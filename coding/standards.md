@@ -15,3 +15,10 @@
 *   **Tags**: Proper Title tags and Meta descriptions.
 *   **Structure**: Single `<h1>`, semantic HTML5.
 *   **Performance**: Optimize for fast load times.
+
+## 4. Operational Hygiene
+*   **Trust but Verify**: After **every** file edit (`replace_file_content`, `write_to_file`), you MUST use `view_file` to confirm the change was applied correctly. Do not assume success.
+*   **Folder Hygiene**: If you move or delete files:
+    1.  Check if the source folder is now empty.
+    2.  **If Empty**: Delete the folder OR add a `.gitkeep` file if the structure is needed.
+    3.  **Why**: Prevents "Ghost Folders" cluttering the repo.
