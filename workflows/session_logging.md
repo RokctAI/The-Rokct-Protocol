@@ -10,11 +10,11 @@
 ## 2. During the Session
 *   **Focus**: Stay on the user's current focus.
 *   **Detours (Minor)**: If the user makes a small request (e.g., "Fix .github first") related to the project but not the specific task, **stay in the current session**. Log it as a detour.
-*   **Context Switch (Major)**: If the user requests a *completely unrelated* task (e.g., stopping UI work to build a backend feature):
-    1.  **PAUSE**: Write `[PAUSED]` at the end of the current log.
-    2.  **SWITCH**: Update `.rokct/active_session.txt` to point to a NEW or different session file (e.g., `sessions/Backend_Feature.md`).
-    3.  **RESUME**: When the user returns to the UI, switch the pointer back to the original file.
-*   **Do NOT mix contexts**: Never put Backend Feature logs into a UI Design session file.
+*   **Context Switch (Major)**: If the user requests a *completely unrelated* task:
+    1.  **Ask**: "Is this a new session or related to the current task?" (If ambiguous).
+    2.  **PAUSE/SWITCH**: Only if user confirms it is separate.
+    3.  **Full Stack Exception**: If moving from Backend -> Frontend for the *same feature*, **STAY** in the current session. Context is needed.
+*   **Do NOT mix contexts**: Truly unrelated tasks (e.g., "Fixing Billing" vs "Designing Chat") must remain separate.
 
 ## 3. End a Session (Critical)
 *   **Trigger**: You believe the task is complete.
