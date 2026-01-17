@@ -8,7 +8,7 @@
 *   `SSO/agent-rules/core`: Mandates (Authority, Communication).
 *   `SSO/agent-rules/coding`: Tech stack and Design systems.
 *   `SSO/agent-rules/system`: Memory, Logs, and Maps (This directory).
-*   `SSO/agent-rules/workflows`: SOPs for specific tasks.
+*   `The-Rokct-Protocol/` (Submodule: **Do Not Touch**)ific tasks.
 
 ## Critical Files
 *   `README.md`: Entry point.

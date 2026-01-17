@@ -21,13 +21,13 @@ The agent **MUST** process these rules in the following priority order:
 Add this repository as a submodule to your project (e.g., your Next.js or Frappe app):
 
 ```bash
-git submodule add https://github.com/RokctAI/The-Rokct-Protocol agent-rules
+git submodule add https://github.com/RokctAI/The-Rokct-Protocol The-Rokct-Protocol
 ```
 
 ### 2. Initialization (The "Bootstrap")
-Once the folder `agent-rules` is in your project, open your AI Editor (Cursor/Windsurf) and tell the agent:
+Once the folder `The-Rokct-Protocol` is in your project, open your AI Editor (Cursor/Windsurf) and tell the agent:
 
-> "Initialize the Rokct Protocol using `agent-rules/workflows/init_protocol.md`."
+> "Initialize the Rokct Protocol using `The-Rokct-Protocol/workflows/init_protocol.md`."
 
 The agent will:
 1.  Create a `.rokct/` folder in your project root (for Memory).

@@ -6,12 +6,12 @@
 1.  **Create Directory**: Create a folder named `.rokct` in the project root.
     *   *Note*: This folder is for your brain (Memory, Logs). It stays with the project.
 2.  **Copy Templates**:
-    *   Copy `SSO/agent-rules/templates/memory.md` -> `.rokct/memory.md`
-    *   Copy `SSO/agent-rules/templates/decision_log.md` -> `.rokct/decision_log.md`
-    *   Copy `SSO/agent-rules/templates/project_map.md` -> `.rokct/project_map.md`
-    *   Copy `SSO/agent-rules/templates/active_session.txt` -> `.rokct/active_session.txt`
+    *   Copy `The-Rokct-Protocol/templates/memory.md` -> `.rokct/memory.md`
+    *   Copy `The-Rokct-Protocol/templates/decision_log.md` -> `.rokct/decision_log.md`
+    *   Copy `The-Rokct-Protocol/templates/project_map.md` -> `.rokct/project_map.md`
+    *   Copy `The-Rokct-Protocol/templates/active_session.txt` -> `.rokct/active_session.txt`
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
-    *   **Activate Rules**: Copy `SSO/agent-rules/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
+    *   **Activate Rules**: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
 3.  **Configuration (Identity)**:
     *   **Identity**: Run `git config user.email`.
     *   **Persona**: Ask the User: *"What should I call you?"* (e.g., "Ray").
