@@ -16,13 +16,13 @@
     *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
 *   **1. Git Binding (Context Sync)**:
     *   **Branch Name**: `users/[Name]/[Task]` (e.g., `users/ray/auth`).
-    *   **Action**:
-        *   *If New*: 
-            1.  `git checkout main` -> `git pull`
-            2.  `git checkout -b users/ray/auth`
-            3.  `git push -u origin users/ray/auth`
-                *   *Note*: If this fails (e.g., "Permission Denied" in Cloud Environment), **IGNORE** the error and proceed locally. Do not stop.
-        *   *If Exists*: `git checkout users/ray/auth`.
+    *   **Action (Capability Check)**:
+        *   **Goal**: Create and Publish the branch `users/[Name]/[Task]`.
+        *   **Method**:
+            1.  **Check Tools**: Do you have a tool like `create_branch` or `github_create_branch`? **Use it**.
+            2.  **Fallback (Shell)**: If no specific tool, use Git commands:
+                *   `git checkout -b users/ray/auth`
+                *   `git push -u origin users/ray/auth` (Ignore "Permission Denied" errors).
     *   *Why*: Prevents you from accidentally overwriting code on the wrong branch.
 *   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
     *   **ID Construction**: Read `Safe ID` from `.rokct/memory.md`. (e.g., `ray.dev.9ac2b1`).
