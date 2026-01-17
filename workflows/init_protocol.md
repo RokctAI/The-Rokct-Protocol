@@ -11,6 +11,7 @@
     *   Copy `SSO/agent-rules/templates/project_map.md` -> `.rokct/project_map.md`
     *   Copy `SSO/agent-rules/templates/active_session.txt` -> `.rokct/active_session.txt`
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
+    *   **Activate Rules**: Copy `SSO/agent-rules/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
 3.  **Register**:
     *   Add `.rokct/` to `.gitignore` (Optional, ask user if they want to commit their agent memory).
 
