@@ -12,6 +12,8 @@
 *   *Goal*: Manage repo clutter automatically.
 
 ## 1. Start a Session
+*   **0. Update Rules**: Run `git submodule update --remote` to ensure you are obeying the latest laws.
+    *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules` to refresh your instructions.
 *   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
     *   **ID Construction**: Read `Safe ID` from `.rokct/memory.md`. (e.g., `ray.dev.9ac2b1`).
 *   **Header**:
