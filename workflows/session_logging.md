@@ -19,7 +19,7 @@
 ## 4. Long Sessions (The "Rolling" Strategy)
 *   **Trigger**: If the session log exceeds ~200 lines (or feels too large).
 *   **Action**:
-    1.  **Summarize**: Write a "Context Anchor" (Current Status, Decisions, Next Steps).
+    1.  **Summarize**: Create a "Context Anchor". **CRITICAL**: This must be a *Cumulative Summary* of the entire mission (Part 1-X), not just the last file. Don't lose the original goal!
     2.  **Archive**: Rename the file to `TaskName_Part1.md`.
     3.  **Continue**: Create `TaskName_Part2.md`. Paste the "Context Anchor" at the top.
 *   **Deep Retrieval**: The archived parts (`Part1`, `Part2`) are **NOT DEAD**. They are "Reference Library".

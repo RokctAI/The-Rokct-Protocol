@@ -1,9 +1,14 @@
-# Context Anchor (Summary of Previous Part)
+# Context Anchor (Cumulative Summary)
 
-**Previous File**: [Link to Part X]
+**Previous Parts**: [Link to Part X, Part Y...]
 **Status**: [Active/Paused]
 
-## Key Decisions Made
+## Cumulative Context (The "Golden Thread")
+*   *Summarize the ENTIRE journey, not just the last file.*
+*   *What was the original goal? (From Part 1)*
+*   *What are the key architectural decisions? (From all Parts)*
+
+## Current State (From Previous Part)
 *   ...
 
 ## Pending Tasks
