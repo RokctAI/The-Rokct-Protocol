@@ -5,10 +5,10 @@
 **Rule**: Update this map when you explore a new part of the codebase.
 
 ## Key Directories
-*   `SSO/agent-rules/core`: Mandates (Authority, Communication).
-*   `SSO/agent-rules/coding`: Tech stack and Design systems.
-*   `SSO/agent-rules/system`: Memory, Logs, and Maps (This directory).
-*   `The-Rokct-Protocol/` (Submodule: **Do Not Touch**)ific tasks.
+*   `The-Rokct-Protocol/core`: Mandates (Authority, Communication).
+*   `The-Rokct-Protocol/coding`: Tech stack and Design systems.
+*   `The-Rokct-Protocol/templates`: Templates (Memory, Logs).
+*   `The-Rokct-Protocol/`: (Submodule: **Do Not Touch**).
 
 ## Critical Files
 *   `README.md`: Entry point.
