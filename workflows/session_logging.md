@@ -3,14 +3,15 @@
 **Rule**: Use `sessions/` to log detailed work. Keep `memory.md` for high-level lessons only.
 
 ## 1. Start a Session
-*   **Filename**: `sessions/YYYY-MM-DD_@<UserEmailPrefix>_TaskName.md`
-    *   *Example*: If email is `ray.dev@rokct.ai`, file is `sessions/2026-05-21_@ray.dev_AuthFlow.md`.
-    *   *Why*: Ensures file uniqueness in team repos.
+*   **Filename**: `sessions/YYYY-MM-DD_@<EmailPrefix>_TaskName.md`
+    *   *Example*: Email is `ray.dev@rokct.ai` -> File is `sessions/2026-05-21_@ray.dev_Auth.md`.
+    *   *Why*: Uniqueness.
 *   **Header**:
     ```markdown
     # Session: [Task Name]
     **Date**: 2026-05-21
-    **User**: [Name] ([Email])
+    **User**: [Preferred Name] (e.g. Ray)
+    **ID**: [Email]
     **Status**: [Active]
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.

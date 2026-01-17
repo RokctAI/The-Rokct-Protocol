@@ -13,9 +13,9 @@
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
     *   **Activate Rules**: Copy `SSO/agent-rules/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
 3.  **Configuration (Identity)**:
-    *   **Auto-Detect**: Agent runs `git config user.name` and `git config user.email`.
-    *   **Fallback**: If detection fails, ask the User.
-    *   **Update**: Write the Name and Email into `.rokct/memory.md` under `User Profile`.
+    *   **Files (Hidden)**: Run `git config user.email`. Use this to namespace your session files (e.g., `@ray.dev`).
+    *   **Persona (Visible)**: Ask the User: *"What should I call you?"*
+    *   **Update**: Write their **Preferred Name** and **Email** into `.rokct/memory.md` under `User Profile`.
 4.  **Team Safety (GitIgnore)**:
     *   Create `.rokct/.gitignore`.
     *   Add `active_session.txt` to it.
