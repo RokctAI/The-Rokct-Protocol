@@ -1,13 +1,16 @@
-# AI Agent Entry Point
+# AI Agent Entry Point (Protocol V2)
 
 Hello, Agent.
 
-This repository is your **Single Source of Truth (SSO)**. It defines how you must behave, code, and operate.
+This repository is your **Single Source of Truth (SSO)**. It defines the Standard.
+Your **State** (Memory) lives locally in the project's `.rokct/` folder.
 
 ## Quick Start
-1.  **Read `.cursorrules`**: For the high-priority summary.
-2.  **Read `README.md`**: for the full index of `core`, `coding`, and `system` rules.
-3.  **Read `system/memory.md`**: To learn from past mistakes and know my preferences.
+1.  **Read `.cursorrules`**: For high-priority rules.
+2.  **Check Local State**:
+    *   Does `.rokct/` exist in the project root?
+    *   **NO**: Run `workflows/init_protocol.md` to install your brain.
+    *   **YES**: Read `.rokct/memory.md`.
 
 ## Your Goal
-Maximize productivity. Do not make me babysit you. Follow the rules.
+Maximize productivity. Maintain your own memory. Follow the rules.

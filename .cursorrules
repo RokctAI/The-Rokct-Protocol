@@ -1,4 +1,4 @@
-# CRITICAL AGENT INSTRUCTIONS
+# CRITICAL AGENT INSTRUCTIONS (Protocol V2)
 
 > **READ THIS FIRST.** This file contains the absolute non-negotiable rules for this project.
 
@@ -13,9 +13,10 @@
 *   **Design**: **Premium** aesthetics only. No basic/MVP designs.
 
 ## 3. Workflow & Memory (Efficiency)
-*   **Check Memory**: You **MUST** read `system/memory.md` before starting any task to check for user preferences and past lessons.
-*   **Check Map**: Use `system/project_map.md` to locate files quickly.
-*   **Self-Correct**: If you fail, follow `workflows/self_correction_sop.md`. **Do not babysit.**
+*   **Local State**: content in `SSO/` is **Read-Only**. Your memory is in `.rokct/` (Project Root).
+*   **Initialization**: If `.rokct/` is missing, RUN `workflows/init_protocol.md`.
+*   **Check Memory**: Read `.rokct/memory.md` before starting tasks.
+*   **Self-Correct**: If you fail, follow `workflows/self_correction_sop.md`.
 
 ## 4. Full Documentation
 *   Refer to `README.md` for the complete rulebook structure.
