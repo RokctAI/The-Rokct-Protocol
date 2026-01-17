@@ -41,7 +41,9 @@ The agent will:
 *   **Identity Aware**: The agent knows who you are but asks what to call you.
 *   **Auto-Cleanup**: Old session logs are deleted based on your Retention Policy (Default: Forever).
 *   **Anti-Hang**: Configurable "Frequent Checkpoints" (Auto-Save) for Cloud Agents to prevent data loss.
-*   **Extensions**: Pluggable "Prompts" and "Schemas" directory (`extensions/`) for shared skills and logic.
+*   **Anti-Hang**: Configurable "Frequent Checkpoints" (Auto-Save) for Cloud Agents to prevent data loss.
+*   **Skills**: Anthropic-standard capability modules (`skills/`) for defining complex agent behaviors.
+*   **Schemas**: Strict output definitions (`coding/schemas.md`) for reliable structured data.
 
 ### 4. How to Work
 Once initialized, simply tell your Agent to start working:
