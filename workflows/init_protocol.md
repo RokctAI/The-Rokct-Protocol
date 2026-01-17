@@ -9,6 +9,7 @@
     *   Copy `SSO/agent-rules/templates/memory.md` -> `.rokct/memory.md`
     *   Copy `SSO/agent-rules/templates/decision_log.md` -> `.rokct/decision_log.md`
     *   Copy `SSO/agent-rules/templates/project_map.md` -> `.rokct/project_map.md`
+    *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
 3.  **Register**:
     *   Add `.rokct/` to `.gitignore` (Optional, ask user if they want to commit their agent memory).
 
