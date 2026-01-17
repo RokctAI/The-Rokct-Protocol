@@ -41,9 +41,13 @@ The agent will:
 *   **Identity Aware**: The agent knows who you are but asks what to call you.
 *   **Auto-Cleanup**: Old session logs are deleted based on your Retention Policy (Default: Forever).
 
-### 4. Usage
-**Do nothing.**
-Once initialized, the `.cursorrules` file in your root will automatically instruct the AI to:
-*   Check `.rokct/memory.md` for your preferences.
-*   Log its work in `.rokct/sessions/`.
-*   Follow the "Rokct Protocol".
+### 4. How to Work
+Once initialized, simply tell your Agent to start working:
+
+> **"Start a new session for [Task Name]"**
+> *(e.g., "Start a new session for Auth Flow")*
+
+The Agent will automatically:
+1.  **Update**: Pull the latest Protocol rules (`git submodule update`).
+2.  **Create**: A namespaced session log (e.g., `.rokct/sessions/2026-05-21_@Ray_Auth.md`).
+3.  **Work**: Log its thoughts and follow the rules.
