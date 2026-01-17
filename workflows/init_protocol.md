@@ -13,8 +13,12 @@
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
     *   **Activate Rules**: Copy `SSO/agent-rules/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
 3.  **Configuration (Identity)**:
-    *   **Files (Hidden)**: Run `git config user.email`. Use this to namespace your session files (e.g., `@ray.dev`).
-    *   **Persona (Visible)**: Ask the User: *"What should I call you?"*
+    *   **Identity**: Run `git config user.email`.
+    *   **Persona**: Ask the User: *"What should I call you?"* (e.g., "Ray").
+    *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
+        *   `ray.dev@rokct.ai` -> `ray.dev.9ac2b1`
+        *   *Why*: Readable user, private domain, collision-proof.
+    *   **Update**: Write **Preferred Name**, **Email**, and **Safe ID** into `.rokct/memory.md`.
     *   **Retention**: Ask: *"How long should I keep closed session logs?"* (Default: Forever).
     *   **Update**: Write **Preferred Name**, **Email**, and **Retention Policy** into `.rokct/memory.md`.
 4.  **Team Safety (GitIgnore)**:

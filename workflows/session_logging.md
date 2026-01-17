@@ -12,15 +12,14 @@
 *   *Goal*: Manage repo clutter automatically.
 
 ## 1. Start a Session
-*   **Filename**: `sessions/YYYY-MM-DD_@<EmailPrefix>_TaskName.md`
-    *   *Example*: Email is `ray.dev@rokct.ai` -> File is `sessions/2026-05-21_@ray.dev_Auth.md`.
-    *   *Why*: Uniqueness.
+*   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
+    *   **ID Construction**: Read `Safe ID` from `.rokct/memory.md`. (e.g., `ray.dev.9ac2b1`).
 *   **Header**:
     ```markdown
     # Session: [Task Name]
     **Date**: 2026-05-21
     **User**: [Preferred Name] (e.g. Ray)
-    **ID**: [EmailPrefix] (e.g. ray.dev)
+    **ID**: [Safe ID] (e.g. ray.dev.9ac2b1)
     **Status**: [Active]
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.

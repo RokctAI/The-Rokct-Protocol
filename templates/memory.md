@@ -4,7 +4,8 @@
 
 ## User Profiles
 *   **[Name]**:
-    *   **Email**: [git.email@example.com]
+    *   **Safe ID**: [ray.dev.9ac2b1] (Used for filenames)
+    *   **Email**: [git.email@example.com] (Private, for reference only)
     *   **Role/Preferences**: [Details]
 *   *(Agent: Add new users here as they appear)*
 
