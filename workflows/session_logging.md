@@ -45,12 +45,13 @@
 *   **Do NOT mix contexts**: Truly unrelated tasks (e.g., "Fixing Billing" vs "Designing Chat") must remain separate.
 
 ## 4. Persistence (Anti-Hang)
-*   **Context**: Critical for Cloud Agents (Jules/Codespaces) where sessions may timeout or hang.
-*   **Rule**: Do NOT wait until the very end to save.
-*   **Action**: After every successful step (e.g., "Created Component", "Fixed Function"):
-    1.  **Ask**: *"Shall I commit/checkpoint this progress to save state?"*
-    2.  **If Yes**: Run `git commit -am "Checkpoint: [Action]"` (or use Platform Submit).
-    3.  **Result**: Your work is saved. If the session dies, you don't lose everything.
+*   **Context**: Critical for Cloud Agents (Jules).
+*   **Trigger**: Completion of a significant step.
+*   **Action**:
+    1.  **Read**: Check `Checkpoint Policy` in `.rokct/memory.md`.
+    2.  **If 'Frequent'**: **AUTO-COMMIT** (without asking). `git commit -am "Checkpoint: [Action]"` (or Platform Submit).
+    3.  **If 'Manual'**: Do nothing (Wait for user).
+    4.  *Why*: Keeps you safe without nagging.
 
 ## 4. Maintenance (Anti-Conflict)
 *   **Trigger**: User says "Update Base" or you are about to Merge.

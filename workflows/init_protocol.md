@@ -23,7 +23,8 @@
         *   *Why*: Readable user, private domain, collision-proof.
     *   **Update**: Write **Preferred Name**, **Email**, and **Safe ID** into `.rokct/memory.md`.
     *   **Retention**: Ask: *"How long should I keep closed session logs?"* (Default: Forever).
-    *   **Update**: Write **Preferred Name**, **Email**, and **Retention Policy** into `.rokct/memory.md`.
+    *   **Safety**: Ask: *"Should I enable 'Frequent Checkpoints' to prevent data loss (Anti-Hang)?"* (Recommended for Cloud).
+    *   **Update**: Write **Preferred Name**, **Email**, **Safe ID**, **Retention**, and **Checkpoint Policy** into `.rokct/memory.md`.
 4.  **Team Safety (GitIgnore)**:
     *   Create `.rokct/.gitignore`.
     *   Add `active_session.txt` to it.

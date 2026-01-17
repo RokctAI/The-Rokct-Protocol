@@ -11,6 +11,7 @@
 
 ## Global Preferences
 *   **Session Retention**: [Forever] (Options: Forever, 1 Month, 1 Week)
+*   **Checkpoint Policy**: [Value] (Options: Frequent, Manual) -> *Set 'Frequent' for Cloud Agents*
 *   [Active] Prefer "Frappe" for backend.
 *   [Active] Prefer "Next.js + AI SDK" for frontend.
 *   [Active] Prefer "Flutter" for mobile.
