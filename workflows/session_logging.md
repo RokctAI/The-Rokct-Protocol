@@ -3,8 +3,16 @@
 **Rule**: Use `sessions/` to log detailed work. Keep `memory.md` for high-level lessons only.
 
 ## 1. Start a Session
-*   **When**: You start a new complex task (e.g., "Designing Auth System").
-*   **Action**: Create `.rokct/sessions/YYYY-MM-DD_TaskName.md`.
+*   **Filename**: `sessions/YYYY-MM-DD_@<UserEmailPrefix>_TaskName.md`
+    *   *Example*: If email is `ray.dev@rokct.ai`, file is `sessions/2026-05-21_@ray.dev_AuthFlow.md`.
+    *   *Why*: Ensures file uniqueness in team repos.
+*   **Header**:
+    ```markdown
+    # Session: [Task Name]
+    **Date**: 2026-05-21
+    **User**: [Name] ([Email])
+    **Status**: [Active]
+    ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.
 
 ## 2. During the Session

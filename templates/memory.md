@@ -2,10 +2,13 @@
 
 **Rule**: Before asking a question or starting a task, the Agent **MUST** read this file to check for past lessons or user preferences.
 
-## User Profile
-*   **Name**: [Not Set] (Agent: Ask user for their name if not set)
+## User Profiles
+*   **[Name]**:
+    *   **Email**: [git.email@example.com]
+    *   **Role/Preferences**: [Details]
+*   *(Agent: Add new users here as they appear)*
 
-## User Preferences
+## Global Preferences
 *   [Active] Prefer "Frappe" for backend.
 *   [Active] Prefer "Next.js + AI SDK" for frontend.
 *   [Active] Prefer "Flutter" for mobile.
