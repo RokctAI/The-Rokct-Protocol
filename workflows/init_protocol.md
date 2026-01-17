@@ -13,7 +13,10 @@
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
     *   **Activate Rules**: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
 3.  **Configuration (Identity)**:
-    *   **Identity**: Run `git config user.email`.
+    *   **Identity**:
+        1.  Run `git config user.email`.
+        2.  Ask User: *"I detected `[Email]`. Is this the correct identity for this session?"*
+        3.  **If No**: Ask for the correct email (Must be `user@domain` format).
     *   **Persona**: Ask the User: *"What should I call you?"* (e.g., "Ray").
     *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
         *   `ray.dev@rokct.ai` -> `ray.dev.9ac2b1`
