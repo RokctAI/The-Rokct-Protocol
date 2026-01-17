@@ -34,7 +34,13 @@ The agent will:
 2.  Copy the `.cursorrules` file to your project root.
 3.  Set up the Session Logging structure.
 
-### 3. Usage
+### 3. Features You Get
+*   **Infinite Memory**: Long sessions "roll over" automatically. You never lose context.
+*   **Team Safe**: Session files are namespaced by user (e.g., `@ray.dev`) to prevent merge conflicts.
+*   **Identity Aware**: The agent knows who you are but asks what to call you.
+*   **Auto-Cleanup**: Old session logs are deleted based on your Retention Policy (Default: Forever).
+
+### 4. Usage
 **Do nothing.**
 Once initialized, the `.cursorrules` file in your root will automatically instruct the AI to:
 *   Check `.rokct/memory.md` for your preferences.
