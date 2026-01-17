@@ -15,7 +15,8 @@
 3.  **Configuration (Identity)**:
     *   **Files (Hidden)**: Run `git config user.email`. Use this to namespace your session files (e.g., `@ray.dev`).
     *   **Persona (Visible)**: Ask the User: *"What should I call you?"*
-    *   **Update**: Write their **Preferred Name** and **Email** into `.rokct/memory.md` under `User Profile`.
+    *   **Retention**: Ask: *"How long should I keep closed session logs?"* (Default: Forever).
+    *   **Update**: Write **Preferred Name**, **Email**, and **Retention Policy** into `.rokct/memory.md`.
 4.  **Team Safety (GitIgnore)**:
     *   Create `.rokct/.gitignore`.
     *   Add `active_session.txt` to it.

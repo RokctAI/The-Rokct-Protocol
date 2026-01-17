@@ -9,6 +9,7 @@
 *   *(Agent: Add new users here as they appear)*
 
 ## Global Preferences
+*   **Session Retention**: [Forever] (Options: Forever, 1 Month, 1 Week)
 *   [Active] Prefer "Frappe" for backend.
 *   [Active] Prefer "Next.js + AI SDK" for frontend.
 *   [Active] Prefer "Flutter" for mobile.

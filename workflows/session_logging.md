@@ -2,6 +2,15 @@
 
 **Rule**: Use `sessions/` to log detailed work. Keep `memory.md` for high-level lessons only.
 
+## 0. Housekeeping (Auto-Cleanup)
+*   **Trigger**: Start of a new session.
+*   **Check**: Read `Session Retention` in `.rokct/memory.md`.
+*   **Action**: If NOT "Forever":
+    1.  Scan `sessions/` for files marked `Status: [CLOSED]`.
+    2.  Check the Date in the filename/header.
+    3.  **DELETE** files older than the limit.
+*   *Goal*: Manage repo clutter automatically.
+
 ## 1. Start a Session
 *   **Filename**: `sessions/YYYY-MM-DD_@<EmailPrefix>_TaskName.md`
     *   *Example*: Email is `ray.dev@rokct.ai` -> File is `sessions/2026-05-21_@ray.dev_Auth.md`.
