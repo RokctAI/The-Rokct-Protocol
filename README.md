@@ -1,4 +1,4 @@
-# Agent Rules & Context (SSO)
+# The Rokct Protocol
 
 This repository acts as the **Single Source of Truth (SSO)** for the AI agent's behavior, constraints, and operational knowledge.
 
@@ -21,7 +21,7 @@ The agent **MUST** process these rules in the following priority order:
 Add this repository as a submodule to your project (e.g., your Next.js or Frappe app):
 
 ```bash
-git submodule add <URL_TO_THIS_REPO> agent-rules
+git submodule add https://github.com/RokctAI/The-Rokct-Protocol agent-rules
 ```
 
 ### 2. Initialization (The "Bootstrap")
