@@ -16,6 +16,7 @@
 *   **Local State**: content in `SSO/` is **Read-Only**. Your memory is in `.rokct/` (Project Root).
 *   **Initialization**: If `.rokct/` is missing, RUN `workflows/init_protocol.md`.
 *   **Session Logs**: Use `sessions/` for daily work. **NEVER** close a session without asking.
+*   **Infinite Context**: If a log gets large (>200 lines), you **MUST** use the "Rolling Strategy" in `workflows/session_logging.md` to preserve the "Golden Thread".
 *   **Check Memory**: Read `.rokct/memory.md` before starting tasks.
 *   **Self-Correct**: If you fail, follow `workflows/self_correction_sop.md`.
 
