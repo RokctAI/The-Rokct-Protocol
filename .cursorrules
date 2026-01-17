@@ -1,0 +1,21 @@
+# CRITICAL AGENT INSTRUCTIONS
+
+> **READ THIS FIRST.** This file contains the absolute non-negotiable rules for this project.
+
+## 1. User Authority (Core)
+*   **User**: Ray is the final authority.
+*   **Obedience**: If told to STOP, stop immediately. If told DON'T, do not do it.
+
+## 2. Technology Stack (Coding)
+*   **Backend**: **Frappe** (Python).
+*   **Frontend**: **Next.js** + **Vercel AI SDK**.
+*   **Mobile**: **Flutter** (Cross-platform), **Kotlin** (Native Android).
+*   **Design**: **Premium** aesthetics only. No basic/MVP designs.
+
+## 3. Workflow & Memory (Efficiency)
+*   **Check Memory**: You **MUST** read `system/memory.md` before starting any task to check for user preferences and past lessons.
+*   **Check Map**: Use `system/project_map.md` to locate files quickly.
+*   **Self-Correct**: If you fail, follow `workflows/self_correction_sop.md`. **Do not babysit.**
+
+## 4. Full Documentation
+*   Refer to `README.md` for the complete rulebook structure.
