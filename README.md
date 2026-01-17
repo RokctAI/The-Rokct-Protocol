@@ -22,6 +22,7 @@ Add this repository as a submodule to your project (e.g., your Next.js or Frappe
 
 ```bash
 git submodule add https://github.com/RokctAI/The-Rokct-Protocol The-Rokct-Protocol
+git commit -m "Install Rokct Protocol"
 ```
 
 ### 2. Initialization (The "Bootstrap")
