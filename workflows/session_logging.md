@@ -14,15 +14,13 @@
 ## 1. Start a Session
 *   **0. Update Rules**: Run `git submodule update --remote`.
     *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
-*   **1. Git Binding (Context Sync)**:
-    *   **Branch Name**: `users/[Name]/[Task]` (e.g., `users/ray/auth`).
-    *   **Action (Capability Check)**:
-        *   **Goal**: Create and Publish the branch `users/[Name]/[Task]`.
-        *   **Method**:
-            1.  **Check Tools**: Do you have a tool like `create_branch` or `github_create_branch`? **Use it**.
-            2.  **Fallback (Shell)**: If no specific tool, use Git commands:
-                *   `git checkout -b users/ray/auth`
-                *   `git push -u origin users/ray/auth` (Ignore "Permission Denied" errors).
+    *   **Action (Environment Check)**:
+        1.  **Determine Type**: Are you in a **Local Terminal** (Unrestricted) or a **Cloud/Web Agent** (Restricted/Jules)?
+        2.  **If Cloud/Web**: **SKIP** all branching. Work on the current branch assigned to you. Do not switch.
+        3.  **If Local**:
+            *   *If New*: `git checkout -b users/[Name]/[Task]`.
+            *   *If Exists*: `git checkout users/[Name]/[Task]`.
+            *   `git push -u origin users/[Name]/[Task]` (Ignore errors).
     *   *Why*: Prevents you from accidentally overwriting code on the wrong branch.
 *   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
     *   **ID Construction**: Read `Safe ID` from `.rokct/memory.md`. (e.g., `ray.dev.9ac2b1`).
