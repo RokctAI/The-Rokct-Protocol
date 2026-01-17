@@ -3,17 +3,16 @@
 **Previous Parts**: [Link to Part X, Part Y...]
 **Status**: [Active/Paused]
 
-## 1. The Golden Thread (Persistent Context)
-*   **Goal**: [The Original Goal from Part 1]
-*   **Key Decisions (History)**:
-    *   *Part 1*: [Crucial Decision, e.g., Not using Tailwind]
-    *   *Part 5*: [Crucial Decision, e.g., Switched to Supabase]
-    *   *(Routine logs from old parts are dropped, only decisions stay)*
+## 1. The Golden Thread (Persistent One-Liners)
+*   *Keep this list growing. Never delete old One-Liners.*
+    *   **Part 1**: [One-Liner Key Decision/Goal]
+    *   **Part 2**: [One-Liner Key Decision/Change]
+    *   **Part 3**: [One-Liner Key Decision/Pivot]
 
-## 2. recent Context (Detailed Summary of Last Part)
-*   *What exactly were we doing in the last file?*
-*   *Where did we leave off?*
-*   *Active Errors/Variables?*
+## 2. Recent Context (Detailed Summary of PREVIOUS Part Only)
+*   *Detailed summary of the file you just came from.*
+*   *Active variables, error states, and immediate next steps.*
+*   *(Note: The detailed summary of Part 1 is lost when we move to Part 3, but its One-Liner stays in Section 1).*
 
 ## Pending Tasks
 *   ...
