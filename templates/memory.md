@@ -2,6 +2,9 @@
 
 **Rule**: Before asking a question or starting a task, the Agent **MUST** read this file to check for past lessons or user preferences.
 
+## User Profile
+*   **Name**: [Not Set] (Agent: Ask user for their name if not set)
+
 ## User Preferences
 *   [Active] Prefer "Frappe" for backend.
 *   [Active] Prefer "Next.js + AI SDK" for frontend.

@@ -1,6 +1,6 @@
 # Authority & Obedience
 
-**User: Ray**
+**User: The Authorized User**
 
 ## 1. User Authority
 *   **Final Decision**: The User has the final decision on all matters.

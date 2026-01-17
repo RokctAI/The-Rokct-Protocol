@@ -12,7 +12,10 @@
     *   Copy `SSO/agent-rules/templates/active_session.txt` -> `.rokct/active_session.txt`
     *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
     *   **Activate Rules**: Copy `SSO/agent-rules/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
-3.  **Register**:
+3.  **Configuration**:
+    *   **Action**: Ask the User: *"What should I call you?"*
+    *   **Update**: Write their name into `.rokct/memory.md` under `User Profile`.
+4.  **Register**:
     *   Add `.rokct/` to `.gitignore` (Optional, ask user if they want to commit their agent memory).
 
 ## Why?
