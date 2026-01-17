@@ -10,8 +10,8 @@ The agent **MUST** process these rules in the following priority order:
     *   [Communication](./core/02_communication.md)
 2.  **[Coding Standards](./coding/standards.md)**: Technical constraints, stack preferences, and "no placeholder" policies.
 3.  **[Design System](./coding/design_system.md)**: Aesthetic guidelines for "Premium" output.
-4.  **[System](./system/project_map.md)**: Memory (`memory.md`), Context Map (`project_map.md`), and Decisions (`decision_log.md`).
-5.  **[Workflows](./workflows/README.md)**: Standard procedures for specific tasks.
+4.  **[Templates](./templates/project_map.md)**: Templates for Memory (`templates/memory.md`), Context Map (`templates/project_map.md`), and Decisions (`templates/decision_log.md`).
+5.  **[Workflows](./workflows/README.md)**: SOPs, including [Initialization](./workflows/init_protocol.md).
 
 ## Purpose
 To maximize productivity by enforcing a clear, predictable flow of user-agent interaction and high-quality output standards.
