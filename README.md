@@ -49,6 +49,8 @@ Once initialized, simply tell your Agent to start working:
 
 The Agent will automatically:
 1.  **Update**: Pull the latest Protocol rules (`git submodule update`).
-2.  **Branch**: Switch to context branch `users/[Name]/[Task]` (Using Agent Tools if available, else Shell).
+2.  **Branch**:
+    *   **Local**: Switches to context branch `users/[Name]/[Task]`.
+    *   **Cloud**: Stays on current branch (Prevention of Agent Error).
 3.  **Create**: A namespaced session log (e.g., `.rokct/sessions/2026-05-21_@Ray_Auth.md`).
 4.  **Work**: Log its thoughts and follow the rules.
