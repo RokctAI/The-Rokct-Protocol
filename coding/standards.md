@@ -1,11 +1,11 @@
 # Coding Standards
 
 ## 1. Technology Stack
-*   **Core**: HTML for structure, Javascript for logic.
+*   **Backend/Platform**: **Frappe** (Python) for custom apps and backend logic.
+*   **Frontend**: **Next.js** + **Vercel AI SDK** for web interfaces.
+*   **Mobile**: **Flutter** for cross-platform apps. 
+*   **Native Mobile**: **Kotlin** for Android-specific needs.
 *   **Styling**: Vanilla CSS for flexibility. Avoid TailwindCSS unless explicitly requested.
-*   **Web App Frameworks**: Next.js or Vite (only if explicitly requested).
-    *   Use `npx -y` for scripts.
-    *   Run in non-interactive mode.
 
 ## 2. Implementation Rules
 *   **No Placeholders**: Never use placeholders. Use generation tools to create working demonstrations.
