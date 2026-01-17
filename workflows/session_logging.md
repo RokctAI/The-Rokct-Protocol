@@ -20,7 +20,7 @@
     # Session: [Task Name]
     **Date**: 2026-05-21
     **User**: [Preferred Name] (e.g. Ray)
-    **ID**: [Email]
+    **ID**: [EmailPrefix] (e.g. ray.dev)
     **Status**: [Active]
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.
