@@ -12,13 +12,20 @@
 *   *Goal*: Manage repo clutter automatically.
 
 ## 1. Start a Session
-*   **0. Update Rules**: Run `git submodule update --remote` to ensure you are obeying the latest laws.
-    *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules` to refresh your instructions.
+*   **0. Update Rules**: Run `git submodule update --remote`.
+    *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
+*   **1. Git Binding (Context Sync)**:
+    *   **Branch Name**: `users/[Name]/[Task]` (e.g., `users/ray/auth`).
+    *   **Action**:
+        *   *If New*: `git checkout main` -> `git pull` -> `git checkout -b users/ray/auth`.
+        *   *If Exists*: `git checkout users/ray/auth`.
+    *   *Why*: Prevents you from accidentally overwriting code on the wrong branch.
 *   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
     *   **ID Construction**: Read `Safe ID` from `.rokct/memory.md`. (e.g., `ray.dev.9ac2b1`).
 *   **Header**:
     ```markdown
     # Session: [Task Name]
+    **Branch**: users/[Name]/[Task]
     **Date**: 2026-05-21
     **User**: [Preferred Name] (e.g. Ray)
     **ID**: [Safe ID] (e.g. ray.dev.9ac2b1)
@@ -26,7 +33,7 @@
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.
 
-## 2. During the Session
+## 3. During the Session
 *   **Focus**: Stay on the user's current focus.
 *   **Detours (Minor)**: If the user makes a small request (e.g., "Fix .github first") related to the project but not the specific task, **stay in the current session**. Log it as a detour.
 *   **Context Switch (Major)**: If the user requests a *completely unrelated* task:
@@ -34,6 +41,11 @@
     2.  **PAUSE/SWITCH**: Only if user confirms it is separate.
     3.  **Full Stack Exception**: If moving from Backend -> Frontend for the *same feature*, **STAY** in the current session. Context is needed.
 *   **Do NOT mix contexts**: Truly unrelated tasks (e.g., "Fixing Billing" vs "Designing Chat") must remain separate.
+
+## 4. Maintenance (Anti-Conflict)
+*   **Trigger**: User says "Update Base" or you are about to Merge.
+*   **Action**: `git pull --rebase origin main`.
+*   **Why**: This "swaps the base" of your branch to the latest code, resolving conflicts locally before you push.
 
 ## 4. Long Sessions (The "Rolling" Strategy)
 *   **Trigger**: If the session log exceeds ~200 lines (or feels too large).
