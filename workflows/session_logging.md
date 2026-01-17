@@ -16,12 +16,22 @@
     3.  **Full Stack Exception**: If moving from Backend -> Frontend for the *same feature*, **STAY** in the current session. Context is needed.
 *   **Do NOT mix contexts**: Truly unrelated tasks (e.g., "Fixing Billing" vs "Designing Chat") must remain separate.
 
-## 3. End a Session (Critical)
+## 4. Long Sessions (The "Rolling" Strategy)
+*   **Trigger**: If the session log exceeds ~200 lines (or feels too large).
+*   **Action**:
+    1.  **Summarize**: Write a "Context Anchor" (Current Status, Decisions, Next Steps).
+    2.  **Archive**: Rename the file to `TaskName_Part1.md`.
+    3.  **Continue**: Create `TaskName_Part2.md`. Paste the "Context Anchor" at the top.
+*   **Deep Retrieval**: The archived parts (`Part1`, `Part2`) are **NOT DEAD**. They are "Reference Library".
+    *   If you need a specific detail from weeks ago, **READ** the archived file.
+    *   Do not guess. Go back and check the logs.
+
+## 5. End a Session (Critical)
 *   **Trigger**: You believe the task is complete.
 *   **ACTION**: **ASK THE USER**: "Are we done with this session? Shall I archive it and update Memory?"
 *   **PROHIBITED**: Do **NOT** close a session or assume the user is ready to move on without explicit permission.
 *   **Reason**: The user may have unvoiced concerns, side-tasks, or just want to "hang out" in the current context longer.
 
-## 4. Archiving (Only after Approval)
+## 6. Closing (Only after Approval)
 *   **Extract**: Copy *only* reusable lessons to `.rokct/memory.md`.
 *   **Close**: Mark the session file as `[CLOSED]`.
