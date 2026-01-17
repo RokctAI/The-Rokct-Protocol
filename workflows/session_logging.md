@@ -20,7 +20,8 @@
         *   *If New*: 
             1.  `git checkout main` -> `git pull`
             2.  `git checkout -b users/ray/auth`
-            3.  `git push -u origin users/ray/auth` (CRITICAL: Publish immediately).
+            3.  `git push -u origin users/ray/auth`
+                *   *Note*: If this fails (e.g., "Permission Denied" in Cloud Environment), **IGNORE** the error and proceed locally. Do not stop.
         *   *If Exists*: `git checkout users/ray/auth`.
     *   *Why*: Prevents you from accidentally overwriting code on the wrong branch.
 *   **Filename**: `sessions/YYYY-MM-DD_@<SafeID>_TaskName.md`
