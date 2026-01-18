@@ -13,10 +13,13 @@
     *   Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
 
 3.  **Load Profile (Identity)**:
-    *   **Logic**:
-        *   Do you generally have unrestricted Internet/Push access? -> **Local**.
-        *   Are you in a restricted Cloud Sandbox? -> **Web**.
-    *   **Action**: If unsure, **ASK THE USER**: *"Am I identifying as a [Local] agent or a [Web] agent?"*
+    *   **Logic**: Agents struggle to self-identify (Sandbox feels "Local" to them).
+    *   **Action**: Ask yourself the following **Strict Definitions**:
+        > *   **Local Agents**: Run on the user's physical computer (VS Code, Windsurf, CLI) and have access to the user's full network/drive.
+        > *   **Web Agents**: Run in a cloud sandbox (Jules, Replit, GitHub Codespaces) and only see this repo.
+    *   **Decision**:
+        *   If you are running in a Cloud Sandbox (Jules) -> **Web**.
+        *   If you are running on the User's Windows/Mac Desktop -> **Local**.
     *   **install**: Copy `The-Rokct-Protocol/profiles/[selection]/rules.md` -> `.rokct/profiles.md`.
     *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
 
