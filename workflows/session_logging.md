@@ -85,4 +85,8 @@
 
 ## 6. Closing (Only after Approval)
 *   **Extract**: Copy *only* reusable lessons to `.rokct/memory.md`.
-*   **Close**: Mark the session file as `[CLOSED]`.
+*   **Cleanup Decision**:
+    *   Ask: *"Shall I keep the session logs (`sessions/*.md`) for history, or delete them to keep the repo clean?"*
+    *   **Keep**: Rename file to `[CLOSED]_...`.
+    *   **Delete**: Remove the file.
+    *   *Default*: Keep (History is valuable).
