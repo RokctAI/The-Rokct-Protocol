@@ -23,10 +23,23 @@ You are a DevOps Engineer. You rely on clean git history for automation.
     *   `chore`: Maintain.
 *   **Example**: `feat(auth): add google login provider`
 
-## 2. Branching Strategy
-*   `main`: Production ready. Protected.
-*   `develop`: Integration branch (if applicable).
-*   `users/[name]/[feature]`: Your working branch.
+## 2. Branching & Commit Context
+The strategy depends on your **Environment** and **Branch**:
+
+### Scenario A: Local Agent (You are in a Terminal)
+1.  **Check Branch**: `git branch --show-current`.
+2.  **If `main`**: STOP. Create a new branch: `users/[name]/[feature]`.
+3.  **Commit**: Use Conventional Commit (`feat: ...`).
+4.  **Push**: `git push -u origin [branch]`.
+
+### Scenario B: Web/Cloud Agent (You are on a specific branch)
+1.  **Check Context**: You are likely *already* on a feature branch (provided by the platform).
+2.  **Commit**: Use Conventional Commit (`fix: ...`).
+3.  **Push**: Do NOT push unless explicitly authorized (Platform handles sync).
+
+### Scenario C: Direct Commit vs PR
+*   **PR**: If creating a PR, the *PR Description* is the Template form. The *Commit Message* is the summary.
+*   **Direct**: If pushing small fixes to a feature branch, just Commit.
 
 ## 3. Pull Requests
 *   **Title**: Matches the commit standard (e.g., `feat: Add Login`).
