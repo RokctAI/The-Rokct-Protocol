@@ -33,11 +33,18 @@
     **Date**: 2026-05-21
     **User**: [Preferred Name] (e.g. Ray)
     **ID**: [Safe ID] (e.g. ray.dev.9ac2b1)
+    **Mode**: [Planning / Building]
     **Status**: [Active]
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.
 
 ## 3. During the Session
+*   **Switching Modes (Plan -> Build)**:
+    *   **Trigger**: User approves the Plan and says "Proceed".
+    *   **Action**:
+        1.  **Update Rules**: Copy `The-Rokct-Protocol/modes/building.md` -> `.rokct/mode_rules.md`.
+        2.  **Update Log**: Change Header to `**Mode**: Building`.
+        3.  **Log**: "Switched to Building Mode. Full access enabled."
 *   **Focus**: Stay on the user's current focus.
 *   **Detours (Minor)**: If the user makes a small request (e.g., "Fix .github first") related to the project but not the specific task, **stay in the current session**. Log it as a detour.
 *   **Context Switch (Major)**: If the user requests a *completely unrelated* task:
