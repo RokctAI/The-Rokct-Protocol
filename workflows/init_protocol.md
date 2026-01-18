@@ -12,17 +12,18 @@
     *   Copy `The-Rokct-Protocol/core/templates/active_session.txt` -> `.rokct/active_session.txt`
     *   Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
 
-3.  **Load Profile (Auto-Detect)**:
-    *   **Logic**: Introspect your capabilities.
-        *   If you have **Terminal Access** AND **Local OS** (Windows/Mac) -> **Local**.
-        *   If you are **Cloud Based** or **Restricted** -> **Web**.
-    *   **Action**: 
-        *   Copy `The-Rokct-Protocol/profiles/[detected]/rules.md` -> `.rokct/profile_rules.md`.
-        *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
+3.  **Load Profile (Identity)**:
+    *   **Logic**:
+        *   Do you generally have unrestricted Internet/Push access? -> **Local**.
+        *   Are you in a restricted Cloud Sandbox? -> **Web**.
+    *   **Action**: If unsure, **ASK THE USER**: *"Am I identifying as a [Local] agent or a [Web] agent?"*
+    *   **install**: Copy `The-Rokct-Protocol/profiles/[selection]/rules.md` -> `.rokct/profiles.md`.
+    *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
 
-4.  **Load Mode (Ask)**:
-    *   Ask: *"What is my goal? [Planning / Building]"*
-    *   **Action**: Copy `The-Rokct-Protocol/modes/[selection].md` -> `.rokct/mode_rules.md`.
+4.  **Register Identity**:
+    *   Ask: *"What should I call you?"* (e.g. "Ray").
+    *   Save to `.rokct/memory.md`.
+
 
 5.  **Configuration**:
     *   **Identity**: `git config user.email` (If Local).
