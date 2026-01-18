@@ -16,8 +16,10 @@
     *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
     *   **Action (Environment Check)**:
         1.  **Determine Type**: Are you in a **Local Terminal** (Unrestricted) or a **Cloud/Web Agent** (Restricted/Jules)?
-        2.  **If Cloud/Web**: **SKIP** all branching. Work on the current branch assigned to you. Do not switch.
-        3.  **If Local**:
+        2.  **Select Mode**: Ask: *"Is this session for [Planning] (Read-Only/No Edits) or [Building] (Full Edits)?"*
+        3.  **Load Rules**: Copy `The-Rokct-Protocol/modes/[selection].md` -> `.rokct/mode_rules.md`.
+        4.  **If Cloud/Web**: **SKIP** all branching. Work on the current branch assigned to you. Do not switch.
+        5.  **If Local & Building**:
             *   *If New*: `git checkout -b users/[Name]/[Task]`.
             *   *If Exists*: `git checkout users/[Name]/[Task]`.
             *   `git push -u origin users/[Name]/[Task]` (Ignore errors).
