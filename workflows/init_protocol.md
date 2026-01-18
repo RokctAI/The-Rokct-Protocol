@@ -20,8 +20,10 @@
     *   **Decision**:
         *   If you are running in a Cloud Sandbox (Jules) -> **Web**.
         *   If you are running on the User's Windows/Mac Desktop -> **Local**.
-    *   **install**: Copy `The-Rokct-Protocol/profiles/[selection]/rules.md` -> `.rokct/profiles.md`.
-    *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
+    *   **install**: 
+        *   Copy `The-Rokct-Protocol/profiles/[selection]/rules.md` -> `.rokct/profiles.md`.
+        *   Copy `The-Rokct-Protocol/core/skills/` -> `.rokct/skills/` (Universal).
+        *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
 
 4.  **Register Identity**:
     *   Ask: *"What should I call you?"* (e.g. "Ray").
