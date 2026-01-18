@@ -18,4 +18,4 @@ Recommended future additions.
 
 ## Specialized
 - [ ] **flutter-dev**: Best practices for mobile.
-- [ ] **frappe-dev**: Best practices for ERPNext backend.
+
