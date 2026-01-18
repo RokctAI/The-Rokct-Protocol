@@ -31,9 +31,10 @@
 
 
 5.  **Configuration**:
-    *   **Identity**: `git config user.email` (If Local).
+    *   **Identity**: Read `git config user.email` (If Local).
     *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
-    *   **Update**: Write to `.rokct/memory.md`.
+    *   **Update**: Write **Safe ID** to `.rokct/memory.md`.
+    *   **Privacy Rule**: Do **NOT** store the raw email in `memory.md`. Use the Safe ID only.
 
 6.  **Team Safety**:
     *   Create `.rokct/.gitignore`.
