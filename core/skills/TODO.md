@@ -8,7 +8,8 @@ Recommended future additions.
 - [x] **security**: Implemented as **Guardian**.
 - [x] **performance**: Implemented as **Vertex**.
 - [x] **frappe-dev**: Best practices for ERPNext backend (Environment Aware).
-- [x] **rokct-architect**: Enforced Clean Architecture (Flutter) & Verticals (Web).
+- [x] **flutter-architect**: Enforced Clean Architecture (Flutter).
+- [x] **web-architect**: Enforced Feature Verticals (Next.js/Web).
 
 ## High Priority
 - [ ] **project-management**: Breakdown of tasks and estimation.
