@@ -1,36 +1,34 @@
-# SOP: Initialize Rokct Protocol
+# SOP: Initialize Rokct Protocol (V8)
 
-**Trigger**: You start working on a project and do NOT see a `.rokct/` folder in the project root.
+**Trigger**: You start working on a project and do NOT see a `.rokct/` folder.
 
 ## Procedure
-1.  **Create Directory**: Create a folder named `.rokct` in the project root.
-    *   *Note*: This folder is for your brain (Memory, Logs). It stays with the project.
-2.  **Copy Templates**:
-    *   Copy `The-Rokct-Protocol/templates/memory.md` -> `.rokct/memory.md`
-    *   Copy `The-Rokct-Protocol/templates/decision_log.md` -> `.rokct/decision_log.md`
-    *   Copy `The-Rokct-Protocol/templates/project_map.md` -> `.rokct/project_map.md`
-    *   Copy `The-Rokct-Protocol/templates/active_session.txt` -> `.rokct/active_session.txt`
-    *   **Create Folder**: `.rokct/sessions/` (Keep empty for new logs).
-    *   **Activate Rules**: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules` (Project Root). This ensures the IDES (Cursor/Windsurf) see the rules.
-3.  **Configuration (Identity)**:
-    *   **Identity**:
-        1.  Run `git config user.email`.
-        2.  Ask User: *"I detected `[Email]`. Is this the correct identity for this session?"*
-        3.  **If No**: Ask for the correct email (Must be `user@domain` format).
-    *   **Persona**: Ask the User: *"What should I call you?"* (e.g., "Ray").
-    *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
-        *   `ray.dev@rokct.ai` -> `ray.dev.9ac2b1`
-        *   *Why*: Readable user, private domain, collision-proof.
-    *   **Update**: Write **Preferred Name**, **Email**, and **Safe ID** into `.rokct/memory.md`.
-    *   **Retention**: Ask: *"How long should I keep closed session logs?"* (Default: Forever).
-    *   **Safety**: Ask: *"Should I enable 'Frequent Checkpoints' to prevent data loss (Anti-Hang)?"* (Recommended for Cloud).
-    *   **Update**: Write **Preferred Name**, **Email**, **Safe ID**, **Retention**, and **Checkpoint Policy** into `.rokct/memory.md`.
-4.  **Team Safety (GitIgnore)**:
-    *   Create `.rokct/.gitignore`.
-    *   Add `active_session.txt` to it.
-    *   *Reason*: Your "Active Session" pointer is local to YOUR machine. You don't want to force your teammate's agent to switch context just because you did.
-5.  **Register**:
-    *   Ask user if they want to commit the rest of `.rokct/` (Memory/Sessions).
+1.  **Create Directory**: Create `.rokct` in the project root.
 
-## Why?
-This ensures you have a dedicated place to `Write` your thoughts without messing up the clean `SSO` submodule.
+2.  **Load Core (Universal)**:
+    *   Copy `The-Rokct-Protocol/core/templates/memory.md` -> `.rokct/memory.md`
+    *   Copy `The-Rokct-Protocol/core/templates/decision_log.md` -> `.rokct/decision_log.md`
+    *   Copy `The-Rokct-Protocol/core/templates/project_map.md` -> `.rokct/project_map.md`
+    *   Copy `The-Rokct-Protocol/core/templates/active_session.txt` -> `.rokct/active_session.txt`
+    *   Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
+
+3.  **Load Profile (Auto-Detect)**:
+    *   **Logic**: Introspect your capabilities.
+        *   If you have **Terminal Access** AND **Local OS** (Windows/Mac) -> **Local**.
+        *   If you are **Cloud Based** or **Restricted** -> **Web**.
+    *   **Action**: 
+        *   Copy `The-Rokct-Protocol/profiles/[detected]/rules.md` -> `.rokct/profile_rules.md`.
+        *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
+
+4.  **Load Mode (Ask)**:
+    *   Ask: *"What is my goal? [Planning / Building]"*
+    *   **Action**: Copy `The-Rokct-Protocol/modes/[selection].md` -> `.rokct/mode_rules.md`.
+
+5.  **Configuration**:
+    *   **Identity**: `git config user.email` (If Local).
+    *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
+    *   **Update**: Write to `.rokct/memory.md`.
+
+6.  **Team Safety**:
+    *   Create `.rokct/.gitignore`.
+    *   Add `active_session.txt`.
