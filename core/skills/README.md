@@ -7,8 +7,11 @@ Each folder contains a self-contained capability for the Agent.
 ```text
 skills/
 └── [skill_name]/
-    ├──- **SKILL.md** (required): The main instruction file with YAML frontmatter.
-    └── **resources/** (optional): Templates or reference files.
+    ├──- **SKILL.md** (required): The main instruction file.
+- **resources/** (optional): **Passive** assets (Templates, Checklists).
+    - *Example*: `audit_template.md` (A form the Agent copies and fills).
+- **scripts/** (optional): **Executable** tools.
+    - *Example*: `scan_secrets.py` (A script the Agent runs to find API keys).
 ```
 
 *Note*: Complex scripts (`scripts/`) are supported but not currently used in the Core Skills.
