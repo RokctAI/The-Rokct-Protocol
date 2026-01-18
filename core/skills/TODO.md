@@ -1,12 +1,13 @@
 # Skills Wishlist
 
-Recommended future additions from `anthropics/skills` and other sources.
+Recommended future additions.
 
 ## Completed (V8)
 - [x] **frontend-design**: Implemented as **Canvas** (Design/UX).
 - [x] **git**: Implemented as **Git Standard** (Local Profile).
 - [x] **security**: Implemented as **Guardian**.
 - [x] **performance**: Implemented as **Vertex**.
+- [x] **frappe-dev**: Best practices for ERPNext backend (Environment Aware).
 
 ## High Priority
 - [ ] **project-management**: Breakdown of tasks and estimation.
