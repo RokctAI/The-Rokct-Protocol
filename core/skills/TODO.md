@@ -2,9 +2,13 @@
 
 Recommended future additions from `anthropics/skills` and other sources.
 
+## Completed (V8)
+- [x] **frontend-design**: Implemented as **Canvas** (Design/UX).
+- [x] **git**: Implemented as **Git Standard** (Local Profile).
+- [x] **security**: Implemented as **Guardian**.
+- [x] **performance**: Implemented as **Vertex**.
+
 ## High Priority
-- [ ] **frontend-design**: React/Tailwind best practices.
-- [ ] **git**: Standardized committing, branching, and rebasing.
 - [ ] **project-management**: Breakdown of tasks and estimation.
 
 ## Medium Priority
