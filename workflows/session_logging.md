@@ -38,6 +38,15 @@
     ```
 *   **Log**: Record your steps, thoughts, and partial decisions there.
 
+## 2. Resume a Session (Wake Up)
+*   **Trigger**: You are assigned a task but no session is explicitly active (or you woke up from a checkpoint).
+*   **Action**:
+    1.  **Grounding**: **READ `.cursorrules`** immediately. Do NOT assume you know the protocol.
+    2.  **Context**: Read `.rokct/memory.md` for recent lessons.
+    3.  **Locate**: Read `.rokct/active_session.txt` to find the last active session.
+    4.  **Resume**: Open that session file and append a new log entry: `* **[WAKE UP]**: Resuming session...`.
+*   **Why**: Prevents "Protocol Drift" where agents forget rules after a checkpoint restore.
+
 ## 3. During the Session
 *   **Switching Modes (Plan -> Build)**:
     *   **Trigger**: User approves the Plan and says "Proceed".
