@@ -24,6 +24,7 @@
         *   Copy `The-Rokct-Protocol/profiles/[selection]/rules.md` -> `.rokct/profiles.md`.
         *   Copy `The-Rokct-Protocol/core/skills/` -> `.rokct/skills/` (Universal).
         *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
+        *   **(If Local) Copy `The-Rokct-Protocol/profiles/local/workflows/workspace_handshake.md` -> `.rokct/workflows/workspace_handshake.md`.**
 
 4.  **Register Identity**:
     *   Ask: *"What should I call you?"* (e.g. "Ray").
