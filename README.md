@@ -44,6 +44,7 @@ The agent will:
 *   **Anti-Hang**: Configurable "Frequent Checkpoints" (Auto-Save) for Cloud Agents to prevent data loss.
 *   **Skills**: Anthropic-standard capability modules (`skills/`) for defining complex agent behaviors.
 *   **Schemas**: Strict output definitions (`coding/schemas.md`) for reliable structured data.
+*   **Workspace Protocol**: Multi-Repo support ("One Log to Rule Them All"). Local Agents automatically detect overlapping projects and sync memory between them.
 
 ### 4. How to Work
 Once initialized, simply tell your Agent to start working:
