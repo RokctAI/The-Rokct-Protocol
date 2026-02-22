@@ -35,7 +35,8 @@ jobs:
   release:
     permissions:
       contents: write
-    uses: RokctAI/shared-workflows/.github/workflows/universal-pipeline.yml@latest
+      issues: write
+    uses: RokctAI/shared-workflows/.github/workflows/universal-pipeline.yml@main
     with:
       project_type: 'node' # Protocol is not a frappe app
       run_ci: false       # Skip heavy bench installation
