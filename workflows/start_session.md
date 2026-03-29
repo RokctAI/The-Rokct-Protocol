@@ -6,7 +6,10 @@
 
 0.  **Sync Protocol (Always First)**:
     *   Run `git submodule update --remote The-Rokct-Protocol`
-    *   This ensures you are working with the latest version of the protocol before proceeding.
+    *   Now `The-Rokct-Protocol/version.json` reflects the latest remote version.
+    *   Compare `The-Rokct-Protocol/version.json` vs `.rokct/protocol_version.json`.
+    *   If different → read and follow `The-Rokct-Protocol/workflows/update_protocol.md`.
+    *   If same → skip.
 
 1.  **Read Memory**:
     *   Read `.rokct/memory.md` in full.
