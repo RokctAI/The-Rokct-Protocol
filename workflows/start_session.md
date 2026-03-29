@@ -5,7 +5,10 @@
 ## Procedure
 
 0.  **Sync Protocol (Always First)**:
-    *   Run `git submodule update --remote The-Rokct-Protocol`
+    *   Check if `The-Rokct-Protocol/` directory exists.
+    *   If NOT found → skip this entire step. You are running inside the protocol repo itself.
+    *   If NOT a registered submodule → skip. You are in the monorepo.
+    *   If registered → run `git submodule update --remote The-Rokct-Protocol`
     *   Now `The-Rokct-Protocol/version.json` reflects the latest remote version.
     *   Compare `The-Rokct-Protocol/version.json` vs `.rokct/protocol_version.json`.
     *   If different → read and follow `The-Rokct-Protocol/workflows/update_protocol.md`.
