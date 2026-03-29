@@ -3,6 +3,11 @@
 **Trigger**: You start working on a project and do NOT see a `.rokct/` folder.
 
 ## Procedure
+
+0.  **Sync Protocol (Always First)**:
+    *   Run `git submodule update --remote The-Rokct-Protocol`
+    *   This ensures you are working with the latest version of the protocol before proceeding.
+
 1.  **Create Directory**: Create `.rokct` in the project root.
 
 2.  **Load Core (Universal)**:
@@ -29,7 +34,6 @@
 4.  **Register Identity**:
     *   Ask: *"What should I call you?"* (e.g. "Ray").
     *   Save to `.rokct/memory.md`.
-
 
 5.  **Configuration**:
     *   **Identity**: Read `git config user.email` (If Local).
