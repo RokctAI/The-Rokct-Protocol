@@ -1,0 +1,11 @@
+{
+  "repo": "RokctAI/the-rokct-protocol",
+  "prompt": "TASK: [Short imperative title of what needs to be done]\n\nBACKGROUND:\n[Why this improvement is needed. What problem it solves or what gap it fills in the protocol.]\n\nCRITICAL RULES:\n1. [Hard constraint Jules must not violate]\n2. [Another hard constraint]\n3. [Add more as needed]\n\nSPECIFIC TASKS:\n1. [Concrete step 1]\n2. [Concrete step 2]\n3. [Concrete step 3]\n\nGOAL: [One sentence describing the desired end state when this task is complete.]",
+  "branch": "main",
+  "title": "[Feature/Area]: [Short Title]",
+  "automation_mode": "AUTO_CREATE_PR",
+  "recurrence": "Once",
+  "immediate": true,
+  "rating": 0,
+  "rationale": "[Why this improvement matters and why it was rated as it was.]"
+}
