@@ -215,7 +215,7 @@ def main():
 
     if not api_key:
         print("Error: Agent API Key is missing. Provide via --api-key, AGENT_API_KEY, or JULES_API_KEY env var.")
-        sys.exit(1)
+        return 1
 
     cli = AgentCLI(api_key)
 
@@ -250,14 +250,15 @@ def main():
             parser.print_help()
     except Exception as e:
         print(f"Error: {e}")
-        # If response has JSON error detail, show it
         if hasattr(e, 'response') and e.response is not None:
             try:
                 print(f"Details: {json.dumps(e.response.json(), indent=2)}")
             except:
                 print(f"Details: {e.response.text}")
-        sys.exit(1)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
