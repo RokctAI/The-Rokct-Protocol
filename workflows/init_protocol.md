@@ -30,6 +30,8 @@
         *   Copy `The-Rokct-Protocol/core/skills/` -> `.rokct/skills/` (Universal).
         *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
         *   **(If Local) Copy `The-Rokct-Protocol/profiles/local/workflows/workspace_handshake.md` -> `.rokct/workflows/workspace_handshake.md`.**
+    3a. **Remove `delegate_to_agent.py`**:
+        *   Delete `.rokct/skills/agent_delegation/scripts/delegate_to_agent.py` after the copy completes.
 
 4.  **Register Identity**:
     *   Ask: *"What should I call you?"* (e.g. "Ray").
