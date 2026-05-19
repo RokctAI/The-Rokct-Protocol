@@ -58,6 +58,53 @@ Order of fallback:
 | `list` | JULES / AGENT | List all sessions |
 | `groq` | GROQ | Call Groq chat completion |
 
+## Project Layouts
+
+| Project | Jules wrapper | Groq wrapper |
+|---|---|---|
+| **factory** | `.rokct/skills/agent_delegation/scripts/call_jules.py` | `.rokct/skills/agent_delegation/scripts/call_groq.py` |
+| **opportunities** | `.rokct/scripts/agent_delegation/call_jules.py` | `.rokct/scripts/agent_delegation/call_groq.py` |
+
+## How to Use (Init Reference)
+
+Use this section when building `init_protocol` scaffold for a new project.
+
+### 1. Delegate to Jules
+
+```bash
+python .rokct/scripts/agent_delegation/call_jules.py create \
+  --repo "sources/github/OWNER/REPO" \
+  --prompt "Your detailed task description here" \
+  --title "Feature/Task Name"
+```
+
+Monitor status:
+
+```bash
+python .rokct/scripts/agent_delegation/call_jules.py status --id "SESSION_ID"
+```
+
+### 2. Call Groq Directly
+
+```bash
+python .rokct/scripts/agent_delegation/call_groq.py groq \
+  --prompt "Your prompt here" \
+  --system "Optional system prompt" \
+  --model "llama-3.3-70b-versatile"
+```
+
+### 3. Manage Sessions
+
+```bash
+python .rokct/scripts/agent_delegation/manage_sessions.py
+```
+
+### 4. Approve Plans (Optional)
+
+```bash
+python .rokct/scripts/agent_delegation/call_jules.py approve --id "SESSION_ID"
+```
+
 ## Init Protocol Reference
 
 When `init_protocol` runs for a new project it:
