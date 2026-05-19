@@ -89,6 +89,7 @@ def load_monorepo_env(custom_path=None):
 
 
 BASE_URL = "https://jules.googleapis.com/v1alpha"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class AgentCLI:
@@ -160,6 +161,34 @@ class AgentCLI:
         response.raise_for_status()
         return response.json().get("sessions", [])
 
+    # === Groq Methods ===
+    def call_groq(self, prompt, system_prompt=None, model="llama-3.3-70b-versatile"):
+        """Call Groq API directly for chat completions."""
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY is missing")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.2
+        }
+
+        response = requests.post(GROQ_URL, json=payload, headers=headers, timeout=60)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("choices", [{}])[0].get("message", {}).get("content")
+
 
 def main():
     """Entry point — resolves the API key and dispatches the requested command."""
@@ -199,6 +228,12 @@ def main():
 
     # --- List Sessions ---
     subparsers.add_parser("list", help="List all Agent sessions")
+
+    # --- Groq Chat ---
+    groq_parser = subparsers.add_parser("groq", help="Call Groq chat completion")
+    groq_parser.add_argument("--prompt", required=True, help="User prompt")
+    groq_parser.add_argument("--system", help="System prompt")
+    groq_parser.add_argument("--model", default="llama-3.3-70b-versatile", help="Groq model")
 
     args = parser.parse_args()
 
@@ -246,6 +281,12 @@ def main():
         elif args.command == "list":
             result = cli.list_sessions()
             print(json.dumps(result, indent=2))
+        elif args.command == "groq":
+            result = cli.call_groq(args.prompt, args.system, args.model)
+            if result:
+                print(result)
+            else:
+                return 1
         else:
             parser.print_help()
     except Exception as e:
