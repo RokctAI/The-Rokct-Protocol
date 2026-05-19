@@ -1,32 +1,41 @@
 #!/usr/bin/env python3
 """
-factory call_groq — thin redirect to The-Rokct-Protocol shared implementation.
+The-Rokct-Protocol scaffold: call_groq.py
+Fetches delegate_to_agent.py from GitHub, executes it.
 """
-import os, sys
+import os, sys, subprocess, tempfile, urllib.request
 
-_here = os.path.dirname(os.path.abspath(__file__))
-_rock_root = os.path.dirname(os.path.dirname(os.path.dirname(_here)))   # .rokct/
-_workspace_parent = os.path.dirname(_rock_root)                       # parent of factory/
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+DELEGATE_PATH   = "core/skills/agent_delegation/scripts/delegate_to_agent.py"
 
-_candidates = [
-    os.path.join(_workspace_parent, "The-Rokct-Protocol", "core",
-                 "skills", "agent_delegation", "scripts"),
-]
 
-_search = os.path.dirname(_here)
-for _ in range(5):
-    _candidates.append(os.path.join(_search, "The-Rokct-Protocol", "core",
-                                    "skills", "agent_delegation", "scripts"))
-    _p = os.path.dirname(_search)
-    if _p == _search: break
-    _search = _p
+def resolve_delegate():
+    url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8"), "github"
+    except Exception:
+        pass
+    return None, None
 
-_shared_dir = next((c for c in _candidates if os.path.isdir(c)), None)
-if not _shared_dir:
-    print("Error: The-Rokct-Protocol/core/skills/agent_delegation/scripts not found",
-          file=sys.stderr)
-    sys.exit(1)
 
-sys.path.insert(0, _shared_dir)
-import delegate_to_agent   # shared canonical implementation
-sys.exit(delegate_to_agent.main())
+def main():
+    code, source = resolve_delegate()
+    if not code:
+        print("Error: delegate_to_agent.py not found on GitHub.", file=sys.stderr)
+        sys.exit(1)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        sys.exit(result.returncode)
+    finally:
+        os.unlink(tmp_path)
+
+
+if __name__ == "__main__":
+    main()
