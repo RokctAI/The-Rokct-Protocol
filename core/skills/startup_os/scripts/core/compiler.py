@@ -399,6 +399,43 @@ def parse_trademark_pdfs_standalone(trademark_dir):
     return trademarks
 
 
+def resolve_workspace_root():
+    import sys
+    main_file = None
+    try:
+        import __main__
+        if hasattr(__main__, "__file__") and __main__.__file__:
+            main_file = os.path.abspath(__main__.__file__)
+    except Exception:
+        pass
+        
+    if not main_file and sys.argv and sys.argv[0]:
+        main_file = os.path.abspath(sys.argv[0])
+
+    if main_file:
+        # Search upwards for the "skills" folder
+        current = main_file
+        while True:
+            parent = os.path.dirname(current)
+            if parent == current:
+                break
+            if os.path.basename(current) == "skills":
+                return parent
+            current = parent
+
+        # Search upwards for "startup_os"
+        current = main_file
+        while True:
+            parent = os.path.dirname(current)
+            if parent == current:
+                break
+            if os.path.basename(current) == "startup_os":
+                return parent
+            current = parent
+
+    return os.getcwd()
+
+
 def compile_instance(instance_type, instance_name, monorepo_root=None):
     """
     Compiles templates for a specific instance.
@@ -411,19 +448,7 @@ def compile_instance(instance_type, instance_name, monorepo_root=None):
     """
     print(f"\n[StartupOS] Compiling {instance_type.upper()} suite for: {instance_name}...")
 
-    # Establish relative paths
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    startup_os_root = os.path.dirname(script_dir)
-    
-    # Dynamic workspace lookup for active instances (separate from protocol core scripts)
-    active_startup_os_root = startup_os_root
-    cwd = os.getcwd()
-    if os.path.exists(os.path.join(cwd, "StartupOS")):
-        active_startup_os_root = os.path.join(cwd, "StartupOS")
-    elif os.path.basename(cwd) == "StartupOS":
-        active_startup_os_root = cwd
-    elif os.path.exists(os.path.join("c:\\Users\\sinya\\Desktop\\RokctAI\\factory", "StartupOS")):
-        active_startup_os_root = os.path.join("c:\\Users\\sinya\\Desktop\\RokctAI\\factory", "StartupOS")
+    active_startup_os_root = resolve_workspace_root()
 
     questions_path = os.path.join(active_startup_os_root, "instances", instance_type, instance_name, "questions.md")
     output_dir = os.path.join(active_startup_os_root, "instances", instance_type, instance_name, "output")

@@ -32,12 +32,35 @@ if PROTOCOL_SCRIPTS_PATH not in sys.path:
     sys.path.append(PROTOCOL_SCRIPTS_PATH)
 
 try:
-    from core.compiler import compile_instance
+    from core.compiler import compile_instance, resolve_workspace_root
 except ImportError as e:
     print(f"[Error] Failed to import compiler logic from ROKCT Protocol repository: {e}", file=sys.stderr)
     sys.exit(1)
 
+def sync_templates():
+    active_startup_os_root = resolve_workspace_root()
+        
+    active_templates_dir = os.path.join(active_startup_os_root, "templates")
+    protocol_templates = os.path.join(os.path.dirname(PROTOCOL_SCRIPTS_PATH), "templates")
+    
+    if os.path.isdir(protocol_templates):
+        import shutil
+        os.makedirs(active_templates_dir, exist_ok=True)
+        for t_type in ["business", "life"]:
+            src_sub = os.path.join(protocol_templates, t_type)
+            if os.path.isdir(src_sub):
+                dest_sub = os.path.join(active_templates_dir, t_type)
+                os.makedirs(dest_sub, exist_ok=True)
+                for f_name in os.listdir(src_sub):
+                    src_file = os.path.join(src_sub, f_name)
+                    dest_file = os.path.join(dest_sub, f_name)
+                    if os.path.isfile(src_file):
+                        shutil.copy2(src_file, dest_file)
+        print(f"[StartupOS] Auto-synced templates to workspace: {active_templates_dir}")
+
 def main():
+    sync_templates()
+    
     parser = argparse.ArgumentParser(description="StartupOS Strategic Compiler Local Project Wrapper")
     parser.add_argument("--type", choices=["business", "life"], required=True, help="Profile type")
     parser.add_argument("--name", required=True, help="Profile/instance name (folder name)")

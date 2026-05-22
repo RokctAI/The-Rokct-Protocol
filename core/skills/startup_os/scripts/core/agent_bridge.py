@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 from pathlib import Path
-from core.compiler import compile_instance
+from core.compiler import compile_instance, resolve_workspace_root
 
 def update_profile_answer(filepath, question_label, new_answer):
     """
@@ -59,16 +59,7 @@ def auto_provision_profile(instance_type, instance_name, primary_base=None, key_
     If 'life', sets up personal life questions and folder.
     """
     # Dynamic workspace lookup for active instances
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    startup_os_root = os.path.dirname(script_dir)
-    active_startup_os_root = startup_os_root
-    cwd = os.getcwd()
-    if os.path.exists(os.path.join(cwd, "StartupOS")):
-        active_startup_os_root = os.path.join(cwd, "StartupOS")
-    elif os.path.basename(cwd) == "StartupOS":
-        active_startup_os_root = cwd
-    elif os.path.exists(os.path.join("c:\\Users\\sinya\\Desktop\\RokctAI\\factory", "StartupOS")):
-        active_startup_os_root = os.path.join("c:\\Users\\sinya\\Desktop\\RokctAI\\factory", "StartupOS")
+    active_startup_os_root = resolve_workspace_root()
     
     instance_dir = os.path.join(active_startup_os_root, "instances", instance_type, instance_name)
     os.makedirs(instance_dir, exist_ok=True)
