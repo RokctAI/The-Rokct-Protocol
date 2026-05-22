@@ -412,6 +412,7 @@ def resolve_workspace_root():
     if not main_file and sys.argv and sys.argv[0]:
         main_file = os.path.abspath(sys.argv[0])
 
+    resolved_root = None
     if main_file:
         # Search upwards for the "skills" folder
         current = main_file
@@ -420,20 +421,39 @@ def resolve_workspace_root():
             if parent == current:
                 break
             if os.path.basename(current) == "skills":
-                return parent
-            current = parent
-
-        # Search upwards for "startup_os"
-        current = main_file
-        while True:
-            parent = os.path.dirname(current)
-            if parent == current:
+                resolved_root = parent
                 break
-            if os.path.basename(current) == "startup_os":
-                return parent
             current = parent
 
-    return os.getcwd()
+        if not resolved_root:
+            # Search upwards for "startup_os"
+            current = main_file
+            while True:
+                parent = os.path.dirname(current)
+                if parent == current:
+                    break
+                if os.path.basename(current) == "startup_os":
+                    resolved_root = parent
+                    break
+                current = parent
+
+    if not resolved_root:
+        resolved_root = os.getcwd()
+
+    # Standardize on StartupOS directory under the resolved project root
+    if resolved_root:
+        # If the resolved root is .rokct, the project root is the parent of .rokct
+        if os.path.basename(resolved_root) == ".rokct":
+            project_root = os.path.dirname(resolved_root)
+        # If the resolved root is core (e.g. The-Rokct-Protocol/core), the project root is the parent of core
+        elif os.path.basename(resolved_root) == "core":
+            project_root = os.path.dirname(resolved_root)
+        else:
+            project_root = resolved_root
+            
+        return os.path.join(project_root, "StartupOS")
+
+    return os.path.join(os.getcwd(), "StartupOS")
 
 
 def compile_instance(instance_type, instance_name, monorepo_root=None):
