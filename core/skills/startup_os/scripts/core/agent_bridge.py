@@ -4,6 +4,21 @@ import shutil
 from pathlib import Path
 from core.compiler import compile_instance, resolve_workspace_root
 
+def _parse_instance_details(filepath):
+    """Helper to extract instance_type and instance_name from a questions.md path."""
+    normalized_path = Path(filepath).resolve()
+    parts = normalized_path.parts
+    if "instances" in parts:
+        idx = parts.index("instances")
+        if idx + 2 < len(parts):
+            return parts[idx + 1].lower(), parts[idx + 2]
+    # Regex fallback
+    match = re.search(r"instances[/\\](business|life)[/\\]([^/\\]+)", str(filepath), re.IGNORECASE)
+    if match:
+        return match.group(1).lower(), match.group(2)
+    return None, None
+
+
 def update_profile_answer(filepath, question_label, new_answer):
     """
     Programmatically updates the answer to a specific strategic question in questions.md.
@@ -49,6 +64,14 @@ def update_profile_answer(filepath, question_label, new_answer):
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
     
+    # Auto-compile downstream deliverables to keep CV/Obituary in sync
+    try:
+        inst_type, inst_name = _parse_instance_details(filepath)
+        if inst_type and inst_name:
+            compile_instance(instance_type=inst_type, instance_name=inst_name)
+    except Exception as e:
+        print(f"[Warning] Bridge auto-compilation failed: {e}")
+        
     return True
 
 
@@ -172,5 +195,13 @@ def log_ambient_milestone(filepath, category, entry_text):
 
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(content)
+        
+    # Auto-compile downstream deliverables to keep CV/Obituary in sync
+    try:
+        inst_type, inst_name = _parse_instance_details(filepath)
+        if inst_type and inst_name:
+            compile_instance(instance_type=inst_type, instance_name=inst_name)
+    except Exception as e:
+        print(f"[Warning] Bridge auto-compilation failed: {e}")
         
     return True
