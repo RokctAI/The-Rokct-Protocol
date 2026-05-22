@@ -559,6 +559,41 @@ def compile_instance(instance_type, instance_name, monorepo_root=None):
         replacements["fin_summary"] = fin_summary
         replacements["fin_grid_rev"] = fin_grid_rev
 
+    elif instance_type == "life":
+        # Parse the milestone log if present in the questions.md file
+        milestones = []
+        try:
+            with open(questions_path, 'r', encoding='utf-8') as f:
+                questions_content = f.read()
+            
+            # Find the section "## 4. Conversational Milestone Log"
+            log_marker = "## 4. Conversational Milestone Log"
+            if log_marker in questions_content:
+                log_part = questions_content.split(log_marker)[1]
+                # Match lines starting with * or - and **[date] (category)**: text
+                matches = re.findall(r"(?:\*|-)\s+\*\*\[([^\]]+)\]\s*\(([^)]+)\)\*\*:\s*(.*)", log_part)
+                for date, category, text in matches:
+                    milestones.append({
+                        "date": date.strip(),
+                        "category": category.strip(),
+                        "text": text.strip()
+                    })
+        except Exception as e:
+            print(f"  Error parsing milestone log: {e}")
+
+        # Format milestones for the Alive CV
+        cv_lines = []
+        for m in milestones:
+            cv_lines.append(f"*   **{m['date']}** | *{m['category']}* — {m['text']}")
+        replacements["living_ledger_cv"] = "\n".join(cv_lines) if cv_lines else "*   *No professional milestones logged yet. Share milestones ambiently with Hermes!*"
+
+        # Format milestones for the Evolving Obituary
+        obituary_lines = []
+        for m in milestones:
+            year_part = m['date'].split('-')[0] if '-' in m['date'] else m['date']
+            obituary_lines.append(f"- In {year_part}, she achieved a milestone in *{m['category']}*: {m['text']}")
+        replacements["living_ledger_obituary"] = "\n".join(obituary_lines) if obituary_lines else "*   *Generational legacy wins will appear here as they are written in her story.*"
+
     # Ensure all missing keys in replacements defaults to an empty string to avoid rendering issues
     # Scan template files to find placeholder tags
     template_files = glob.glob(os.path.join(templates_dir, "*.md"))
