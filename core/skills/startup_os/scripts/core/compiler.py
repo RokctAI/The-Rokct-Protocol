@@ -508,7 +508,13 @@ def compile_instance(instance_type, instance_name, monorepo_root=None):
             # Attempt default path relative to standard desktop workspace
             monorepo_root = "C:\\Users\\sinya\\Desktop\\RokctAI\\Monorepo"
         
-        compliance_dir = os.path.join(monorepo_root, "Compliance", instance_name)
+        # Check if local compliance folder exists inside active instance folder
+        local_compliance = os.path.join(active_startup_os_root, "instances", "business", instance_name, "compliance")
+        if os.path.isdir(local_compliance):
+            compliance_dir = local_compliance
+        else:
+            compliance_dir = os.path.join(monorepo_root, "Compliance", instance_name)
+            
         trademark_dir = os.path.join(monorepo_root, "trademark", instance_name)
 
         # Parse compliance documents from monorepo
