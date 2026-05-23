@@ -12,14 +12,14 @@
 
 This evolving biography records the legacy, achievements, and lessons of {{full_name}}, establishing an evergreen blueprint for future generations:
 
-*   **Geographical Foundations**: She established her primary base of operations and family roots in **{{primary_base}}**.
-*   **Biological High-Performance & Stewardship**: In all things, she maintained a dedicated focus on: *"{{wellness_focus}}"*
+*   **Geographical Foundations**: {{he_she}} established {{his_her}} primary base of operations and family roots in **{{primary_base}}**.
+*   **Biological High-Performance & Stewardship**: In all things, {{he_she_lower}} maintained a dedicated focus on: *"{{wellness_focus}}"*
 
 ---
 
 ## 2. Generational Achievements & Validated Milestones
 
-Her life’s work, recorded dynamically as she built her path, stands as a testament to her vision:
+{{his_her_capital}} life’s work, recorded dynamically as {{he_she_lower}} built {{his_her}} path, stands as a testament to {{his_her}} vision:
 
 {{living_ledger_obituary}}
 

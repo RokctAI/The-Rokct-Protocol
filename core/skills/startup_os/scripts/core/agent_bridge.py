@@ -140,6 +140,8 @@ This file is the Single Source of Truth (SSOT) for {display_name}'s life develop
 ## 1. Personal Identity & Focus
 *   **Full Name**: What is your full name?
     *   **Answer**: {display_name}
+*   **Gender**: What is your gender?
+    *   **Answer**: Male
 *   **Primary Base**: What is your primary geographical base of operations?
     *   **Answer**: {primary_base if primary_base else "Cape Town, South Africa"}
 *   **Life Purpose**: What is your high-level core mission or purpose statement?

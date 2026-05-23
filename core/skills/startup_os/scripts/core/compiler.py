@@ -400,6 +400,12 @@ def parse_trademark_pdfs_standalone(trademark_dir):
 
 
 def resolve_workspace_root():
+    # 1. Frappe Docker Environment Sites Detection
+    # If we are inside the running container, sites is the mounted named volume
+    frappe_sites = "/home/frappe/frappe-bench/sites"
+    if os.path.isdir(frappe_sites):
+        return os.path.join(frappe_sites, "StartupOS")
+
     import sys
     main_file = None
     try:
@@ -587,12 +593,34 @@ def compile_instance(instance_type, instance_name, monorepo_root=None):
             cv_lines.append(f"*   **{m['date']}** | *{m['category']}* — {m['text']}")
         replacements["living_ledger_cv"] = "\n".join(cv_lines) if cv_lines else "*   *No professional milestones logged yet. Share milestones ambiently with Hermes!*"
 
+        # Resolve dynamic pronouns from gender
+        gender_input = q_data.get("gender", "male").lower()
+        if "female" in gender_input or "woman" in gender_input:
+            replacements["he_she"] = "She"
+            replacements["he_she_lower"] = "she"
+            replacements["his_her"] = "her"
+            replacements["his_her_capital"] = "Her"
+            replacements["him_her"] = "her"
+        elif "non-binary" in gender_input or "they" in gender_input:
+            replacements["he_she"] = "They"
+            replacements["he_she_lower"] = "they"
+            replacements["his_her"] = "their"
+            replacements["his_her_capital"] = "Their"
+            replacements["him_her"] = "them"
+        else:
+            # Default to male / he / him
+            replacements["he_she"] = "He"
+            replacements["he_she_lower"] = "he"
+            replacements["his_her"] = "his"
+            replacements["his_her_capital"] = "His"
+            replacements["him_her"] = "him"
+
         # Format milestones for the Evolving Obituary
         obituary_lines = []
         for m in milestones:
             year_part = m['date'].split('-')[0] if '-' in m['date'] else m['date']
-            obituary_lines.append(f"- In {year_part}, she achieved a milestone in *{m['category']}*: {m['text']}")
-        replacements["living_ledger_obituary"] = "\n".join(obituary_lines) if obituary_lines else "*   *Generational legacy wins will appear here as they are written in her story.*"
+            obituary_lines.append(f"- In {year_part}, {replacements['he_she_lower']} achieved a milestone in *{m['category']}*: {m['text']}")
+        replacements["living_ledger_obituary"] = "\n".join(obituary_lines) if obituary_lines else f"*   *Generational legacy wins will appear here as they are written in {replacements['his_her']} story.*"
 
     # Ensure all missing keys in replacements defaults to an empty string to avoid rendering issues
     # Scan template files to find placeholder tags
