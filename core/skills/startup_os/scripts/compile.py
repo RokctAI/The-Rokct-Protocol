@@ -27,9 +27,14 @@ def ensure_core_engines():
             sys.path.append(protocol_path)
         return
         
-    # Standalone/Docker mode: Download core engines from GitHub raw
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    core_dir = os.path.join(current_dir, "core")
+    # Standalone/Docker mode: Download core engines from GitHub raw into a writable area
+    frappe_sites = "/home/frappe/frappe-bench/sites"
+    if os.path.isdir(frappe_sites):
+        parent_dir = os.path.join(frappe_sites, "StartupOS")
+    else:
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+
+    core_dir = os.path.join(parent_dir, "core")
     os.makedirs(core_dir, exist_ok=True)
     
     init_py = os.path.join(core_dir, "__init__.py")
@@ -56,8 +61,8 @@ def ensure_core_engines():
             else:
                 print(f"[Warning] Using cached core engine {f_name} (fetch failed: {e})", file=sys.stderr)
                 
-    if current_dir not in sys.path:
-        sys.path.append(current_dir)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
 
 # Initialize Core
 ensure_core_engines()
