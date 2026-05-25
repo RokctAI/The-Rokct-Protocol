@@ -42,14 +42,14 @@ jobs:
       - name: Check if queue and running are empty
         id: check_empty
         run: |
-          QUEUE=$(ls .rokct/agent/queue/*.json 2>/dev/null | wc -l)
-          RUNNING=$(ls .rokct/agent/running/*.json 2>/dev/null | wc -l)
-          echo "queue=$QUEUE" >> $GITHUB_OUTPUT
-          echo "running=$RUNNING" >> $GITHUB_OUTPUT
+          QUEUE=$(find .rokct/agent/queue -maxdepth 1 -name "*.json" 2>/dev/null | wc -l)
+          RUNNING=$(find .rokct/agent/running -maxdepth 1 -name "*.json" 2>/dev/null | wc -l)
+          echo "queue=$QUEUE" >> "$GITHUB_OUTPUT"
+          echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
           if [ "$QUEUE" -eq 0 ] && [ "$RUNNING" -eq 0 ]; then
-            echo "empty=true" >> $GITHUB_OUTPUT
+            echo "empty=true" >> "$GITHUB_OUTPUT"
           else
-            echo "empty=false" >> $GITHUB_OUTPUT
+            echo "empty=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Call Jules — Idea Session
@@ -97,20 +97,20 @@ jobs:
           for FILE in $(ls .rokct/agent/queue/*.json 2>/dev/null || true); do
             RATING=$(jq -r '.rating // 10' "$FILE")
             if [ "$RATING" -lt 4 ]; then
-              echo "🗑️ Rejecting $(basename $FILE) — rated $RATING/10"
+              echo "🗑️ Rejecting $(basename "$FILE") — rated $RATING/10"
               # Strip rating field before moving to rejected/
-              jq 'del(.rating)' "$FILE" > ".rokct/agent/rejected/$(basename $FILE)"
+              jq 'del(.rating)' "$FILE" > ".rokct/agent/rejected/$(basename "$FILE")"
               rm "$FILE"
               HAS_UPDATES=true
             fi
           done
 
-          echo "has_updates=$HAS_UPDATES" >> $GITHUB_ENV
+          echo "has_updates=$HAS_UPDATES" >> "$GITHUB_ENV"
 
       - name: Move queue to running (max 4)
         run: |
           mkdir -p .rokct/agent/running
-          RUNNING=$(ls .rokct/agent/running/*.json 2>/dev/null | wc -l)
+          RUNNING=$(find .rokct/agent/running -maxdepth 1 -name "*.json" 2>/dev/null | wc -l)
           SLOTS=$(( 4 - RUNNING ))
           echo "🔢 Available slots: $SLOTS"
 
@@ -119,6 +119,7 @@ jobs:
             exit 0
           fi
 
+          HAS_UPDATES=false
           COUNT=0
           for FILE in $(ls .rokct/agent/queue/*.json 2>/dev/null || true); do
             if [ "$COUNT" -ge "$SLOTS" ]; then break; fi
@@ -132,7 +133,7 @@ jobs:
 
             # Add to ledger
             LEDGER_FILE="$LEDGER"
-            mkdir -p "$(dirname $LEDGER_FILE)"
+            mkdir -p "$(dirname "$LEDGER_FILE")"
             [ -f "$LEDGER_FILE" ] || echo "[]" > "$LEDGER_FILE"
 
             jq --arg number "$NUMBER" \
@@ -153,7 +154,7 @@ jobs:
             HAS_UPDATES=true
           done
 
-          echo "has_updates=true" >> $GITHUB_ENV
+          echo "has_updates=$HAS_UPDATES" >> "$GITHUB_ENV"
 
       - name: Commit changes
         if: env.has_updates == 'true'
@@ -192,7 +193,6 @@ jobs:
           # Find last entry
           LAST=$(jq '.[-1]' "$LEDGER_FILE")
           LAST_MERGED=$(echo "$LAST" | jq -r '.merged')
-          LAST_SESSION=$(echo "$LAST" | jq -r '.session_id')
 
           # If last entry has no session yet → delegate it
           # If last entry is merged → find next unstarted
