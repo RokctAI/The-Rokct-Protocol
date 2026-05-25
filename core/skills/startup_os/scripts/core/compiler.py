@@ -400,6 +400,16 @@ def parse_trademark_pdfs_standalone(trademark_dir):
 
 
 def resolve_workspace_root():
+    # 0. Check if running inside Frappe (dynamic site path resolution)
+    try:
+        import sys
+        if "frappe" in sys.modules:
+            import frappe
+            if hasattr(frappe, "get_site_path"):
+                return frappe.get_site_path("StartupOS")
+    except Exception:
+        pass
+
     # 1. Frappe Docker Environment Sites Detection
     # If we are inside the running container, sites is the mounted named volume
     frappe_sites = "/home/frappe/frappe-bench/sites"
