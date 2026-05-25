@@ -290,7 +290,7 @@ jobs:
 
           HAS_UPDATES=false
 
-          echo "$PENDING" | jq -c '.[]' | while read ENTRY; do
+          echo "$PENDING" | jq -c '.[]' | while read -r ENTRY; do
             NUMBER=$(echo "$ENTRY" | jq -r '.number')
             SESSION_ID=$(echo "$ENTRY" | jq -r '.session_id')
             TITLE=$(echo "$ENTRY" | jq -r '.title')
@@ -330,12 +330,12 @@ jobs:
             3. If satisfied → output exactly: APPROVED
             4. If not satisfied → output exactly: REJECTED and explain why."
 
-            REVIEW_RESULT=$(python .rokct/skills/agent_delegation/scripts/delegate_to_agent.py create \
+            python .rokct/skills/agent_delegation/scripts/delegate_to_agent.py create \
               --repo "sources/github/RokctAI/the-rokct-protocol" \
               --prompt "$REVIEW_PROMPT" \
               --branch "$REVIEW_BRANCH" \
               --title "Review: $TITLE" \
-              --automation-mode "SUGGEST_CHANGES" 2>/dev/null || echo "{}")
+              --automation-mode "SUGGEST_CHANGES" 2>/dev/null || true
 
             # For now mark as approved — review session result parsing to be refined
             # TODO: Parse REVIEW_RESULT response to detect APPROVED/REJECTED
@@ -381,7 +381,7 @@ jobs:
           HAS_UPDATES=false
 
           # ── Publish approved, unpublished entries ──
-          jq -c '.[] | select(.approved == true and .published == false)' "$LEDGER_FILE" | while read ENTRY; do
+          jq -c '.[] | select(.approved == true and .published == false)' "$LEDGER_FILE" | while read -r ENTRY; do
             NUMBER=$(echo "$ENTRY" | jq -r '.number')
             BRANCH=$(echo "$ENTRY" | jq -r '.branch')
             TITLE=$(echo "$ENTRY" | jq -r '.title')
@@ -420,7 +420,7 @@ jobs:
           done
 
           # ── Detect merged PRs ──
-          jq -c '.[] | select(.published == true and .merged == false)' "$LEDGER_FILE" | while read ENTRY; do
+          jq -c '.[] | select(.published == true and .merged == false)' "$LEDGER_FILE" | while read -r ENTRY; do
             NUMBER=$(echo "$ENTRY" | jq -r '.number')
             PR_NUMBER=$(echo "$ENTRY" | jq -r '.pr_number // empty')
             FILE=$(echo "$ENTRY" | jq -r '.file')
