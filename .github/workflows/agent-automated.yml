@@ -58,13 +58,13 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
           PROMPT="Read and follow The-Rokct-Protocol/workflows/start_session.md first.
-For the session:
-- Name: Protocol Idea Session
-- Mode: Planning
-- Agent: Jules
-- Workspace: FALSE
-Do not ask questions — use the values above directly.
-Then read and follow the instructions in .rokct/agent/idea_prompt.md exactly."
+          For the session:
+          - Name: Protocol Idea Session
+          - Mode: Planning
+          - Agent: Jules
+          - Workspace: FALSE
+          Do not ask questions — use the values above directly.
+          Then read and follow the instructions in .rokct/agent/idea_prompt.md exactly."
 
           python .rokct/skills/agent_delegation/scripts/delegate_to_agent.py create \
             --repo "sources/github/RokctAI/the-rokct-protocol" \
@@ -213,15 +213,15 @@ Then read and follow the instructions in .rokct/agent/idea_prompt.md exactly."
           TITLE=$(echo "$NEXT" | jq -r '.title')
           TASK_PROMPT=$(jq -r '.prompt' ".rokct/agent/running/$FILE")
           PROMPT="Read and follow The-Rokct-Protocol/workflows/start_session.md first.
-For the session:
-- Name: $TITLE
-- Mode: Building
-- Agent: Jules
-- Workspace: FALSE
-Do not ask questions — use the values above directly.
-Then proceed with the following task:
+          For the session:
+          - Name: $TITLE
+          - Mode: Building
+          - Agent: Jules
+          - Workspace: FALSE
+          Do not ask questions — use the values above directly.
+          Then proceed with the following task:
 
-$TASK_PROMPT"
+          $TASK_PROMPT"
 
           echo "🚀 Delegating: $TITLE (#$NUMBER)"
 
