@@ -1,15 +1,13 @@
 name: Build (Smart)
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-  packages: write
-  id-token: write
+permissions: write-all
 
 on:
   push:
@@ -36,7 +34,7 @@ on:
         default: '24'
       python-version:
         type: string
-        default: '3.14'
+        default: '3.14.2'
       mariadb-version:
         type: string
         default: '10.6'
@@ -45,7 +43,7 @@ on:
         default: '15'
       db-type:
         type: string
-        default: 'mariadb'
+        default: 'postgres'
       version_format:
         type: string
         default: '##.##.##'
@@ -65,16 +63,16 @@ jobs:
         run: |
           if [ -f "pubspec.yaml" ]; then
              echo "Flutter project detected."
-             echo "is_flutter=true" >> $GITHUB_OUTPUT
-             echo "is_node=false" >> $GITHUB_OUTPUT
+             echo "is_flutter=true" >> "$GITHUB_OUTPUT"
+             echo "is_node=false" >> "$GITHUB_OUTPUT"
           elif [ -f "package.json" ]; then
              echo "Node.js project detected."
-             echo "is_flutter=false" >> $GITHUB_OUTPUT
-             echo "is_node=true" >> $GITHUB_OUTPUT
+             echo "is_flutter=false" >> "$GITHUB_OUTPUT"
+             echo "is_node=true" >> "$GITHUB_OUTPUT"
           else
              echo "Unknown project type. Skipping builds."
-             echo "is_flutter=false" >> $GITHUB_OUTPUT
-             echo "is_node=false" >> $GITHUB_OUTPUT
+             echo "is_flutter=false" >> "$GITHUB_OUTPUT"
+             echo "is_node=false" >> "$GITHUB_OUTPUT"
           fi
 
   # --- 2. UNIFIED PIPELINE (Smart) ---
@@ -91,10 +89,10 @@ jobs:
       # Deployment Configuration (Immediate release on Main)
       release_strategy: 'immediately' # rokct-keep
       # Environment configuration
-      node-version: ${{ inputs.node-version || '24' }}
-      python-version: ${{ inputs.python-version || '3.14' }}
-      mariadb-version: ${{ inputs.mariadb-version || '10.6' }}
-      postgres-version: ${{ inputs.postgres-version || '15' }}
-      db-type: ${{ inputs.db-type || 'mariadb' }}
+      node-version: ${{ inputs.node-version }}
+      python-version: ${{ inputs.python-version }}
+      mariadb-version: ${{ inputs.mariadb-version }}
+      postgres-version: ${{ inputs.postgres-version }}
+      db-type: ${{ inputs.db-type || 'postgres' }}
       version_format: ${{ inputs.version_format || '##.##.##' }}
     secrets: inherit
