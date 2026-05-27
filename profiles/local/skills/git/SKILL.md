@@ -52,3 +52,15 @@ The strategy depends on your **Environment** and **Branch**:
 ## 4. Safety
 *   **Never** commit secrets (`.env`).
 *   **Always** `git pull --rebase` before pushing to avoid merge commits.
+
+## 5. Automated CI/CD Workflows
+*   **Lean Design**: Workflows must be kept strictly minimal and highly specific to the project's framework/runtime (e.g., Node/TS vs. Python/Docker). Avoid copying bloated templates.
+*   **Node Packages**: Standardize on `npm ci`, typechecking via `npm run typecheck`, linting via `npm run lint`, and building using `npm run build`.
+*   **Releases**: Automate tag releases (`v*`) to deploy directly to standard registries (NPM) using secure `--provenance` tags and package output artifacts.
+
+## 6. GitHub CLI & Pull Request Fallbacks
+*   **Non-Interactive Constraints**: If `gh pr create` fails or GitHub CLI isn't installed/authenticated in your terminal runtime environment:
+    *   Do not block. Pushing the branch to `origin` provides a standard GitHub link.
+    *   Construct a direct compare-and-create URL format: `https://github.com/[upstream_owner]/[upstream_repo]/compare/[base]...[fork_owner]:[fork_repo]:[branch]`.
+    *   Provide a pre-filled, highly detailed conventional title and markdown description of changes for the user to paste.
+*   **Windows Winget Sourcing**: If running on Windows and standard terminal `winget` command paths are unrecognized due to localized shell profiles, execute using its absolute user-level path: `& "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"`.
