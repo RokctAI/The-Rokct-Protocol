@@ -49,7 +49,8 @@ FOOTER_MAPS = {
             ("10_life_lean_canvas.md", "Personal Lean Growth Canvas", "Personal Lean Canvas"),
             ("health_plan_on_a_page.md", "1-Page Biological Conditioning Plan", "Health Plan on a Page"),
             ("financial_legacy_plan_on_a_page.md", "1-Page Multigenerational Stewardship Plan", "Financial Legacy Plan on a Page"),
-            ("productivity_plan_on_a_page.md", "1-Page Master Accountability Plan", "Productivity Plan on a Page")
+            ("productivity_plan_on_a_page.md", "1-Page Master Accountability Plan", "Productivity Plan on a Page"),
+            ("legacy_plan_on_a_page.md", "1-Page Legacy Preservations Plan", "Legacy Plan on a Page")
         ],
         "health_plan_on_a_page.md": [
             ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
@@ -58,6 +59,9 @@ FOOTER_MAPS = {
             ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
         ],
         "productivity_plan_on_a_page.md": [
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+        ],
+        "legacy_plan_on_a_page.md": [
             ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
         ]
     }
