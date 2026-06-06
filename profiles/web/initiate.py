@@ -79,14 +79,8 @@ def main():
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
-            f.write("active_session.txt\n")
+            f.write("skills/\n")
         print(f"[init] Created {gitignore_path}")
-    else:
-        content = open(gitignore_path, "r", encoding="utf-8").read()
-        if "active_session.txt" not in content:
-            with open(gitignore_path, "a", encoding="utf-8") as f:
-                f.write("\nactive_session.txt\n")
-            print(f"[init] Updated {gitignore_path}")
 
     print("[init] Web profile initialization complete.")
 

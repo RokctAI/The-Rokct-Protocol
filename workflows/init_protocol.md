@@ -4,10 +4,6 @@
 
 ## Procedure
 
-0.  **Sync Protocol (Always First)**:
-    *   Run `git submodule update --remote The-Rokct-Protocol`
-    *   This ensures you are working with the latest version of the protocol before proceeding.
-
 1.  **Run Profile Init Script**:
     *   **Select profile based on your environment**:
         *   **Local**: Running on your physical computer (VS Code, Windsurf, CLI) with full network/drive access.

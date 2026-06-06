@@ -9,7 +9,7 @@
     python profiles/local/end_protocol.py
     ```
     This will:
-    *   Delete `skills/` if it matches the protocol template exactly (pristine).
-    *   Delete `workflows/` if it matches the protocol template exactly (pristine).
-    *   Delete `.gitignore` if it only contains the default `active_session.txt` rule.
+*   Delete `skills/` if it matches the protocol template exactly (pristine).
+*   Delete `workflows/` if it matches the protocol template exactly (pristine).
+*   Keep `.gitignore` as-is.
     *   Keep any working files that the agent modified (e.g. `memory.md` with new content).
