@@ -14,20 +14,16 @@ Project .rokct/                         The-Rokct-Protocol/
  └─ agent_delegation/                   └─ core/skills/agent_delegation/scripts/
      ├─ call_jules.py ──────────────────► delegate_to_agent.py   (canonical)
      ├─ call_groq.py  ──────────────────► delegate_to_agent.py   (canonical)
-     ├─ handle_groq_output.py            └─ utils/               (scaffold scripts)
-     │                                      ├─ call_jules.py
-     │                                      ├─ call_groq.py
-     │                                      ├─ handle_groq_output.py
-     │                                      └─ manage_sessions.py
-     ├─ manage_sessions.py ──────────────► manage_sessions.py   (scaffold)
-     └─ update_classifications.py        (project-specific)
+     ├─ handle_groq_output.py            (project-specific in .rokct)
+     ├─ manage_sessions.py ──────────────► manage_sessions.py   (project-specific in .rokct)
+     └─ update_classifications.py        (project-specific in .rokct)
 ```
 
 - **Thin wrappers** (`call_jules.py`, `call_groq.py`) live in the project's `.rokct/agent_delegation/scripts/`. They locate `The-Rokct-Protocol` by walking up the directory tree and redirect to `delegate_to_agent.py`.
 - **`delegate_to_agent.py`** is the single canonical implementation. Wrapper scripts in the project redirect to this, so **`delegate_to_agent.py` is excluded from project copies during `init_protocol`**.
-- **`utils/`** holds scaffold/reference copies (`call_jules.py`, `call_groq.py`, `handle_groq_output.py`, `manage_sessions.py`). Projects are initialised from here via `init_protocol` — they copy to the project's wrapper directory and update paths accordingly.
-- **`handle_groq_output.py`** is scaffolded project-side from `utils/`. Uses `update_classifications.py` (same project directory) for topic deduplication.
-- **`manage_sessions.py`** is scaffolded project-side from `utils/`. Reads `session_state.md` + `ledger.md`, detects stalled cards, counts active Jules sessions.
+- **`scripts/`** holds scaffold/reference copies (`call_jules.py`, `call_groq.py`, `handle_groq_output.py`, `manage_sessions.py`). Projects are initialised from here via `init_protocol` — they copy to the project's wrapper directory and update paths accordingly.
+- **`handle_groq_output.py`** is scaffolded project-side from `scripts/`. Uses `update_classifications.py` (same project directory) for topic deduplication.
+- **`manage_sessions.py`** is scaffolded project-side from `scripts/`. Reads `session_state.md` + `ledger.md`, detects stalled cards, counts active Jules sessions.
 - **`update_classifications.py`** is project-specific — generates classification files for `.rokct/config/classifications/<project>_themes.txt`.
 
 ## Prerequisites
@@ -110,7 +106,7 @@ python .rokct/scripts/agent_delegation/call_jules.py approve --id "SESSION_ID"
 When `init_protocol` runs for a new project it:
 
 1. Creates `.rokct/agent_delegation/scripts/` in the project.
-2. Copies `utils/call_jules.py` and `utils/call_groq.py` into the project's `agent_delegation/scripts/`, updating their lookup paths to point to the project's directory.
+2. Copies `scripts/call_jules.py` and `scripts/call_groq.py` into the project's `agent_delegation/scripts/`, updating their lookup paths to point to the project's directory.
 3. Deletes `delegate_to_agent.py` from the project copy (wrappers already redirect to the protocol copy).
 4. Also scaffolds/manages project-specific scripts (`handle_groq_output.py`, `update_classifications.py`, `manage_sessions.py`) as needed per project.
 

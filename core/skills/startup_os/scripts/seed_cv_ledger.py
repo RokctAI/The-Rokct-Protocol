@@ -12,51 +12,28 @@ try:
 except ImportError:
     pypdf = None
 
-# Dynamic ROKCT Protocol Path Resolution
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 
-def find_protocol_path():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    for _ in range(10):
-        probe_path = os.path.join(current_dir, "The-Rokct-Protocol")
-        if os.path.isdir(probe_path):
-            return os.path.join(probe_path, "core", "skills", "startup_os", "scripts")
-        parent = os.path.dirname(current_dir)
-        if parent == current_dir:
-            break
-        current_dir = parent
-    return None
-
-def ensure_core_engines():
-    protocol_path = find_protocol_path()
-    if protocol_path:
-        if protocol_path not in sys.path:
-            sys.path.append(protocol_path)
-        return
-        
-    # Standalone/Docker mode: Download core engines from GitHub raw into a writable area
-    frappe_sites = "/home/frappe/frappe-bench/sites"
-    if os.path.isdir(frappe_sites):
-        parent_dir = os.path.join(frappe_sites, "StartupOS")
-    else:
-        parent_dir = os.path.dirname(os.path.abspath(__file__))
+def fetch_core_from_github():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(script_dir)
 
     core_dir = os.path.join(parent_dir, "core")
     os.makedirs(core_dir, exist_ok=True)
-    
+
     init_py = os.path.join(core_dir, "__init__.py")
     if not os.path.exists(init_py):
         with open(init_py, 'w') as f:
             f.write("")
-            
+
     core_files = ["compiler.py", "parser.py", "agent_bridge.py"]
     github_raw_core = f"{GITHUB_RAW_BASE}/core/utils/startup_os"
-    
+
     for f_name in core_files:
         dest_file = os.path.join(core_dir, f_name)
         url = f"{github_raw_core}/{f_name}"
         try:
-            print(f"[StartupOS] Sourcing latest core engine from GitHub raw: {f_name}")
+            print(f"[StartupOS] Fetching core engine from GitHub: {f_name}")
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 with open(dest_file, 'wb') as f:
@@ -67,12 +44,11 @@ def ensure_core_engines():
                 sys.exit(1)
             else:
                 print(f"[Warning] Using cached core engine {f_name} (fetch failed: {e})", file=sys.stderr)
-                
+
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
-# Initialize Core
-ensure_core_engines()
+fetch_core_from_github()
 
 try:
     from core.compiler import compile_instance, resolve_workspace_root

@@ -92,9 +92,10 @@ Project .rokct/                         The-Rokct-Protocol/
      ├─ handle_groq_output.py
      ├─ manage_sessions.py
      └─ update_classifications.py
-                                       └─ core/skills/agent_delegation/scripts/utils/ (scaffolds)
-                                                ├─ call_jules.py
-                                                ├─ call_groq.py
-                                                ├─ handle_groq_output.py
-                                                └─ manage_sessions.py
+                                        └─ core/skills/agent_delegation/scripts/ (scaffolds)
+                                                 ├─ call_jules.py
+                                                 ├─ call_groq.py
+                                                 ├─ handle_groq_output.py
+                                                 ├─ manage_sessions.py
+                                                 └─ update_classifications.py
 ```
