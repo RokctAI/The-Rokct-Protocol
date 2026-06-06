@@ -84,5 +84,8 @@ def main():
 
     print("[init] Web profile initialization complete.")
 
+    shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
+    print("[init] Copied initiate.py -> .rokct/initiate.py")
+
 if __name__ == "__main__":
     main()
