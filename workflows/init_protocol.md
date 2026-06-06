@@ -30,9 +30,7 @@
         *   Copy `The-Rokct-Protocol/core/skills/` -> `.rokct/skills/` (Universal).
         *   (If Local) Copy `The-Rokct-Protocol/profiles/local/skills/` -> `.rokct/skills/`.
         *   **(If Local) Copy `The-Rokct-Protocol/profiles/local/workflows/workspace_handshake.md` -> `.rokct/workflows/workspace_handshake.md`.**
-    3a. **Remove `delegate_to_agent.py`**:
-        *   Delete `.rokct/skills/agent_delegation/scripts/delegate_to_agent.py` after the copy completes.
-    3b. **Remove StartupOS Core Engines**:
+3a. **Remove StartupOS Core Engines**:
         *   Delete `.rokct/skills/startup_os/scripts/core/` and `.rokct/skills/startup_os/scripts/main.py` after the copy completes to keep only the callers.
 
 4.  **Register Identity**:

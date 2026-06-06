@@ -86,12 +86,15 @@ Outputs: `.rokct/config/classifications/<project>_themes.txt` and `_genres.txt`.
 
 ```text
 Project .rokct/                         The-Rokct-Protocol/
- └─ agent_delegation/                   └─ core/skills/agent_delegation/scripts/
-     ├─ call_jules.py ──────────────────► delegate_to_agent.py   (canonical)
-     ├─ call_groq.py  ──────────────────► delegate_to_agent.py   (canonical)
-     ├─ handle_groq_output.py            └─ utils/
-     ├─ manage_sessions.py                    ├─ call_jules.py
-     └─ update_classifications.py             ├─ call_groq.py
-                                              ├─ handle_groq_output.py
-                                              └─ manage_sessions.py
+ └─ agent_delegation/                   └─ core/utils/agent_deligation/
+     ├─ call_jules.py ──────────────────► delegate_to_agent.py (canonical)
+     ├─ call_groq.py  ──────────────────►
+     ├─ handle_groq_output.py
+     ├─ manage_sessions.py
+     └─ update_classifications.py
+                                       └─ core/skills/agent_delegation/scripts/utils/ (scaffolds)
+                                                ├─ call_jules.py
+                                                ├─ call_groq.py
+                                                ├─ handle_groq_output.py
+                                                └─ manage_sessions.py
 ```

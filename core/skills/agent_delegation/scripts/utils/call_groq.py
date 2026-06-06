@@ -6,7 +6,7 @@ Fetches delegate_to_agent.py from GitHub, executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-DELEGATE_PATH   = "core/skills/agent_delegation/scripts/delegate_to_agent.py"
+DELEGATE_PATH   = "core/utils/agent_deligation/delegate_to_agent.py"
 
 
 def resolve_delegate():
