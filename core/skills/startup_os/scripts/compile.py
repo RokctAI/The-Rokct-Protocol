@@ -43,7 +43,7 @@ def ensure_core_engines():
             f.write("")
             
     core_files = ["compiler.py", "parser.py", "agent_bridge.py"]
-    github_raw_core = f"{GITHUB_RAW_BASE}/core/skills/startup_os/scripts/core"
+    github_raw_core = f"{GITHUB_RAW_BASE}/core/utils/startup_os"
     
     for f_name in core_files:
         dest_file = os.path.join(core_dir, f_name)
