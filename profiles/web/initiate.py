@@ -35,6 +35,8 @@ def main():
 
     copy_dir(os.path.join(PROTOCOL_DIR, "core", "skills"), os.path.join(ROKCT_DIR, "skills"))
 
+    copy(os.path.join(PROTOCOL_DIR, "profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"))
+
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:

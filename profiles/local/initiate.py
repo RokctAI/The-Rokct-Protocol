@@ -1,5 +1,7 @@
 import os
 import shutil
+import subprocess
+import hashlib
 
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
@@ -37,9 +39,25 @@ def main():
 
     copy_dir(os.path.join(PROTOCOL_DIR, "profiles", "local", "skills"), os.path.join(ROKCT_DIR, "skills"))
 
+    copy(os.path.join(PROTOCOL_DIR, "profiles", "local", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"))
+
     local_workflows_src = os.path.join(PROTOCOL_DIR, "profiles", "local", "workflows")
     if os.path.isdir(local_workflows_src):
         copy_dir(local_workflows_src, os.path.join(ROKCT_DIR, "workflows"))
+
+    try:
+        email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        email = ""
+    if email:
+        prefix = email.split("@")[0].replace(".", "").lower()
+        domain = email.split("@")[1].lower()
+        domain_hash = hashlib.md5(domain.encode()).hexdigest()[:6]
+        safe_id = f"{prefix}.{domain_hash}"
+        mem_path = os.path.join(ROKCT_DIR, "memory.md")
+        with open(mem_path, "a", encoding="utf-8") as f:
+            f.write(f"\n\n## Safe ID\n{safe_id}\n")
+        print(f"[init] Registered safe identity: {safe_id}")
 
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):
