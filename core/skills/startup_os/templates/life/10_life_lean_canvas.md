@@ -9,9 +9,9 @@ This personal development grid highlights key life bottlenecks, daily recovery h
 | • Chronic time dilution<br>• Sub-optimal sleep recovery<br>• Information clutter<br>• Transactional relationships | • Hard physical boundaries<br>• Rigid sleep/wake timing<br>• Deep-work blocks (3hrs)<br>• Quality-first social circles | • **Autonomy & Sowing**: Creating leverage while mentoring next-gen leaders<br>• **Legacy Focus**: {{life_purpose}} | • Highly developed technical IP<br>• Deep spiritual grounding<br>• High mental focus stamina<br>• Zero-dependency operations | • Health & Biological Capital<br>• Family & Legacy Sowing<br>• Deep Craft & Intellectual IP<br>• Financial Autonomy Assets |
 | | **Key Habits / Metrics** | | **Daily Routines** | |
 | | • Mean Sleep Quality Score<br>• Weekly Deep Work Hours<br>• Relational Quality Rating<br>• Monthly Net Asset growth | | • Morning study block<br>• Focused afternoon build run<br>• Evening connection and reading<br>• Consistent sleep wind-down | |
-| **Relational & Energetic Costs** | | **Legacy Harvest** |
-| :--- | :--- | :--- |
-| • Time spent planning and cooking healthy meals<br>• Saying "no" to low-yield corporate/social requests<br>• Daily discipline energy | | • Generational asset protection<br>• Intellectual property (IP) and system royalties<br>• Direct community mentorship impact |
+| **Relational & Energetic Costs** | | | | **Legacy Harvest** |
+| :--- | :--- | :--- | :--- | :--- |
+| • Time spent planning and cooking healthy meals<br>• Saying "no" to low-yield corporate/social requests<br>• Daily discipline energy | | | | • Generational asset protection<br>• Intellectual property (IP) and system royalties<br>• Direct community mentorship impact |
 
 ---
 

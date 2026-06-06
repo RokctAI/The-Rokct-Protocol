@@ -9,7 +9,7 @@ This skill delegates work to external AI agents (Jules) or the Groq API. It uses
 
 ## Architecture
 
-```
+```text
 Project .rokct/                         The-Rokct-Protocol/
  └─ agent_delegation/                   └─ core/skills/agent_delegation/scripts/
      ├─ call_jules.py ──────────────────► delegate_to_agent.py   (canonical)

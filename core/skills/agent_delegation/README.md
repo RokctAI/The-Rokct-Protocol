@@ -84,7 +84,7 @@ Outputs: `.rokct/config/classifications/<project>_themes.txt` and `_genres.txt`.
 
 ## Project Layout
 
-```
+```text
 Project .rokct/                         The-Rokct-Protocol/
  └─ agent_delegation/                   └─ core/skills/agent_delegation/scripts/
      ├─ call_jules.py ──────────────────► delegate_to_agent.py   (canonical)

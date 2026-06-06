@@ -9,9 +9,9 @@ This canvas maps the architecture of personal development, time investments, rel
 | • **{{key_relationships}}**<br>• Core Professional Mentors<br>• Wellness Partners | • Purpose-Driven Work<br>• Continuous Learning<br>• Physical Conditioning | • **Core Life Mission**: {{life_purpose}}<br>• Personal autonomy & resilience<br>• Legacy contribution | • Active Listening<br>• Family Gatherings<br>• Shared Values | • Loved Ones & Family<br>• Core Community / Network<br>• Future Successors |
 | | **Key Resources** | | **Channels** | |
 | | • Physical Senses & Health<br>• Deep Intellectual Property<br>• Time Availability | | • Professional Networks<br>• Creative Publications<br>• One-on-One Mentorship | |
-| **Relational & Energetic Costs** | | **Legacy Harvest** |
-| :--- | :--- | :--- |
-| • Weekly high-priority time allocations<br>• Cognitive attention management<br>• Financial investment in health/growth | | • Financial Independence & Family Wealth<br>• Mentored successors carrying the light<br>• Created works (books, code, enterprises) |
+| **Relational & Energetic Costs** | | | | **Legacy Harvest** |
+| :--- | :--- | :--- | :--- | :--- |
+| • Weekly high-priority time allocations<br>• Cognitive attention management<br>• Financial investment in health/growth | | | | • Financial Independence & Family Wealth<br>• Mentored successors carrying the light<br>• Created works (books, code, enterprises) |
 
 ---
 

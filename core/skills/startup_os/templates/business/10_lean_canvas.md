@@ -9,9 +9,9 @@ The following canvas focuses on high-priority customer problems, unique value po
 | • High regional logistics OPEX<br>• Traditional software/ops complexity<br>• Lack of unified digital profiles<br>• Outdated manual recordkeeping | • Dynamic offline-first engine<br>• Integrated local gig-fleets<br>• SANS/POPIA compliant flows<br>• Automated strategic compilers | • **Zero-Dependency Platform**: Immediate local execution<br>• **Ecosystem Referrals**: Interconnected value loops<br>• **B-BBEE Advantage**: Level 1 Status | • Proprietary Drift-Sync databases<br>• Established regional sandboxes<br>• Broad local network referrals<br>• B-BBEE Level 1 Youth Enterprise | • Rural and peri-urban merchants<br>• Regional food & beverage producers<br>• Independent local bakkie owners<br>• Multi-tenant enterprises |
 | | **Key Metrics** | | **Channels** | |
 | | • Monthly Active Users (MAU)<br>• Total Digital Volume (ZAR)<br>• Customer Acquisition Cost (CAC)<br>• Average Order Value (AOV) | | • Wholesale depot vouchers<br>• Local brand advocate programs<br>• Manufacturer referral loops<br>• Direct sales onboarding | |
-| **Cost Structure** | | **Revenue Streams** |
-| :--- | :--- | :--- |
-| • Infrastructure & Cloud Operating Costs<br>• Variable gig-driver delivery commissions<br>• B-BBEE Audit & Licensing certification fees | | • Wholesale product markup margins<br>• Last-mile platform delivery commissions<br>• Enterprise SaaS API license tiers |
+| **Cost Structure** | | | | **Revenue Streams** |
+| :--- | :--- | :--- | :--- | :--- |
+| • Infrastructure & Cloud Operating Costs<br>• Variable gig-driver delivery commissions<br>• B-BBEE Audit & Licensing certification fees | | | | • Wholesale product markup margins<br>• Last-mile platform delivery commissions<br>• Enterprise SaaS API license tiers |
 
 ---
 

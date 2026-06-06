@@ -9,9 +9,9 @@ The following canvas outlines the full enterprise architecture, illustrating how
 | • **{{key_suppliers}}**<br>• Local Distribution Anchors<br>• Strategic Funding Bodies | • Product Research & Design<br>• Strategic Growth Loops<br>• Operational Quality Control | • **Premium Core Value**: Highly scalable enterprise delivery<br>• Automated strategic transparency<br>• **B-BBEE Compliance**: {{bee_level}} Status | • Strategic Joint-Ventures<br>• Transparent Operations<br>• Direct Digital Support | • Mid-to-Large Regional Buyers<br>• Local Informal Retailers<br>• Multi-Tenant Enterprises |
 | | **Key Resources** | | **Channels** | |
 | | • Direct Intellectual Property<br>• Certified Facilities<br>• Agile Executive Team | | • Dedicated Direct Sales<br>• Referral Loop Mechanics<br>• Digital Portals | |
-| **Cost Structure** | | **Revenue Streams** |
-| :--- | :--- | :--- |
-| • Product Manufacturing / Service Setup<br>• Regulatory Compliance & Auditing<br>• Personnel & Strategic Operations | | • Direct Wholesale Product Sales / Service Retainers<br>• Dynamic API Licensing Fees<br>• Value-Added Ancillary Revenue |
+| **Cost Structure** | | | | **Revenue Streams** |
+| :--- | :--- | :--- | :--- | :--- |
+| • Product Manufacturing / Service Setup<br>• Regulatory Compliance & Auditing<br>• Personnel & Strategic Operations | | | | • Direct Wholesale Product Sales / Service Retainers<br>• Dynamic API Licensing Fees<br>• Value-Added Ancillary Revenue |
 
 ---
 

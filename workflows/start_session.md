@@ -72,8 +72,8 @@
 8.  **Update Active Session Pointer**:
     *   Overwrite `.rokct/active_session.txt` with:
 
-    ```
-    # Active Session: [SessionName]
+```text
+# Active Session: [SessionName]
     Mission: [One line goal]
     Status: IN PROGRESS
     Last Action: [To be updated as work progresses]
