@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "files": {
+    "core/templates/memory.md": { "hash": "531598c979cba380", "size": 901 },
+    "core/templates/active_session.txt": { "hash": "30b1fc64a9051ca8", "size": 21 },
+    "core/templates/decision_log.md": { "hash": "a5ed2f49524e9b4f", "size": 429 },
+    "core/templates/project_map.md": { "hash": "aecf4a6bfe0e1a14", "size": 614 },
+    "core/templates/session_summary.md": { "hash": "d793a2f800954d56", "size": 745 },
+    "profiles/local/rules.md": { "hash": "a312562342a11f99", "size": 417 },
+    "profiles/local/skills/git/SKILL.md": { "hash": "d7c5881579fdf8b3", "size": 3485 },
+    ".cursorrules": { "hash": "da39a3ee5e6b4b0d", "size": 0 }
+  }
+}

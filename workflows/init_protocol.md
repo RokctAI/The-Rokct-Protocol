@@ -28,3 +28,6 @@
     *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
     *   **Update**: Write **Safe ID** to `.rokct/memory.md`.
     *   **Privacy Rule**: Do **NOT** store the raw email in `memory.md`. Use the Safe ID only.
+
+4.  **End Session**:
+    *   When done, run `python profiles/local/end_protocol.py` (or `profiles/web/end_protocol.py` if one exists) to clean up pristine scaffold files.
