@@ -1,19 +1,38 @@
 import os
+import sys
 import shutil
 import subprocess
 import hashlib
 import json
+import urllib.request
 
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
-def load_manifest():
-    manifest_path = os.path.join(PROTOCOL_DIR, "profiles", "local", "manifest.json")
-    if not os.path.exists(manifest_path):
-        return {}
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+def fetch_from_github(rel_path, dest_path):
+    url = f"{GITHUB_RAW_BASE}/{rel_path}"
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            with open(dest_path, "wb") as f:
+                f.write(r.read())
+        print(f"[init] Fetched {rel_path}")
+    except Exception as e:
+        print(f"[init] Failed to fetch {rel_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def ensure_file(rel_path, dest_path):
+    if os.path.exists(dest_path):
+        return
+    src = os.path.join(PROTOCOL_DIR, rel_path)
+    if os.path.exists(src):
+        shutil.copy2(src, dest_path)
+        print(f"[init] Copied {rel_path}")
+    else:
+        fetch_from_github(rel_path, dest_path)
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -21,69 +40,52 @@ def file_hash(path):
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
-def copy_versioned(src_rel, dst_abs, manifest):
-    dst_dir = os.path.dirname(dst_abs)
-    os.makedirs(dst_dir, exist_ok=True)
-
-    entry = manifest.get("files", {}).get(src_rel)
+def copy_versioned(src_rel, dst_abs):
+    src = os.path.join(PROTOCOL_DIR, src_rel)
+    if not os.path.exists(src):
+        return
+    with open(os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json"), "r", encoding="utf-8") as mf:
+        manifest = json.load(mf)
+    entry = manifest.get("files", {}).get(src_rel.split("core/templates/")[-1] if "core/templates/" in src_rel else src_rel.split("profiles/local/")[-1])
     if not entry:
-        print(f"[init] Warning: no manifest entry for {src_rel}, copying unconditionally")
-        shutil.copy2(os.path.join(PROTOCOL_DIR, src_rel), dst_abs)
-        print(f"[init] Copied {src_rel} -> {dst_abs}")
+        shutil.copy2(src, dst_abs)
         return
-
     current_hash = file_hash(dst_abs)
-    if current_hash == entry["hash"]:
-        print(f"[init] Skipping unchanged {dst_abs}")
+    if current_hash == entry.get("hash"):
         return
+    shutil.copy2(src, dst_abs)
 
-    if current_hash is None:
-        print(f"[init] New file {dst_abs}, copying from protocol")
-    else:
-        print(f"[init] WARNING: {dst_abs} differs from protocol version, replacing")
-    shutil.copy2(os.path.join(PROTOCOL_DIR, src_rel), dst_abs)
-    print(f"[init] Copied {src_rel} -> {dst_abs}")
-
-def copy_dir(src, dst):
+def copy_dir(rel_src, dst):
+    src = os.path.join(PROTOCOL_DIR, rel_src)
+    if not os.path.isdir(src):
+        return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
         if os.path.isdir(s):
-            copy_dir(s, d)
+            copy_dir(os.path.relpath(s, PROTOCOL_DIR), d)
         else:
-            copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d, manifest)
-    print(f"[init] Synced directory {src} -> {dst}")
-
-def detect_repo_owner():
-    try:
-        url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
-        if "RokctAI/" in url:
-            return url.split("RokctAI/")[-1].replace(".git", "")
-    except Exception:
-        pass
-    return None
+            rel = os.path.relpath(s, PROTOCOL_DIR)
+            ensure_file(rel, d)
 
 def main():
-    global manifest
-    manifest = load_manifest()
     os.makedirs(ROKCT_DIR, exist_ok=True)
 
-    core_templates_src = os.path.join(PROTOCOL_DIR, "core", "templates")
-    for fname in ["memory.md", "decision_log.md", "project_map.md", "active_session.txt"]:
-        copy_versioned(os.path.join("core", "templates", fname), os.path.join(ROKCT_DIR, fname), manifest)
+    templates = ["memory.md", "decision_log.md", "project_map.md", "active_session.txt"]
+    for t in templates:
+        ensure_file(f"core/templates/{t}", os.path.join(ROKCT_DIR, t))
 
-    copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"), manifest)
+    ensure_file(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
-    copy_dir(os.path.join(PROTOCOL_DIR, "core", "skills"), os.path.join(ROKCT_DIR, "skills"))
+    copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
+    copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
 
-    copy_dir(os.path.join(PROTOCOL_DIR, "profiles", "local", "skills"), os.path.join(ROKCT_DIR, "skills"))
+    ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
-    copy_versioned(os.path.join("profiles", "local", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
-
-    local_workflows_src = os.path.join(PROTOCOL_DIR, "profiles", "local", "workflows")
-    if os.path.isdir(local_workflows_src):
-        copy_dir(local_workflows_src, os.path.join(ROKCT_DIR, "workflows"))
+    wp = os.path.join(PROTOCOL_DIR, "profiles", "local", "workflows")
+    if os.path.isdir(wp):
+        copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
@@ -94,56 +96,47 @@ def main():
         domain = email.split("@")[1].lower()
         domain_hash = hashlib.md5(domain.encode()).hexdigest()[:6]
         safe_id = f"{prefix}.{domain_hash}"
-        mem_path = os.path.join(ROKCT_DIR, "memory.md")
-        with open(mem_path, "a", encoding="utf-8") as f:
+        mem = os.path.join(ROKCT_DIR, "memory.md")
+        with open(mem, "a", encoding="utf-8") as f:
             f.write(f"\n\n## Safe ID\n{safe_id}\n")
         print(f"[init] Registered safe identity: {safe_id}")
 
-    gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
-    if not os.path.exists(gitignore_path):
-        with open(gitignore_path, "w", encoding="utf-8") as f:
+    ignore = os.path.join(ROKCT_DIR, ".gitignore")
+    if not os.path.exists(ignore):
+        with open(ignore, "w", encoding="utf-8") as f:
             f.write("skills/\n")
-        print(f"[init] Created {gitignore_path}")
+        print("[init] Created .gitignore")
     else:
-        content = open(gitignore_path, "r", encoding="utf-8").read()
-        if "skills/" not in content and "/skills" not in content:
-            with open(gitignore_path, "a", encoding="utf-8") as f:
+        txt = open(ignore, "r", encoding="utf-8").read()
+        if "skills/" not in txt:
+            with open(ignore, "a", encoding="utf-8") as f:
                 f.write("skills/\n")
-            print(f"[init] Updated {gitignore_path}")
+            print("[init] Updated .gitignore")
 
-    print("[init] Local profile file operations complete.")
+    ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
+    ensure_file("profiles/local/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
+    ensure_file(os.path.basename(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
+    print("[init] Copied initiate.py -> .rokct/initiate.py")
 
-    shutil.copy2(os.path.join(PROTOCOL_DIR, "workflows", "sync_workspace.py"), os.path.join(ROKCT_DIR, "sync_workspace.py"))
-    print("[init] Copied sync_workspace.py -> .rokct/sync_workspace.py")
-
-    shutil.copy2(os.path.join(PROTOCOL_DIR, "profiles", "local", "end_protocol.py"), os.path.join(ROKCT_DIR, "end_protocol.py"))
-    print("[init] Copied end_protocol.py -> .rokct/end_protocol.py")
-
-    config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
-    if not os.path.exists(config_path):
-        repo_owner = detect_repo_owner()
-        if repo_owner:
-            parent_repo = "RokctAI/occultation"
-            print(f"[init] Detected RokctAI repo — routing working files to {parent_repo}")
+    cfg = os.path.join(ROKCT_DIR, ".workspace_config.json")
+    if not os.path.exists(cfg):
+        try:
+            url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
+        except Exception:
+            url = ""
+        if "RokctAI/" in url:
+            parent = "RokctAI/occultation"
+            print(f"[init] Auto-detected RokctAI repo, routing to {parent}")
         else:
-            parent_repo = input("[init] NOT a RokctAI repo. Enter parent workspace repo (owner/repo) or press Enter to skip: ").strip()
-            if not parent_repo:
-                print("[init] Skipping workspace config")
-                return
+            parent = input("[init] Enter parent workspace repo (owner/repo) or press Enter for standalone: ").strip()
+        if parent:
+            with open(cfg, "w", encoding="utf-8") as f:
+                json.dump({"parent_repo": parent, "parent_branch": "main", "working_files": templates}, f, indent=2)
+            print(f"[init] Created .workspace_config.json -> {parent}")
+        else:
+            print("[init] Standalone mode (no workspace sync)")
 
-        workspace_config = {
-            "parent_repo": parent_repo,
-            "parent_branch": "main",
-            "working_files": [
-                "memory.md",
-                "decision_log.md",
-                "project_map.md",
-                "active_session.txt"
-            ]
-        }
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(workspace_config, f, indent=2)
-        print(f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}")
+    print("[init] Local profile init complete.")
 
 if __name__ == "__main__":
     main()

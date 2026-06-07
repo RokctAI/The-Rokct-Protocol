@@ -1,29 +1,25 @@
 #!/bin/bash
-# Rokct Protocol Installer (Unix/macOS/Linux)
+# Rokct Protocol Installer (UNIX)
 # Usage: curl -sSL https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.sh | bash
 
-set -e
+set -euo pipefail
 
-PROTOCOL_DIR="The-Rokct-Protocol"
-REPO_URL="https://github.com/RokctAI/The-Rokct-Protocol.git"
+PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+INIT_PATH="profiles/local/initiate.py"
 
-echo "[install] Rokct Protocol Setup (Workspace Mode)"
+echo "[install] Rokct Protocol Setup (Standalone)"
 
-if ! command -v git &> /dev/null; then
-    echo "[install] ERROR: git is required but not installed."
+if ! command -v python3 &> /dev/null; then
+    echo "[install] ERROR: python3 is required but not installed." >&2
     exit 1
 fi
 
-if [ ! -d "$PROTOCOL_DIR" ]; then
-    echo "[install] Cloning The-Rokct-Protocol..."
-    git clone --depth 1 "$REPO_URL" "$PROTOCOL_DIR"
-else
-    echo "[install] The-Rokct-Protocol already exists, pulling latest..."
-    git -C "$PROTOCOL_DIR" pull --ff-only
-fi
+mkdir -p .rokct
 
-echo "[install] Running local workspace init..."
-cd "$PROTOCOL_DIR"
-python3 profiles/local/initiate.py
+echo "[install] Fetching initiate.py from protocol..."
+curl -fsSL "$PROTOCOL_RAW/$INIT_PATH" -o ".rokct/initiate.py"
+
+echo "[install] Running init..."
+python3 .rokct/initiate.py
 
 echo "[install] Done. Run 'python .rokct/end_protocol.py' when session ends."
