@@ -86,9 +86,8 @@ def fetch_dir_from_github(rel_src, dst):
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
                 rel = name[len(prefix):]
-                if "/" in rel:
-                    continue
                 dest = os.path.join(dst, rel)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
                     f.write(z.read(name))
                 count += 1
