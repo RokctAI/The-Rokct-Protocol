@@ -32,16 +32,27 @@ Or clone manually:
 
 ### 2. Initialization (The "Bootstrap")
 
-**First-time setup**: Tell your AI agent exactly this:
+**Quick install** uses the local profile automatically (installer assumes desktop/local environment):
+
+```powershell
+# Windows
+iwr -useb https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.ps1 | iex
+
+# Unix/macOS/Linux
+curl -sSL https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.sh | bash
+```
+
+This downloads and runs `profiles/local/initiate.py`, which:
+1.  Creates `.rokct/` in your project root.
+2.  Fetches templates, skills, and rules from the protocol (no local clone needed).
+3.  Prompts for a parent workspace repo if you want multi-repo sync.
+4.  Auto-detects `RokctAI/*` repos and routes to the configured parent.
+
+**For AI agents**: Tell your agent exactly this:
 
 > "Initialize the Rokct Protocol using `The-Rokct-Protocol/workflows/init_protocol.md`."
 
-Do NOT just tell it "use the protocol" — you must hand it the explicit path to `init_protocol.md`, or it won’t know where to start.
-
-The agent will:
-1.  Create `.rokct/` in your project root.
-2.  Run the matching `initiate.py` (Local or Web profile).
-3.  Copy templates, skills, and rules into `.rokct/`.
+The agent will read `init_protocol.md` and run the matching `initiate.py` (Local or Web profile based on its environment).
 
 ### 3. Profiles
 
