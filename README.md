@@ -18,14 +18,17 @@ Process these rules in priority order:
 
 ### 1. Installation
 
-No submodule needed. Copy the protocol into your project:
-
-```bash
-# Clone this repo somewhere accessible
-git clone https://github.com/RokctAI/The-Rokct-Protocol.git
-
-# Or reference it as a remote in your project
+Quick install (Windows PowerShell):
+```powershell
+iwr -useb https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.ps1 | iex
 ```
+
+Quick install (Unix / macOS / Linux):
+```bash
+curl -sSL https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.sh | bash
+```
+
+Or clone manually:
 
 ### 2. Initialization (The "Bootstrap")
 
@@ -56,7 +59,7 @@ If your project's working files should live in a central parent repo:
 3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
 4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
 
-If a parent workspace repo is configured, working files sync there automatically. Otherwise, you will be prompted to provide a parent workspace repo (e.g. `Owner/Repo`) during initialization, or you can skip workspace mode and work standalone.
+If your remote repo follows a recognized organization pattern, `initiate.py` auto-detects and routes working files to the configured parent workspace repo. For other repos, you will be prompted to provide a parent workspace repo (e.g. `Owner/Repo`) during initialization, or you can skip workspace mode and work standalone.
 
 ### 5. End Protocol
 
