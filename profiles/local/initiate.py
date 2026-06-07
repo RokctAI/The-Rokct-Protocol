@@ -113,8 +113,8 @@ def main():
 
     print("[init] Local profile file operations complete.")
 
-    shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
-    print("[init] Copied initiate.py -> .rokct/initiate.py")
+    shutil.copy2(os.path.join(PROTOCOL_DIR, "workflows", "sync_workspace.py"), os.path.join(ROKCT_DIR, "sync_workspace.py"))
+    print("[init] Copied sync_workspace.py -> .rokct/sync_workspace.py")
 
     shutil.copy2(os.path.join(PROTOCOL_DIR, "profiles", "local", "end_protocol.py"), os.path.join(ROKCT_DIR, "end_protocol.py"))
     print("[init] Copied end_protocol.py -> .rokct/end_protocol.py")
@@ -123,8 +123,8 @@ def main():
     if not os.path.exists(config_path):
         repo_owner = detect_repo_owner()
         if repo_owner:
-            parent_repo = f"RokctAI/{repo_owner}"
-            print(f"[init] Detected RokctAI repo: {parent_repo}")
+            parent_repo = "RokctAI/occultation"
+            print(f"[init] Detected RokctAI repo — routing working files to {parent_repo}")
         else:
             parent_repo = input("[init] NOT a RokctAI repo. Enter parent workspace repo (owner/repo) or press Enter to skip: ").strip()
             if not parent_repo:

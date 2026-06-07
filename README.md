@@ -1,61 +1,77 @@
 # The Rokct Protocol
 
-This repository acts as the **Single Source of Truth (SSO)** for the AI agent's behavior, constraints, and operational knowledge.
+This repository is the **Single Source of Truth (SSO)** for AI agent behavior, constraints, and operational knowledge.
 
 ## How to Read This Repo (For Agents)
-The agent **MUST** process these rules in the following priority order:
+
+Process these rules in priority order:
 
 1.  **[Core Rules](./core/README.md)**: Absolute mandates on authority, obedience, and communication.
-    *   [Authority & Obedience](./core/01_authority.md)
-    *   [Communication](./core/02_communication.md)
 2.  **[Coding Standards](./coding/standards.md)**: Technical constraints, stack preferences, and "no placeholder" policies.
 3.  **[Design System](./coding/design_system.md)**: Aesthetic guidelines for "Premium" output.
-4.  **[Templates](./templates/project_map.md)**: Templates for Memory, Context Map, and **Active Session Pointer** (`active_session.txt`).
-5.  **[Workflows](./workflows/README.md)**: SOPs, including [Initialization](./workflows/init_protocol.md) and [Session Logging](./workflows/session_logging.md).
+4.  **[Templates](./templates/project_map.md)**: Templates for Memory, Context Map, and Active Session Pointer.
+5.  **[Workflows](./workflows/README.md)**: SOPs, including Initialization and Session Logging.
 
 ---
 
 ## Creator's Guide (For Humans)
 
 ### 1. Installation
-Add this repository as a submodule to your project (e.g., your Next.js or Frappe app):
+
+No submodule needed. Copy the protocol into your project:
 
 ```bash
-git submodule add https://github.com/RokctAI/The-Rokct-Protocol The-Rokct-Protocol
-git commit -m "Install Rokct Protocol"
+# Clone this repo somewhere accessible
+git clone https://github.com/RokctAI/The-Rokct-Protocol.git
+
+# Or reference it as a remote in your project
 ```
 
 ### 2. Initialization (The "Bootstrap")
-Once the folder `The-Rokct-Protocol` is in your project, open your AI Editor (Cursor/Windsurf) and tell the agent:
+
+Tell your AI agent:
 
 > "Initialize the Rokct Protocol using `The-Rokct-Protocol/workflows/init_protocol.md`."
 
 The agent will:
-1.  Create a `.rokct/` folder in your project root (for Memory).
-2.  Copy the `.cursorrules` file to your project root.
-3.  Set up the Session Logging structure.
+1.  Create `.rokct/` in your project root.
+2.  Run the matching `initiate.py` (Local or Web profile).
+3.  Copy templates, skills, and rules into `.rokct/`.
+4.  Auto-detect if your repo is `RokctAI/*` and set the workspace parent to `RokctAI/occultation`.
+5.  If your repo is NOT `RokctAI/*`, the agent will ask you which parent workspace repo to use.
 
-### 3. Features You Get
-*   **Infinite Memory**: Long sessions "roll over" automatically. You never lose context.
-*   **Team Safe**: Session files are namespaced by user (e.g., `@ray.dev`) to prevent merge conflicts.
+### 3. Profiles
+
+| Profile | When to Use | Key Differences |
+|---------|-------------|-----------------|
+| **Local** | Desktop (VS Code, CLI, Windsurf) | Copies local-only skills, workflows, Safe ID from git config |
+| **Web** | Cloud sandbox (Jules, Codespaces, Replit) | Skips local-only assets, no interactive prompts |
+
+### 4. Workspace Mode (Multi-Repo)
+
+If your project's working files should live in a central parent repo:
+
+1.  `initiate.py` writes `.rokct/.workspace_config.json` pointing to the parent.
+2.  `end_protocol.py` creates `.rokct/.sync_ready` after cleanup.
+3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
+4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
+
+### 5. End Protocol
+
+When done working:
+
+> "Run the end protocol."
+
+The agent runs `.rokct/end_protocol.py`, which:
+- Deletes pristine `skills/` and `workflows/` (untouched scaffolding).
+- Keeps any modified working files (`memory.md`, `decision_log.md`, etc.).
+- Leaves `.sync_ready` for CI to pick up.
+
+### 6. Features You Get
+
+*   **Infinite Memory**: Long sessions roll over automatically.
+*   **Workspace Sync**: Multi-repo support — one central log for all your projects.
 *   **Identity Aware**: The agent knows who you are but asks what to call you.
-*   **Auto-Cleanup**: Old session logs are deleted based on your Retention Policy (Default: Forever).
-*   **Anti-Hang**: Configurable "Frequent Checkpoints" (Auto-Save) for Cloud Agents to prevent data loss.
-*   **Anti-Hang**: Configurable "Frequent Checkpoints" (Auto-Save) for Cloud Agents to prevent data loss.
-*   **Skills**: Anthropic-standard capability modules (`skills/`) for defining complex agent behaviors.
-*   **Schemas**: Strict output definitions (`coding/schemas.md`) for reliable structured data.
-*   **Workspace Protocol**: Multi-Repo support ("One Log to Rule Them All"). Local Agents automatically detect overlapping projects and sync memory between them.
-
-### 4. How to Work
-Once initialized, simply tell your Agent to start working:
-
-> **"Start a new session for [Task Name]"**
-> *(e.g., "Start a new session for Auth Flow")*
-
-The Agent will automatically:
-1.  **Update**: Pull the latest Protocol rules (`git submodule update`).
-2.  **Branch**:
-    *   **Local**: Switches to context branch `users/[Name]/[Task]`.
-    *   **Cloud**: Stays on current branch (Prevention of Agent Error).
-3.  **Create**: A namespaced session log (e.g., `.rokct/sessions/2026-05-21_@Ray_Auth.md`).
-4.  **Work**: Log its thoughts and follow the rules.
+*   **Auto-Cleanup**: Stale scaffold files are removed after sessions.
+*   **Skills**: Modular capability definitions for complex agent behaviors.
+*   **No Submodules**: Copy-based initialization — no git submodule overhead.

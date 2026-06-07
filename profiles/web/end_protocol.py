@@ -33,13 +33,17 @@ def load_json(name):
     with open(p, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def touch(path):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("")
+
 def main():
     if not os.path.isdir(ROKCT_DIR):
         print("[end] .rokct/ not found, nothing to do")
         return
 
     core_manifest = load_json("core/templates/manifest.json")
-    local_manifest = load_json("profiles/local/manifest.json")
+    profile_manifest = load_json("profiles/web/manifest.json")
 
     pristine_skills = "f7cfce8ecd1c06e7"
     pristine_workflows = "af7192f8a988c3a6"
@@ -63,18 +67,22 @@ def main():
         if item == "active_session.txt":
             print("[end] Kept active_session.txt (workspace working file)")
             continue
+        if item == ".sync_ready":
+            continue
         if os.path.isdir(item_path):
             continue
         core_key = f"core/templates/{item}"
-        local_key = f"profiles/local/{item}"
+        profile_key = f"profiles/web/{item}"
         if item == "profiles.md":
-            local_key = "profiles/local/rules.md"
-        if file_hash(item_path) in (core_manifest.get("files", {}).get(core_key, {}).get("hash"), local_manifest.get("files", {}).get(local_key, {}).get("hash")):
+            profile_key = "profiles/web/rules.md"
+        if file_hash(item_path) in (core_manifest.get("files", {}).get(core_key, {}).get("hash"), profile_manifest.get("files", {}).get(profile_key, {}).get("hash")):
             os.remove(item_path)
             print(f"[end] Deleted pristine {item}")
         else:
             print(f"[end] Kept modified {item}")
 
+    touch(os.path.join(ROKCT_DIR, ".sync_ready"))
+    print("[end] Created .sync_ready marker — CI will pick this up when active session ends")
     print("[end] End protocol cleanup complete.")
 
 if __name__ == "__main__":

@@ -33,6 +33,10 @@ def load_json(name):
     with open(p, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def touch(path):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("")
+
 def main():
     if not os.path.isdir(ROKCT_DIR):
         print("[end] .rokct/ not found, nothing to do")
@@ -63,6 +67,8 @@ def main():
         if item == "active_session.txt":
             print("[end] Kept active_session.txt (workspace working file)")
             continue
+        if item == ".sync_ready":
+            continue
         if os.path.isdir(item_path):
             continue
         core_key = f"core/templates/{item}"
@@ -75,6 +81,8 @@ def main():
         else:
             print(f"[end] Kept modified {item}")
 
+    touch(os.path.join(ROKCT_DIR, ".sync_ready"))
+    print("[end] Created .sync_ready marker — CI will pick this up when active session ends")
     print("[end] End protocol cleanup complete.")
 
 if __name__ == "__main__":
