@@ -87,5 +87,21 @@ def main():
     shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
 
+    config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
+    if not os.path.exists(config_path):
+        workspace_config = {
+            "parent_repo": "RokctAI/occultation",
+            "parent_branch": "main",
+            "working_files": [
+                "memory.md",
+                "decision_log.md",
+                "project_map.md",
+                "active_session.txt"
+            ]
+        }
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(workspace_config, f, indent=2)
+        print(f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}")
+
 if __name__ == "__main__":
     main()
