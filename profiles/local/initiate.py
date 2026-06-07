@@ -6,7 +6,11 @@ import hashlib
 import json
 import urllib.request
 
+import io
+import zipfile
+
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
@@ -58,6 +62,7 @@ def copy_versioned(src_rel, dst_abs):
 def copy_dir(rel_src, dst):
     src = os.path.join(PROTOCOL_DIR, rel_src)
     if not os.path.isdir(src):
+        fetch_dir_from_github(rel_src, dst)
         return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
@@ -68,6 +73,28 @@ def copy_dir(rel_src, dst):
         else:
             rel = os.path.relpath(s, PROTOCOL_DIR)
             ensure_file(rel, d)
+
+def fetch_dir_from_github(rel_src, dst):
+    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
+    try:
+        print(f"[init] Fetching directory from GitHub: {rel_src}")
+        req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            z = zipfile.ZipFile(io.BytesIO(r.read()))
+        os.makedirs(dst, exist_ok=True)
+        count = 0
+        for name in z.namelist():
+            if name.startswith(prefix) and not name.endswith("/"):
+                rel = name[len(prefix):]
+                if "/" in rel:
+                    continue
+                dest = os.path.join(dst, rel)
+                with open(dest, "wb") as f:
+                    f.write(z.read(name))
+                count += 1
+        print(f"[init] Fetched {count} files from {rel_src}")
+    except Exception as e:
+        print(f"[init] Failed to fetch directory {rel_src}: {e}", file=sys.stderr)
 
 def main():
     os.makedirs(ROKCT_DIR, exist_ok=True)
