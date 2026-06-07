@@ -2,56 +2,38 @@ import os
 import hashlib
 import json
 import shutil
+from pathlib import Path
 
-PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# When copied to .rokct/, __file__ is .rokct/end_protocol.py
-# Walk up to find the protocol repo root (has workflows/ + core/)
-def find_protocol_root():
-    current = os.path.dirname(PROTOCOL_DIR)  # project root when in .rokct/
-    for _ in range(6):
-        if os.path.isfile(os.path.join(current, "workflows", "init_protocol.md")):
-            return current
-        parent = os.path.dirname(current)
-        if parent == current:
-            break
-        current = parent
-    return None
+BASE = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path.cwd()
+ROKCT_DIR = PROJECT_ROOT / ".rokct"
 
-PROJECT_ROOT = os.getcwd()
-ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
-
-def dir_hash(d):
-    if not os.path.isdir(d):
+def dir_hash(d: Path):
+    if not d.is_dir():
         return None
     h = hashlib.sha256()
-    for root, dirs, files in os.walk(d):
-        dirs.sort()
-        for f in sorted(files):
-            p = os.path.join(root, f)
-            h.update(f.encode())
-            with open(p, "rb") as fh:
-                h.update(fh.read())
+    for path in sorted(p for p in d.rglob("*") if p.is_file()):
+        rel = path.relative_to(d)
+        h.update(str(rel).encode())
+        h.update(path.read_bytes())
     return h.hexdigest()[:16]
 
-def file_hash(path):
-    if not os.path.exists(path):
+def file_hash(path: Path):
+    if not path.exists():
         return None
-    with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
-def load_json(name):
-    p = os.path.join(PROTOCOL_DIR, name)
-    if not os.path.exists(p):
+def load_json(name: str) -> dict:
+    p = BASE / name
+    if not p.exists():
         return {}
-    with open(p, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return json.loads(p.read_text(encoding="utf-8"))
 
-def touch(path):
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("")
+def touch(path: Path):
+    path.write_text("", encoding="utf-8")
 
 def main():
-    if not os.path.isdir(ROKCT_DIR):
+    if not ROKCT_DIR.is_dir():
         print("[end] .rokct/ not found, nothing to do")
         return
 
@@ -60,52 +42,35 @@ def main():
 
     pristine_skills = "f7cfce8ecd1c06e7"
 
-    skills_dir = os.path.join(ROKCT_DIR, "skills")
-    if os.path.isdir(skills_dir) and dir_hash(skills_dir) == pristine_skills:
+    skills_dir = ROKCT_DIR / "skills"
+    if skills_dir.is_dir() and dir_hash(skills_dir) == pristine_skills:
         shutil.rmtree(skills_dir)
         print("[end] Deleted pristine skills/ (auto-clean)")
     else:
         print("[end] Kept modified skills/")
 
-    for item in os.listdir(ROKCT_DIR):
-        item_path = os.path.join(ROKCT_DIR, item)
-        if item == "active_session.txt":
+    for item_path in ROKCT_DIR.iterdir():
+        if item_path.name == "active_session.txt":
             print("[end] Kept active_session.txt (workspace working file)")
             continue
-        if item == ".sync_ready":
+        if item_path.name == ".sync_ready":
             continue
-        if os.path.isdir(item_path):
+        if item_path.is_dir():
             continue
-        core_key = f"core/templates/{item}"
-        local_key = f"profiles/local/{item}"
-        if item == "profiles.md":
-            local_key = "profiles/local/rules.md"
-        if file_hash(item_path) in (core_manifest.get("files", {}).get(core_key, {}).get("hash"), local_manifest.get("files", {}).get(local_key, {}).get("hash")):
-            os.remove(item_path)
-            print(f"[end] Deleted pristine {item}")
+        core_key = f"core/templates/{item_path.name}"
+        local_rel = f"profiles/local/{item_path.name}"
+        if item_path.name == "profiles.md":
+            local_rel = "profiles/local/rules.md"
+        if file_hash(item_path) in (
+            core_manifest.get("files", {}).get(core_key, {}).get("hash"),
+            local_manifest.get("files", {}).get(local_rel, {}).get("hash"),
+        ):
+            item_path.unlink()
+            print(f"[end] Deleted pristine {item_path.name}")
         else:
-            print(f"[end] Kept modified {item}")
+            print(f"[end] Kept modified {item_path.name}")
 
-    protocol_root = find_protocol_root()
-    if protocol_root:
-        workflows_dir = os.path.join(protocol_root, "workflows")
-        if os.path.isdir(workflows_dir):
-            keep = {"init_protocol.md", "sync_workspace.py", "session_logging.md"}
-            for name in os.listdir(workflows_dir):
-                if name in keep:
-                    print(f"[end] Kept workflows/{name}")
-                    continue
-                path = os.path.join(workflows_dir, name)
-                if os.path.isfile(path):
-                    os.remove(path)
-                    print(f"[end] Deleted workflows/{name}")
-                elif os.path.isdir(path):
-                    shutil.rmtree(path)
-                    print(f"[end] Deleted workflows/{name}/")
-                else:
-                    print(f"[end] Kept workflows/{name} (unknown type)")
-
-    touch(os.path.join(ROKCT_DIR, ".sync_ready"))
+    touch(ROKCT_DIR / ".sync_ready")
     print("[end] Created .sync_ready marker — CI will pick this up when active session ends")
     print("[end] End protocol cleanup complete.")
 

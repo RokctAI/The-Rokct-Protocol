@@ -72,10 +72,10 @@ def main():
         if os.path.isdir(item_path):
             continue
         core_key = f"core/templates/{item}"
-        profile_key = f"profiles/web/{item}"
+        profile_rel = f"profiles/web/{item}"
         if item == "profiles.md":
-            profile_key = "profiles/web/rules.md"
-        if file_hash(item_path) in (core_manifest.get("files", {}).get(core_key, {}).get("hash"), profile_manifest.get("files", {}).get(profile_key, {}).get("hash")):
+            profile_rel = "profiles/web/rules.md"
+        if file_hash(item_path) in (core_manifest.get("files", {}).get(core_key, {}).get("hash"), profile_manifest.get("files", {}).get(profile_rel, {}).get("hash")):
             os.remove(item_path)
             print(f"[end] Deleted pristine {item}")
         else:
