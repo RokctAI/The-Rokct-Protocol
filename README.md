@@ -29,9 +29,11 @@ git clone https://github.com/RokctAI/The-Rokct-Protocol.git
 
 ### 2. Initialization (The "Bootstrap")
 
-Tell your AI agent:
+**First-time setup**: Tell your AI agent exactly this:
 
 > "Initialize the Rokct Protocol using `The-Rokct-Protocol/workflows/init_protocol.md`."
+
+Do NOT just tell it "use the protocol" — you must hand it the explicit path to `init_protocol.md`, or it won’t know where to start.
 
 The agent will:
 1.  Create `.rokct/` in your project root.
@@ -55,6 +57,8 @@ If your project's working files should live in a central parent repo:
 2.  `end_protocol.py` creates `.rokct/.sync_ready` after cleanup.
 3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
 4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
+
+**Non-RokctAI repos**: During init, the agent will ask you to provide the parent workspace repo (e.g. `Owner/Repo`). RokctAI-owned repos auto-detect and route to the configured parent.
 
 ### 5. End Protocol
 
