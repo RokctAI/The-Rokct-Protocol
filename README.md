@@ -39,7 +39,6 @@ The agent will:
 1.  Create `.rokct/` in your project root.
 2.  Run the matching `initiate.py` (Local or Web profile).
 3.  Copy templates, skills, and rules into `.rokct/`.
-4.  If you set up a workspace parent, it will ask for the parent repo location. If no workspace is configured, it initializes in standalone mode.
 
 ### 3. Profiles
 
@@ -56,6 +55,8 @@ If your project's working files should live in a central parent repo:
 2.  `end_protocol.py` creates `.rokct/.sync_ready` after cleanup.
 3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
 4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
+
+If a parent workspace repo is configured, working files sync there automatically. Otherwise, you will be prompted to provide a parent workspace repo (e.g. `Owner/Repo`) during initialization, or you can skip workspace mode and work standalone.
 
 ### 5. End Protocol
 
