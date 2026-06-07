@@ -39,8 +39,7 @@ The agent will:
 1.  Create `.rokct/` in your project root.
 2.  Run the matching `initiate.py` (Local or Web profile).
 3.  Copy templates, skills, and rules into `.rokct/`.
-4.  Auto-detect if your repo is `RokctAI/*` and set the workspace parent to `RokctAI/occultation`.
-5.  If your repo is NOT `RokctAI/*`, the agent will ask you which parent workspace repo to use.
+4.  If you set up a workspace parent, it will ask for the parent repo location. If no workspace is configured, it initializes in standalone mode.
 
 ### 3. Profiles
 
@@ -57,8 +56,6 @@ If your project's working files should live in a central parent repo:
 2.  `end_protocol.py` creates `.rokct/.sync_ready` after cleanup.
 3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
 4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
-
-**Non-RokctAI repos**: During init, the agent will ask you to provide the parent workspace repo (e.g. `Owner/Repo`). RokctAI-owned repos auto-detect and route to the configured parent.
 
 ### 5. End Protocol
 
