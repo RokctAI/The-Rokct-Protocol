@@ -3,24 +3,45 @@ import shutil
 import hashlib
 import json
 import subprocess
+import urllib.request
+import io
+import zipfile
 
+GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
+def fetch_file_from_github(rel_path, dest_path):
+    url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path}"
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            with open(dest_path, "wb") as f:
+                f.write(r.read())
+        print(f"[init] Fetched {rel_path}")
+    except Exception as e:
+        print(f"[init] Failed to fetch {rel_path}: {e}", file=sys.stderr)
+
 def load_local_manifest():
     manifest_path = os.path.join(PROTOCOL_DIR, "profiles", "local", "manifest.json")
-    if not os.path.exists(manifest_path):
-        return {}
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 def load_core_manifest():
     manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
-    if not os.path.exists(manifest_path):
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    try:
+        req = urllib.request.Request(f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            return json.loads(r.read().decode())
+    except Exception:
         return {}
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -28,14 +49,27 @@ def file_hash(path):
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
+def ensure_file(rel_path, dest_path):
+    if os.path.exists(dest_path):
+        return
+    src = os.path.join(PROTOCOL_DIR, rel_path)
+    if os.path.exists(src):
+        shutil.copy2(src, dest_path)
+        print(f"[init] Copied {rel_path}")
+    else:
+        fetch_file_from_github(rel_path, dest_path)
+
 def copy_versioned(src_rel, dst_abs, manifest):
     dst_dir = os.path.dirname(dst_abs)
     os.makedirs(dst_dir, exist_ok=True)
 
     entry = manifest.get("files", {}).get(src_rel)
+    src = os.path.join(PROTOCOL_DIR, src_rel)
     if not entry:
-        print(f"[init] Warning: no manifest entry for {src_rel}, copying unconditionally")
-        shutil.copy2(os.path.join(PROTOCOL_DIR, src_rel), dst_abs)
+        if os.path.exists(src):
+            shutil.copy2(src, dst_abs)
+        else:
+            fetch_file_from_github(src_rel, dst_abs)
         print(f"[init] Copied {src_rel} -> {dst_abs}")
         return
 
@@ -44,14 +78,17 @@ def copy_versioned(src_rel, dst_abs, manifest):
         print(f"[init] Skipping unchanged {dst_abs}")
         return
 
-    if current_hash is None:
-        print(f"[init] New file {dst_abs}, copying from protocol")
+    if os.path.exists(src):
+        shutil.copy2(src, dst_abs)
     else:
-        print(f"[init] WARNING: {dst_abs} differs from protocol version, replacing")
-    shutil.copy2(os.path.join(PROTOCOL_DIR, src_rel), dst_abs)
+        fetch_file_from_github(src_rel, dst_abs)
     print(f"[init] Copied {src_rel} -> {dst_abs}")
 
 def copy_dir(src, dst):
+    rel_src = os.path.relpath(src, PROTOCOL_DIR)
+    if not os.path.isdir(src):
+        fetch_dir_from_github(rel_src, dst)
+        return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
         s = os.path.join(src, item)
@@ -61,6 +98,27 @@ def copy_dir(src, dst):
         else:
             copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d, manifest)
     print(f"[init] Synced directory {src} -> {dst}")
+
+def fetch_dir_from_github(rel_src, dst):
+    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
+    try:
+        print(f"[init] Fetching directory from GitHub: {rel_src}")
+        req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            z = zipfile.ZipFile(io.BytesIO(r.read()))
+        os.makedirs(dst, exist_ok=True)
+        count = 0
+        for name in z.namelist():
+            if name.startswith(prefix) and not name.endswith("/"):
+                rel = name[len(prefix):]
+                dest = os.path.join(dst, rel)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with open(dest, "wb") as f:
+                    f.write(z.read(name))
+                count += 1
+        print(f"[init] Fetched {count} files from {rel_src}")
+    except Exception as e:
+        print(f"[init] Failed to fetch directory {rel_src}: {e}", file=sys.stderr)
 
 def detect_repo_owner():
     try:
@@ -94,14 +152,12 @@ def main():
 
     print("[init] Web profile file operations complete.")
 
-    shutil.copy2(os.path.join(PROTOCOL_DIR, "workflows", "sync_workspace.py"), os.path.join(ROKCT_DIR, "sync_workspace.py"))
-    print("[init] Copied sync_workspace.py -> .rokct/sync_workspace.py")
+    ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
 
     shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
 
-    shutil.copy2(os.path.join(PROTOCOL_DIR, "profiles", "web", "end_protocol.py"), os.path.join(ROKCT_DIR, "end_protocol.py"))
-    print("[init] Copied end_protocol.py -> .rokct/end_protocol.py")
+    ensure_file("profiles/web/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
 
     config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
     if not os.path.exists(config_path):
