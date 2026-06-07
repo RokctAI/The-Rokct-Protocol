@@ -5,9 +5,20 @@
 set -euo pipefail
 
 PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-INIT_PATH="profiles/local/initiate.py"
 
-echo "[install] Rokct Protocol Setup (Standalone)"
+echo "[install] Rokct Protocol Setup"
+echo "Select profile:"
+echo "  1) Local (desktop/CLI)"
+echo "  2) Web (cloud sandbox / AI agent)"
+read -r -p "Enter 1 or 2: " choice
+
+case "$choice" in
+    1|"") PROFILE="local" ;;
+    2) PROFILE="web" ;;
+    *) echo "[install] Invalid choice"; exit 1 ;;
+esac
+
+INIT_PATH="profiles/$PROFILE/initiate.py"
 
 if ! command -v python3 &> /dev/null; then
     echo "[install] ERROR: python3 is required but not installed." >&2
@@ -16,7 +27,7 @@ fi
 
 mkdir -p .rokct
 
-echo "[install] Fetching initiate.py from protocol..."
+echo "[install] Fetching $PROFILE initiate.py from protocol..."
 curl -fsSL "$PROTOCOL_RAW/$INIT_PATH" -o ".rokct/initiate.py"
 
 echo "[install] Running init..."

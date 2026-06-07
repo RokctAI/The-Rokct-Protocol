@@ -4,9 +4,19 @@
 $ErrorActionPreference = "Stop"
 
 $ProtocolRaw = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-$InitPath = "profiles/local/initiate.py"
 
-Write-Host "[install] Rokct Protocol Setup (Standalone)"
+Write-Host "[install] Rokct Protocol Setup"
+Write-Host "Select profile:"
+Write-Host "  1) Local (desktop/CLI)"
+Write-Host "  2) Web (cloud sandbox / AI agent)"
+$choice = Read-Host "Enter 1 or 2"
+
+switch ($choice) {
+    {$_ -eq "2"} { $Profile = "web" }
+    default { $Profile = "local" }
+}
+
+$InitPath = "profiles/$Profile/initiate.py"
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host "[install] ERROR: python is required but not installed."
@@ -15,7 +25,7 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 
 New-Item -ItemType Directory -Force -Path ".rokct" | Out-Null
 
-Write-Host "[install] Fetching initiate.py from protocol..."
+Write-Host "[install] Fetching $Profile initiate.py from protocol..."
 Invoke-WebRequest -Uri "$ProtocolRaw/$InitPath" -OutFile ".rokct/initiate.py"
 
 Write-Host "[install] Running init..."

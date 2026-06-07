@@ -1,29 +1,29 @@
-# SOP: Initialize Rokct Protocol (V8)
+# SOP: Initialize Rokct Protocol
 
 **Trigger**: You start working on a project and do NOT see a `.rokct/` folder.
 
 ## Procedure
 
-1.  **Run Profile Init Script**:
-    *   **Select profile based on your environment**:
-        *   **Local**: Running on your physical computer (VS Code, Windsurf, CLI) with full network/drive access.
-        *   **Web**: Running in a cloud sandbox (Jules, Replit, GitHub Codespaces) that only sees this repo.
-    *   Execute the corresponding script:
+1.  **Run the Installer**:
+    *   **Windows (PowerShell)**:
+        ```powershell
+        iwr -useb https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.ps1 | iex
+        ```
+    *   **Unix / macOS / Linux**:
         ```bash
-        python profiles/local/initiate.py
-        # or
-        python profiles/web/initiate.py
+        curl -sSL https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/install.sh | bash
         ```
 
-2.  **Register Identity**:
-    *   Ask: *"What should I call you?"* (e.g. "Ray").
-    *   Save to `.rokct/memory.md`.
+2.  **Answer the Prompts**:
+    *   The installer will ask if this is for a **Local** (desktop) or **Web** (cloud sandbox) environment.
+    *   If prompted, enter the parent workspace repo (e.g. `Owner/Repo`) or press Enter for standalone mode.
 
-3.  **Configuration**:
-    *   **Identity**: Read `git config user.email` (If Local).
-    *   **Safe ID**: Generate `[EmailPrefix].[MD5(Domain)][:6]`.
-    *   **Update**: Write **Safe ID** to `.rokct/memory.md`.
-    *   **Privacy Rule**: Do **NOT** store the raw email in `memory.md`. Use the Safe ID only.
+3.  **Done**:
+    *   The installer downloads and runs the matching `initiate.py`, which:
+        *   Creates `.rokct/` in your project root.
+        *   Copies templates, skills, and rules into `.rokct/`.
+        *   Sets up workspace config if a parent repo was provided.
+        *   Copies `end_protocol.py` and `initiate.py` into `.rokct/` for later use.
 
-4.  **End Session**:
-    *   When done, run `python profiles/local/end_protocol.py` (or `profiles/web/end_protocol.py` if one exists) to clean up pristine scaffold files.
+4.  **When Finished**:
+    *   Run `python .rokct/end_protocol.py` to clean up pristine scaffold files.
