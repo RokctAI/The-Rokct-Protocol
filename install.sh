@@ -18,7 +18,7 @@ case "$choice" in
     *) echo "[install] Invalid choice"; exit 1 ;;
 esac
 
-INIT_PATH="profiles/$PROFILE/initiate.py"
+INIT_FILE="profiles/$PROFILE/initiate.py"
 
 if ! command -v python3 &> /dev/null; then
     echo "[install] ERROR: python3 is required but not installed." >&2
@@ -28,7 +28,7 @@ fi
 mkdir -p .rokct
 
 echo "[install] Fetching $PROFILE initiate.py from protocol..."
-curl -fsSL "$PROTOCOL_RAW/$INIT_PATH" -o ".rokct/initiate.py"
+curl -fsSL "$PROTOCOL_RAW/$INIT_FILE" -o ".rokct/initiate.py"
 
 echo "[install] Running init..."
 python3 .rokct/initiate.py

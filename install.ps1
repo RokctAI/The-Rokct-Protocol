@@ -16,7 +16,7 @@ switch ($choice) {
     default { $Profile = "local" }
 }
 
-$InitPath = "profiles/$Profile/initiate.py"
+$InitFile = "profiles/$Profile/initiate.py"
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host "[install] ERROR: python is required but not installed."
@@ -26,7 +26,7 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 New-Item -ItemType Directory -Force -Path ".rokct" | Out-Null
 
 Write-Host "[install] Fetching $Profile initiate.py from protocol..."
-Invoke-WebRequest -Uri "$ProtocolRaw/$InitPath" -OutFile ".rokct/initiate.py"
+Invoke-WebRequest -Uri "$ProtocolRaw/$InitFile" -OutFile ".rokct/initiate.py"
 
 Write-Host "[install] Running init..."
 python .rokct/initiate.py
