@@ -59,8 +59,6 @@ If your project's working files should live in a central parent repo:
 3.  CI (`sync_workspace.yml`) only syncs when `active_session.txt` is absent and `.sync_ready` is present.
 4.  Sync is **append-only** — CI never overwrites parent files, only inserts new sections with markers.
 
-If your remote repo follows a recognized organization pattern, `initiate.py` auto-detects and routes working files to the configured parent workspace repo. For other repos, you will be prompted to provide a parent workspace repo (e.g. `Owner/Repo`) during initialization, or you can skip workspace mode and work standalone.
-
 ### 5. End Protocol
 
 When done working:
