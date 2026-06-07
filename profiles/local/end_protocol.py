@@ -90,7 +90,7 @@ def main():
     if protocol_root:
         workflows_dir = os.path.join(protocol_root, "workflows")
         if os.path.isdir(workflows_dir):
-            keep = {"init_protocol.md", "sync_workspace.py", "session_logging.md", "sync_workspace.yml", "start_session.md"}
+            keep = {"init_protocol.md", "sync_workspace.py", "session_logging.md"}
             for name in os.listdir(workflows_dir):
                 if name in keep:
                     print(f"[end] Kept workflows/{name}")
