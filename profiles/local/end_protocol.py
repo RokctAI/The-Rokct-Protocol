@@ -4,6 +4,19 @@ import json
 import shutil
 
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# When copied to .rokct/, __file__ is .rokct/end_protocol.py
+# Walk up to find the protocol repo root (has workflows/ + core/)
+def find_protocol_root():
+    current = os.path.dirname(PROTOCOL_DIR)  # project root when in .rokct/
+    for _ in range(6):
+        if os.path.isfile(os.path.join(current, "workflows", "init_protocol.md")):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return None
+
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
@@ -46,7 +59,6 @@ def main():
     local_manifest = load_json("profiles/local/manifest.json")
 
     pristine_skills = "f7cfce8ecd1c06e7"
-    pristine_workflows = "af7192f8a988c3a6"
 
     skills_dir = os.path.join(ROKCT_DIR, "skills")
     if os.path.isdir(skills_dir) and dir_hash(skills_dir) == pristine_skills:
@@ -54,13 +66,6 @@ def main():
         print("[end] Deleted pristine skills/ (auto-clean)")
     else:
         print("[end] Kept modified skills/")
-
-    workflows_dir = os.path.join(ROKCT_DIR, "workflows")
-    if os.path.isdir(workflows_dir) and dir_hash(workflows_dir) == pristine_workflows:
-        shutil.rmtree(workflows_dir)
-        print("[end] Deleted pristine workflows/ (auto-clean)")
-    else:
-        print("[end] Kept modified workflows/")
 
     for item in os.listdir(ROKCT_DIR):
         item_path = os.path.join(ROKCT_DIR, item)
@@ -80,6 +85,25 @@ def main():
             print(f"[end] Deleted pristine {item}")
         else:
             print(f"[end] Kept modified {item}")
+
+    protocol_root = find_protocol_root()
+    if protocol_root:
+        workflows_dir = os.path.join(protocol_root, "workflows")
+        if os.path.isdir(workflows_dir):
+            keep = {"init_protocol.md", "sync_workspace.py", "session_logging.md"}
+            for name in os.listdir(workflows_dir):
+                if name in keep:
+                    print(f"[end] Kept workflows/{name}")
+                    continue
+                path = os.path.join(workflows_dir, name)
+                if os.path.isfile(path):
+                    os.remove(path)
+                    print(f"[end] Deleted workflows/{name}")
+                elif os.path.isdir(path):
+                    shutil.rmtree(path)
+                    print(f"[end] Deleted workflows/{name}/")
+                else:
+                    print(f"[end] Kept workflows/{name} (unknown type)")
 
     touch(os.path.join(ROKCT_DIR, ".sync_ready"))
     print("[end] Created .sync_ready marker — CI will pick this up when active session ends")
