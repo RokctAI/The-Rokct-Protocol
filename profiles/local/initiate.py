@@ -55,6 +55,15 @@ def copy_dir(src, dst):
             copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d, manifest)
     print(f"[init] Synced directory {src} -> {dst}")
 
+def detect_repo_owner():
+    try:
+        url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
+        if "RokctAI/" in url:
+            return url.split("RokctAI/")[-1].replace(".git", "")
+    except Exception:
+        pass
+    return None
+
 def main():
     global manifest
     manifest = load_manifest()
@@ -102,15 +111,28 @@ def main():
                 f.write("skills/\n")
             print(f"[init] Updated {gitignore_path}")
 
-    print("[init] Local profile initialization complete.")
+    print("[init] Local profile file operations complete.")
 
     shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
 
+    shutil.copy2(os.path.join(PROTOCOL_DIR, "profiles", "local", "end_protocol.py"), os.path.join(ROKCT_DIR, "end_protocol.py"))
+    print("[init] Copied end_protocol.py -> .rokct/end_protocol.py")
+
     config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
     if not os.path.exists(config_path):
+        repo_owner = detect_repo_owner()
+        if repo_owner:
+            parent_repo = f"RokctAI/{repo_owner}"
+            print(f"[init] Detected RokctAI repo: {parent_repo}")
+        else:
+            parent_repo = input("[init] NOT a RokctAI repo. Enter parent workspace repo (owner/repo) or press Enter to skip: ").strip()
+            if not parent_repo:
+                print("[init] Skipping workspace config")
+                return
+
         workspace_config = {
-            "parent_repo": "RokctAI/occultation",
+            "parent_repo": parent_repo,
             "parent_branch": "main",
             "working_files": [
                 "memory.md",

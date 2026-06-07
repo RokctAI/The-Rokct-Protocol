@@ -2,6 +2,7 @@ import os
 import shutil
 import hashlib
 import json
+import subprocess
 
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
@@ -61,6 +62,15 @@ def copy_dir(src, dst):
             copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d, manifest)
     print(f"[init] Synced directory {src} -> {dst}")
 
+def detect_repo_owner():
+    try:
+        url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
+        if "RokctAI/" in url:
+            return url.split("RokctAI/")[-1].replace(".git", "")
+    except Exception:
+        pass
+    return None
+
 def main():
     global manifest
     manifest = load_core_manifest()
@@ -82,26 +92,38 @@ def main():
             f.write("skills/\n")
         print(f"[init] Created {gitignore_path}")
 
-    print("[init] Web profile initialization complete.")
+    print("[init] Web profile file operations complete.")
 
     shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
 
+    shutil.copy2(os.path.join(PROTOCOL_DIR, "profiles", "web", "end_protocol.py"), os.path.join(ROKCT_DIR, "end_protocol.py"))
+    print("[init] Copied end_protocol.py -> .rokct/end_protocol.py")
+
     config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
     if not os.path.exists(config_path):
-        workspace_config = {
-            "parent_repo": "RokctAI/occultation",
-            "parent_branch": "main",
-            "working_files": [
-                "memory.md",
-                "decision_log.md",
-                "project_map.md",
-                "active_session.txt"
-            ]
-        }
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(workspace_config, f, indent=2)
-        print(f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}")
+        repo_owner = detect_repo_owner()
+        if repo_owner:
+            parent_repo = f"RokctAI/{repo_owner}"
+            print(f"[init] Detected RokctAI repo: {parent_repo}")
+        else:
+            print("[init] Not a RokctAI repo — skipping workspace config (web agent cannot prompt for parent repo)")
+            parent_repo = None
+
+        if parent_repo:
+            workspace_config = {
+                "parent_repo": parent_repo,
+                "parent_branch": "main",
+                "working_files": [
+                    "memory.md",
+                    "decision_log.md",
+                    "project_map.md",
+                    "active_session.txt"
+                ]
+            }
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(workspace_config, f, indent=2)
+            print(f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}")
 
 if __name__ == "__main__":
     main()
