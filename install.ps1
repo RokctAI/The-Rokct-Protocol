@@ -12,11 +12,11 @@ Write-Host "  2) Web (cloud sandbox / AI agent)"
 $choice = Read-Host "Enter 1 or 2"
 
 switch ($choice) {
-    {$_ -eq "2"} { $Profile = "web" }
-    default { $Profile = "local" }
+    {$_ -eq "2"} { $RokctProfile = "web" }
+    default { $RokctProfile = "local" }
 }
 
-$InitFile = "profiles/$Profile/initiate.py"
+$InitFile = "profiles/$RokctProfile/initiate.py"
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host "[install] ERROR: python is required but not installed."
@@ -25,7 +25,7 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 
 New-Item -ItemType Directory -Force -Path ".rokct" | Out-Null
 
-Write-Host "[install] Fetching $Profile initiate.py from protocol..."
+Write-Host "[install] Fetching $RokctProfile initiate.py from protocol..."
 Invoke-WebRequest -Uri "$ProtocolRaw/$InitFile" -OutFile ".rokct/initiate.py"
 
 Write-Host "[install] Running init..."
