@@ -55,17 +55,8 @@ def main():
 
     skills_dir = ROKCT_DIR / "skills"
     if skills_dir.is_dir():
-        # Always delete pristine skills and definitely remove startup_os
-        startup_os_path = skills_dir / "startup_os"
-        if startup_os_path.is_dir():
-            shutil.rmtree(startup_os_path)
-            print("[end] Deleted startup_os skill (cleanup)")
-        
-        if dir_hash(skills_dir) == pristine_skills:
-            shutil.rmtree(skills_dir)
-            print("[end] Deleted pristine skills/ (auto-clean)")
-        else:
-            print("[end] Kept modified skills/")
+        shutil.rmtree(skills_dir)
+        print("[end] Deleted skills/ (unconditional cleanup)")
 
     workflows_dir = ROKCT_DIR / "workflows"
     if workflows_dir.is_dir():
