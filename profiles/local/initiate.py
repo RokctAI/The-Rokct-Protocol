@@ -73,8 +73,8 @@ def copy_dir(rel_src, dst):
         return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
-        # Skip sync_workspace files - handled separately
-        if item in ("sync_workspace.py", "sync_workspace.yml"):
+        # Skip sync files and the init guide - handled separately or not needed in .rokct
+        if item in ("sync_workspace.py", "sync_workspace.yml", "init_protocol.md"):
             continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -135,6 +135,7 @@ def main():
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
     copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
+    ensure_file("workflows/reinit_protocol.md", os.path.join(ROKCT_DIR, "workflows", "reinit_protocol.md"))
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()

@@ -163,6 +163,7 @@ def main():
     copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
 
     copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
+    ensure_file("workflows/reinit_protocol.md", os.path.join(ROKCT_DIR, "workflows", "reinit_protocol.md"))
 
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):

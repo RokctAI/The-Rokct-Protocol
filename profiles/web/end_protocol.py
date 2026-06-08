@@ -69,10 +69,10 @@ def main():
     if os.path.isdir(workflows_dir):
         for f in os.listdir(workflows_dir):
             fpath = os.path.join(workflows_dir, f)
-            if os.path.isfile(fpath) and f != "init_protocol.md":
+            if os.path.isfile(fpath) and f != "reinit_protocol.md":
                 os.remove(fpath)
                 print(f"[end] Deleted workflow: {f}")
-        print("[end] Cleaned workflows/ (kept init_protocol.md)")
+        print("[end] Cleaned workflows/ (kept reinit_protocol.md)")
 
     for item in os.listdir(ROKCT_DIR):
         item_path = os.path.join(ROKCT_DIR, item)
