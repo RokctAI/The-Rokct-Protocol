@@ -133,6 +133,18 @@ def main():
             shutil.rmtree(rok_path)
             print("[init] Removed .rok skill (non-RokctAI repo)")
 
+    # Distribution of Protocol-only (RokctAI) workflows
+    if "RokctAI/" in origin_url:
+        rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
+        if os.path.isdir(rok_workflows_src):
+            dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
+            os.makedirs(dst_workflows, exist_ok=True)
+            for item in os.listdir(rok_workflows_src):
+                src_file = os.path.join(rok_workflows_src, item)
+                if os.path.isfile(src_file):
+                    shutil.copy2(src_file, os.path.join(dst_workflows, item))
+                    print(f"[init] Deployed Protocol workflow: {item}")
+
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))

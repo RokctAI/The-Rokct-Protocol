@@ -166,8 +166,23 @@ def main():
 
     copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
     
-    gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
+    # Distribution of Protocol-only (RokctAI) workflows
+    repo_owner = detect_repo_owner()
+    if repo_owner:
+        rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
+        if os.path.isdir(rok_workflows_src):
+            dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
+            os.makedirs(dst_workflows, exist_ok=True)
+            for item in os.listdir(rok_workflows_src):
+                src_file = os.path.join(rok_workflows_src, item)
+                if os.path.isfile(src_file):
+                    shutil.copy2(src_file, os.path.join(dst_workflows, item))
+                    print(f"[init] Deployed Protocol workflow: {item}")
+    else:
+        # Ensure no Protocol-only workflows exist in non-RokctAI repos
+        pass
 
+    gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
             f.write("skills/\n")

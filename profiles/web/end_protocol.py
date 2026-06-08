@@ -81,6 +81,10 @@ def main():
         if item == ".sync_ready":
             continue
         if os.path.isdir(item_path):
+            if item == "workflows":
+                continue
+            shutil.rmtree(item_path)
+            print(f"[end] Deleted directory: {item}")
             continue
         core_key = f"core/templates/{item}"
         profile_rel = f"profiles/web/{item}"
