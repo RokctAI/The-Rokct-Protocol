@@ -126,16 +126,17 @@ def main():
         # For RokctAI repos, we already copied .rok via copy_dir("core/skills")
     else:
         # For non-RokctAI repos, remove .rok from skills
-        .rok_path = os.path.join(ROKCT_DIR, "skills", ".rok")
-        if os.path.isdir(.rok_path):
-            shutil.rmtree(.rok_path)
+        rok_path = os.path.join(ROKCT_DIR, "skills", ".rok")
+        if os.path.isdir(rok_path):
+            shutil.rmtree(rok_path)
             print("[init] Removed .rok skill (non-RokctAI repo)")
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
     copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
-    ensure_file("workflows/reinit_protocol.md", os.path.join(ROKCT_DIR, "workflows", "reinit_protocol.md"))
+    # Removed ensure_file("workflows/reinit_protocol.md", ...) as it was deleted and replaced by init_protocol.md
+
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
