@@ -2,11 +2,13 @@ import os
 import hashlib
 import json
 import shutil
+import urllib.request
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = Path.cwd()
 ROKCT_DIR = PROJECT_ROOT / ".rokct"
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 
 def dir_hash(d: Path):
     if not d.is_dir():
@@ -23,11 +25,20 @@ def file_hash(path: Path):
         return None
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
+def load_json_remote(name: str) -> dict:
+    url = f"{GITHUB_RAW_BASE}/{name}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            return json.loads(r.read().decode())
+    except Exception:
+        return {}
+
 def load_json(name: str) -> dict:
     p = BASE / name
-    if not p.exists():
-        return {}
-    return json.loads(p.read_text(encoding="utf-8"))
+    if p.exists():
+        return json.loads(p.read_text(encoding="utf-8"))
+    return load_json_remote(name)
 
 def touch(path: Path):
     path.write_text("", encoding="utf-8")
@@ -40,7 +51,7 @@ def main():
     core_manifest = load_json("core/templates/manifest.json")
     local_manifest = load_json("profiles/local/manifest.json")
 
-    pristine_skills = "f7cfce8ecd1c06e7"
+    pristine_skills = "86400b7a6e267879"
 
     skills_dir = ROKCT_DIR / "skills"
     if skills_dir.is_dir() and dir_hash(skills_dir) == pristine_skills:
