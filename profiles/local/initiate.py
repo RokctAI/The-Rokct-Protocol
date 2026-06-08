@@ -111,15 +111,20 @@ def main():
 
     ensure_file(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
+    copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
     try:
         origin_url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
     except Exception:
         origin_url = ""
-    is_rokctai_repo = "RokctAI/" in origin_url
-
-    copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
-    if is_rokctai_repo:
+    if "RokctAI/" in origin_url:
         copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
+        # For RokctAI repos, we already copied startup_os via copy_dir("core/skills")
+    else:
+        # For non-RokctAI repos, remove startup_os from skills
+        startup_os_path = os.path.join(ROKCT_DIR, "skills", "startup_os")
+        if os.path.isdir(startup_os_path):
+            shutil.rmtree(startup_os_path)
+            print("[init] Removed startup_os skill (non-RokctAI repo)")
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
