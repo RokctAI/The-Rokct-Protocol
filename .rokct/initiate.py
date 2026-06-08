@@ -1,3 +1,4 @@
+# compliance-silent
 import os
 import sys
 import shutil
@@ -207,4 +208,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
