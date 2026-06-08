@@ -1,3 +1,4 @@
+# compliance-silent
 import os
 import shutil
 import hashlib
@@ -210,4 +211,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
