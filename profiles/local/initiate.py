@@ -73,8 +73,8 @@ def copy_dir(rel_src, dst):
         return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
-        # Skip sync files and the init guide - handled separately or not needed in .rokct
-        if item in ("sync_workspace.py", "sync_workspace.yml", "init_protocol.md"):
+        # Skip sync files, maintenance, and the init guide - handled separately or not needed in .rokct
+        if item in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml", "init_protocol.md"):
             continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -96,7 +96,7 @@ def fetch_dir_from_github(rel_src, dst):
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
                 rel = name[len(prefix):]
-                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml"):
+                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml"):
                     continue
                 dest = os.path.join(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)

@@ -79,6 +79,29 @@ def fetch_maintenance_workflow(dest_path):
         print(f"[sync] Failed to fetch maintenance workflow: {e}")
         return False
 
+def check_and_update_maintenance(parent_clone):
+    """Ensure parent has the maintenance workflow. Only installs if missing to avoid overriding custom cron."""
+    maintenance_path = os.path.join(parent_clone, ".github", "workflows", "maintenance.yml")
+    
+    if os.path.exists(maintenance_path):
+        # If it exists, we assume developers may have customized the cron or logic.
+        # We do not overwrite it to avoid losing those customizations.
+        return False
+
+    print("[sync] Parent is missing maintenance workflow. Installing...")
+    url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            remote_content = r.read()
+            os.makedirs(os.path.dirname(maintenance_path), exist_ok=True)
+            with open(maintenance_path, "wb") as f:
+                f.write(remote_content)
+        return True
+    except Exception as e:
+        print(f"[sync] Failed to install maintenance workflow: {e}")
+        return False
+
 def sync_to_parent(config):
     parent_repo = config.get("parent_repo")
     working_files = config.get("working_files", [
@@ -109,18 +132,11 @@ def sync_to_parent(config):
     parent_rokct = os.path.join(parent_clone, ".rokct")
     os.makedirs(parent_rokct, exist_ok=True)
     
-    # Guard: Ensure parent has the maintenance workflow
-    maintenance_path = os.path.join(parent_clone, ".github", "workflows", "maintenance.yml")
-    if not os.path.exists(maintenance_path):
-        print("[sync] Parent is missing maintenance workflow. Installing...")
-        if fetch_maintenance_workflow(maintenance_path):
-            print("[sync] Installed maintenance.yml to parent")
-            any_changes = True
-        else:
-            print("[sync] Could not install maintenance workflow")
-
-    any_changes = any_changes if 'any_changes' in locals() else False
+    # Guard: Ensure parent has the LATEST maintenance workflow
+    any_changes = check_and_update_maintenance(parent_clone)
+    
     for rel_file in working_files:
+
         child_path = os.path.join(ROKCT_DIR, rel_file)
         parent_path = os.path.join(parent_rokct, rel_file)
         
