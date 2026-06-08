@@ -114,10 +114,9 @@ def main():
     copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
     copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
 
-ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
+    ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
-    copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
     copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
 
     try:

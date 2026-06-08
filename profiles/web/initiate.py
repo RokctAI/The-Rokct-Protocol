@@ -11,6 +11,7 @@ GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/he
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
+REMOTE_PREFIX = "The-Rokct-Protocol-main"
 
 def fetch_file_from_github(rel_path, dest_path):
     url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path}"
@@ -85,8 +86,9 @@ def copy_versioned(src_rel, dst_abs, manifest):
     print(f"[init] Copied {src_rel} -> {dst_abs}")
 
 def copy_dir(src, dst):
-    rel_src = os.path.relpath(src, PROTOCOL_DIR)
     if not os.path.isdir(src):
+        # Remote mode - derive path from src
+        rel_src = src.replace(PROTOCOL_DIR + os.sep, "") if PROTOCOL_DIR in src else src
         fetch_dir_from_github(rel_src, dst)
         return
     os.makedirs(dst, exist_ok=True)
