@@ -57,7 +57,6 @@ def main():
     profile_manifest = load_json("profiles/web/manifest.json")
 
     pristine_skills = "86400b7a6e267879"
-    pristine_workflows = "bf76e53150cdd95f"
 
     skills_dir = os.path.join(ROKCT_DIR, "skills")
     if os.path.isdir(skills_dir) and dir_hash(skills_dir) == pristine_skills:
@@ -67,11 +66,13 @@ def main():
         print("[end] Kept modified skills/")
 
     workflows_dir = os.path.join(ROKCT_DIR, "workflows")
-    if os.path.isdir(workflows_dir) and dir_hash(workflows_dir) == pristine_workflows:
-        shutil.rmtree(workflows_dir)
-        print("[end] Deleted pristine workflows/ (auto-clean)")
-    else:
-        print("[end] Kept modified workflows/")
+    if os.path.isdir(workflows_dir):
+        for f in os.listdir(workflows_dir):
+            fpath = os.path.join(workflows_dir, f)
+            if os.path.isfile(fpath) and f != "init_protocol.md":
+                os.remove(fpath)
+                print(f"[end] Deleted workflow: {f}")
+        print("[end] Cleaned workflows/ (kept init_protocol.md)")
 
     for item in os.listdir(ROKCT_DIR):
         item_path = os.path.join(ROKCT_DIR, item)
