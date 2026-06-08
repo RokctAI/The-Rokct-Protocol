@@ -111,8 +111,15 @@ def main():
 
     ensure_file(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
+    try:
+        origin_url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        origin_url = ""
+    is_rokctai_repo = "RokctAI/" in origin_url
+
     copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
-    copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
+    if is_rokctai_repo:
+        copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
