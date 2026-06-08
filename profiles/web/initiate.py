@@ -3,6 +3,7 @@ import shutil
 import hashlib
 import json
 import subprocess
+import sys
 import urllib.request
 import io
 import zipfile
