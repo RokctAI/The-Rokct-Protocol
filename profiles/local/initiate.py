@@ -82,7 +82,7 @@ def copy_dir(rel_src, dst):
             ensure_file(rel, d)
 
 def fetch_dir_from_github(rel_src, dst):
-    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
+    prefix = f"The-Rokct-Protocol-main/{rel_src.replace(os.sep, '/')}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
         req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})

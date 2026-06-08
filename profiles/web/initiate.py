@@ -15,7 +15,7 @@ ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 REMOTE_PREFIX = "The-Rokct-Protocol-main"
 
 def fetch_file_from_github(rel_path, dest_path):
-    url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path}"
+    url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path.replace(os.sep, '/')}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -103,7 +103,7 @@ def copy_dir(src, dst):
     print(f"[init] Synced directory {src} -> {dst}")
 
 def fetch_dir_from_github(rel_src, dst):
-    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
+    prefix = f"The-Rokct-Protocol-main/{rel_src.replace(os.sep, '/')}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
         req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
