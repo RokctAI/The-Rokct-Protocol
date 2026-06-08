@@ -73,6 +73,9 @@ def copy_dir(rel_src, dst):
         return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
+        # Skip sync_workspace files - handled separately
+        if item in ("sync_workspace.py", "sync_workspace.yml"):
+            continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
         if os.path.isdir(s):
