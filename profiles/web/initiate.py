@@ -142,7 +142,17 @@ def main():
 
     copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"), manifest)
 
-    copy_dir(os.path.join(PROTOCOL_DIR, "core", "skills"), os.path.join(ROKCT_DIR, "skills"))
+    repo_owner = detect_repo_owner()
+    if repo_owner:
+        copy_dir(os.path.join(PROTOCOL_DIR, "core", "skills"), os.path.join(ROKCT_DIR, "skills"))
+    else:
+        core_skills_dir = os.path.join(PROTOCOL_DIR, "core", "skills")
+        dst = os.path.join(ROKCT_DIR, "skills")
+        os.makedirs(dst, exist_ok=True)
+        for item in os.listdir(core_skills_dir):
+            s = os.path.join(core_skills_dir, item)
+            if os.path.isdir(s) and item != "startup_os":
+                copy_dir(s, os.path.join(dst, item))
 
     copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
 
