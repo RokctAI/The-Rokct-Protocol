@@ -106,7 +106,7 @@ def copy_dir(src, dst):
     print(f"[init] Synced directory {src} -> {dst}")
 
 def fetch_dir_from_github(rel_src, dst):
-    prefix = f"The-Rokct-Protocol-main/{rel_src.replace(os.sep, '/')}/"
+    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
         req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
@@ -117,6 +117,8 @@ def fetch_dir_from_github(rel_src, dst):
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
                 rel = name[len(prefix):]
+                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml"):
+                    continue
                 dest = os.path.join(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
