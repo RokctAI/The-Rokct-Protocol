@@ -60,18 +60,13 @@ def main():
     else:
         print("[end] Kept modified skills/")
 
-    pristine_workflows = "bf76e53150cdd95f"
     workflows_dir = ROKCT_DIR / "workflows"
-    if workflows_dir.is_dir() and dir_hash(workflows_dir) == pristine_workflows:
-        # Keep init_protocol.md even in pristine state
-        keep_file = workflows_dir / "init_protocol.md"
+    if workflows_dir.is_dir():
         for f in workflows_dir.iterdir():
             if f.is_file() and f.name != "init_protocol.md":
                 f.unlink()
-                print(f"[end] Deleted pristine workflow: {f.name}")
-        print("[end] Clean workflows/ (kept init_protocol.md)")
-    else:
-        print("[end] Kept modified workflows/")
+                print(f"[end] Deleted workflow: {f.name}")
+        print("[end] Cleaned workflows/ (kept init_protocol.md)")
 
     for item_path in ROKCT_DIR.iterdir():
         if item_path.name == "active_session.txt":
