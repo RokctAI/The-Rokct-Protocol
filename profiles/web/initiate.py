@@ -170,8 +170,10 @@ def main():
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
     ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
 
-    shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
-    print("[init] Copied initiate.py -> .rokct/initiate.py")
+    dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
+    if os.path.abspath(__file__) != dest_initiate:
+        shutil.copy2(os.path.abspath(__file__), dest_initiate)
+        print("[init] Copied initiate.py -> .rokct/initiate.py")
 
     ensure_file("profiles/web/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
 

@@ -160,7 +160,11 @@ def main():
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
     ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
     ensure_file("profiles/local/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
-    ensure_file(os.path.basename(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
+    # Don't copy initiate.py to itself if already running from .rokct/
+    dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
+    src_initiate = os.path.basename(__file__)
+    if os.path.abspath(__file__) != dest_initiate:
+        ensure_file(src_initiate, dest_initiate)
     print("[init] Copied initiate.py -> .rokct/initiate.py")
 
     cfg = os.path.join(ROKCT_DIR, ".workspace_config.json")
