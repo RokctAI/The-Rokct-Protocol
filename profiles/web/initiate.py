@@ -157,7 +157,7 @@ def main():
         os.makedirs(dst, exist_ok=True)
         for item in os.listdir(core_skills_dir):
             s = os.path.join(core_skills_dir, item)
-            if os.path.isdir(s) and item != "startup_os":
+            if os.path.isdir(s) and item != ".rok":
                 copy_dir(s, os.path.join(dst, item))
 
     copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
@@ -210,3 +210,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

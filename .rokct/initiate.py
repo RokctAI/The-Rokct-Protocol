@@ -123,13 +123,13 @@ def main():
         origin_url = ""
     if "RokctAI/" in origin_url:
         copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
-        # For RokctAI repos, we already copied startup_os via copy_dir("core/skills")
+        # For RokctAI repos, we already copied .rok via copy_dir("core/skills")
     else:
-        # For non-RokctAI repos, remove startup_os from skills
-        startup_os_path = os.path.join(ROKCT_DIR, "skills", "startup_os")
-        if os.path.isdir(startup_os_path):
-            shutil.rmtree(startup_os_path)
-            print("[init] Removed startup_os skill (non-RokctAI repo)")
+        # For non-RokctAI repos, remove .rok from skills
+        .rok_path = os.path.join(ROKCT_DIR, "skills", ".rok")
+        if os.path.isdir(.rok_path):
+            shutil.rmtree(.rok_path)
+            print("[init] Removed .rok skill (non-RokctAI repo)")
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
@@ -206,3 +206,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
