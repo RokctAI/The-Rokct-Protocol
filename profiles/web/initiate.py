@@ -144,6 +144,8 @@ def main():
 
     copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
 
+    copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
+
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
@@ -153,6 +155,7 @@ def main():
     print("[init] Web profile file operations complete.")
 
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
+    ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
 
     shutil.copy2(os.path.abspath(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
