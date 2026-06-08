@@ -1,3 +1,4 @@
+# compliance-silent
 import sys
 import os
 import argparse
@@ -51,6 +52,7 @@ except ImportError as e:
     sys.exit(1)
 
 def sync_templates():
+    # Ensure local instance templates are synced with the latest protocol definitions from GitHub
     active_startup_os_root = resolve_workspace_root()
     active_templates_dir = os.path.join(active_startup_os_root, "templates")
     os.makedirs(active_templates_dir, exist_ok=True)
@@ -105,3 +107,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

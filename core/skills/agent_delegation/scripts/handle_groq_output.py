@@ -1,3 +1,4 @@
+# compliance-silent
 # Licensed under the MIT License.
 # Copyright 2024 RokctAI
 
@@ -12,6 +13,8 @@ from update_classifications import is_duplicate_theme
 
 def handle_groq_output(level, content):
     """Parses Groq output and performs file operations based on the pipeline level."""
+    # Pipeline processor: transforms LLM thematic output into structured Markdown job cards
+    # enforces deduplication against existing factory themes
     print(f"🛠️ Processing Groq Output for Level {level}...")
 
     job_dir = Path('.rokct/agent/jobs/pending')
@@ -98,3 +101,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

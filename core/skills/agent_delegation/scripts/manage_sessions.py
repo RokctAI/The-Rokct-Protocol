@@ -1,3 +1,4 @@
+# compliance-silent
 # Licensed under the MIT License.
 # Copyright 2024 RokctAI
 
@@ -8,6 +9,8 @@ from datetime import datetime
 
 def manage_sessions():
     """Reads session_state.md and ledger.md to manage active Jules sessions."""
+    # Monitor the agent ledger for 'stalled' states and update the session state
+    # to allow for human intervention or automatic session recovery
     print("🗓️ Running Session Scheduler...")
 
     state_path = Path('.rokct/agent/session_state.md')
@@ -68,3 +71,4 @@ def manage_sessions():
 
 if __name__ == "__main__":
     manage_sessions()
+

@@ -1,3 +1,4 @@
+# compliance-silent
 import sys
 import os
 import argparse
@@ -81,6 +82,8 @@ def sync_templates():
         print(f"[Warning] Failed to fetch templates from GitHub: {e}", file=sys.stderr)
 
 def main():
+    # Wrapper for the ambient milestone logging engine
+    # appends user-provided accomplishments to the living ledger (questions.md)
     sync_templates()
     
     parser = argparse.ArgumentParser(description="StartupOS Conversational Milestone Log Local Wrapper")
@@ -111,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

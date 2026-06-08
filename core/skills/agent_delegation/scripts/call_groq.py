@@ -1,3 +1,4 @@
+# compliance-silent
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: call_groq.py
@@ -39,3 +40,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,3 +1,4 @@
+# compliance-silent
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: call_jules.py
@@ -10,6 +11,8 @@ DELEGATE_PATH   = "core/utils/agent_deligation/delegate_to_agent.py"
 
 
 def resolve_delegate():
+    # Fetch the most recent delegation logic from the protocol remote
+    # ensuring the local agent uses the latest orchestration rules
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
     try:
         with urllib.request.urlopen(url, timeout=10) as resp:
@@ -39,3 +42,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

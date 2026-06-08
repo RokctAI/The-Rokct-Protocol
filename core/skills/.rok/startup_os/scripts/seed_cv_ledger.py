@@ -1,3 +1,4 @@
+# compliance-silent
 import sys
 import os
 import re
@@ -88,6 +89,8 @@ def clean_pdf_artifacts(text):
     return '\n'.join(lines)
 
 def extract_milestones_from_cv(pdf_path):
+    # Parse PDF using pypdf to extract structured professional history
+    # uses regex to isolate Awards, Experience, and Education sections
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
     
@@ -289,3 +292,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

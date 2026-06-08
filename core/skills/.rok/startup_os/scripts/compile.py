@@ -1,3 +1,4 @@
+# compliance-silent
 import sys
 import os
 import argparse
@@ -80,6 +81,8 @@ def sync_templates():
         print(f"[Warning] Failed to fetch templates from GitHub: {e}", file=sys.stderr)
 
 def main():
+    # Wrapper for the Strategic Compiler
+    # Processes instance data into finalized profile outputs for the end-user
     sync_templates()
     
     parser = argparse.ArgumentParser(description="StartupOS Strategic Compiler Local Project Wrapper")
@@ -101,3 +104,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

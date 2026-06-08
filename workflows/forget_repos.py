@@ -1,3 +1,4 @@
+# compliance-silent
 import os
 import re
 import subprocess
@@ -15,6 +16,8 @@ def check_repo_status(repo_url):
         - ('renamed', new_url): Repo was renamed to new_url.
         - ('gone', None): Repo is gone (404).
     """
+    # Audit GitHub repo status to handle renames (301/302) or deletions (404)
+    # allowing the protocol to clean up dead sync markers
     url = f"https://github.com/{repo_url}"
     try:
         # Use a custom request to handle redirects manually
@@ -138,3 +141,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
