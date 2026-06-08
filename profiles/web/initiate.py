@@ -94,8 +94,8 @@ def copy_dir(src, dst):
         return
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
-        # Skip sync_workspace.py and sync_workspace.yml - handled separately
-        if item in ("sync_workspace.py", "sync_workspace.yml"):
+        # Skip sync files, maintenance, and the init guide - handled separately
+        if item in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml", "init_protocol.md"):
             continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -117,7 +117,7 @@ def fetch_dir_from_github(rel_src, dst):
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
                 rel = name[len(prefix):]
-                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml"):
+                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml"):
                     continue
                 dest = os.path.join(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -163,9 +163,9 @@ def main():
     copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
 
     copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
-    ensure_file("workflows/reinit_protocol.md", os.path.join(ROKCT_DIR, "workflows", "reinit_protocol.md"))
-
+    
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
+
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
             f.write("skills/\n")
