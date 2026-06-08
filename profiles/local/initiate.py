@@ -114,9 +114,11 @@ def main():
     copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
     copy_dir("profiles/local/skills", os.path.join(ROKCT_DIR, "skills"))
 
-    ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
+ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
+    copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
+    copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
@@ -145,6 +147,7 @@ def main():
             print("[init] Updated .gitignore")
 
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
+    ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
     ensure_file("profiles/local/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
     ensure_file(os.path.basename(__file__), os.path.join(ROKCT_DIR, "initiate.py"))
     print("[init] Copied initiate.py -> .rokct/initiate.py")
