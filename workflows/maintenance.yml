@@ -1,0 +1,23 @@
+name: Protocol Maintenance
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Every Sunday at midnight
+  workflow_dispatch:
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Forget Repos
+        run: |
+          python3 workflows/forget_repos.py
+          git config user.name "rokct-bot"
+          git config user.email "rokct-bot@users.noreply.github.com"
+          git add .rokct/
+          if git diff --cached --quiet; then
+            echo "No memory cleanup needed"
+          else
+            git commit -m "chore(protocol): cleanup deleted/renamed repositories [skip ci]"
+            git push origin HEAD
+          fi

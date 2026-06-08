@@ -172,7 +172,7 @@ def main():
     if os.path.abspath(__file__) != dest_initiate:
         ensure_file(src_initiate, dest_initiate)
     print("[init] Copied initiate.py -> .rokct/initiate.py")
-
+    
     cfg = os.path.join(ROKCT_DIR, ".workspace_config.json")
     if not os.path.exists(cfg):
         try:
@@ -190,6 +190,17 @@ def main():
             print(f"[init] Created .workspace_config.json -> {parent}")
         else:
             print("[init] Standalone mode (no workspace sync)")
+            # Only standalone or parent repos get the maintenance workflow (children don't need it)
+            ensure_file("workflows/maintenance.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "maintenance.yml"))
+            print("[init] Installed maintenance workflow for parent/standalone repo")
+    else:
+        # If config already exists, check if it's a parent (no parent_repo set)
+        with open(cfg, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+            if not config_data.get("parent_repo"):
+                ensure_file("workflows/maintenance.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "maintenance.yml"))
+                print("[init] Verified maintenance workflow for parent/standalone repo")
+
 
     print("[init] Local profile init complete.")
 

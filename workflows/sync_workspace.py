@@ -3,6 +3,7 @@ import sys
 import json
 import hashlib
 import subprocess
+import urllib.request
 from datetime import datetime, timezone
 
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,6 +53,32 @@ def extract_new_sections(child_path, parent_path, repo, session):
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return HEADER.format(repo=repo, session=session, ts=ts) + new_content + "\n" + FOOTER.format(repo=repo, session=session, ts=ts)
 
+def get_child_repo():
+    try:
+        url = subprocess.check_output(["git", "remote", "get-url", "origin"], text=True, stderr=subprocess.DEVNULL).strip()
+        # Extract 'owner/repo' from git url
+        if "github.com" in url:
+            parts = url.split("github.com/")[-1].replace(".git", "").split("/")
+            return f"{parts[0]}/{parts[1]}"
+    except Exception:
+        pass
+    return "unknown-child"
+
+def fetch_maintenance_workflow(dest_path):
+    """Fetch maintenance.yml from the protocol remote repository."""
+    url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as r:
+            content = r.read()
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            with open(dest_path, "wb") as f:
+                f.write(content)
+        return True
+    except Exception as e:
+        print(f"[sync] Failed to fetch maintenance workflow: {e}")
+        return False
+
 def sync_to_parent(config):
     parent_repo = config.get("parent_repo")
     working_files = config.get("working_files", [
@@ -62,7 +89,7 @@ def sync_to_parent(config):
         return
     
     session = config.get("session_id", "unknown")
-    repo_name = parent_repo.split("/")[-1]
+    child_repo = get_child_repo()
     
     parent_clone = os.path.join(ROKCT_DIR, ".parent_clone")
     
@@ -82,12 +109,22 @@ def sync_to_parent(config):
     parent_rokct = os.path.join(parent_clone, ".rokct")
     os.makedirs(parent_rokct, exist_ok=True)
     
-    any_changes = False
+    # Guard: Ensure parent has the maintenance workflow
+    maintenance_path = os.path.join(parent_clone, ".github", "workflows", "maintenance.yml")
+    if not os.path.exists(maintenance_path):
+        print("[sync] Parent is missing maintenance workflow. Installing...")
+        if fetch_maintenance_workflow(maintenance_path):
+            print("[sync] Installed maintenance.yml to parent")
+            any_changes = True
+        else:
+            print("[sync] Could not install maintenance workflow")
+
+    any_changes = any_changes if 'any_changes' in locals() else False
     for rel_file in working_files:
         child_path = os.path.join(ROKCT_DIR, rel_file)
         parent_path = os.path.join(parent_rokct, rel_file)
         
-        section = extract_new_sections(child_path, parent_path, repo_name, session)
+        section = extract_new_sections(child_path, parent_path, child_repo, session)
         if section:
             os.makedirs(os.path.dirname(parent_path), exist_ok=True)
             existing = ""
@@ -107,7 +144,8 @@ def sync_to_parent(config):
     subprocess.run(["git", "-C", parent_clone, "config", "user.email", "rokct-bot@users.noreply.github.com"], capture_output=True)
     subprocess.run(["git", "-C", parent_clone, "config", "user.name", "rokct-bot"], capture_output=True)
     subprocess.run(["git", "-C", parent_clone, "add", ".rokct/"], capture_output=True)
-    subprocess.run(["git", "-C", parent_clone, "commit", "-m", "chore(workspace): sync working files [skip ci]"], capture_output=True)
+    subprocess.run(["git", "-C", parent_clone, "add", ".github/workflows/maintenance.yml"], capture_output=True)
+    subprocess.run(["git", "-C", parent_clone, "commit", "-m", f"chore(workspace): sync working files from {child_repo} and update maintenance [skip ci]"], capture_output=True)
     result = subprocess.run(["git", "-C", parent_clone, "push"], capture_output=True, text=True)
     if result.returncode == 0:
         print("[sync] Pushed to parent repo")
@@ -119,6 +157,12 @@ def main():
     if not config:
         return
     sync_to_parent(config)
+    
+    # Remove the sync marker after attempting sync
+    sync_marker = os.path.join(ROKCT_DIR, ".sync_ready")
+    if os.path.exists(sync_marker):
+        os.remove(sync_marker)
+        print("[sync] Removed .sync_ready marker")
 
 if __name__ == "__main__":
     main()
