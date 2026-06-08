@@ -135,7 +135,8 @@ def main():
 
     copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
     copy_dir("workflows", os.path.join(ROKCT_DIR, "workflows"))
-    ensure_file("workflows/reinit_protocol.md", os.path.join(ROKCT_DIR, "workflows", "reinit_protocol.md"))
+    # Removed ensure_file("workflows/reinit_protocol.md", ...) as it was deleted and replaced by init_protocol.md
+
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()

@@ -76,7 +76,7 @@ def main():
         print("[end] Cleaned workflows/ (kept reinit_protocol.md)")
 
     for item_path in ROKCT_DIR.iterdir():
-        if item_path.name in ("active_session.txt", "end_protocol.py", "initiate.py"):
+        if item_path.name in ("active_session.txt", "initiate.py"):
             print(f"[end] Kept {item_path.name} (protocol tool)")
             continue
         if item_path.name == ".sync_ready":
