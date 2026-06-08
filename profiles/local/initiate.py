@@ -46,16 +46,23 @@ def file_hash(path):
 
 def copy_versioned(src_rel, dst_abs):
     src = os.path.join(PROTOCOL_DIR, src_rel)
-    if not os.path.exists(src):
-        return
-    with open(os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json"), "r", encoding="utf-8") as mf:
-        manifest = json.load(mf)
+    manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r", encoding="utf-8") as mf:
+            manifest = json.load(mf)
+    else:
+        try:
+            req = urllib.request.Request(f"{GITHUB_RAW_BASE}/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req) as r:
+                manifest = json.loads(r.read().decode())
+        except Exception:
+            manifest = {}
     entry = manifest.get("files", {}).get(src_rel.split("core/templates/")[-1] if "core/templates/" in src_rel else src_rel.split("profiles/local/")[-1])
-    if not entry:
-        shutil.copy2(src, dst_abs)
+    if not entry or not os.path.exists(src):
+        fetch_from_github(src_rel, dst_abs)
         return
     current_hash = file_hash(dst_abs)
-    if current_hash == entry.get("hash"):
+    if current_hash and current_hash == entry.get("hash"):
         return
     shutil.copy2(src, dst_abs)
 
@@ -109,9 +116,7 @@ def main():
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
-    wp = os.path.join(PROTOCOL_DIR, "profiles", "local", "workflows")
-    if os.path.isdir(wp):
-        copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
+    copy_dir("profiles/local/workflows", os.path.join(ROKCT_DIR, "workflows"))
 
     try:
         email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
