@@ -59,11 +59,9 @@ def main():
     pristine_skills = "86400b7a6e267879"
 
     skills_dir = os.path.join(ROKCT_DIR, "skills")
-    if os.path.isdir(skills_dir) and dir_hash(skills_dir) == pristine_skills:
+    if os.path.isdir(skills_dir):
         shutil.rmtree(skills_dir)
-        print("[end] Deleted pristine skills/ (auto-clean)")
-    else:
-        print("[end] Kept modified skills/")
+        print("[end] Deleted skills/ (unconditional cleanup)")
 
     workflows_dir = os.path.join(ROKCT_DIR, "workflows")
     if os.path.isdir(workflows_dir):
@@ -76,8 +74,8 @@ def main():
 
     for item in os.listdir(ROKCT_DIR):
         item_path = os.path.join(ROKCT_DIR, item)
-        if item == "active_session.txt":
-            print("[end] Kept active_session.txt (workspace working file)")
+        if item in ("active_session.txt", "initiate.py"):
+            print(f"[end] Kept {item} (protocol tool)")
             continue
         if item == ".sync_ready":
             continue
