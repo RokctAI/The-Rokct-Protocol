@@ -12,7 +12,7 @@ Write-Host "  2) Web (cloud sandbox / AI agent)"
 $choice = Read-Host "Enter 1 or 2"
 
 switch ($choice) {
-    {$_ -eq "2"} { $RokctProfile = "web" }
+    { $_ -eq "2" } { $RokctProfile = "web" }
     default { $RokctProfile = "local" }
 }
 
