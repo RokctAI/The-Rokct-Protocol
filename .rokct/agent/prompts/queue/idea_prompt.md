@@ -14,7 +14,7 @@ Read every file in `.rokct/agent/rejected/`.
 Do **NOT** propose anything with a similar title, goal, or approach to what is already there.
 
 ## Step 3 — Generate 10 Ideas
-Generate exactly 10 improvement ideas. For each idea write a separate JSON file to `.rokct/agent/queue/` using the template at `.rokct/agent/idea_template.json`.
+Generate exactly 10 improvement ideas. For each idea write a separate JSON file to `.rokct/agent/prompts/queue/` using the template at `.rokct/agent/idea_template.json`.
 
 ### Rules for ideas:
 - Each idea must target a specific, actionable improvement — not vague suggestions
@@ -28,4 +28,4 @@ Generate exactly 10 improvement ideas. For each idea write a separate JSON file 
 Do **NOT** implement any ideas.
 Do **NOT** open a PR.
 Do **NOT** modify any existing protocol files.
-Your only output is the JSON files written to `.rokct/agent/queue/`.
+Your only output is the JSON files written to `.rokct/agent/prompts/queue/`.
