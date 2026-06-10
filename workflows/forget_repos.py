@@ -8,6 +8,30 @@ from pathlib import Path
 ROKCT_DIR = Path.cwd() / ".rokct"
 WORKING_FILES = ["memory.md", "decision_log.md", "project_map.md"]
 
+def check_repo_status_git(repo_url):
+    """Fallback check for private repositories using git ls-remote."""
+    url = f"https://github.com/{repo_url}.git"
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GIT_ASKPASS"] = "true"
+    try:
+        res = subprocess.run(
+            ["git", "ls-remote", url],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=10
+        )
+        if res.returncode == 0:
+            return ('exists', None)
+        stderr = res.stderr.lower()
+        if "not found" in stderr:
+            return ('gone', None)
+        # If it fails with permission denied, auth required, etc., it exists but is private
+        return ('exists', None)
+    except Exception:
+        return ('exists', None)
+
 def check_repo_status(repo_url):
     """
     Check the status of a GitHub repository.
@@ -43,10 +67,10 @@ def check_repo_status(repo_url):
                             return ('renamed', f"{parts[0]}/{parts[1]}")
                 return ('exists', None) # Fallback if redirect is weird
             elif status == 404:
-                return ('gone', None)
+                return check_repo_status_git(repo_url)
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            return ('gone', None)
+            return check_repo_status_git(repo_url)
         if e.code in (301, 302):
             new_url = e.headers.get("Location")
             if new_url and "github.com" in new_url:
@@ -55,7 +79,7 @@ def check_repo_status(repo_url):
                     return ('renamed', f"{parts[0]}/{parts[1]}")
     except Exception:
         pass
-    return ('gone', None) # Default to gone if unreachable
+    return ('exists', None) # Default to exists if unreachable (network down, etc.)
 
 def forget_repo_from_content(content, repo_to_forget):
     """Remove all sync blocks associated with a specific repository."""
