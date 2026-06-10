@@ -2,12 +2,12 @@
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: check_health.py
-Fetches check_health.py from GitHub, executes it.
+Fetches reporter.py from GitHub, executes it with the health subcommand.
 """
 import os, sys, subprocess, tempfile, urllib.request
 
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-DELEGATE_PATH   = "core/utils/agent_deligation/check_health.py"
+DELEGATE_PATH   = "core/utils/agent_deligation/reporter.py"
 
 
 def resolve_delegate():
@@ -24,7 +24,7 @@ def resolve_delegate():
 def main():
     code, source = resolve_delegate()
     if not code:
-        print("Error: check_health.py not found on GitHub.", file=sys.stderr)
+        print("Error: reporter.py not found on GitHub.", file=sys.stderr)
         sys.exit(1)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
@@ -32,7 +32,7 @@ def main():
         tmp_path = tmp.name
 
     try:
-        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        result = subprocess.run([sys.executable, tmp_path, "health"] + sys.argv[1:], check=False)
         sys.exit(result.returncode)
     finally:
         os.unlink(tmp_path)

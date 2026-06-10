@@ -2,12 +2,12 @@
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: response_kits.py
-Fetches response_kits.py from GitHub, executes it.
+Fetches job_manager.py from GitHub, executes it with the kits subcommand.
 """
 import os, sys, subprocess, tempfile, urllib.request
 
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-DELEGATE_PATH   = "core/utils/agent_deligation/response_kits.py"
+DELEGATE_PATH   = "core/utils/agent_deligation/job_manager.py"
 
 
 def resolve_delegate():
@@ -24,7 +24,7 @@ def resolve_delegate():
 def main():
     code, source = resolve_delegate()
     if not code:
-        print("Error: response_kits.py not found on GitHub.", file=sys.stderr)
+        print("Error: job_manager.py not found on GitHub.", file=sys.stderr)
         sys.exit(1)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
@@ -32,7 +32,7 @@ def main():
         tmp_path = tmp.name
 
     try:
-        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        result = subprocess.run([sys.executable, tmp_path, "kits"] + sys.argv[1:], check=False)
         sys.exit(result.returncode)
     finally:
         os.unlink(tmp_path)
