@@ -1,74 +1,42 @@
 # compliance-silent
-# Licensed under the MIT License.
-# Copyright 2024 RokctAI
+#!/usr/bin/env python3
+"""
+The-Rokct-Protocol scaffold: manage_sessions.py
+Fetches manage_sessions.py from GitHub, executes it.
+"""
+import os, sys, subprocess, tempfile, urllib.request
 
-import os
-import yaml
-from pathlib import Path
-from datetime import datetime
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+DELEGATE_PATH   = "core/utils/agent_deligation/manage_sessions.py"
 
-def manage_sessions():
-    """Reads session_state.md and ledger.md to manage active Jules sessions."""
-    # Monitor the agent ledger for 'stalled' states and update the session state
-    # to allow for human intervention or automatic session recovery
-    print("🗓️ Running Session Scheduler...")
 
-    state_path = Path('.rokct/agent/session_state.md')
-    ledger_path = Path('.rokct/agent/log/ledger.md')
+def resolve_delegate():
+    url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8"), "github"
+    except Exception:
+        pass
+    return None, None
 
-    if not state_path.exists():
-        print("⚠️ session_state.md not found.")
-        return
 
-    # 1. Parse session_state.md
-    with open(state_path, 'r') as f:
-        content = f.read()
-        parts = content.split('---')
-        if len(parts) < 3:
-            print("⚠️ Invalid session_state.md format.")
-            return
-        state = yaml.safe_load(parts[1])
+def main():
+    code, source = resolve_delegate()
+    if not code:
+        print("Error: manage_sessions.py not found on GitHub.", file=sys.stderr)
+        sys.exit(1)
 
-    # 2. Check for stalled cards in ledger
-    stalled_found = False
-    if ledger_path.exists():
-        with open(ledger_path, 'r') as f:
-            for line in f:
-                if 'stalled' in line:
-                    print(f"⚠️ STALLED JOB DETECTED: {line.strip()}")
-                    stalled_found = True
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
 
-    if stalled_found:
-        print("ℹ️ Stalled jobs require human review. Reset iterations to 0 and status to 'writing' to resume.")
+    try:
+        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        sys.exit(result.returncode)
+    finally:
+        os.unlink(tmp_path)
 
-    # 3. Count currently active sessions from ledger
-    active_count = 0
-    if ledger_path.exists():
-        with open(ledger_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            # Only look at the last few lines for active status (simplified)
-            for line in lines[-20:]:
-                if any(status in line for status in ['writing', 'evaluating', 'rules_generating']):
-                    # This is a bit naive but works for a historical log check
-                    active_count += 1
-
-    print(f"📊 Active sessions detected: {active_count}")
-
-    # 4. Update state
-    if state.get('active_sessions') == active_count:
-        print("ℹ️ No change in active sessions. Skipping update to reduce noise.")
-        return
-
-    state['active_sessions'] = active_count
-    state['last_updated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    # 5. Save updated state
-    new_content = "---\n" + yaml.dump(state) + "---\n"
-    with open(state_path, 'w') as f:
-        f.write(new_content)
-
-    print("✅ session_state.md updated.")
 
 if __name__ == "__main__":
-    manage_sessions()
-
+    main()
