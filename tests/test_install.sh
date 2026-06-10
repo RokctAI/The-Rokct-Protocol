@@ -82,9 +82,8 @@ test_end_protocol() {
     # 1. Install the protocol
     echo "H" | bash install.sh > /dev/null 2>&1
     
-    # Verify a workflow file was created in the root (e.g., session_logging.md)
-    # Note: initiate.py copies workflows to the root
-    if [[ ! -f "session_logging.md" ]]; then
+    # Verify a workflow file was created (e.g., .rokct/workflows/session_logging.md)
+    if [[ ! -f ".rokct/workflows/session_logging.md" ]]; then
         echo -e "${RED}FAIL: Installation didn't create workflow files for cleanup test${NC}"
         exit 1
     fi
@@ -94,13 +93,13 @@ test_end_protocol() {
     
     # 3. Verify cleanup
     # session_logging.md should be deleted
-    if [[ -f "session_logging.md" ]]; then
+    if [[ -f ".rokct/workflows/session_logging.md" ]]; then
         echo -e "${RED}FAIL: end_protocol.py failed to delete session_logging.md${NC}"
         exit 1
     fi
     
     # init_protocol.md should be preserved
-    if [[ ! -f "init_protocol.md" ]]; then
+    if [[ ! -f ".rokct/workflows/init_protocol.md" ]]; then
         echo -e "${RED}FAIL: end_protocol.py deleted init_protocol.md (should be preserved)${NC}"
         exit 1
     fi
