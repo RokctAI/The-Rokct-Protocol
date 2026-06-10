@@ -1,65 +1,42 @@
-# Licensed under the MIT License.
-# Copyright 2024 RokctAI
+# compliance-silent
+#!/usr/bin/env python3
+"""
+The-Rokct-Protocol scaffold: check_health.py
+Fetches check_health.py from GitHub, executes it.
+"""
+import os, sys, subprocess, tempfile, urllib.request
 
-import requests
-import re
-import os
-from pathlib import Path
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+DELEGATE_PATH   = "core/utils/agent_deligation/check_health.py"
 
-def check_link_health():
-    """Scans book jobs for broken links."""
-    print("🔍 Starting Global Job Link Health Check...")
 
-    # Target book draft directories
-    directories = [Path('books/drafts')]
-    broken_count = 0
-    checked_count = 0
+def resolve_delegate():
+    url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8"), "github"
+    except Exception:
+        pass
+    return None, None
 
-    for directory in directories:
-        if not directory.exists(): continue
-        print(f"📂 Auditing {directory.name}...")
 
-        # Scan all markdown files in book subdirectories
-        for md_file in directory.rglob('*.md'):
-            if md_file.name in ['template.md', 'metadata.md']:
-                continue
+def main():
+    code, source = resolve_delegate()
+    if not code:
+        print("Error: check_health.py not found on GitHub.", file=sys.stderr)
+        sys.exit(1)
 
-            with open(md_file, 'r', encoding='utf-8') as f:
-                content = f.read()
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
 
-            # Pattern to find URLs in markdown links [text](url) or standing alone
-            links = re.findall(r'\(https?://[^\s\)]+\)|https?://[^\s\n\)]+', content)
+    try:
+        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        sys.exit(result.returncode)
+    finally:
+        os.unlink(tmp_path)
 
-            file_broken = False
-            for link in links:
-                url = link.strip('() ')
-
-                checked_count += 1
-                try:
-                    # Use a short timeout and allow redirects
-                    response = requests.head(url, timeout=15, allow_redirects=True)
-                    # 403 Forbidden is often a bot block, so we only flag >= 404
-                    if response.status_code >= 404:
-                        print(f"❌ Broken Link in {md_file.name}: {url} (Status: {response.status_code})")
-                        file_broken = True
-                        broken_count += 1
-                except:
-                    # Connection errors are often temporary or firewall blocks,
-                    # but we flag for steward review.
-                    print(f"⚠️ Connection Error in {md_file.name}: {url}")
-                    file_broken = True
-                    broken_count += 1
-
-            if file_broken:
-                # Mark status as BROKEN in the file if not already marked
-                if "Status: BROKEN" not in content and "Verification Status: BROKEN" not in content:
-                    updated = content.replace("Status: ACTIVE", "Status: BROKEN")
-                    updated = updated.replace("Verification Status: VERIFIED", "Verification Status: BROKEN")
-                    updated = updated.replace("Verification Status: IN_PROGRESS", "Verification Status: BROKEN")
-                    with open(md_file, 'w', encoding='utf-8') as f:
-                        f.write(updated)
-
-    print(f"🏁 Health check complete. Checked {checked_count} links. Found {broken_count} issues.")
 
 if __name__ == "__main__":
-    check_link_health()
+    main()

@@ -1,56 +1,42 @@
-# Licensed under the MIT License.
-# Copyright 2024 RokctAI
+# compliance-silent
+#!/usr/bin/env python3
+"""
+The-Rokct-Protocol scaffold: update_classifications.py
+Fetches update_classifications.py from GitHub, executes it.
+"""
+import os, sys, subprocess, tempfile, urllib.request
 
-import os
-import re
-from pathlib import Path
-import difflib
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+DELEGATE_PATH   = "core/utils/agent_deligation/update_classifications.py"
 
-def is_duplicate_theme(new_theme, existing_themes_path, threshold=0.8):
-    if not os.path.exists(existing_themes_path):
-        return False, ""
 
-    with open(existing_themes_path, 'r', encoding='utf-8') as f:
-        existing_themes = [line.strip() for line in f.readlines() if line.strip()]
+def resolve_delegate():
+    url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8"), "github"
+    except Exception:
+        pass
+    return None, None
 
-    for existing in existing_themes:
-        similarity = difflib.SequenceMatcher(None, new_theme.lower(), existing.lower()).ratio()
-        if similarity >= threshold:
-            return True, existing
 
-    return False, ""
+def main():
+    code, source = resolve_delegate()
+    if not code:
+        print("Error: update_classifications.py not found on GitHub.", file=sys.stderr)
+        sys.exit(1)
 
-# Ported from opportunities: Adapt for 'factory' book jobs context
-def update_classifications():
-    """Generates classification reference files for factory books."""
-    print("🏷️ Updating Factory Classifications...")
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
 
-    config_dir = Path('.rokct/config/classifications')
-    config_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        result = subprocess.run([sys.executable, tmp_path] + sys.argv[1:], check=False)
+        sys.exit(result.returncode)
+    finally:
+        os.unlink(tmp_path)
 
-    job_dir = Path('.rokct/agent/jobs/pending')
-    themes = set()
-    genres = set()
-
-    if job_dir.exists():
-        for f in job_dir.glob('*.md'):
-            if f.name == 'template.md': continue
-            with open(f, 'r') as content:
-                text = content.read()
-                theme_match = re.search(r'theme:\s*(.*)', text)
-                if theme_match: themes.add(theme_match.group(1).strip())
-
-                genre_match = re.search(r'type:\s*(.*)', text)
-                if genre_match: genres.add(genre_match.group(1).strip())
-
-    save_list(config_dir / 'factory_themes.txt', themes)
-    save_list(config_dir / 'factory_genres.txt', genres)
-
-def save_list(path, items):
-    clean_items = sorted(list(set([i.strip() for i in items if i.strip()])))
-    with open(path, 'w') as f:
-        f.write('\n'.join(clean_items))
-    print(f"✅ Saved {path.name} ({len(clean_items)} entries)")
 
 if __name__ == "__main__":
-    update_classifications()
+    main()
