@@ -23,37 +23,12 @@ def check_self_update():
         if not os.path.exists(src_local):
             src_local = os.path.join(PROTOCOL_DIR, "profiles", "web", "initiate.py")
             
-        if not os.path.exists(src_local):
-            sibling_proto = os.path.join(PROJECT_ROOT, "..", "The-Rokct-Protocol")
-            if os.path.isdir(sibling_proto):
-                src_local = os.path.join(sibling_proto, "profiles", "web", "initiate.py")
-                if not os.path.exists(src_local):
-                    src_local = os.path.join(sibling_proto, "profiles", "local", "initiate.py")
-            
-        new_content = False
-        if os.path.exists(src_local):
+        if src_local and os.path.exists(src_local):
             if file_hash(src_local) != file_hash(dest_initiate):
                 print("[init] Local protocol has a newer initiate.py. Updating...")
                 shutil.copy2(src_local, dest_initiate)
-                new_content = True
-        else:
-            url = f"{GITHUB_RAW_BASE}/profiles/web/initiate.py"
-            try:
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req) as r:
-                    remote_data = r.read()
-                remote_hash = hashlib.sha256(remote_data).hexdigest()[:16]
-                if remote_hash != file_hash(dest_initiate):
-                    print("[init] GitHub has a newer initiate.py. Self-updating...")
-                    with open(dest_initiate, "wb") as f:
-                        f.write(remote_data)
-                    new_content = True
-            except Exception as e:
-                print(f"[init] Self-update check failed: {e}", file=sys.stderr)
-                
-        if new_content:
-            print("[init] Reloading initiate.py...")
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+                print("[init] Reloading initiate.py...")
+                os.execv(sys.executable, [sys.executable] + sys.argv)
 
 def fetch_from_github(rel_path, dest_path):
     url = f"{GITHUB_RAW_BASE}/{rel_path}"
