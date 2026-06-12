@@ -74,7 +74,7 @@ def main():
         if item_path.name == ".sync_ready":
             continue
         if item_path.is_dir():
-            if item_path.name in ("workflows", "agent"):
+            if item_path.name in ("workflows", "agent", "evidence"):
                 continue
             shutil.rmtree(item_path)
             print(f"[end] Deleted directory: {item_path.name}")
