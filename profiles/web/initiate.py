@@ -24,6 +24,13 @@ def check_self_update():
         if not os.path.exists(src_local):
             src_local = os.path.join(PROTOCOL_DIR, "profiles", "web", "initiate.py")
             
+        if not os.path.exists(src_local):
+            sibling_proto = os.path.join(PROJECT_ROOT, "..", "The-Rokct-Protocol")
+            if os.path.isdir(sibling_proto):
+                src_local = os.path.join(sibling_proto, "profiles", "web", "initiate.py")
+                if not os.path.exists(src_local):
+                    src_local = os.path.join(sibling_proto, "profiles", "local", "initiate.py")
+            
         new_content = False
         if os.path.exists(src_local):
             if file_hash(src_local) != file_hash(dest_initiate):
