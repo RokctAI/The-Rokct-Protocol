@@ -15,6 +15,40 @@ PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 REMOTE_PREFIX = "The-Rokct-Protocol-main"
 
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+
+def check_self_update():
+    dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
+    if os.path.exists(dest_initiate) and os.path.abspath(__file__) == os.path.abspath(dest_initiate):
+        src_local = os.path.join(PROTOCOL_DIR, "profiles", "local", "initiate.py")
+        if not os.path.exists(src_local):
+            src_local = os.path.join(PROTOCOL_DIR, "profiles", "web", "initiate.py")
+            
+        new_content = False
+        if os.path.exists(src_local):
+            if file_hash(src_local) != file_hash(dest_initiate):
+                print("[init] Local protocol has a newer initiate.py. Updating...")
+                shutil.copy2(src_local, dest_initiate)
+                new_content = True
+        else:
+            url = f"{GITHUB_RAW_BASE}/profiles/web/initiate.py"
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req) as r:
+                    remote_data = r.read()
+                remote_hash = hashlib.sha256(remote_data).hexdigest()[:16]
+                if remote_hash != file_hash(dest_initiate):
+                    print("[init] GitHub has a newer initiate.py. Self-updating...")
+                    with open(dest_initiate, "wb") as f:
+                        f.write(remote_data)
+                    new_content = True
+            except Exception as e:
+                print(f"[init] Self-update check failed: {e}", file=sys.stderr)
+                
+        if new_content:
+            print("[init] Reloading initiate.py...")
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
 def fetch_file_from_github(rel_path, dest_path):
     url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path.replace(os.sep, '/')}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -140,6 +174,7 @@ def detect_repo_owner():
     return None
 
 def main():
+    check_self_update()
     global manifest
     manifest = load_core_manifest()
     os.makedirs(ROKCT_DIR, exist_ok=True)
