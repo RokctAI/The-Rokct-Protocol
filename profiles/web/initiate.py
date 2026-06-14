@@ -117,7 +117,7 @@ def copy_dir(src, dst):
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
         # Skip sync files, maintenance, and the init guide - handled separately
-        if item in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml", "init_protocol.md"):
+        if item in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml", "init_protocol.md", ".rok"):
             continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -139,7 +139,7 @@ def fetch_dir_from_github(rel_src, dst):
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
                 rel = name[len(prefix):]
-                if rel_src == "workflows" and rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml"):
+                if rel_src == "workflows" and (rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml") or rel.startswith(".rok/")):
                     continue
                 dest = os.path.join(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -191,14 +191,24 @@ def main():
     repo_owner = detect_repo_owner()
     if repo_owner:
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
-        if os.path.isdir(rok_workflows_src):
+        temp_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
+        if not os.path.isdir(rok_workflows_src):
+            fetch_dir_from_github("workflows/.rok", temp_rok_workflows)
+            src_dir = temp_rok_workflows
+        else:
+            src_dir = rok_workflows_src
+
+        if os.path.isdir(src_dir):
             dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
             os.makedirs(dst_workflows, exist_ok=True)
-            for item in os.listdir(rok_workflows_src):
-                src_file = os.path.join(rok_workflows_src, item)
+            for item in os.listdir(src_dir):
+                src_file = os.path.join(src_dir, item)
                 if os.path.isfile(src_file):
                     shutil.copy2(src_file, os.path.join(dst_workflows, item))
                     print(f"[init] Deployed Protocol workflow: {item}")
+            if src_dir == temp_rok_workflows and os.path.isdir(temp_rok_workflows):
+                shutil.rmtree(temp_rok_workflows)
+                print("[init] Cleaned up temporary workflows/.rok directory")
     else:
         # Ensure no Protocol-only workflows exist in non-RokctAI repos
         pass
