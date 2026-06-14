@@ -12,7 +12,7 @@ import zipfile
 
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
-PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else (os.path.join(os.getcwd(), "..", "The-Rokct-Protocol") if os.path.isdir(os.path.join(os.getcwd(), "..", "The-Rokct-Protocol")) else os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
@@ -202,7 +202,7 @@ def main():
     ensure_file("profiles/local/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
     # Don't copy initiate.py to itself if already running from .rokct/
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
-    src_initiate = os.path.basename(__file__)
+    src_initiate = "profiles/local/initiate.py"
     if os.path.abspath(__file__) != dest_initiate:
         ensure_file(src_initiate, dest_initiate)
     print("[init] Copied initiate.py -> .rokct/initiate.py")
