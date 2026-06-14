@@ -13,15 +13,17 @@ $userType = Read-Host "Enter H or A"
 
 if ($userType -eq "H") {
     $RokctProfile = "local"
-} elseif ($userType -eq "A") {
+}
+elseif ($userType -eq "A") {
     Write-Host "Select Agent profile:"
     Write-Host "  1) Web (cloud sandbox / AI agent)"
     $choice = Read-Host "Enter 1"
     switch ($choice) {
-        {"1"} { $RokctProfile = "web" }
+        { "1" } { $RokctProfile = "web" }
         default { $RokctProfile = "web" }
     }
-} else {
+}
+else {
     Write-Host "[install] Invalid input. Defaulting to Local."
     $RokctProfile = "local"
 }
