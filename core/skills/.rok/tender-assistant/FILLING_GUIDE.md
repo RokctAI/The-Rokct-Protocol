@@ -51,7 +51,7 @@ Filling a bid is an exercise in "Administrative Rigour." The technical solution 
 - **The Alternative:** If you/directors rent or are in a rural area, provide a **Lease Agreement** or a **Tribal Authority Letter**.
 
 ### Certified Documents
-- ** Freshness:** Certifications must be recent (usually within 3-6 months).
+- **Freshness:** Certifications must be recent (usually within 3-6 months).
 - **The Stamp:** The Commissioner of Oaths stamp must be clear. If the date is illegible, the document is discarded.
 
 ---
