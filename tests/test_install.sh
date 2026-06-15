@@ -31,8 +31,8 @@ setup_temp_env() {
 patch_installer() {
     # Replace the curl line with a cp line
     # Original: curl -sSL "$PROTOCOL_RAW/$INIT_FILE" -o .rokct/initiate.py
-    # Patched: cp "profiles/$INIT_FILE" .rokct/initiate.py
-    sed -i 's|curl -sSL "$PROTOCOL_RAW/\$INIT_FILE" -o .rokct/initiate.py|cp "profiles/\$INIT_FILE" .rokct/initiate.py|' "$TEST_ROOT/install.sh"
+    # Patched: cp "$INIT_FILE" .rokct/initiate.py
+    sed -i 's|curl -sSL "$PROTOCOL_RAW/\$INIT_FILE" -o .rokct/initiate.py|cp "\$INIT_FILE" .rokct/initiate.py|' "$TEST_ROOT/install.sh"
 }
 
 test_human() {
