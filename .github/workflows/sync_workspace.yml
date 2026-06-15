@@ -19,6 +19,7 @@ jobs:
       - name: "Guard: skip if session active or no config"
         id: guard
         run: |
+          # shellcheck disable=SC2129
           if [ -f .rokct/active_session.txt ]; then
             echo "Active session in progress, skipping sync."
             echo "skip=true" >> "$GITHUB_OUTPUT"
