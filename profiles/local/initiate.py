@@ -12,15 +12,9 @@ import zipfile
 
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
+PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
-
-# Try to resolve PROTOCOL_DIR locally if it exists as a neighbor folder
-local_proto = os.path.abspath(os.path.join(PROJECT_ROOT, "..", "The-Rokct-Protocol"))
-if os.path.isdir(local_proto):
-    PROTOCOL_DIR = local_proto
-else:
-    PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def check_self_update():
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
