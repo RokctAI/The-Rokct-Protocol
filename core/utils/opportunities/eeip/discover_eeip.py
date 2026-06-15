@@ -274,8 +274,8 @@ def search_site_for_links(domain, company):
     print(f"\n[Site Search] Attempting deep-link discovery for {company} on domain: {domain}...")
     
     # Formulate site search query
-    keywords = '"local-programme" OR "ed-programme" OR "Enterprise Development" OR "Equity Equivalent" OR "EEIP" OR "B-BBEE" OR "Abadali" OR "Khulisa"'
-    query = f"site:{domain} {keywords}"
+    search_terms = '"local-programme" OR "ed-programme" OR "Enterprise Development" OR "Equity Equivalent" OR "EEIP" OR "B-BBEE" OR "Abadali" OR "Khulisa"'
+    query = f"site:{domain} {search_terms}"
     
     links = search_duckduckgo(query)
     

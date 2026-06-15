@@ -84,10 +84,10 @@ def auto_provision_profile(instance_type, instance_name, primary_base=None, key_
     # Dynamic workspace lookup for active instances
     active_startup_os_root = resolve_workspace_root()
     
-    instance_dir = os.path.join(active_startup_os_root, "instances", instance_type, instance_name)
+    instance_dir = os.path.abspath(os.path.join(active_startup_os_root, "instances", instance_type, instance_name))
     os.makedirs(instance_dir, exist_ok=True)
     
-    questions_path = os.path.join(instance_dir, "questions.md")
+    questions_path = os.path.abspath(os.path.join(instance_dir, "questions.md"))
     
     # If the file already exists, don't overwrite it
     if os.path.exists(questions_path):

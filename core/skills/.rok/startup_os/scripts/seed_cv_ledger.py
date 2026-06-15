@@ -37,7 +37,7 @@ def fetch_core_from_github():
         try:
             print(f"[StartupOS] Fetching core engine from GitHub: {f_name}")
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:
                 with open(dest_file, 'wb') as f:
                     f.write(response.read())
         except Exception as e:

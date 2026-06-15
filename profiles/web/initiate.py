@@ -23,7 +23,7 @@ def check_self_update():
         url = f"{GITHUB_RAW_BASE}/profiles/web/initiate.py"
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-            with urllib.request.urlopen(req) as r:
+            with urllib.request.urlopen(req, timeout=10) as r:
                 remote_data = r.read()
             remote_hash = hashlib.sha256(remote_data).hexdigest()[:16]
             if remote_hash != file_hash(dest_initiate):
@@ -40,7 +40,7 @@ def fetch_file_from_github(rel_path, dest_path):
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=10) as r:
             with open(dest_path, "wb") as f:
                 f.write(r.read())
         print(f"[init] Fetched {rel_path}")
@@ -61,7 +61,7 @@ def load_core_manifest():
             return json.load(f)
     try:
         req = urllib.request.Request(f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read().decode())
     except Exception:
         return {}
@@ -132,7 +132,7 @@ def fetch_dir_from_github(rel_src, dst):
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
         req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=10) as r:
             z = zipfile.ZipFile(io.BytesIO(r.read()))
         os.makedirs(dst, exist_ok=True)
         count = 0
