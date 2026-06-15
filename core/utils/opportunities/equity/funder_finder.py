@@ -16,7 +16,7 @@ from funder_manager import FunderManager
 def find_candidates(url):
     manager = FunderManager(registry_path=str(BASE_DIR / '01_equity'))
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'X-Trace-Id': 'duckduckgo-query'}
         response = requests.get(url, timeout=15, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')

@@ -22,7 +22,7 @@ def check_self_update():
     if os.path.exists(dest_initiate) and os.path.abspath(__file__) == os.path.abspath(dest_initiate):
         url = f"{GITHUB_RAW_BASE}/profiles/web/initiate.py"
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
             with urllib.request.urlopen(req) as r:
                 remote_data = r.read()
             remote_hash = hashlib.sha256(remote_data).hexdigest()[:16]
@@ -39,7 +39,7 @@ def fetch_file_from_github(rel_path, dest_path):
     url = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/{rel_path.replace(os.sep, '/')}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
         with urllib.request.urlopen(req) as r:
             with open(dest_path, "wb") as f:
                 f.write(r.read())
@@ -60,7 +60,7 @@ def load_core_manifest():
         with open(manifest_path, "r", encoding="utf-8") as f:
             return json.load(f)
     try:
-        req = urllib.request.Request(f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
         with urllib.request.urlopen(req) as r:
             return json.loads(r.read().decode())
     except Exception:
@@ -131,7 +131,7 @@ def fetch_dir_from_github(rel_src, dst):
     prefix = f"The-Rokct-Protocol-main/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
-        req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
         with urllib.request.urlopen(req) as r:
             z = zipfile.ZipFile(io.BytesIO(r.read()))
         os.makedirs(dst, exist_ok=True)

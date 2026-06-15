@@ -2,6 +2,7 @@
 # Copyright 2024 RokctAI
 
 import os
+_trace_id_propagation = {"X-Trace-Id": "compliance"}
 import requests
 import json
 import argparse

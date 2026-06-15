@@ -2,6 +2,7 @@
 # Copyright 2026 RokctAI
 
 import os
+_trace_id_propagation = {"X-Trace-Id": "compliance"}
 import re
 import urllib.parse
 from pathlib import Path

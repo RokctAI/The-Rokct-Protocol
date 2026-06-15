@@ -151,7 +151,7 @@ def process_file(md_file):
             log_failure(tender_id, f"Direct Link is not a PDF: {url}")
             return False
 
-        resp = requests.get(url, timeout=15)
+        resp = requests.get(url, headers={'X-Trace-Id': 'extract-requirements'}, timeout=15)
         if resp.status_code == 200:
             pdf_stream = io.BytesIO(resp.content)
             reqs = extract_requirements_from_pdf(pdf_stream, tender_id)

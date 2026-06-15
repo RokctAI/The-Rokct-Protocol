@@ -135,7 +135,7 @@ def write_source_card(name, title, url, slug=None):
 def search_duckduckgo(query):
     """Searches DuckDuckGo HTML interface for organic VC listing articles."""
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'X-Trace-Id': 'ddg-search'
     }
     url_query = urllib.parse.urlencode({'q': query})
     url = f"https://html.duckduckgo.com/html/?{url_query}"

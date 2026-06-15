@@ -32,7 +32,7 @@ def file_hash(path):
 def load_json_remote(name):
     url = f"{GITHUB_RAW_BASE}/{name}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
         with urllib.request.urlopen(req) as r:
             return json.loads(r.read().decode())
     except Exception:

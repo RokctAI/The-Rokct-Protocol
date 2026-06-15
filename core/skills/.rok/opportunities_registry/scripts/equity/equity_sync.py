@@ -20,7 +20,7 @@ def main():
         print("[wrapper] Fetching opportunities scripts from GitHub...")
         os.makedirs(cache_dir, exist_ok=True)
         try:
-            req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0"})
+            req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 z = zipfile.ZipFile(io.BytesIO(resp.read()))
             prefix = "The-Rokct-Protocol-main/core/utils/opportunities/"

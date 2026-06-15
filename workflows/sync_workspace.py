@@ -89,7 +89,7 @@ def fetch_maintenance_workflow(dest_path):
     """Fetch maintenance.yml from the protocol remote repository."""
     url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
         with urllib.request.urlopen(req) as r:
             content = r.read()
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -112,7 +112,7 @@ def check_and_update_maintenance(parent_clone):
     print("[sync] Parent is missing maintenance workflow. Installing...")
     url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
         with urllib.request.urlopen(req) as r:
             remote_content = r.read()
             os.makedirs(os.path.dirname(maintenance_path), exist_ok=True)

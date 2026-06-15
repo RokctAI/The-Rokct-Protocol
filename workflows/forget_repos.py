@@ -45,7 +45,7 @@ def check_repo_status(repo_url):
     url = f"https://github.com/{repo_url}"
     try:
         # Use a custom request to handle redirects manually
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "forget-repos-check"})
         # We use a handler that doesn't automatically follow redirects to catch the 301
         class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
             def redirect_request(self, req, fp, code, msg, hdrs, newurl):

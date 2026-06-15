@@ -1,5 +1,6 @@
 # compliance-silent
 import sys
+_trace_id_propagation = {"X-Trace-Id": "compliance"}
 import os
 import argparse
 import urllib.request

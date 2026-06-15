@@ -54,7 +54,7 @@ def extract_text_from_pdf(url):
     if not pdfplumber:
         return ""
     try:
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, headers={'X-Trace-Id': 'musina-list'}, timeout=30)
         if resp.status_code != 200:
             return ""
         with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
@@ -95,7 +95,7 @@ def fetch_deep_details(url, existing_pub):
 
     try:
         time.sleep(0.5)
-        resp = requests.get(url, timeout=20)
+        resp = requests.get(url, headers={'X-Trace-Id': 'musina-detail'}, timeout=20)
         if resp.status_code != 200:
             val, est = calculate_fallback_date(existing_pub)
             return val, est, None

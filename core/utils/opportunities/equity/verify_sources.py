@@ -18,7 +18,7 @@ def verify_url(url):
     try:
         # Use a browser-like User-Agent to avoid some basic bot blocking
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'X-Trace-Id': 'duckduckgo-query'
         }
         response = requests.head(url, timeout=10, headers=headers, allow_redirects=True)
         # If HEAD fails, try GET as some servers block HEAD

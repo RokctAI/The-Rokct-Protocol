@@ -87,7 +87,7 @@ def process_tender(tender_id):
 
         # Fetch PDF
         try:
-            resp = requests.get(direct_link, timeout=60)
+            resp = requests.get(direct_link, headers={'X-Trace-Id': 'pdf-to-md'}, timeout=60)
             resp.raise_for_status()
             if 'application/pdf' not in resp.headers.get('Content-Type', '').lower() and not direct_link.lower().endswith('.pdf'):
                 # Try to check if it's actually a PDF even if header is missing

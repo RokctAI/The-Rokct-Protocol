@@ -80,6 +80,9 @@ def run():
     import funder_finder
     original_get = requests.get
     def patched_get(url, **kwargs):
+        headers = kwargs.get("headers", {})
+        headers["X-Trace-Id"] = "equity-sync-get"
+        kwargs["headers"] = headers
         if url.startswith('file://'):
             return session.get(url, **kwargs)
         return original_get(url, **kwargs)
