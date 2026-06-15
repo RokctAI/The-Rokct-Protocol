@@ -29,8 +29,8 @@ def file_hash(path: Path):
 def load_json_remote(name: str) -> dict:
     url = f"{GITHUB_RAW_BASE}/{name}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as r:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
+        with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read().decode())
     except Exception:
         return {}
@@ -74,7 +74,7 @@ def main():
         if item_path.name == ".sync_ready":
             continue
         if item_path.is_dir():
-            if item_path.name in ("workflows", "agent"):
+            if item_path.name in ("workflows", "agent", "evidence", "images"):
                 continue
             shutil.rmtree(item_path)
             print(f"[end] Deleted directory: {item_path.name}")
