@@ -50,6 +50,49 @@ def get_last_verified_date(card_path):
                 return None
     return None
 
+def clean_markdown(text):
+    """Cleans extracted PDF text to resolve common markdownlint errors."""
+    if not text:
+        return text
+    
+    lines = text.splitlines()
+    cleaned_lines = []
+    
+    list_counter = 0
+    in_list = False
+    
+    for line in lines:
+        # Fix MD010: Hard tabs
+        line = line.replace('\\t', '    ')
+        
+        # MD029: Ordered list item prefix
+        # Detect if line starts with a digit followed by . or )
+        list_match = re.match(r'^(\s*)(\d+)[.)]\s+(.*)', line)
+        if list_match:
+            in_list = True
+            indent, _, content = list_match.groups()
+            list_counter += 1
+            line = f"{indent}{list_counter}. {content}"
+        else:
+            # If it's not a list item, but has indent, it might be part of the list
+            if not (line.strip() == "" or re.match(r'^\s{2,}', line)):
+                in_list = False
+                list_counter = 0
+        
+        # Fix MD035: Horizontal rule style
+        stripped = line.strip()
+        if stripped and all(c in ' _-*' for c in stripped) and len(stripped) >= 3:
+            line = '---'
+        
+        cleaned_lines.append(line)
+    
+    result = '\\n'.join(cleaned_lines)
+    
+    # Fix MD037: Spaces inside emphasis markers
+    result = re.sub(r'_\s+(.*?)\s+_', r'_\1_', result)
+    
+    return result
+
 def process_tender(tender_id):
     try:
         # Normalize tender_id in case it's a full path
@@ -111,6 +154,8 @@ def process_tender(tender_id):
             if not md_content.strip():
                 log_failure(tender_id, "PDF has no extractable text (likely scanned image)")
                 return
+            
+            md_content = clean_markdown(md_content)
 
             with open(content_file, 'w', encoding='utf-8') as f:
                 f.write(md_content)
