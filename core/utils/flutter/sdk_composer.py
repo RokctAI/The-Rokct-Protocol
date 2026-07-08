@@ -70,15 +70,30 @@ def resolve_and_cache_sdks(sdks):
         repo_name = extract_repo_name(git_url)
         temp_repo_dir = os.path.join(cache_base, f"{repo_name}_sdk")
         
-        ref = group_sdks[0].get("ref", "main")
-        print(f"[*] Fetching repository {git_url} into {temp_repo_dir}...")
-        try:
-            if os.path.exists(temp_repo_dir):
-                shutil.rmtree(temp_repo_dir)
-            subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, temp_repo_dir], check=True)
-        except Exception as e:
-            print(f"[!] Failed to clone {git_url}: {e}")
-            sys.exit(1)
+        # Check if repo exists locally in the parent folder of PROJECT_ROOT
+        workspace_parent = os.path.dirname(PROJECT_ROOT)
+        local_repo_path = os.path.join(workspace_parent, repo_name)
+        
+        is_local_available = os.path.exists(local_repo_path)
+        
+        if is_local_available:
+            print(f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy.")
+            repo_source_dir = local_repo_path
+        else:
+            ref = group_sdks[0].get("ref", "main")
+            print(f"[*] Fetching repository {git_url} into {temp_repo_dir}...")
+            try:
+                def remove_readonly(func, path, excinfo):
+                    import stat
+                    os.chmod(path, stat.S_IWRITE)
+                    func(path)
+                if os.path.exists(temp_repo_dir):
+                    shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
+                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, temp_repo_dir], check=True)
+                repo_source_dir = temp_repo_dir
+            except Exception as e:
+                print(f"[!] Failed to clone {git_url}: {e}")
+                sys.exit(1)
             
         # Extract each SDK
         for sdk in group_sdks:
@@ -88,7 +103,7 @@ def resolve_and_cache_sdks(sdks):
             
             local_path = sdk.get("path", "")
             subpath = get_subpath_in_repo(local_path, repo_name)
-            src_dir = os.path.join(temp_repo_dir, *subpath.split("/"))
+            src_dir = os.path.join(repo_source_dir, *subpath.split("/"))
             
             if os.path.exists(src_dir):
                 print(f"[+] Extracting {sdk_name} from {subpath} to {target_dir}...")
@@ -96,11 +111,15 @@ def resolve_and_cache_sdks(sdks):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
             else:
-                print(f"[!] Error: Path {subpath} not found in cloned repository {git_url}")
+                print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
                 
-        # Clean up temp repo folder
-        if os.path.exists(temp_repo_dir):
-            shutil.rmtree(temp_repo_dir)
+        # Clean up temp repo folder if it was cloned
+        if not is_local_available and os.path.exists(temp_repo_dir):
+            def remove_readonly(func, path, excinfo):
+                import stat
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
             
     # Process Local SDKs
     for sdk in local_sdks:
