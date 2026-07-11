@@ -263,6 +263,102 @@ def update_pubspec_dependencies(sdks):
     except Exception as e:
         print(f"[!] Error updating pubspec.yaml dependencies: {e}")
 
+# Dependency overrides every composed app needs, regardless of which SDKs it
+# installs. Asserted idempotently on every compose run (added if missing,
+# left alone if already present) rather than relying on a one-off manual
+# pubspec.yaml edit, which does not survive later reruns.
+#
+# sqlite3 >=3.x ships a package-root hook/build.dart (native asset build
+# hook). Combined with Dart 3.10+'s native-assets support being on by
+# default, build_runner's internal build-script precompile step hard-fails
+# with "'dart compile' does not support build hooks, use 'dart build'
+# instead." Pinning below the version that introduced the root-level hook
+# avoids it; 2.9.4 only has a hook inside its example/ folder, which is not
+# part of the real dependency graph.
+REQUIRED_DEPENDENCY_OVERRIDES = {
+    "sqlite3": "2.9.4",
+}
+
+def ensure_pubspec_overrides():
+    pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
+    if not os.path.exists(pubspec_path):
+        return
+
+    try:
+        with open(pubspec_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        overrides_start = -1
+        for i, line in enumerate(lines):
+            if line.strip() == "dependency_overrides:":
+                overrides_start = i
+                break
+
+        existing_keys = set()
+        if overrides_start != -1:
+            i = overrides_start + 1
+            while i < len(lines) and (lines[i].startswith(" ") or lines[i].strip() == ""):
+                stripped = lines[i].strip()
+                if stripped and not stripped.startswith("#") and ":" in stripped:
+                    existing_keys.add(stripped.split(":", 1)[0].strip())
+                i += 1
+
+        missing = {k: v for k, v in REQUIRED_DEPENDENCY_OVERRIDES.items() if k not in existing_keys}
+        if not missing:
+            return
+
+        new_override_lines = [f"  {k}: {v}\n" for k, v in missing.items()]
+
+        if overrides_start == -1:
+            # No dependency_overrides section at all yet: append one.
+            if lines and not lines[-1].endswith("\n"):
+                lines[-1] += "\n"
+            lines.append("dependency_overrides:\n")
+            lines.extend(new_override_lines)
+        else:
+            lines[overrides_start + 1:overrides_start + 1] = new_override_lines
+
+        with open(pubspec_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        print(f"[*] Ensured required dependency_overrides in pubspec.yaml: {list(missing.keys())}")
+    except Exception as e:
+        print(f"[!] Error ensuring pubspec.yaml dependency_overrides: {e}")
+
+def run_code_generation():
+    """Runs `flutter pub get` then `build_runner build --force-jit`.
+
+    --force-jit is required, not optional: AOT builder compilation invokes
+    `dart compile`, which refuses to run when any resolved package (e.g.
+    objective_c, pulled in transitively by path_provider_foundation) ships a
+    native-asset build hook, failing with "'dart compile' does not support
+    build hooks, use 'dart build' instead." JIT mode uses `dart run`
+    instead, which has no such restriction. This is slower than AOT but is
+    the only mode that works while any dependency in the graph has a
+    hook/build.dart — a real, growing category of packages as Dart's native
+    assets feature becomes more widely adopted.
+
+    Generation failures are reported but do not abort the script — SDK
+    installation already completed successfully at this point, and a
+    codegen problem is a separate, visible-in-output concern the caller
+    should look at, not a reason to make the whole compose run look failed.
+    """
+    print("\n[*] Running flutter pub get...")
+    pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=True)
+    if pub_get.returncode != 0:
+        print("[!] flutter pub get failed; skipping code generation.")
+        return
+
+    print("[*] Running build_runner (--force-jit, required for packages with native-asset build hooks)...")
+    build = subprocess.run(
+        ["dart", "run", "build_runner", "build", "--force-jit"],
+        cwd=PROJECT_ROOT,
+        shell=True,
+    )
+    if build.returncode == 0:
+        print("[+] Code generation completed successfully.")
+    else:
+        print(f"[!] Code generation failed (exit {build.returncode}). Check output above for the specific error.")
+
 def main():
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
     package_name = None
@@ -309,6 +405,9 @@ def main():
     
     if sdks_to_install:
         update_pubspec_dependencies(sdks_to_install)
+
+    ensure_pubspec_overrides()
+    run_code_generation()
 
 if __name__ == "__main__":
     main()
