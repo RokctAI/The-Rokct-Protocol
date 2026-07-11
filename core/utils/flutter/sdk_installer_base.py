@@ -170,6 +170,19 @@ def resolve_sdk_path(sdk_name):
     if os.path.exists(local_path):
         return local_path
 
+    # 3. Fallback to .rokct/cache/<clean_name> (populated by sdk_composer.py's
+    # git-based compose flow). sdk_composer.py strips a trailing "_sdk"/"_sdks"
+    # suffix when naming the cache folder (see clean_sdk_name there), so mirror
+    # that here rather than looking up the raw sdk_name.
+    clean_name = sdk_name
+    if clean_name.endswith("_sdks"):
+        clean_name = clean_name[:-5]
+    elif clean_name.endswith("_sdk"):
+        clean_name = clean_name[:-4]
+    cache_path = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean_name)
+    if os.path.exists(cache_path):
+        return cache_path
+
     return None
 
 def install_sdk_files_and_routes(sdk_name):
