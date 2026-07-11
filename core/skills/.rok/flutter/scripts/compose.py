@@ -30,9 +30,15 @@ def main():
         print("Error: Flutter composer scripts not found on GitHub.", file=sys.stderr)
         sys.exit(1)
 
-    # Write both to the current working directory temporarily so imports match
+    # Write both to the current working directory temporarily so imports match.
+    # sdk_installer_base.py must land in .rokct/ specifically: each cached SDK's
+    # install.py does sys.path.append(os.path.join(os.getcwd(), '.rokct')) before
+    # importing it, so writing it to the cwd root (as this used to do) causes
+    # "ModuleNotFoundError: No module named 'sdk_installer_base'" for every SDK.
     tmp_composer = os.path.join(os.getcwd(), "_tmp_sdk_composer.py")
-    tmp_installer_base = os.path.join(os.getcwd(), "sdk_installer_base.py")
+    rokct_dir = os.path.join(os.getcwd(), ".rokct")
+    os.makedirs(rokct_dir, exist_ok=True)
+    tmp_installer_base = os.path.join(rokct_dir, "sdk_installer_base.py")
 
     with open(tmp_composer, "w", encoding="utf-8") as f:
         f.write(composer_code)
