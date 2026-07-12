@@ -328,6 +328,7 @@ def update_router_table():
             imp = r.get("import")
             
             if imp:
+                imp = imp.replace("${package}", get_project_package_name())
                 all_imports.add(f"import '{imp}';")
                 
             all_routes.append(f"    {rtype}(path: '{path}', page: {page}),")
