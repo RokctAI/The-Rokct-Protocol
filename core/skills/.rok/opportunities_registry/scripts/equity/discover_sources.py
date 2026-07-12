@@ -1,4 +1,4 @@
-# compliance-silent
+﻿# compliance-silent
 import os, sys, subprocess, urllib.request, zipfile, io
 
 GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
@@ -14,7 +14,7 @@ def main():
             break
         repo_root = parent
         
-    cache_dir = os.path.join(repo_root, ".rokct", "cache", "opportunities")
+    cache_dir = os.path.join(repo_root, ".rokct", "tmp", "opportunities")
     
     if not os.path.exists(cache_dir):
         print("[wrapper] Fetching opportunities scripts from GitHub...")
