@@ -325,17 +325,26 @@ def ensure_pubspec_overrides():
         print(f"[!] Error ensuring pubspec.yaml dependency_overrides: {e}")
 
 def run_code_generation():
-    """Runs `flutter pub get` then `build_runner build --force-jit`.
+    """Runs `flutter pub get` then `build_runner build`.
 
-    --force-jit is required, not optional: AOT builder compilation invokes
+    --force-jit avoids a real failure mode: AOT builder compilation invokes
     `dart compile`, which refuses to run when any resolved package (e.g.
     objective_c, pulled in transitively by path_provider_foundation) ships a
     native-asset build hook, failing with "'dart compile' does not support
-    build hooks, use 'dart build' instead." JIT mode uses `dart run`
-    instead, which has no such restriction. This is slower than AOT but is
-    the only mode that works while any dependency in the graph has a
-    hook/build.dart — a real, growing category of packages as Dart's native
-    assets feature becomes more widely adopted.
+    build hooks, use 'dart build' instead." JIT mode uses `dart run` instead,
+    which has no such restriction. This is slower than AOT but is the only
+    mode that works while any dependency in the graph has a hook/build.dart.
+
+    --force-jit is not universally available, though: it's a newer
+    build_runner flag, and some dependency graphs resolve an older
+    build_runner (observed: 2.5.4) that doesn't recognize it at all
+    ("Could not find an option named --force-jit") and exits non-zero before
+    running anything. So: try --force-jit first; if it fails specifically
+    because the flag itself is unrecognized, retry with
+    --delete-conflicting-outputs instead (supported by older versions,
+    fine as long as no native-asset-hook package is actually in the graph
+    for that project — e.g. sqlite3 pinned below the version that added its
+    package-root hook, as this project already does).
 
     Generation failures are reported but do not abort the script — SDK
     installation already completed successfully at this point, and a
@@ -353,7 +362,21 @@ def run_code_generation():
         ["dart", "run", "build_runner", "build", "--force-jit"],
         cwd=PROJECT_ROOT,
         shell=True,
+        capture_output=True,
+        text=True,
     )
+    if build.returncode != 0 and "Could not find an option named" in (build.stdout + build.stderr):
+        print("[*] This build_runner version doesn't support --force-jit; retrying with --delete-conflicting-outputs...")
+        build = subprocess.run(
+            ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
+            cwd=PROJECT_ROOT,
+            shell=True,
+        )
+    else:
+        # Either it succeeded or failed for a real reason - show the output either way.
+        print(build.stdout, end="")
+        print(build.stderr, end="")
+
     if build.returncode == 0:
         print("[+] Code generation completed successfully.")
     else:
