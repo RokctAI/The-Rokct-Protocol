@@ -12,8 +12,10 @@ import sys
 def parse_env_content(content):
     """
     Parses shell-style exports (export KEY=<value>) and returns True
-    only if a key was successfully found and set.
-    Priority: JULES_API_KEY then AGENT_API_KEY.
+    if any key was successfully found and set.
+    Jules key priority: JULES_API_KEY then AGENT_API_KEY (only one is set).
+    GROQ_API_KEY is independent of that priority and always parsed if present,
+    since call_groq() needs it regardless of which Jules key was found.
     """
     found = False
 
@@ -33,6 +35,14 @@ def parse_env_content(content):
                 os.environ["AGENT_API_KEY"] = val
                 found = True
                 break
+
+    # --- Pass 3: GROQ_API_KEY (independent, always checked) ---
+    for line in content.splitlines():
+        if "GROQ_API_KEY=" in line:
+            val = line.replace("export ", "").strip().split("=", 1)[1].strip("'\" ")
+            os.environ["GROQ_API_KEY"] = val
+            found = True
+            break
 
     return found
 
@@ -246,10 +256,18 @@ def main():
     if not os.environ.get("JULES_API_KEY") and not os.environ.get("AGENT_API_KEY"):
         load_monorepo_env(args.env_file)
 
+    # groq command has its own key (GROQ_API_KEY), independent of the Jules
+    # key resolved above. If it's not already in the environment (e.g. not
+    # passed as a GitHub Actions secret), fall back to the same monorepo
+    # vault the Jules keys use -- production.env is the intended single
+    # source of truth for these, not just Jules'.
+    if args.command == "groq" and not os.environ.get("GROQ_API_KEY"):
+        load_monorepo_env(args.env_file)
+
     # Resolve key
     api_key = args.api_key or os.environ.get("JULES_API_KEY") or os.environ.get("AGENT_API_KEY")
 
-    if not api_key:
+    if args.command != "groq" and not api_key:
         print("Error: Agent API Key is missing. Provide via --api-key, AGENT_API_KEY, or JULES_API_KEY env var.")
         return 1
 
