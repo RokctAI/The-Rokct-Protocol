@@ -14,7 +14,15 @@ sys.path.append(str(current_dir / 'scrapers'))
 import ocds
 import musina
 
-BASE_DIR = Path(__file__).parent.parent.parent.parent
+# Walk up to the real repo root instead of a fixed parent-count: this script
+# is invoked from more than one on-disk depth (the canonical
+# .rokct/skills/.rok/opportunities_registry/scripts/ path, and the
+# self-relocated .rokct/tmp/opportunities/ cache path used by
+# registry_orchestrator/index.py's wrapper), and a fixed .parent chain
+# silently lands one level short (inside .rokct/) for the latter.
+BASE_DIR = Path(__file__).resolve()
+while not (BASE_DIR / '.rokct').exists():
+    BASE_DIR = BASE_DIR.parent
 TENDER_DIR = BASE_DIR / '03_tenders'
 SOURCES_DIR = TENDER_DIR / 'sources'
 
