@@ -163,12 +163,16 @@ ALLOWED_TRANSITIONS = {
     "pending_approval": ["concept_expanding", "declined", "failed", "stalled"],
     "concept_expanding": ["concept_generated", "failed", "stalled"],
     "concept_generated": ["pending_concept_approval", "failed", "stalled"],
-    "pending_concept_approval": ["rules_generating", "declined", "failed", "stalled"],
+    "pending_concept_approval": ["rules_generating", "evaluated", "declined", "failed", "stalled"],
     "rules_generating": ["rules_generated", "failed", "stalled"],
     "rules_generated": ["pending_rules_approval", "failed", "stalled"],
     "pending_rules_approval": ["writing", "declined", "failed", "stalled"],
     "writing": ["evaluating", "failed", "stalled"],
-    "evaluating": ["draft_ready", "writing", "failed", "stalled"],
+    "evaluating": ["draft_ready", "writing", "evaluated", "failed", "stalled"],
+    # Terminal state for lesson.* jobs: content produced, checked, and
+    # human-approved at Level 4. Level 6 production (a future brief) will
+    # add the onward transition when its runner exists.
+    "evaluated": ["failed", "stalled"],
     "draft_ready": ["pending_acceptance", "failed", "stalled"],
     "pending_acceptance": ["publishing", "writing", "failed", "stalled"],
     "publishing": ["published", "failed", "stalled"],
