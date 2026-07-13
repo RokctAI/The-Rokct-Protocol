@@ -279,6 +279,28 @@ REQUIRED_DEPENDENCY_OVERRIDES = {
     "sqlite3": "2.9.4",
 }
 
+
+# `flutter create` scaffolds a boilerplate counter-app smoke test at
+# test/widget_test.dart referencing a `MyApp` widget that never exists in a
+# composed app (the real entry widget comes from whichever SDK is home_sdk).
+# Left in place, it fails `flutter analyze` with "The name 'MyApp' isn't a
+# class" on every composed app. Only delete it if it still looks like the
+# untouched scaffold — never clobber a real test someone wrote at that path.
+STALE_WIDGET_TEST_SIGNATURE = "Counter increments smoke test"
+
+def remove_stale_widget_test():
+    test_path = os.path.join(PROJECT_ROOT, "test", "widget_test.dart")
+    if not os.path.exists(test_path):
+        return
+    try:
+        with open(test_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        if STALE_WIDGET_TEST_SIGNATURE in content:
+            os.remove(test_path)
+            print(f"[*] Removed stale flutter-create scaffold test: {test_path}")
+    except Exception as e:
+        print(f"[!] Error checking/removing stale widget_test.dart: {e}")
+
 def ensure_pubspec_overrides():
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
     if not os.path.exists(pubspec_path):
@@ -430,6 +452,7 @@ def main():
         update_pubspec_dependencies(sdks_to_install)
 
     ensure_pubspec_overrides()
+    remove_stale_widget_test()
     run_code_generation()
 
 if __name__ == "__main__":
