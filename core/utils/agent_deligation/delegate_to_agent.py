@@ -111,8 +111,7 @@ def log_api_usage(record):
         record["ts"] = __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         os.makedirs(os.path.dirname(USAGE_LOG), exist_ok=True)
         with open(USAGE_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "
-")
+            f.write(json.dumps(record, ensure_ascii=False) + chr(10))
     except Exception:
         pass
 
