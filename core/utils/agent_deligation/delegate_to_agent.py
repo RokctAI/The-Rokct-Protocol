@@ -99,6 +99,24 @@ def load_monorepo_env(custom_path=None):
     return False
 
 
+
+USAGE_LOG = os.path.join(".rokct", "agent", "log", "api_usage.jsonl")
+
+
+def log_api_usage(record):
+    """Append one JSON line of API usage to a committed, queryable log.
+    Best-effort and silent on stdout — callers capture stdout as the
+    response payload, so this must never print."""
+    try:
+        record["ts"] = __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        os.makedirs(os.path.dirname(USAGE_LOG), exist_ok=True)
+        with open(USAGE_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "
+")
+    except Exception:
+        pass
+
+
 BASE_URL = "https://jules.googleapis.com/v1alpha"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -134,7 +152,14 @@ class AgentCLI:
 
         response = requests.post(url, json=payload, headers=self.headers, timeout=30)
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        log_api_usage({
+            "api": "jules", "kind": "create_session",
+            "title": (title or "")[:80],
+            "session": str(result.get("name") or result.get("id") or "")[-24:],
+            "prompt_chars": len(prompt or ""),
+        })
+        return result
 
     def get_session(self, session_id):
         """Fetch the current state of an existing session."""
@@ -198,6 +223,13 @@ class AgentCLI:
         response = requests.post(GROQ_URL, json=payload, headers=headers, timeout=60)
         response.raise_for_status()
         data = response.json()
+        usage = data.get("usage", {})
+        log_api_usage({
+            "api": "groq", "kind": "chat", "model": model,
+            "prompt_tokens": usage.get("prompt_tokens"),
+            "completion_tokens": usage.get("completion_tokens"),
+            "total_tokens": usage.get("total_tokens"),
+        })
         return data.get("choices", [{}])[0].get("message", {}).get("content")
 
 
