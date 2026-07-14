@@ -11,15 +11,34 @@ DELEGATE_PATH   = "core/utils/agent_deligation/update_structure.py"
 
 
 def resolve_delegate():
+    """Fetch the delegate from GitHub with retries; fall back to (and
+    refresh) a local cache under .rokct/tmp/delegate_cache/ so a transient
+    raw.githubusercontent.com failure cannot kill a workflow mid-run.
+    initiate.py pre-populates the cache at workflow start."""
+    import time
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
-
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status == 200:
-                return resp.read().decode("utf-8"), "github"
-    except Exception:
-        pass
+    cache = os.path.join(".rokct", "tmp", "delegate_cache", os.path.basename(DELEGATE_PATH))
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status == 200:
+                    code = resp.read().decode("utf-8")
+                    try:
+                        os.makedirs(os.path.dirname(cache), exist_ok=True)
+                        with open(cache, "w", encoding="utf-8") as f:
+                            f.write(code)
+                    except OSError:
+                        pass
+                    return code, "github"
+        except Exception:
+            pass
+        if attempt < 2:
+            time.sleep(2 ** attempt)
+    if os.path.exists(cache):
+        print(f"[scaffold] GitHub fetch failed after 3 attempts; using cached {os.path.basename(cache)}", file=sys.stderr)
+        with open(cache, encoding="utf-8") as f:
+            return f.read(), "cache"
     return None, None
 
 
