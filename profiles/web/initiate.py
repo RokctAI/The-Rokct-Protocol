@@ -216,10 +216,18 @@ def main():
         pass
 
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
+    required_ignores = ("skills/", "cache/")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
-            f.write("skills/\n")
+            f.write("\n".join(required_ignores) + "\n")
         print(f"[init] Created {gitignore_path}")
+    else:
+        txt = open(gitignore_path, "r", encoding="utf-8").read()
+        missing = [entry for entry in required_ignores if entry not in txt]
+        if missing:
+            with open(gitignore_path, "a", encoding="utf-8") as f:
+                f.write("\n".join(missing) + "\n")
+            print(f"[init] Updated {gitignore_path} (added: {', '.join(missing)})")
 
     print("[init] Web profile file operations complete.")
 
