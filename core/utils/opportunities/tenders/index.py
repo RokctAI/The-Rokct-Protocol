@@ -55,6 +55,21 @@ def generate_md(release, flag, source_ref, existing_content=""):
     docs_md = "".join([f"    - [{t}]({u})\n" for t, u in processed_docs]) or "    - No documents listed.\n"
     direct_link = processed_docs[0][1] if processed_docs else "https://www.etenders.gov.za/Home/opportunities?id=1"
 
+    # --- DATA COMPLETENESS ---
+    # A scraped card missing required fields must say so visibly instead of
+    # reading identically to a complete one ('Untitled Opportunity' with the
+    # generic etenders link looked like a real card).
+    missing = []
+    if not tender.get('title'):
+        missing.append('title')
+    if not closing or closing.startswith('See Documents'):
+        missing.append('closing date')
+    if not re.match(r'\d{4}-\d{2}-\d{2}', published):
+        missing.append('publication date')
+    if not processed_docs:
+        missing.append('source link')
+    completeness = f"INCOMPLETE — missing: {', '.join(missing)}" if missing else "COMPLETE"
+
     # --- AI SECTION PRESERVATION ---
     # Default Checklist
     ai_section = """## AI Checklist (Jules)
@@ -108,6 +123,7 @@ def generate_md(release, flag, source_ref, existing_content=""):
 
 ## Audit & Status
 - **Status**: ACTIVE
+- **Data Completeness**: {completeness}
 - **Last Verified**: {datetime.now().strftime('%Y-%m-%d')}
 
 {ai_section}"""

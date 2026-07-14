@@ -34,8 +34,8 @@ def run_orchestration():
     eeip_todo = []
     
     for name, path in REGISTRIES.items():
-        total, verified, cats, advanced, todo = scan_registry(name, path, BASE_DIR)
-        stats[name] = (total, verified, cats, advanced, todo)
+        total, verified, incomplete, cats, advanced, todo = scan_registry(name, path, BASE_DIR)
+        stats[name] = (total, verified, incomplete, cats, advanced, todo)
 
         if name == "Tenders":
             tender_categories = cats
@@ -50,7 +50,7 @@ def run_orchestration():
 
     # Trigger Updaters
     update_readme(README_PATH, stats)
-    update_audit_log(AUDIT_LOG_PATH, stats["Tenders"][0], stats["Tenders"][1])
+    update_audit_log(AUDIT_LOG_PATH, stats["Tenders"][0], stats["Tenders"][1], stats["Tenders"][2])
     update_json_meta(META_PATH, stats, all_advanced_data)
 
     # Save specialized task queues

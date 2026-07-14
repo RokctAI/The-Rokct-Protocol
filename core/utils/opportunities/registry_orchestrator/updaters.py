@@ -23,7 +23,7 @@ def update_readme(readme_path, stats):
     icons = {"Equity": "🏦", "Grants": "📜", "Tenders": "🏗️", "EEIP": "🤝"}
     
     for name, data in stats.items():
-        total, verified, _, _, _ = data
+        total, verified, _, _, _, _ = data
         health = "🟢" if verified > (total * 0.5) else "🟡"
         rows.append(f"| {icons.get(name, '📁')} **{name}** | {total} | {total} | {verified} | {health} |")
         total_all += total
@@ -41,21 +41,28 @@ def update_readme(readme_path, stats):
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(content)
 
-def update_audit_log(audit_path, total, verified):
+def update_audit_log(audit_path, total, verified, incomplete=0):
     """Updates the Tender-specific audit log."""
     if not audit_path.exists(): return
     with open(audit_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
+
+    incomplete_line = f"- Incomplete (missing required fields): {incomplete}/{total}\n"
+    has_incomplete_line = any(l.startswith("- Incomplete") for l in lines)
+
     new_lines = []
     for line in lines:
         if line.startswith("| 03_tenders/ |"):
             new_lines.append(f"| 03_tenders/ | LIVING | IN_PROGRESS | {datetime.now().strftime('%Y-%m-%d')} | {verified} | {total} |\n")
         elif "Automated audit log update:" in line:
             new_lines.append(f"- Automated audit log update: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+        elif line.startswith("- Incomplete"):
+            new_lines.append(incomplete_line)
         elif "Verified:" in line:
             pct = (verified / total * 100) if total > 0 else 0
             new_lines.append(f"- Verified: {verified}/{total} ({pct:.1f}%)\n")
+            if not has_incomplete_line:
+                new_lines.append(incomplete_line)
         else:
             new_lines.append(line)
     with open(audit_path, 'w', encoding='utf-8') as f:
@@ -68,10 +75,11 @@ def update_json_meta(meta_path, stats, advanced_data):
     # Flatten registry stats and classifications
     registry_details = {}
     for name, data in stats.items():
-        total, verified, aggregations, _, _ = data
+        total, verified, incomplete, aggregations, _, _ = data
         registry_details[name] = {
             "total": total,
             "verified": verified,
+            "incomplete": incomplete,
             "classifications": aggregations
         }
 

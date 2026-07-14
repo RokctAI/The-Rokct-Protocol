@@ -225,6 +225,20 @@ def run():
                 filename = f"{date_prefix}_{safe_title}.md"
                 if len(filename) > 100: filename = filename[:97] + ".md"
 
+                # Data completeness: a card whose extraction fell back to
+                # defaults must say so on the card itself, not only in a log —
+                # otherwise it reads identically to a fully-extracted one.
+                missing = []
+                if not title.strip():
+                    missing.append('title')
+                if not deadline:
+                    missing.append("deadline ('Ongoing' is an extraction fallback, not verified)")
+                if funding == "Unspecified":
+                    missing.append('funding amount')
+                if org == "Unspecified":
+                    missing.append('organization')
+                completeness = f"INCOMPLETE — missing: {', '.join(missing)}" if missing else "COMPLETE"
+
                 card_content = f"""# Grant Opportunity: {title}
 
 ## Quick Stats
@@ -246,6 +260,7 @@ def run():
 
 ## Audit & Status
 - **Verification Status**: UNVERIFIED
+- **Data Completeness**: {completeness}
 - **Last Verified**: {today}
 """
                 filepath = BASE_DIR / '02_grants' / filename

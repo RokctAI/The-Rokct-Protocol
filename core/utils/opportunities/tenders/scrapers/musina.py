@@ -9,6 +9,7 @@ import sys
 import re
 import io
 import time
+from urllib.parse import urljoin
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -20,6 +21,29 @@ try:
     import pdfplumber
 except ImportError:
     pdfplumber = None
+
+
+def rokct_logs_dir():
+    """Locate the consuming repo's .rokct/agent/logs by walking up from this
+    file to the first directory containing .rokct/. A fixed parent-depth path
+    breaks when this script runs from a relocated copy (e.g. the delegate
+    cache under .rokct/tmp/); fall back to CWD, which CI sets to the repo
+    root."""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / '.rokct').is_dir():
+            return parent / '.rokct' / 'agent' / 'logs'
+    return Path.cwd() / '.rokct' / 'agent' / 'logs'
+
+
+def log_failure(message):
+    """Append to the extraction-failure log; never raise from logging."""
+    try:
+        log = rokct_logs_dir() / 'pdf_extraction_failures.log'
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with open(log, 'a', encoding='utf-8') as fl:
+            fl.write(f"[{datetime.now().isoformat()}] {message}\n")
+    except OSError:
+        pass
 
 
 def normalize_date(date_str):
@@ -46,7 +70,8 @@ def calculate_fallback_date(pub_date_str):
             return None, False
         dt = datetime.strptime(norm, '%Y-%m-%d')
         return (dt + timedelta(days=14)).strftime('%Y-%m-%d'), True
-    except:
+    except Exception as e:
+        log_failure(f"Fallback-date parse failed for '{pub_date_str}': {e}")
         return None, False
 
 
@@ -62,7 +87,8 @@ def extract_text_from_pdf(url):
             for page in pdf.pages:
                 text += page.extract_text() or ""
             return text
-    except:
+    except Exception as e:
+        log_failure(f"PDF extraction failed for {url}: {e}")
         return ""
 
 
@@ -117,7 +143,15 @@ def fetch_deep_details(url, existing_pub):
         if create_date_label:
             sibling = create_date_label.find_next_sibling()
             if sibling:
-                found_pub = sibling.get_text(strip=True)
+                # Only accept the sibling text if it actually parses as a
+                # date — pages put script fragments (e.g. 'window.RS_') next
+                # to the label, and normalize_date passes unparseable strings
+                # through, so junk here used to end up as the card's
+                # Date Published.
+                candidate = sibling.get_text(strip=True)
+                norm = normalize_date(candidate)
+                if norm and re.match(r'\d{4}-\d{2}-\d{2}', norm):
+                    found_pub = candidate
 
         # Existing regex fallback for pub date
         if not found_pub or found_pub == existing_pub:
@@ -147,9 +181,9 @@ def fetch_deep_details(url, existing_pub):
         # Priority 3 & 4: PDF explicit then buried
         pdf_link = soup.find('a', href=re.compile(r'\.pdf$', re.I))
         if pdf_link:
-            pdf_url = pdf_link['href']
-            if not pdf_url.startswith('http'):
-                pdf_url = "https://www.musina.gov.za" + pdf_url
+            # Resolve relative links against the detail page's own URL, not a
+            # hardcoded host — the source URL in sources/musinaZA.md governs.
+            pdf_url = urljoin(url, pdf_link['href'])
             pdf_text = extract_text_from_pdf(pdf_url)
 
             # Explicit in PDF
@@ -172,7 +206,8 @@ def fetch_deep_details(url, existing_pub):
         val, est = calculate_fallback_date(found_pub)
         return val, est, found_pub
 
-    except:
+    except Exception as e:
+        log_failure(f"Detail-page fetch/parse failed for {url}: {e}")
         val, est = calculate_fallback_date(existing_pub)
         return val, est, None
 
@@ -200,7 +235,7 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
     session.headers.update({'User-Agent': 'Mozilla/5.0 RokctAI-Scraper/1.0'})
 
     # 1. Bids Received Intelligence
-    log_path = Path(__file__).resolve().parent.parent.parent.parent.parent / '.rokct' / 'agent' / 'logs' / 'musina_bids_intelligence.log'
+    log_path = rokct_logs_dir() / 'musina_bids_intelligence.log'
     log_path.parent.mkdir(parents=True, exist_ok=True)
     audit_entries = []
 
@@ -212,8 +247,8 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
                 b_text = b_link.get_text(" ", strip=True)
                 if any(kw in b_text.upper() for kw in ["TENDER", "RFQ", "BID"]):
                     audit_entries.append(f"BID RECEIVED - {b_text}")
-    except:
-        pass
+    except Exception as e:
+        log_failure(f"Bids-received page fetch failed ({base_url}bids-received/): {e}")
 
     # 2. RFQ Scraping
     try:
@@ -224,9 +259,9 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
         rfqs_found = {}
         for link in soup.find_all('a', href=True):
             text = link.get_text(" ", strip=True)
-            url = link['href']
-            if not url.startswith('http'):
-                url = "https://www.musina.gov.za" + url
+            # Relative links resolve against the configured source URL, not a
+            # hardcoded host.
+            url = urljoin(base_url, link['href'])
 
             if any(kw in text.upper() for kw in ["TENDER", "RFQ", "BID"]):
                 audit_entries.append(text)
@@ -258,7 +293,7 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
                         rfqs_found[full_id] = {'text': text, 'url': url, 'pub': pub_date}
 
         updates = 0
-        failure_log = Path(__file__).resolve().parent.parent.parent.parent.parent / '.rokct' / 'agent' / 'logs' / 'pdf_extraction_failures.log'
+        failure_log = rokct_logs_dir() / 'pdf_extraction_failures.log'
         failure_log.parent.mkdir(parents=True, exist_ok=True)
 
         for fid, rdata in rfqs_found.items():
@@ -272,7 +307,14 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
 
             closing_date, is_est, found_pub = fetch_deep_details(rdata['url'], rdata['pub'])
 
-            final_pub = normalize_date(found_pub) or normalize_date(rdata['pub']) or ""
+            # Only a string that actually normalised to YYYY-MM-DD counts as
+            # a published date; normalize_date echoes unparseable input.
+            final_pub = ""
+            for cand in (found_pub, rdata['pub']):
+                norm = normalize_date(cand)
+                if norm and re.match(r'\d{4}-\d{2}-\d{2}', norm):
+                    final_pub = norm
+                    break
 
             if not final_pub:
                 with open(failure_log, 'a', encoding='utf-8') as fl:

@@ -32,6 +32,7 @@ class FunderManager:
 ## Audit & Status
 - **Status**: ACTIVE
 - **Verification Status**: {Verification Status}
+- **Data Completeness**: {Data Completeness}
 - **Last Verified**: {Last Verified}
 ---
 """
@@ -97,6 +98,18 @@ class FunderManager:
             data["Phone"] = ""
         if "Notes" not in data:
             data["Notes"] = ""
+
+        # Data completeness: bulk-synced cards default whole fields to
+        # "Unspecified"; mark them visibly so they don't read like researched
+        # cards. Required: organization, funding type, website (source link).
+        missing = []
+        for field in ("Organization", "Funding Type", "Website"):
+            value = str(data.get(field, "")).strip()
+            if not value or value.lower() == "unspecified":
+                missing.append(field.lower())
+        data["Data Completeness"] = (
+            f"INCOMPLETE — missing: {', '.join(missing)}" if missing else "COMPLETE"
+        )
 
         content = self.template.format(**data)
         filename = self.generate_filename(data["Organization"])

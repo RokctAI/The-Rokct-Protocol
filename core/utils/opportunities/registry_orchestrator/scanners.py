@@ -22,12 +22,13 @@ def scan_registry(name, path, base_dir):
     """Scans a directory with Multi-Tag splitting and ISO Flag aggregation."""
     total = 0
     verified = 0
-    stats_aggregation = {} 
+    incomplete = 0
+    stats_aggregation = {}
     advanced_tenders = {}
     todo_list = []
-    
+
     if not path.exists():
-        return 0, 0, {}, {}, []
+        return 0, 0, 0, {}, {}, []
 
     for file in path.rglob('*.md'):
         fname = file.name.lower()
@@ -58,7 +59,12 @@ def scan_registry(name, path, base_dir):
 
                 if is_v:
                     verified += 1
-                
+
+                # Cards the writers marked as missing required fields
+                # (title / closing date / amount / source link).
+                if re.search(r'Data Completeness\*\*:\s*INCOMPLETE', content, re.I):
+                    incomplete += 1
+
                 # 3. Multi-Tag Metadata Extraction (Only for Verified Entries)
                 if is_v:
                     stat_matches = re.finditer(r'-\s+\*\*(?P<key>.*?)\*\*:\s*(?P<val>.*)', content)
@@ -97,4 +103,4 @@ def scan_registry(name, path, base_dir):
         except Exception:
             continue
                 
-    return total, verified, stats_aggregation, advanced_tenders, todo_list
+    return total, verified, incomplete, stats_aggregation, advanced_tenders, todo_list
