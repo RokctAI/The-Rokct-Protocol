@@ -169,10 +169,13 @@ ALLOWED_TRANSITIONS = {
     "pending_rules_approval": ["writing", "declined", "failed", "stalled"],
     "writing": ["evaluating", "failed", "stalled"],
     "evaluating": ["draft_ready", "writing", "evaluated", "failed", "stalled"],
-    # Terminal state for lesson.* jobs: content produced, checked, and
-    # human-approved at Level 4. Level 6 production (a future brief) will
-    # add the onward transition when its runner exists.
-    "evaluated": ["failed", "stalled"],
+    # Level 4 approval is the human gate; Level 6 production then turns the
+    # approved content into the ReplaySDK asset triple (manifest/audio/
+    # animations). `producing` is the in-flight lock, `produced` the terminal
+    # state once assets are uploaded and their URLs recorded on the card.
+    "evaluated": ["producing", "failed", "stalled"],
+    "producing": ["produced", "failed", "stalled"],
+    "produced": ["failed", "stalled"],
     "draft_ready": ["pending_acceptance", "failed", "stalled"],
     "pending_acceptance": ["publishing", "writing", "failed", "stalled"],
     "publishing": ["published", "failed", "stalled"],
