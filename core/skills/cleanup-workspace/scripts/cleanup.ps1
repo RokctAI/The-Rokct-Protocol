@@ -86,7 +86,8 @@ function Invoke-WorkspaceCleanup {
 
     try {
         $children = [System.IO.Directory]::GetDirectories($Path)
-    } catch {
+    }
+    catch {
         # Can't enumerate (permissions, etc) - treat as non-empty so we never try to delete it.
         return $false
     }
@@ -106,7 +107,8 @@ function Invoke-WorkspaceCleanup {
                 Remove-Item -LiteralPath $child -Recurse -Force -ErrorAction Stop
                 $script:pycacheRemoved++
                 # Successfully deleted - does not count against this directory's emptiness.
-            } catch {
+            }
+            catch {
                 $script:pycacheFailed++
                 Write-Output "  FAILED to remove __pycache__: $child -> $($_.Exception.Message)"
                 $isEmpty = $false
@@ -120,7 +122,8 @@ function Invoke-WorkspaceCleanup {
 
     try {
         $files = [System.IO.Directory]::GetFiles($Path)
-    } catch {
+    }
+    catch {
         $files = @()
     }
     if ($files.Count -gt 0) { $isEmpty = $false }
@@ -130,7 +133,8 @@ function Invoke-WorkspaceCleanup {
             [System.IO.Directory]::Delete($Path)
             $script:emptyRemoved++
             return $true
-        } catch {
+        }
+        catch {
             $script:emptyFailed++
             Write-Output "  FAILED to remove empty dir: $Path -> $($_.Exception.Message)"
             return $false
