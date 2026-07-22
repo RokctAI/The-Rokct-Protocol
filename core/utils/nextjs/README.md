@@ -47,7 +47,7 @@ the host's `package.json`.
 
 ## On-disk convention
 
-```
+```text
 <domain>/<sdk>/nextjs/
   manifest.json
   install.py

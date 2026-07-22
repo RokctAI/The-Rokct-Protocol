@@ -4,7 +4,7 @@
 > so future fork decisions (which apps to fork next, what to budget for) are informed by what's already
 > been found — not re-discovered from scratch each time. Add an entry whenever a fork audit (like the ones
 > below) surfaces a real external dependency, resolved or not.
-
+>
 > **Standing decision (2026-07)**: Frappe and ERPNext themselves will never be forked away — they're
 > permanent, accepted foundational dependencies for this whole workspace. Entries below that note
 > ERPNext-doctype coupling (`Customer`, `Company`, `Employee`) are **not** gaps to close — they're expected
