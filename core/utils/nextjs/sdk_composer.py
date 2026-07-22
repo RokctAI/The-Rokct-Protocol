@@ -150,8 +150,17 @@ def run_installer(sdk_config):
 
     print(f"\n[*] Executing Installer for {sdk_name}...")
     try:
-        subprocess.run([sys.executable, installer_script], cwd=PROJECT_ROOT,
-                        capture_output=True, text=True, check=True)
+        result = subprocess.run([sys.executable, installer_script], cwd=PROJECT_ROOT,
+                                 capture_output=True, text=True, check=True)
+        # install_sdk_files() genuinely prints its non-fatal warnings (missing
+        # `requires` paths, missing integration markers) — but capture_output
+        # meant they were captured into result.stdout and then discarded here
+        # on the success path (exit 0 never reaches the except branch below),
+        # so they never reached the terminal at all. Surface them.
+        if result.stdout.strip():
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+        if result.stderr.strip():
+            print(result.stderr, end="" if result.stderr.endswith("\n") else "\n")
         print(f"[+] Installer for {sdk_name} completed successfully.")
     except subprocess.CalledProcessError as e:
         log_dir = os.path.join(PROJECT_ROOT, ".rokct", "agent", "logs")
@@ -164,6 +173,63 @@ def run_installer(sdk_config):
             lf.write(f"Stderr:\n{e.stderr}\n")
         print(f"[!] Installer for {sdk_name} failed. Error log written to: .rokct/agent/logs/{sdk_name}_install_error.log")
         sys.exit(1)
+
+
+def collect_post_install_checklist(sdks_to_install):
+    """Re-derive the same non-fatal checks install_sdk_files() already prints
+    per-SDK (missing `requires` paths, missing/placeholder-less integration
+    targets), aggregated and deduplicated across every SDK installed this
+    run. Fix for #1 (surfacing captured stdout again) already makes each
+    SDK's own warnings visible; this additionally means a prerequisite
+    shared by multiple SDKs (e.g. app/lib/roles.ts) prints once at the very
+    end instead of as N near-identical lines scattered between each SDK's
+    file-copy output — the thing you'd actually want to act on before
+    calling the install done.
+    """
+    missing_requires = {}
+    integration_issues = []
+
+    for sdk_config in sdks_to_install:
+        sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
+        sdk_path = resolve_active_path(sdk_config)
+        manifest_path = os.path.join(sdk_path, "manifest.json")
+        if not os.path.exists(manifest_path):
+            continue
+        try:
+            with open(manifest_path, "r", encoding="utf-8-sig") as f:
+                manifest = json.load(f)
+        except Exception:
+            continue
+
+        for req in manifest.get("requires", []):
+            if not os.path.exists(os.path.join(PROJECT_ROOT, req)):
+                missing_requires.setdefault(req, set()).add(sdk_name)
+
+        for integration in manifest.get("integrations", []):
+            target_rel = integration.get("target")
+            placeholder = integration.get("placeholder")
+            if not target_rel or not placeholder:
+                continue
+            target_abs = os.path.join(PROJECT_ROOT, target_rel)
+            if not os.path.exists(target_abs):
+                integration_issues.append(f"{sdk_name}: integration target missing: {target_rel}")
+                continue
+            with open(target_abs, "r", encoding="utf-8") as f:
+                content = f.read()
+            if placeholder not in content:
+                integration_issues.append(
+                    f"{sdk_name}: placeholder \"{placeholder}\" not found in {target_rel} "
+                    f"— this SDK's entry was not wired in automatically"
+                )
+
+    if not missing_requires and not integration_issues:
+        return
+
+    print("\n[*] Post-install checklist — not fatal, but nothing below got wired up automatically:")
+    for req, sdks in sorted(missing_requires.items()):
+        print(f"  [!] Missing host prerequisite: {req} (needed by: {', '.join(sorted(sdks))})")
+    for issue in integration_issues:
+        print(f"  [!] {issue}")
 
 
 def run_npm_install():
@@ -211,6 +277,7 @@ def main():
         run_installer(sdk)
 
     run_npm_install()
+    collect_post_install_checklist(sdks_to_install)
 
 
 if __name__ == "__main__":
