@@ -29,6 +29,18 @@ def get_subpath_in_repo(local_path, repo_name):
         return "/".join(parts[-2:])
     return normalized
 
+def authenticated_git_url(git_url):
+    """Inject MONOREPO_PAT for github.com HTTPS clones so private SDK repos
+    (all SDKs are now private) resolve without ambient git credentials —
+    same token/URL shape universal-flutter-build.yml already uses for its
+    own private-repo clone path."""
+    token = os.environ.get("MONOREPO_PAT")
+    if token and git_url.startswith("https://github.com/"):
+        return git_url.replace(
+            "https://github.com/", f"https://x-access-token:{token}@github.com/"
+        )
+    return git_url
+
 def check_git_availability(git_url):
     try:
         result = subprocess.run(
@@ -89,7 +101,7 @@ def resolve_and_cache_sdks(sdks):
                     func(path)
                 if os.path.exists(temp_repo_dir):
                     shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
-                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, temp_repo_dir], check=True)
+                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", authenticated_git_url(git_url), temp_repo_dir], check=True)
                 repo_source_dir = temp_repo_dir
             except Exception as e:
                 print(f"[!] Failed to clone {git_url}: {e}")

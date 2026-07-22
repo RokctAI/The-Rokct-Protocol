@@ -1,4 +1,4 @@
-# compliance-silent
+# compliance-ignore-file: structural-special-dirs
 # Licensed under the MIT License.
 # Copyright 2024 RokctAI
 

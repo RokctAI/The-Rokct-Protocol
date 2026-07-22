@@ -1,4 +1,4 @@
-# compliance-silent
+# compliance-ignore-file: structural-special-dirs
 import os
 import hashlib
 import json
@@ -74,7 +74,7 @@ def main():
         if item_path.name == ".sync_ready":
             continue
         if item_path.is_dir():
-            if item_path.name in ("workflows", "agent", "evidence", "images", "templates", "types", "config"):
+            if item_path.name in ("workflows", "agent", "evidence", "images", "templates", "types", "config", "cache"):
                 continue
             shutil.rmtree(item_path)
             print(f"[end] Deleted directory: {item_path.name}")

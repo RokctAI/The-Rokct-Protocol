@@ -1,4 +1,4 @@
-# compliance-silent
+# compliance-ignore-file: structural-special-dirs
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: check_health.py

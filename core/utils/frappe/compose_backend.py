@@ -17,6 +17,75 @@ def load_composer_config():
     with open(composer_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def extract_repo_name(git_url):
+    url_path = git_url.rstrip("/")
+    if url_path.endswith(".git"):
+        url_path = url_path[:-4]
+    return os.path.basename(url_path)
+
+def get_subpath_in_repo(local_path, repo_name):
+    normalized = local_path.replace("\\", "/").strip("/")
+    parts = normalized.split("/")
+    for idx, part in enumerate(parts):
+        if part.lower() == repo_name.lower():
+            return "/".join(parts[idx + 1:])
+    if len(parts) >= 2:
+        return "/".join(parts[-2:])
+    return normalized
+
+def resolve_module_sources(modules):
+    """Resolve each module's source directory for modules declared with the
+    rich (source/git/ref) schema, mirroring core/utils/flutter/sdk_composer.py's
+    git-group caching: a module is served from an already-checked-out sibling
+    repo when present (the normal monorepo dev layout, where "path" already
+    resolves relative to PROJECT_ROOT), and only cloned into .rokct/cache when
+    no local copy exists (e.g. a CI checkout of a single repo). Modules using
+    the plain {name, enabled, path} schema are left alone; compose_module()
+    resolves their path directly, as before.
+    """
+    cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
+    git_groups = {}
+    for m in modules:
+        if m.get("source") == "git" and m.get("git"):
+            git_groups.setdefault(m["git"], []).append(m)
+
+    resolved = {}
+    if not git_groups:
+        return resolved
+
+    workspace_parent = os.path.dirname(PROJECT_ROOT)
+
+    for git_url, group in git_groups.items():
+        repo_name = extract_repo_name(git_url)
+        local_repo_path = os.path.join(workspace_parent, repo_name)
+
+        if os.path.exists(local_repo_path):
+            print(f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy.")
+            repo_source_dir = local_repo_path
+        else:
+            ref = group[0].get("ref", "main")
+            temp_repo_dir = os.path.join(cache_base, f"{repo_name}_frappe")
+            print(f"[*] Fetching repository {git_url} (ref {ref}) into {temp_repo_dir}...")
+            try:
+                os.makedirs(cache_base, exist_ok=True)
+                if os.path.exists(temp_repo_dir):
+                    def remove_readonly(func, path, excinfo):
+                        import stat
+                        os.chmod(path, stat.S_IWRITE)
+                        func(path)
+                    shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
+                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, temp_repo_dir], check=True)
+                repo_source_dir = temp_repo_dir
+            except Exception as e:
+                print(f"[!] Failed to clone {git_url}: {e}")
+                continue
+
+        for m in group:
+            subpath = get_subpath_in_repo(m.get("path", ""), repo_name)
+            resolved[id(m)] = os.path.join(repo_source_dir, *subpath.split("/"))
+
+    return resolved
+
 def find_target_app_dir(config):
     # Try to resolve app name from configuration or folder name
     app_name = config.get("name", "").replace("_app", "")
@@ -35,15 +104,18 @@ def find_target_app_dir(config):
         
     return app_name, target_path
 
-def compose_module(module_config, target_app_path, app_name):
+def compose_module(module_config, target_app_path, app_name, resolved_src_dir=None):
     module_name = module_config["name"]
     raw_path = module_config.get("path")
-    
-    if not raw_path:
+
+    if resolved_src_dir:
+        src_sdk_path = resolved_src_dir
+    elif raw_path:
+        src_sdk_path = os.path.abspath(os.path.join(PROJECT_ROOT, raw_path))
+    else:
         print(f"[-] No path defined for module: {module_name}. Skipping.")
         return None
-        
-    src_sdk_path = os.path.abspath(os.path.join(PROJECT_ROOT, raw_path))
+
     manifest_path = os.path.join(src_sdk_path, "manifest.json")
     
     if not os.path.exists(manifest_path):
@@ -360,11 +432,13 @@ def main():
     
     modules = config.get("modules", [])
     compiled_manifests = {}
-    
+
+    resolved_sources = resolve_module_sources(modules)
+
     for m in modules:
         if m.get("enabled", False):
             print(f"\n[*] Pouring module: {m['name']}...")
-            manifest = compose_module(m, target_app_path, app_name)
+            manifest = compose_module(m, target_app_path, app_name, resolved_sources.get(id(m)))
             if manifest:
                 compiled_manifests[m['name']] = manifest
                 

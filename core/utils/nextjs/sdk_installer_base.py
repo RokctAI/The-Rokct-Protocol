@@ -276,10 +276,17 @@ def update_integrations():
     """Marker-based text injection into shared host files (e.g. a nav/sidebar
     array), mirroring the Dart installer's update_layout_integrations().
     Idempotent: skips if the replacement text is already present.
+
+    Grouped by target file (not iterated package-by-package) so that when
+    two SDKs declare an integration against the *same* marker (e.g. two
+    sidebar-nav entries), each new entry is anchored after the previous
+    one's already-inserted line instead of always re-inserting right after
+    the placeholder — the naive per-package version of this stacked LIFO:
+    the SDK installed second ended up placed *above* the one installed
+    first, silently reversing nav order across separate install runs.
     """
     state = load_state()
-    file_changes = {}
-
+    by_target = {}
     for pkg_name, pkg_data in state.get("packages", {}).items():
         for integration in pkg_data.get("integrations", []):
             target_rel = integration.get("target")
@@ -287,28 +294,35 @@ def update_integrations():
             replacement = integration.get("replacement")
             if not target_rel or not placeholder or not replacement:
                 continue
+            by_target.setdefault(target_rel, []).append((pkg_name, placeholder, replacement))
 
-            target_abs = os.path.join(PROJECT_ROOT, target_rel)
-            if not os.path.exists(target_abs):
-                print(f"  [-] Integration target not found: {target_rel}")
-                continue
+    for target_rel, entries in by_target.items():
+        target_abs = os.path.join(PROJECT_ROOT, target_rel)
+        if not os.path.exists(target_abs):
+            for pkg_name, _, _ in entries:
+                print(f"  [-] Integration target not found: {target_rel} (from {pkg_name})")
+            continue
 
-            content = file_changes.get(target_abs)
-            if content is None:
-                with open(target_abs, "r", encoding="utf-8") as f:
-                    content = f.read()
+        with open(target_abs, "r", encoding="utf-8") as f:
+            content = f.read()
+        original = content
 
+        # Anchor starts at each entry's own placeholder; once an entry is
+        # applied (this run or a previous one), later entries for the same
+        # target insert after *it* instead, preserving declaration order.
+        anchor = None
+        for pkg_name, placeholder, replacement in entries:
             if replacement in content:
+                anchor = replacement
                 continue
-            if placeholder not in content:
+            insert_after = anchor or placeholder
+            if insert_after not in content:
                 print(f"  [!] WARNING: placeholder not found in {target_rel}, skipping integration for {pkg_name}")
                 continue
+            content = content.replace(insert_after, f"{insert_after}\n{replacement}", 1)
+            anchor = replacement
 
-            content = content.replace(placeholder, f"{placeholder}\n{replacement}")
-            file_changes[target_abs] = content
-
-    for path, content in file_changes.items():
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
-        rel_path = os.path.relpath(path, PROJECT_ROOT).replace("\\", "/")
-        print(f"[*] Applied integration in: {rel_path}")
+        if content != original:
+            with open(target_abs, "w", encoding="utf-8") as f:
+                f.write(content)
+            print(f"[*] Applied integration in: {target_rel}")
