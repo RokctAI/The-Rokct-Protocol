@@ -216,7 +216,7 @@ def main():
         pass
 
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
-    required_ignores = ("skills/", "cache/", "tmp/")
+    required_ignores = ("skills/", "tmp/")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
             f.write("\n".join(required_ignores) + "\n")
