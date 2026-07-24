@@ -431,7 +431,15 @@ def main():
         except Exception as e:
             print(f"[!] Error reading composer.json: {e}.")
             sys.exit(1)
-            
+
+    # The FULL enabled set from composer.json — pubspec.yaml must always
+    # reflect every enabled SDK, never just whichever subset this run is
+    # scoped to refresh. A scoped run (e.g. `compose.py auth_sdk`) used to
+    # filter sdks_to_install BEFORE it reached update_pubspec_dependencies(),
+    # silently dropping every other SDK's pubspec entry and breaking the
+    # whole app until a full unscoped recompose restored it.
+    all_enabled_sdks = list(sdks_to_install)
+
     if len(sys.argv) < 2:
         if not sdks_to_install:
             print("[-] No SDKs found to install.")
@@ -460,8 +468,8 @@ def main():
     if package_name:
         update_pubspec_name(package_name)
     
-    if sdks_to_install:
-        update_pubspec_dependencies(sdks_to_install)
+    if all_enabled_sdks:
+        update_pubspec_dependencies(all_enabled_sdks)
 
     ensure_pubspec_overrides()
     remove_stale_widget_test()

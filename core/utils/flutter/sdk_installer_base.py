@@ -230,11 +230,13 @@ def install_sdk_files_and_routes(sdk_name):
     version = manifest.get("version", "1.0.0")
     installs = manifest.get("installs", [])
     routes = manifest.get("routes", [])
-    
+    app_routes = manifest.get("app_routes", [])
+
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
     package_state["version"] = version
     package_state["routes"] = routes
+    package_state["app_routes"] = app_routes
     
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
     
@@ -585,8 +587,58 @@ def update_layout_integrations():
         rel_path = os.path.relpath(path, PROJECT_ROOT).replace("\\", "/")
         print(f"[*] Applied widget layout integration in: {rel_path}")
 
+def update_app_routes():
+    """Injects AppRoutes.I method implementations into main.dart's
+    _HostAppRoutes scaffold (see the base_sdk template) from each installed
+    SDK's manifest.json "app_routes" list — e.g. auth_sdk declares
+    replaceLoginRoute so every app that installs it gets real login
+    navigation without hand-wiring it. A method is only injected if some
+    installed SDK actually needs it; anything else keeps throwing via
+    _HostAppRoutes' noSuchMethod. Apps that hand-edit main.dart (main.dart
+    detects host edits and stops being overwritten by ensure_file/copy_dir)
+    keep whatever they wrote instead — this only touches the marker block.
+    """
+    if not os.path.exists(MAIN_FILE):
+        return
+
+    state = load_state()
+    all_methods = []
+    seen_methods = set()
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        for r in pkg_data.get("app_routes", []):
+            method = r.get("method")
+            params = r.get("params", "BuildContext context")
+            body = r.get("body")
+            if not method or not body:
+                continue
+            if method in seen_methods:
+                print(f"  [!] app_routes: {method} already provided by another SDK, skipping {pkg_name}'s")
+                continue
+            seen_methods.add(method)
+            all_methods.append(
+                f"  @override\n  Future<Object?> {method}({params}) => {body}\n"
+            )
+
+    with open(MAIN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    methods_block = "\n".join(all_methods)
+    replacement = f"  // @generated-approutes-start\n{methods_block}\n  // @generated-approutes-end"
+    new_content = re.sub(
+        r"  // @generated-approutes-start.*?// @generated-approutes-end",
+        replacement,
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(MAIN_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(all_methods)} AppRoutes method(s) into main.dart")
+
 if __name__ == "__main__":
     update_router_table()
     update_main_dependencies()
     update_database_registration()
     update_layout_integrations()
+    update_app_routes()
