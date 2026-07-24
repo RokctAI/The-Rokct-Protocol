@@ -120,6 +120,33 @@ def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 
+def get_host_routes():
+    """Host-composition routes (ADR-005): pages that live in the host's own
+    composition files (lib/core/presentation/routes/*_route_pages.dart)
+    rather than inside any SDK's lib/ — typically because they import
+    another SDK directly (cross-SDK composition), which ADR-005 forbids
+    inside a single SDK's own lib/. No SDK manifest can declare these, and
+    update_router_table() owns the whole @generated-routes block, so any
+    host route not declared somewhere is silently dropped on every recompose
+    (this repeatedly broke apps whose onboarding entry is host-composed —
+    the app hangs on splash with no route for AppRoutes.replaceLoginRoute to
+    reach).
+
+    Declared as DATA in the consuming app's own composer.json
+    ("host_routes"), not hardcoded in this shared script — this file is
+    canonical/fetched by every app; only each app's own composer.json
+    should differ. An app with no host-composed routes just omits the key.
+    """
+    composer_json_path = os.path.join(PROJECT_ROOT, "composer.json")
+    if not os.path.exists(composer_json_path):
+        return []
+    try:
+        with open(composer_json_path, "r", encoding="utf-8-sig") as f:
+            config = json.load(f)
+        return config.get("host_routes", [])
+    except Exception:
+        return []
+
 def get_project_package_name():
     # 1. Try to get package name from the root composer.json
     composer_json_path = os.path.join(PROJECT_ROOT, "composer.json")
@@ -332,7 +359,21 @@ def update_router_table():
                 all_imports.add(f"import '{imp}';")
                 
             all_routes.append(f"    {rtype}(path: '{path}', page: {page}),")
-            
+
+    # Host-composition routes (see get_host_routes(), sourced from the
+    # consuming app's own composer.json): merged in alongside the
+    # SDK-manifest routes so they are regenerated into the @generated block
+    # every time, instead of being hand-patched back after each compose.
+    for r in get_host_routes():
+        path = r.get("path")
+        page = r.get("page")
+        rtype = r.get("type", "MaterialRoute")
+        imp = r.get("import")
+        if imp:
+            imp = imp.replace("${package}", get_project_package_name())
+            all_imports.add(f"import '{imp}';")
+        all_routes.append(f"    {rtype}(path: '{path}', page: {page}),")
+
     with open(ROUTER_FILE, "r", encoding="utf-8") as f:
         content = f.read()
         
