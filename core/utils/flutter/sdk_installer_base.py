@@ -9,7 +9,10 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
 ROUTER_FILE = os.path.join(PROJECT_ROOT, "lib", "core", "presentation", "routes", "app_router.dart")
 MAIN_FILE = os.path.join(PROJECT_ROOT, "lib", "main.dart")
-DB_FILE = os.path.join(PROJECT_ROOT, "sdk", "core_sdk", "lib", "src", "infrastructure", "utils", "app_database.dart")
+DB_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "app_database.dart")
+TRKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "tr_keys.dart")
+CONSTANTS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "constants", "app_constants.dart")
+INJECTED_DB_DIR = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected")
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -324,6 +327,17 @@ def install_sdk_files_and_routes(sdk_name):
     if db_config:
         package_state["database"] = db_config
 
+    # Extract and store tr_keys (translation keys owned by this SDK alone -
+    # keys used by 2+ SDKs belong hand-written in base_sdk's TrKeys instead)
+    tr_keys_config = manifest.get("tr_keys")
+    if tr_keys_config:
+        package_state["tr_keys"] = tr_keys_config
+
+    # Extract and store AppConstants field overrides (home_sdk only, normally)
+    constants_config = manifest.get("constants")
+    if constants_config:
+        package_state["constants"] = constants_config
+
     # Extract and store layout integrations if present
     integrations_config = manifest.get("integrations")
     if integrations_config:
@@ -331,11 +345,13 @@ def install_sdk_files_and_routes(sdk_name):
 
     state["packages"][sdk_name] = package_state
     save_state(state)
-    
+
     # 2. Update Routing, Main DI & Database Registrations
     update_router_table()
     update_main_dependencies()
     update_database_registration()
+    update_tr_keys_registration()
+    update_constants_overrides()
     return True
 
 def update_router_table():
@@ -450,20 +466,37 @@ def update_main_dependencies():
         f.write(content)
     print("[*] Successfully updated main.dart with generated SDK imports and DI registrations.")
 
+def _clean_pkg_name(pkg):
+    if pkg.endswith("_sdks"):
+        return pkg[:-5]
+    if pkg.endswith("_sdk"):
+        return pkg[:-4]
+    return pkg
+
 def update_database_registration():
     if not os.path.exists(DB_FILE):
         print(f"[-] app_database.dart file not found: {DB_FILE}")
         return
 
     state = load_state()
-    all_imports = set()
     all_tables = []
-    all_datacolumns = []
     migration_steps = []
-    max_version = 12
+    max_version = 1
+
+    # Drift 2.x modular analysis only understands table classes defined
+    # inside the package being generated - a raw cross-package import (what
+    # this function used to emit) yields "The referenced element ... is not
+    # understood by drift" and a silently EMPTY database. So each table's
+    # source file gets copied into base_sdk's own package here (the
+    # .rokct/cache copy is fully editable by design) and imported relatively,
+    # same technique Supacharge's inject_sdk_tables.py proved out before this
+    # was folded back into the canonical installer.
+    os.makedirs(INJECTED_DB_DIR, exist_ok=True)
+    copied = {}
+    rel_imports = set()
 
     # Loop through packages and aggregate definitions to avoid overriding
-    for pkg_name, pkg_data in state.get("packages", {}).items():
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
         db_config = pkg_data.get("database")
         if not db_config:
             continue
@@ -472,13 +505,29 @@ def update_database_registration():
         for tbl in tables:
             t_class = tbl.get("class")
             t_imp = tbl.get("import")
-            t_entity = tbl.get("entity")
             if t_class:
                 all_tables.append(f"    {t_class},")
-            if t_imp:
-                all_imports.add(f"import '{t_imp}';")
-            if t_entity:
-                all_datacolumns.append(f"    if (row is {t_entity}) return row.data;")
+            if t_imp and t_imp not in copied:
+                uri = t_imp
+                pkg, _, rel = uri[len("package:"):].partition("/")
+                clean = _clean_pkg_name(pkg)
+                src = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean, "lib", *rel.split("/"))
+                if not os.path.exists(src):
+                    print(f"  [!] table import source missing, skipping: {uri}")
+                    continue
+                dest_name = f"{pkg}__{os.path.basename(rel)}"
+                dest = os.path.join(INJECTED_DB_DIR, dest_name)
+                with open(src, "r", encoding="utf-8-sig") as sf:
+                    content = sf.read()
+                with open(dest, "w", encoding="utf-8", newline="\n") as df:
+                    df.write(
+                        f"// Copied at compose time from {uri} by "
+                        f"sdk_installer_base.py's update_database_registration() -\n"
+                        f"// drift only understands table classes inside its own package.\n" + content
+                    )
+                copied[uri] = f"injected/{dest_name}"
+            if t_imp in copied:
+                rel_imports.add(f"import '{copied[t_imp]}';")
 
         migration = db_config.get("migration", {})
         version = migration.get("version")
@@ -496,48 +545,38 @@ def update_database_registration():
         content = f.read()
 
     # 1. Inject imports
-    imports_block = "\n".join(sorted(list(all_imports)))
-    imports_replacement = f"// @generated-database-imports-start\n{imports_block}\n// @generated-database-imports-end"
+    imports_block = "\n".join(sorted(rel_imports))
+    imports_replacement = f"// @sdk-database-imports-start\n{imports_block}\n// @sdk-database-imports-end"
     content = re.sub(
-        r"// @generated-database-imports-start.*?// @generated-database-imports-end",
-        imports_replacement,
+        r"// @sdk-database-imports-start.*?// @sdk-database-imports-end",
+        imports_replacement.replace("\\", "\\\\"),
         content,
         flags=re.DOTALL
     )
 
     # 2. Inject tables
     tables_block = "\n".join(all_tables)
-    tables_replacement = f"    // @generated-database-tables-start\n{tables_block}\n    // @generated-database-tables-end"
+    tables_replacement = f"    // @sdk-database-tables-start\n{tables_block}\n    // @sdk-database-tables-end"
     content = re.sub(
-        r"    // @generated-database-tables-start.*?    // @generated-database-tables-end",
-        tables_replacement,
+        r"    // @sdk-database-tables-start.*?    // @sdk-database-tables-end",
+        tables_replacement.replace("\\", "\\\\"),
         content,
         flags=re.DOTALL
     )
 
-    # 3. Inject data columns
-    datacolumn_block = "\n".join(all_datacolumns)
-    datacolumn_replacement = f"    // @generated-database-datacolumn-start\n{datacolumn_block}\n    // @generated-database-datacolumn-end"
-    content = re.sub(
-        r"    // @generated-database-datacolumn-start.*?    // @generated-database-datacolumn-end",
-        datacolumn_replacement,
-        content,
-        flags=re.DOTALL
-    )
-
-    # 4. Inject schemaVersion dynamically
+    # 3. Inject schemaVersion dynamically
     content = re.sub(
         r"int get schemaVersion => \d+;",
         f"int get schemaVersion => {max_version};",
         content
     )
 
-    # 5. Inject migrations
+    # 4. Inject migrations
     migrations_block = "\n".join(migration_steps)
-    migrations_replacement = f"        // @generated-database-migrations-start\n{migrations_block}\n        // @generated-database-migrations-end"
+    migrations_replacement = f"        // @sdk-database-migrations-start\n{migrations_block}\n        // @sdk-database-migrations-end"
     content = re.sub(
-        r"        // @generated-database-migrations-start.*?        // @generated-database-migrations-end",
-        migrations_replacement,
+        r"        // @sdk-database-migrations-start.*?        // @sdk-database-migrations-end",
+        migrations_replacement.replace("\\", "\\\\"),
         content,
         flags=re.DOTALL
     )
@@ -545,6 +584,88 @@ def update_database_registration():
     with open(DB_FILE, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"[*] Successfully updated app_database.dart. Set schemaVersion to {max_version}.")
+
+def update_tr_keys_registration():
+    if not os.path.exists(TRKEYS_FILE):
+        print(f"[-] tr_keys.dart file not found: {TRKEYS_FILE}")
+        return
+
+    state = load_state()
+    key_lines = []
+    seen = {}
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
+        tr_keys = pkg_data.get("tr_keys")
+        if not tr_keys:
+            continue
+        for field, value in tr_keys.items():
+            if field in seen and seen[field] != pkg_name:
+                print(f"  [!] tr_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first")
+                continue
+            seen[field] = pkg_name
+            escaped = value.replace("\\", "\\\\").replace("'", "\\'")
+            key_lines.append(f"  static const String {field} = '{escaped}';")
+
+    with open(TRKEYS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    block = "\n".join(key_lines)
+    replacement = f"// @sdk-tr-keys-start\n{block}\n  // @sdk-tr-keys-end"
+    content = re.sub(
+        r"// @sdk-tr-keys-start.*?  // @sdk-tr-keys-end",
+        replacement.replace("\\", "\\\\"),
+        content,
+        flags=re.DOTALL
+    )
+
+    with open(TRKEYS_FILE, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"[*] Successfully updated tr_keys.dart with {len(key_lines)} SDK-owned key(s).")
+
+def update_constants_overrides():
+    if not os.path.exists(CONSTANTS_FILE):
+        print(f"[-] app_constants.dart file not found: {CONSTANTS_FILE}")
+        return
+
+    state = load_state()
+    imports = set()
+    overrides = {}
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
+        cfg = pkg_data.get("constants")
+        if not cfg:
+            continue
+        if cfg.get("import"):
+            imports.add(f"import '{cfg['import']}';")
+        for field, expr in cfg.get("overrides", {}).items():
+            overrides[field] = expr
+
+    if not overrides:
+        return
+
+    with open(CONSTANTS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    for imp in sorted(imports):
+        if imp not in content:
+            content = content.replace(
+                "import 'package:base_sdk/src/services/enums.dart';",
+                f"import 'package:base_sdk/src/services/enums.dart';\n{imp}",
+                1,
+            )
+
+    applied = 0
+    for field, expr in overrides.items():
+        pattern = r"(static\s+(?:const\s+)?\w+(?:<[^>]*>)?\s+%s\s*=\s*).*?;" % re.escape(field)
+        new_content, n = re.subn(pattern, r"\1%s;" % expr, content, count=1)
+        if n:
+            content = new_content
+            applied += 1
+        else:
+            print(f"  [!] constants override: field '{field}' not found in AppConstants, skipping")
+
+    if applied:
+        with open(CONSTANTS_FILE, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"[*] overrode {applied} AppConstants field(s) from home SDK manifest")
 
 def update_layout_integrations():
     state = load_state()
