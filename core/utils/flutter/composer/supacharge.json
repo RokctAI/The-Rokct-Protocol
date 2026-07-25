@@ -1,0 +1,145 @@
+{
+  "name": "rokctapp_composer",
+  "version": "1.0.0",
+  "package_name": "supacharge",
+  "description": "Configuration list of active SDKs for the Supacharge app",
+  "sdks": [
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "home_sdk": false,
+      "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
+    },
+    {
+      "name": "lms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/lms/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "home_sdk": true,
+      "_comment": "LMS domain SDK (2026-07 carve-out from agent_sdk/replay_sdk); owns the lesson-player experience and is Supacharge's home SDK."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "users_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "products_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "_comment": "Transitive dependency of users_sdk, not used directly by Supacharge features today."
+    },
+    {
+      "name": "merchants_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "_comment": "Mutual dependency of products_sdk, not used directly by Supacharge features today."
+    },
+    {
+      "name": "onboarding_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/onboarding/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "payments_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "wallet_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "_comment": "Transitive dependency of payments_sdk, not used directly by Supacharge features today."
+    },
+    {
+      "name": "subscriptions_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "replay_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/replay/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "agent_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "home_sdk": false
+    },
+    {
+      "name": "fav_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/fav/dart",
+      "ref": "sdk-refork-2026-07-11",
+      "_comment": "Used today for shop/product favoriting only. Subject-selection reuse (ADR-004 in decision_log.md) is still PENDING - do not assume subject selection works via fav_sdk until that redesign lands."
+    },
+    {
+      "name": "comms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "productivity_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/dart",
+      "ref": "sdk-refork-2026-07-11"
+    },
+    {
+      "name": "processing_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/processing/dart",
+      "ref": "sdk-refork-2026-07-11"
+    }
+  ]
+}

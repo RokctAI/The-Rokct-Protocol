@@ -23,6 +23,21 @@ def file_hash(path):
             hasher.update(chunk)
     return hasher.hexdigest()
 
+def resolve_app_type():
+    """Reads this host app's own flavor marker (e.g. 'customer', 'driver',
+    'manager', 'pos') from .rokct/app_type - a plain one-line text file
+    checked into each host app's own repo (distinct from production.env,
+    which is shared across all flavors and lists every flavor's package
+    name at once, so it can't self-identify which one a given repo is).
+    Returns None if the file doesn't exist - manifests with no matching
+    app_type block behave exactly as before (nothing filtered)."""
+    path = os.path.join(PROJECT_ROOT, ".rokct", "app_type")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+            return value or None
+    return None
+
 def resolve_home_sdk():
     sdk_root = os.path.join(PROJECT_ROOT, "sdk")
     if os.path.isdir(sdk_root):
@@ -229,11 +244,22 @@ def install_sdk_files_and_routes(sdk_name):
         
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         manifest = json.load(f)
-        
+
+    # Everything at the manifest's top level always installs regardless of
+    # flavor ("common get installed regardless"). A manifest can additionally
+    # declare an "app_type" block keyed by flavor name (customer/driver/
+    # manager/pos/...) whose own installs/routes/app_routes/database/
+    # tr_keys/constants get merged in ONLY when they match this host app's
+    # own .rokct/app_type marker - same file-selection idea as the
+    # tenant/control split on the Frappe composer side, applied here via
+    # manifest content instead of separate on-disk folders.
+    current_app_type = resolve_app_type()
+    flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+
     version = manifest.get("version", "1.0.0")
-    installs = manifest.get("installs", [])
-    routes = manifest.get("routes", [])
-    app_routes = manifest.get("app_routes", [])
+    installs = manifest.get("installs", []) + flavor_block.get("installs", [])
+    routes = manifest.get("routes", []) + flavor_block.get("routes", [])
+    app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
@@ -322,24 +348,39 @@ def install_sdk_files_and_routes(sdk_name):
             package_state["files"][rel_dest] = file_hash(file_dest)
             print(f"  [+] COPY: {rel_dest}")
             
-    # Extract and store database definitions if present
+    # Extract and store database definitions if present (tables from both
+    # common and the matching flavor block; flavor's migration step wins if
+    # both declare one, since a manifest normally only needs one)
     db_config = manifest.get("database")
-    if db_config:
-        package_state["database"] = db_config
+    flavor_db = flavor_block.get("database")
+    if db_config or flavor_db:
+        merged_db = dict(db_config or {})
+        if flavor_db:
+            merged_db["tables"] = (db_config or {}).get("tables", []) + flavor_db.get("tables", [])
+            if flavor_db.get("migration"):
+                merged_db["migration"] = flavor_db["migration"]
+        package_state["database"] = merged_db
 
     # Extract and store tr_keys (translation keys owned by this SDK alone -
     # keys used by 2+ SDKs belong hand-written in base_sdk's TrKeys instead)
-    tr_keys_config = manifest.get("tr_keys")
+    tr_keys_config = dict(manifest.get("tr_keys") or {})
+    tr_keys_config.update(flavor_block.get("tr_keys") or {})
     if tr_keys_config:
         package_state["tr_keys"] = tr_keys_config
 
     # Extract and store AppConstants field overrides (home_sdk only, normally)
     constants_config = manifest.get("constants")
-    if constants_config:
-        package_state["constants"] = constants_config
+    flavor_constants = flavor_block.get("constants")
+    if constants_config or flavor_constants:
+        merged_constants = dict(constants_config or {})
+        if flavor_constants:
+            merged_constants["import"] = flavor_constants.get("import", merged_constants.get("import"))
+            merged_constants["overrides"] = dict((constants_config or {}).get("overrides", {}))
+            merged_constants["overrides"].update(flavor_constants.get("overrides", {}))
+        package_state["constants"] = merged_constants
 
     # Extract and store layout integrations if present
-    integrations_config = manifest.get("integrations")
+    integrations_config = manifest.get("integrations", []) + flavor_block.get("integrations", [])
     if integrations_config:
         package_state["integrations"] = integrations_config
 

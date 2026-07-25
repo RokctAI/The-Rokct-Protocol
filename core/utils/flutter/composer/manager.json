@@ -1,0 +1,148 @@
+{
+  "name": "rokctapp_composer",
+  "version": "1.0.0",
+  "package_name": "manager",
+  "description": "Configuration list of active SDKs for paas_manager",
+  "sdks": [
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/dart",
+      "ref": "main",
+      "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../Users/auth/dart",
+      "git": "https://github.com/RokctAI/Users",
+      "ref": "main"
+    },
+    {
+      "name": "users_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../Users/users/dart",
+      "git": "https://github.com/RokctAI/Users",
+      "ref": "main"
+    },
+    {
+      "name": "merchants_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/merchants/dart",
+      "home_sdk": true,
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main"
+    },
+    {
+      "name": "products_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/products/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main"
+    },
+    {
+      "name": "orders_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/orders/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main"
+    },
+    {
+      "name": "kitchen_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/dart",
+      "ref": "main"
+    },
+    {
+      "name": "hardware_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hardware/dart",
+      "ref": "main"
+    },
+    {
+      "name": "payments_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/dart",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/dart",
+      "ref": "main"
+    },
+    {
+      "name": "comms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/dart",
+      "ref": "main"
+    },
+    {
+      "name": "processing_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/processing/dart",
+      "ref": "main"
+    },
+    {
+      "name": "productivity_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/dart",
+      "ref": "main",
+      "_comment": "Included but not present in original apps"
+    },
+    {
+      "name": "corporate_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/corporate/dart",
+      "ref": "main"
+    },
+    {
+      "name": "promotions_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/promotions/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main"
+    },
+    {
+      "name": "map_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../zones/map/dart",
+      "git": "https://github.com/RokctAI/zones",
+      "ref": "main"
+    },
+    {
+      "name": "agent_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/dart",
+      "ref": "main",
+      "_comment": "Disabled as per requirements"
+    }
+  ]
+}
