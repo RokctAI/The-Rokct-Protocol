@@ -55,6 +55,24 @@
       "ref": "main"
     },
     {
+      "name": "hardware_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hardware/dart",
+      "ref": "main",
+      "_comment": "Printer/camera/scanner/sensors - POS terminals need receipt printing. Was missing from this template entirely (only manager.json had it)."
+    },
+    {
+      "name": "desktop_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/desktop/dart",
+      "ref": "main",
+      "_comment": "Native desktop runners/config - POS-only, not referenced by any composer template before this."
+    },
+    {
       "name": "payments_sdk",
       "enabled": true,
       "source": "git",

@@ -25,13 +25,17 @@ def file_hash(path):
 
 def resolve_app_type():
     """Reads this host app's own flavor marker (e.g. 'customer', 'driver',
-    'manager', 'pos') from .rokct/app_type - a plain one-line text file
-    checked into each host app's own repo (distinct from production.env,
-    which is shared across all flavors and lists every flavor's package
-    name at once, so it can't self-identify which one a given repo is).
+    'manager', 'pos') from .rokct/config/app_type - a plain one-line text
+    file checked into each host app's own repo (distinct from
+    production.env, which is shared across all flavors and lists every
+    flavor's package name at once, so it can't self-identify which one a
+    given repo is). Lives under .rokct/config/ specifically because
+    end_protocol.py's cleanup deletes anything loose at .rokct/'s own root
+    that isn't a recognized canonical template - config/ is one of its
+    explicitly protected directory names.
     Returns None if the file doesn't exist - manifests with no matching
     app_type block behave exactly as before (nothing filtered)."""
-    path = os.path.join(PROJECT_ROOT, ".rokct", "app_type")
+    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             value = f.read().strip().lower()
