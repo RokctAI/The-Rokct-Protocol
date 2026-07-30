@@ -6,7 +6,12 @@ True wealth is not measured in luxury purchases; it is measured in the degree of
 ---
 
 ## 2. Dynamic Financial Foundations
+{{#if key_relationships}}
 *   **Estate & Legacy Trustees**: {{key_relationships}}
+{{/if}}
+{{#if dependants}}
+*   **Dependants Provided For**: {{dependants}}
+{{/if}}
 *   **Asset Sowing Base**: Sovereign real assets, scalable IP, tech equity, liquid reserves.
 *   **Target Status**: Secure geographic flexibility and permanent financial independence.
 

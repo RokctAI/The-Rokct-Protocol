@@ -1,48 +1,179 @@
+"""StartupOS compilation pipeline.
+
+Reads `questions.md` (the SSOT), sources compliance evidence, and renders the
+template suite for an instance.
+
+Contract, in one line: **the compiler never asserts anything a document or an
+answer does not support.** Unproven regulated fields render as `Pending`,
+regimes that do not exist in the profile's jurisdiction render as
+`Not applicable` or are omitted entirely, and every claim carries provenance.
+"""
+
 import os
 import re
-import glob
-import json
-from pathlib import Path
+from datetime import date
 
-# Try to import pypdf gracefully
-try:
-    import pypdf
-except ImportError:
-    pypdf = None
-
-# Relative path mapping: Import parser from same sibling folder
+from core import __version__ as ENGINE_VERSION
+from core import compliance as compliance_mod
+from core import documents
+from core import jurisdictions
+from core import paths as path_utils
+from core import safe_io
+from core import schemas
+from core import template_engine
+from core.errors import ProfileNotFoundError, TemplateError
 from core.parser import parse_questions_md
 
-# Bidirectional footer mapping rules
+COMPLIANCE_ROOT_ENV_VAR = "STARTUPOS_COMPLIANCE_ROOT"
+
+# What an unanswered question renders as. Deliberately falsy to `{{#if}}` so a
+# template can omit a section instead of printing this into running prose.
+UNANSWERED_TEXT = "Not yet provided"
+
+# Re-exported so existing callers keep working.
+resolve_workspace_root = path_utils.resolve_workspace_root
+
 FOOTER_MAPS = {
     "business": {
+        "01_executive_summary.md": [
+            ("02_company_description.md", "Legal identity, mission and delivery model", "Company Description"),
+            ("03_market_analysis.md", "Sizing, competition and segments", "Market Analysis"),
+            ("07_financial_model.md", "Revenue streams and projections", "Financial Model"),
+            ("annexures/investor_pitch_deck.md", "Slide-by-slide investment case", "Investor Pitch Deck"),
+        ],
+        "02_company_description.md": [
+            ("business_profile.md", "Institution-ready corporate summary", "Business Profile"),
+            ("06_technical_architecture.md", "How the offering is built and delivered", "Delivery Architecture"),
+            ("08_risk_and_mitigation.md", "Risk register and compliance exposure", "Risk & Mitigation"),
+            ("annexures/succession_plan.md", "Leadership continuity", "Succession Plan"),
+        ],
+        "03_market_analysis.md": [
+            ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
+            ("05_marketing_and_sales.md", "How the market is reached", "Marketing & Sales"),
+            ("10_lean_canvas.md", "Problem, solution and advantage on one grid", "Lean Canvas"),
+        ],
+        "04_product_ecosystem.md": [
+            ("06_technical_architecture.md", "Build and delivery detail", "Delivery Architecture"),
+            ("annexures/product_pricing_list.md", "Prices and commercial terms", "Price List"),
+            ("09_business_model_canvas.md", "How the offering creates value", "Business Model Canvas"),
+        ],
+        "05_marketing_and_sales.md": [
+            ("03_market_analysis.md", "Who the market is", "Market Analysis"),
+            ("annexures/marketing_plan.md", "Full marketing plan", "Marketing Plan"),
+            ("annexures/sales_plan.md", "Full sales plan", "Sales Plan"),
+            ("sales_plan_on_a_page.md", "1-Page sales summary", "Sales Plan on a Page"),
+        ],
+        "06_technical_architecture.md": [
+            ("04_product_ecosystem.md", "What is delivered", "Products & Services"),
+            ("operational_plan_on_a_page.md", "1-Page operating summary", "Operational Plan on a Page"),
+            ("annexures/business_continuity_plan.md", "Failure and recovery", "Business Continuity Plan"),
+            ("annexures/quality_management_system.md", "Quality controls and records", "Quality Management System"),
+        ],
+        "07_financial_model.md": [
+            ("financial_plan_on_a_page.md", "1-Page financial summary", "Financial Plan on a Page"),
+            ("annexures/product_pricing_list.md", "Price points behind the model", "Price List"),
+            ("annexures/investor_pitch_deck.md", "The funding ask", "Investor Pitch Deck"),
+        ],
+        "08_risk_and_mitigation.md": [
+            ("annexures/business_continuity_plan.md", "Continuity and recovery targets", "Business Continuity Plan"),
+            ("annexures/succession_plan.md", "Key-person cover", "Succession Plan"),
+            ("compliance_log.md", "Certificate status and expiry warnings", "Compliance Log"),
+        ],
         "09_business_model_canvas.md": [
             ("10_lean_canvas.md", "Venture Strategic Lean Canvas", "Lean Canvas"),
             ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
-            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page")
+            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page"),
         ],
         "10_lean_canvas.md": [
             ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
-            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page")
+            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
+            ("03_market_analysis.md", "Market sizing and competition", "Market Analysis"),
         ],
         "business_plan_on_a_page.md": [
+            ("01_executive_summary.md", "The long-form summary", "Executive Summary"),
             ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
             ("10_lean_canvas.md", "Venture Strategic Lean Canvas", "Lean Canvas"),
-            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page")
+            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page"),
+        ],
+        "business_profile.md": [
+            ("02_company_description.md", "Full company description", "Company Description"),
+            ("compliance_log.md", "Certificate status and expiry warnings", "Compliance Log"),
+            ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
         ],
         "financial_plan_on_a_page.md": [
+            ("07_financial_model.md", "Full financial model", "Financial Model"),
             ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
-            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page")
-        ]
+            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
+        ],
+        "strategic_plan_on_a_page.md": [
+            ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
+            ("project_plan_on_a_page.md", "Projects delivering the strategy", "Project Plan on a Page"),
+            ("people_plan_on_a_page.md", "Team required to deliver it", "People Plan on a Page"),
+        ],
+        "marketing_plan_on_a_page.md": [
+            ("annexures/marketing_plan.md", "Full marketing plan", "Marketing Plan"),
+            ("05_marketing_and_sales.md", "Marketing and sales strategy", "Marketing & Sales"),
+        ],
+        "sales_plan_on_a_page.md": [
+            ("annexures/sales_plan.md", "Full sales plan", "Sales Plan"),
+            ("annexures/sales_terms_and_conditions.md", "Standard terms of sale", "Terms of Sale"),
+            ("annexures/product_pricing_list.md", "Price list", "Price List"),
+        ],
+        "operational_plan_on_a_page.md": [
+            ("06_technical_architecture.md", "Build and delivery detail", "Delivery Architecture"),
+            ("annexures/quality_management_system.md", "Quality controls", "Quality Management System"),
+            ("annexures/business_continuity_plan.md", "Continuity planning", "Business Continuity Plan"),
+        ],
+        "people_plan_on_a_page.md": [
+            ("annexures/succession_plan.md", "Key-person cover and succession", "Succession Plan"),
+            ("strategic_plan_on_a_page.md", "What the team is being built for", "Strategic Plan on a Page"),
+        ],
+        "project_plan_on_a_page.md": [
+            ("strategic_plan_on_a_page.md", "Objectives the projects serve", "Strategic Plan on a Page"),
+            ("people_plan_on_a_page.md", "Resourcing", "People Plan on a Page"),
+        ],
+        "annexures/investor_pitch_deck.md": [
+            ("01_executive_summary.md", "The written summary", "Executive Summary"),
+            ("07_financial_model.md", "Figures behind the deck", "Financial Model"),
+            ("business_profile.md", "Corporate standing", "Business Profile"),
+        ],
+        "annexures/business_continuity_plan.md": [
+            ("08_risk_and_mitigation.md", "The risk register", "Risk & Mitigation"),
+            ("annexures/succession_plan.md", "Key-person continuity", "Succession Plan"),
+        ],
+        "annexures/succession_plan.md": [
+            ("people_plan_on_a_page.md", "Team and key-person risk", "People Plan on a Page"),
+            ("annexures/business_continuity_plan.md", "Operational continuity", "Business Continuity Plan"),
+        ],
+        "annexures/marketing_plan.md": [
+            ("marketing_plan_on_a_page.md", "1-Page summary", "Marketing Plan on a Page"),
+            ("03_market_analysis.md", "Market sizing and segments", "Market Analysis"),
+        ],
+        "annexures/sales_plan.md": [
+            ("sales_plan_on_a_page.md", "1-Page summary", "Sales Plan on a Page"),
+            ("annexures/sales_terms_and_conditions.md", "Terms sales may agree", "Terms of Sale"),
+        ],
+        "annexures/product_pricing_list.md": [
+            ("annexures/sales_terms_and_conditions.md", "Full terms of sale", "Terms of Sale"),
+            ("07_financial_model.md", "Margin and cost basis", "Financial Model"),
+        ],
+        "annexures/quality_management_system.md": [
+            ("operational_plan_on_a_page.md", "1-Page operating summary", "Operational Plan on a Page"),
+            ("compliance_log.md", "Certificate status", "Compliance Log"),
+        ],
+        "annexures/sales_terms_and_conditions.md": [
+            ("annexures/product_pricing_list.md", "Prices these terms apply to", "Price List"),
+            ("annexures/sales_plan.md", "How they are used in the field", "Sales Plan"),
+        ],
     },
     "life": {
         "09_life_model_canvas.md": [
             ("10_life_lean_canvas.md", "Personal Lean Growth Canvas", "Personal Lean Canvas"),
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
         ],
         "10_life_lean_canvas.md": [
             ("09_life_model_canvas.md", "Personal Life Model Canvas", "Personal Life Canvas"),
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
         ],
         "life_plan_on_a_page.md": [
             ("09_life_model_canvas.md", "Personal Life Model Canvas", "Personal Life Canvas"),
@@ -50,665 +181,445 @@ FOOTER_MAPS = {
             ("health_plan_on_a_page.md", "1-Page Biological Conditioning Plan", "Health Plan on a Page"),
             ("financial_legacy_plan_on_a_page.md", "1-Page Multigenerational Stewardship Plan", "Financial Legacy Plan on a Page"),
             ("productivity_plan_on_a_page.md", "1-Page Master Accountability Plan", "Productivity Plan on a Page"),
-            ("legacy_plan_on_a_page.md", "1-Page Legacy Preservations Plan", "Legacy Plan on a Page")
+            ("legacy_plan_on_a_page.md", "1-Page Legacy Preservations Plan", "Legacy Plan on a Page"),
         ],
         "health_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
         ],
         "financial_legacy_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
         ],
         "productivity_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
         ],
         "legacy_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page")
-        ]
-    }
+            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+        ],
+    },
 }
 
-def parse_compliance_pdfs_standalone(compliance_dir, folder_name, primary_base=None):
+
+class CompileResult:
+    """Outcome of one compilation."""
+
+    def __init__(self, instance_type, instance_name, output_dir, jurisdiction):
+        self.instance_type = instance_type
+        self.instance_name = instance_name
+        self.output_dir = output_dir
+        self.jurisdiction = jurisdiction
+        self.written = []
+        self.removed = []
+        self.warnings = []
+        self.missing_fields = {}
+        self.completeness = 0.0
+        self.compliance_status = 0
+
+    @property
+    def ok(self):
+        return bool(self.written)
+
+    def summary(self):
+        # ASCII only: the Windows console defaults to cp1252, and a stray arrow
+        # glyph here crashed the run after every document had been written.
+        lines = [
+            f"[StartupOS] {self.instance_type}/{self.instance_name} "
+            f"-> {len(self.written)} documents",
+            f"  Jurisdiction : {self.jurisdiction.name} ({self.jurisdiction.code})",
+            f"  Completeness : {self.completeness:.0%} of questions answered",
+        ]
+        if self.removed:
+            lines.append(f"  Pruned stale : {', '.join(self.removed)}")
+        if self.missing_fields:
+            lines.append(f"  Unanswered   : {len(self.missing_fields)} field(s)")
+        if self.warnings:
+            lines.append(f"  Warnings     : {len(self.warnings)}")
+        return "\n".join(lines)
+
+
+def resolve_compliance_dir(workspace_root, instance_type, instance_name,
+                           compliance_root=None, warnings=None):
+    """Locate the compliance evidence directory for an instance.
+
+    Order: explicit argument, environment variable, instance-local
+    `compliance/`, then `<workspace parent>/Compliance/<name>`.
+
+    Notably absent: the hardcoded `C:\\Users\\sinya\\Desktop\\RokctAI\\Monorepo`
+    that the previous engine fell back to. That directory was renamed to
+    `occultation` some time ago, so every business compile silently logged
+    "compliance folder not found" and proceeded on fabricated defaults.
     """
-    Stand-alone PDF parsing implementation that mirrors the monorepo logic.
-    Gracefully handles missing pypdf or missing compliance files by using placeholders
-    and answers parsed from questions.md.
+    warnings = warnings if warnings is not None else []
+
+    if compliance_root:
+        candidate = os.path.join(os.path.abspath(compliance_root), instance_name)
+        if os.path.isdir(candidate):
+            return candidate
+        if os.path.isdir(compliance_root):
+            return candidate  # honour the explicit root even when empty
+        warnings.append(f"--compliance-root {compliance_root!r} does not exist.")
+
+    env_root = os.environ.get(COMPLIANCE_ROOT_ENV_VAR)
+    if env_root:
+        candidate = os.path.join(os.path.abspath(env_root), instance_name)
+        if os.path.isdir(candidate):
+            return candidate
+
+    local = os.path.join(
+        path_utils.instance_dir(workspace_root, instance_type, instance_name), "compliance"
+    )
+    if os.path.isdir(local):
+        return local
+
+    sibling = os.path.join(
+        os.path.dirname(os.path.abspath(workspace_root)), "Compliance", instance_name
+    )
+    if os.path.isdir(sibling):
+        return sibling
+
+    return local  # canonical location; caller reports it as missing
+
+
+def compile_instance(instance_type, instance_name, monorepo_root=None,
+                     workspace_root=None, compliance_root=None, quiet=False):
+    """Compile the template suite for one instance.
+
+    `monorepo_root` is accepted for backwards compatibility and treated as
+    `compliance_root`'s parent.
     """
-    trading_name = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', folder_name).strip()
-    
-    # 1. Detect South Africa base (using word boundaries for short acronyms)
-    is_sa = False
-    if primary_base:
-        base_lower = str(primary_base).lower()
-        words = re.findall(r"\b\w+\b", base_lower)
-        if "sa" in words or "za" in words or "south africa" in base_lower:
-            is_sa = True
+    instance_type = path_utils.validate_instance_type(instance_type)
+    instance_name = path_utils.sanitize_instance_name(instance_name)
 
-    # If compliance folder exists, we can also infer SA base
-    if os.path.exists(compliance_dir):
-        is_sa = True
+    root = path_utils.resolve_workspace_root(workspace_root, verbose=not quiet)
+    questions_file = path_utils.questions_path(root, instance_type, instance_name)
+    out_dir = path_utils.output_dir(root, instance_type, instance_name)
+    template_root = path_utils.templates_dir(root, instance_type)
 
-    # Build default fallbacks based on SA vs International
-    if is_sa:
-        data = {
-            "company_name": f"{trading_name} (Pty) Ltd",
-            "reg_number": "Pending — add Business Registration Certificate.pdf",
-            "reg_date": "Pending — add Business Registration Certificate.pdf",
-            "tax_number": "Pending — add Tax_Pin.pdf",
-            "registered_office": "Pending — add Business Registration Certificate.pdf",
-            "postal_address": "Pending — add Business Registration Certificate.pdf",
-            "bee_level": "Level 1 Contributor",
-            "bee_procurement_recognition": "135%",
-            "bee_black_ownership": "100%",
-            "bee_youth_owned": "100%",
-            "bee_disabled_owned": "0%",
-            "bee_rural_owned": "0%",
-            "bee_cert_number": "Pending — add BEE.pdf",
-            "bee_issue_date": "Pending",
-            "bee_expiry_date": "Pending",
-            "tax_pin": "Pending — add Tax_Pin.pdf",
-            "tax_pin_issue_date": "Pending",
-            "tax_pin_expiry_date": "Pending",
-            "tax_compliance_status": "Good Standing",
-            "trademarks": []
-        }
-    else:
-        # Non-SA Venture
-        data = {
-            "company_name": f"{trading_name} LLC",
-            "reg_number": "Pending — add Business Registration Certificate",
-            "reg_date": "Pending — add Business Registration Certificate",
-            "tax_number": "Pending — add Tax ID Certificate",
-            "registered_office": "Pending — add Registration Document",
-            "postal_address": "Pending — add Registration Document",
-            "bee_level": "Not Applicable (International Venture)",
-            "bee_procurement_recognition": "Not Applicable",
-            "bee_black_ownership": "Not Applicable",
-            "bee_youth_owned": "Not Applicable",
-            "bee_disabled_owned": "Not Applicable",
-            "bee_rural_owned": "Not Applicable",
-            "bee_cert_number": "Not Applicable",
-            "bee_issue_date": "Not Applicable",
-            "bee_expiry_date": "Not Applicable",
-            "tax_pin": "Not Applicable",
-            "tax_pin_issue_date": "Not Applicable",
-            "tax_pin_expiry_date": "Not Applicable",
-            "tax_compliance_status": "Not Applicable",
-            "trademarks": []
-        }
+    if not os.path.exists(questions_file):
+        raise ProfileNotFoundError(
+            f"Missing strategic source of truth: {questions_file}\n"
+            f"Provision it first:  python provision.py --type {instance_type} "
+            f"--name {instance_name}"
+        )
+    if not os.path.isdir(template_root):
+        raise TemplateError(
+            f"Missing template folder: {template_root}\n"
+            "Templates ship with the skill; run the compile wrapper so they sync, "
+            "or copy them from core/skills/.rok/startup_os/templates/."
+        )
 
-    if not pypdf:
-        print("[Warning] pypdf is not installed. Skipping PDF extraction; relying on placeholders & answers.")
-        return data
+    if not compliance_root and monorepo_root:
+        compliance_root = os.path.join(monorepo_root, "Compliance")
 
-    if not os.path.exists(compliance_dir):
-        print(f"[Warning] Compliance folder '{compliance_dir}' not found. Using standard default fallbacks.")
-        return data
+    profile = parse_questions_md(questions_file)
+    warnings = list(profile.warnings)
 
-    # 1. Parse CIPC Business Registration Certificate.pdf
-    cipc_path = os.path.join(compliance_dir, "Business Registration Certificate.pdf")
-    if os.path.exists(cipc_path):
-        try:
-            reader = pypdf.PdfReader(cipc_path)
-            full_text = ""
-            for page in reader.pages:
-                full_text += page.extract_text() + "\n"
+    jurisdiction = jurisdictions.resolve(profile.answers, warnings)
+    result = CompileResult(instance_type, instance_name, out_dir, jurisdiction)
+    result.completeness = profile.completeness
 
-            reg_match = re.search(r"(\d{4}\s*/\s*\d{6}\s*/\s*\d{2})", full_text)
-            if reg_match:
-                data["reg_number"] = re.sub(r"\s+", "", reg_match.group(1))
+    trading_name = profile.get("trading_name") or _humanise(instance_name)
 
-            name_match = re.search(r"Enterprise Name:\s*([A-Z\s\(\)]+)", full_text, re.IGNORECASE)
-            if not name_match:
-                name_match = re.search(r"Enterprise Name\s*([A-Z\s\(\)]+)", full_text, re.IGNORECASE)
-            if name_match:
-                data["company_name"] = name_match.group(1).strip()
+    record = None
+    if instance_type == "business":
+        compliance_dir = resolve_compliance_dir(
+            root, instance_type, instance_name, compliance_root, warnings
+        )
+        record = compliance_mod.load_compliance(
+            compliance_dir, trading_name, jurisdiction
+        )
+        warnings.extend(record.warnings)
 
-            tax_match = re.search(r"(\d+)\s*TAX\s*Number", full_text, re.IGNORECASE)
-            if tax_match:
-                data["tax_number"] = tax_match.group(1).strip()
+    values = _build_values(profile, jurisdiction, record, trading_name,
+                           instance_name, instance_type, warnings)
 
-            reg_date_match = re.search(r"Registration Date[:\s]+(\d{1,2}\s+\w+\s+\d{4}|\d{4}-\d{2}-\d{2})", full_text, re.IGNORECASE)
-            if reg_date_match:
-                data["reg_date"] = reg_date_match.group(1).strip()
+    context = template_engine.RenderContext(
+        values=values, jurisdiction=jurisdiction, features=jurisdiction.features
+    )
 
-            lines = [line.strip() for line in full_text.split('\n') if line.strip()]
-            idx = -1
-            for i, line in enumerate(lines):
-                if "addresses" in line.lower():
-                    idx = i
-                    break
+    template_files = list(_iter_templates(template_root))
+    if not template_files:
+        raise TemplateError(f"No .md templates found in {template_root}")
 
-            if idx != -1:
-                addr_lines = []
-                for j in range(idx + 1, min(idx + 15, len(lines))):
-                    l_val = lines[j]
-                    if any(x in l_val.lower() for x in ["registration date", "business start date", "enterprise type", "active members", "directors", "appointment", "tax"]):
-                        break
-                    addr_lines.append(l_val)
+    os.makedirs(out_dir, exist_ok=True)
+    generated_on = date.today()
+    written_names = set()
 
-                postal_parts = []
-                reg_parts = []
-                in_reg = False
-                for part in addr_lines:
-                    if not in_reg:
-                        postal_parts.append(part)
-                        if re.match(r"^\d{4}$", part):
-                            in_reg = True
-                    else:
-                        reg_parts.append(part)
-                        if re.match(r"^\d{4}$", part):
-                            break
+    for template_path, relative_name in template_files:
+        with open(template_path, "r", encoding="utf-8") as handle:
+            template_text = handle.read()
 
-                def clean_parts(parts):
-                    seen = []
-                    for p in parts:
-                        if p not in seen:
-                            seen.append(p)
-                    return ", ".join(seen)
+        rendered, render_warnings = template_engine.render(template_text, context)
+        for warning in render_warnings:
+            warnings.append(f"{relative_name}: {warning}")
 
-                if postal_parts:
-                    data["postal_address"] = clean_parts(postal_parts)
-                if reg_parts:
-                    data["registered_office"] = clean_parts(reg_parts)
+        document = _assemble(
+            rendered=rendered,
+            filename=relative_name,
+            instance_name=instance_name,
+            instance_type=instance_type,
+            jurisdiction=jurisdiction,
+            record=record,
+            profile=profile,
+            generated_on=generated_on,
+        )
 
-            print(f"  Successfully parsed CIPC: {data['company_name']}")
-        except Exception as e:
-            print(f"  Error parsing CIPC PDF: {e}")
+        destination = os.path.join(out_dir, *relative_name.split("/"))
+        path_utils.assert_contained(out_dir, destination)
+        safe_io.atomic_write(destination, document)
+        written_names.add(relative_name)
+        result.written.append(relative_name)
+        if not quiet:
+            print(f"  Generated: {relative_name}")
 
-    # 2. Parse BEE.pdf
-    bee_path = os.path.join(compliance_dir, "BEE.pdf")
-    if os.path.exists(bee_path):
-        try:
-            reader = pypdf.PdfReader(bee_path)
-            full_text = ""
-            for page in reader.pages:
-                full_text += page.extract_text() + "\n"
+    if record is not None:
+        log_text = compliance_mod.build_compliance_log(record, instance_name, generated_on)
+        safe_io.atomic_write(os.path.join(out_dir, "compliance_log.md"), log_text)
+        written_names.add("compliance_log.md")
+        result.written.append("compliance_log.md")
+        status, _messages = compliance_mod.compliance_exit_status(record, generated_on)
+        result.compliance_status = status
 
-            level_match = re.search(r"(LEVEL\s+\d+\s+CONTRIBUTOR)", full_text, re.IGNORECASE)
-            if level_match:
-                data["bee_level"] = level_match.group(1).strip()
+    # Prune only after everything this run produces is known, or the compliance
+    # log would be deleted moments after being written.
+    result.removed = safe_io.prune_directory(out_dir, written_names | {".history"})
 
-            proc_match = re.search(r"(\d+%)\s*PROCUREMENT\s*RECOGNITION", full_text, re.IGNORECASE)
-            if proc_match:
-                data["bee_procurement_recognition"] = proc_match.group(1).strip()
+    result.missing_fields = {
+        key: profile.labels.get(key, key) for key in sorted(profile.pending)
+    }
+    result.warnings = warnings
 
-            cert_match = re.search(r"Certificate Number\s*(\d+)", full_text, re.IGNORECASE)
-            if not cert_match:
-                cert_match = re.search(r"Tracking Number:\s*(\d+)", full_text, re.IGNORECASE)
-            if cert_match:
-                data["bee_cert_number"] = cert_match.group(1).strip()
+    if not quiet:
+        print(result.summary())
+        for warning in warnings:
+            print(f"  [warn] {warning}")
 
-            dates = re.findall(r"(\d{1,2}-[a-zA-Z]+-\d{4})", full_text)
-            if len(dates) >= 2:
-                data["bee_issue_date"] = dates[-2]
-                data["bee_expiry_date"] = dates[-1]
-
-            bo_match = re.search(r"(\d+%)\s*BLACK\s*OWNERSHIP", full_text, re.IGNORECASE)
-            if bo_match:
-                data["bee_black_ownership"] = bo_match.group(1).strip()
-
-            yo_match = re.search(r"youth\s+as\s+defined.*?\n\s*(\d+%)", full_text, re.DOTALL | re.IGNORECASE)
-            if yo_match:
-                data["bee_youth_owned"] = yo_match.group(1).strip()
-
-            print(f"  Successfully parsed BEE: {data['bee_level']}")
-        except Exception as e:
-            print(f"  Error parsing BEE PDF: {e}")
-
-    # 3. Parse Tax_Pin.pdf
-    tax_pin_path = os.path.join(compliance_dir, "Tax_Pin.pdf")
-    if os.path.exists(tax_pin_path):
-        try:
-            reader = pypdf.PdfReader(tax_pin_path)
-            full_text = ""
-            for page in reader.pages:
-                full_text += page.extract_text() + "\n"
-
-            tax_ref_match = re.search(r"Taxpayer Reference Number[:\s]+(?:IT\s*-\s*)?(\d+)", full_text, re.IGNORECASE)
-            if not tax_ref_match:
-                tax_ref_match = re.search(r"Tax reference No:\s*(\d+)", full_text, re.IGNORECASE)
-            if tax_ref_match:
-                data["tax_number"] = tax_ref_match.group(1).strip()
-
-            pin_match = re.search(r"\bPIN\s+([A-Z0-9]{8,12})\b", full_text)
-            if pin_match:
-                data["tax_pin"] = pin_match.group(1).strip()
-
-            pin_issue_match = re.search(r"Issue Date:\s*([\d/\-]+)", full_text, re.IGNORECASE)
-            if pin_issue_match:
-                data["tax_pin_issue_date"] = pin_issue_match.group(1).strip()
-
-            pin_expiry_match = re.search(r"PIN Expiry Date\s+([\d/\-]+)", full_text, re.IGNORECASE)
-            if pin_expiry_match:
-                data["tax_pin_expiry_date"] = pin_expiry_match.group(1).strip()
-
-            print(f"  Successfully parsed Tax Pin: {data['tax_pin']}")
-        except Exception as e:
-            print(f"  Error parsing Tax Pin PDF: {e}")
-
-    # 4. Parse Overrides Layer if present
-    overrides_path = os.path.join(compliance_dir, "compliance_overrides.json")
-    if os.path.exists(overrides_path):
-        try:
-            with open(overrides_path, 'r', encoding='utf-8') as f:
-                overrides = json.load(f)
-            for k, v in overrides.items():
-                if v is not None and not k.startswith("_"):
-                    data[k] = v
-            print(f"  Applied compliance overrides from json.")
-        except Exception as e:
-            print(f"  Error applying overrides: {e}")
-
-    # 5. Entity Suffix and BEE Conditioning logic based on final registration format
-    final_reg = data.get("reg_number", "")
-    if final_reg and not final_reg.startswith("Pending"):
-        # Match South African pattern YYYY/NNNNNN/EE or YYYY / NNNNNN / EE
-        sa_reg_match = re.search(r"(\d{4})\s*/\s*(\d{6})\s*/\s*(\d{2})", final_reg)
-        if sa_reg_match:
-            is_sa = True
-            entity_code = sa_reg_match.group(3)
-            
-            # Map entity code to standard SA suffix
-            if entity_code == "07":
-                entity_suffix = " (Pty) Ltd"
-            elif entity_code == "28":
-                entity_suffix = " CC"
-            elif entity_code == "06":
-                entity_suffix = " NPC"
-            elif entity_code == "08":
-                entity_suffix = " Ltd"
-            elif entity_code == "21":
-                entity_suffix = " Inc"
-            else:
-                entity_suffix = " (Pty) Ltd"
-
-            # Clean and format company name to append the correct dynamic suffix
-            current_company_name = data.get("company_name", trading_name)
-            
-            # Remove any standard suffixes from the end of the parsed name to prevent duplicates
-            clean_name = current_company_name
-            for sfx in ["(Pty) Ltd", "PTY LTD", "Pty Ltd", "CC", "NPC", "Ltd", "LTD", "Inc", "INC", "LLC"]:
-                if clean_name.endswith(sfx):
-                    clean_name = clean_name[:-len(sfx)].strip()
-                elif clean_name.endswith(f" ({sfx})"):
-                    clean_name = clean_name[:-len(f" ({sfx})")].strip()
-
-            data["company_name"] = f"{clean_name}{entity_suffix}"
-
-    # If the final check determines it is not in SA, ensure BEE & Tax Pin are conditionalized out
-    if not is_sa:
-        data["bee_level"] = "Not Applicable (International Venture)"
-        data["bee_procurement_recognition"] = "Not Applicable"
-        data["bee_black_ownership"] = "Not Applicable"
-        data["bee_youth_owned"] = "Not Applicable"
-        data["bee_disabled_owned"] = "Not Applicable"
-        data["bee_rural_owned"] = "Not Applicable"
-        data["bee_cert_number"] = "Not Applicable"
-        data["bee_issue_date"] = "Not Applicable"
-        data["bee_expiry_date"] = "Not Applicable"
-        data["tax_pin"] = "Not Applicable"
-        data["tax_pin_issue_date"] = "Not Applicable"
-        data["tax_pin_expiry_date"] = "Not Applicable"
-        data["tax_compliance_status"] = "Not Applicable"
-
-    return data
+    return result
 
 
-def parse_trademark_pdfs_standalone(trademark_dir):
-    """Parses CIPC trademark documents from the monorepo trademark folder if they exist."""
-    trademarks = []
-    if not pypdf or not os.path.exists(trademark_dir):
-        return trademarks
-
-    tm_files = glob.glob(os.path.join(trademark_dir, "*.pdf"))
-    for tm_path in tm_files:
-        try:
-            reader = pypdf.PdfReader(tm_path)
-            full_text = ""
-            for page in reader.pages:
-                full_text += page.extract_text() + "\n"
-
-            tm = {
-                "application_number": "Pending",
-                "application_date": "Pending",
-                "mark": "Pending",
-                "status": "Pending",
-                "international_class": "Pending",
-                "nature": "Ordinary",
-                "specification": "Pending",
-                "generated_date": "Pending"
-            }
-
-            app_match = re.search(r"21\s*Official Application No\.\s*(\d+/\d+)", full_text, re.IGNORECASE)
-            if app_match:
-                tm["application_number"] = app_match.group(1).strip()
-
-            date_match = re.search(r"22\s*Application date\s*([\d\-]+)", full_text, re.IGNORECASE)
-            if date_match:
-                tm["application_date"] = date_match.group(1).strip()
-
-            mark_match = re.search(r"54\s*Representation of Trade mark\s*\n([^\n]+)", full_text, re.IGNORECASE)
-            if mark_match:
-                tm["mark"] = mark_match.group(1).strip()
-
-            status_match = re.search(r"TRADE MARK STATUS:\s*(\S+)", full_text, re.IGNORECASE)
-            if status_match:
-                tm["status"] = status_match.group(1).strip()
-
-            class_match = re.search(r"51\s*International Classification\s*(\d+)", full_text, re.IGNORECASE)
-            if class_match:
-                tm["international_class"] = class_match.group(1).strip()
-
-            trademarks.append(tm)
-            print(f"  Parsed trademark CIPC doc: {tm['mark']}")
-        except Exception as e:
-            print(f"  Error parsing trademark PDF: {e}")
-
-    return trademarks
+def _iter_templates(template_root):
+    """Yield `(absolute_path, relative_path)` for every template, including
+    subdirectories such as `annexures/`, whose structure is mirrored in output.
+    """
+    for directory, subdirs, filenames in os.walk(template_root):
+        subdirs[:] = sorted(name for name in subdirs if not name.startswith("."))
+        for filename in sorted(filenames):
+            if not filename.endswith(".md"):
+                continue
+            absolute = os.path.join(directory, filename)
+            relative = os.path.relpath(absolute, template_root).replace(os.sep, "/")
+            yield absolute, relative
 
 
-def resolve_workspace_root():
-    # 0. Check if running inside Frappe (dynamic site path resolution)
-    try:
-        import sys
-        if "frappe" in sys.modules:
-            import frappe
-            if hasattr(frappe, "get_site_path"):
-                return frappe.get_site_path("StartupOS")
-    except Exception:
-        pass
+def _assemble(rendered, filename, instance_name, instance_type, jurisdiction,
+              record, profile, generated_on):
+    """Wrap a rendered body with control block, footers and gap report."""
+    fingerprint = documents.content_fingerprint(rendered)
 
-    # 1. Frappe Docker Environment Sites Detection
-    # If we are inside the running container, sites is the mounted named volume
-    frappe_sites = "/home/frappe/frappe-bench/sites"
-    if os.path.isdir(frappe_sites):
-        return os.path.join(frappe_sites, "StartupOS")
+    version_block = documents.build_version_block(
+        instance_name=instance_name,
+        instance_type=instance_type,
+        engine_version=ENGINE_VERSION,
+        fingerprint=fingerprint,
+        generated_on=generated_on,
+        completeness=profile.completeness,
+        verified_fields=record.verified_count if record else None,
+        applicable_fields=record.applicable_count if record else None,
+        privacy_law=jurisdiction.privacy_law,
+    )
 
-    import sys
-    main_file = None
-    try:
-        import __main__
-        if hasattr(__main__, "__file__") and __main__.__file__:
-            main_file = os.path.abspath(__main__.__file__)
-    except Exception:
-        pass
-        
-    if not main_file and sys.argv and sys.argv[0]:
-        main_file = os.path.abspath(sys.argv[0])
+    document = documents.insert_version_block(rendered, version_block)
+    document += documents.build_link_footer(
+        FOOTER_MAPS.get(instance_type, {}).get(filename)
+    )
 
-    resolved_root = None
-    if main_file:
-        # Search upwards for the "skills" folder
-        current = main_file
-        while True:
-            parent = os.path.dirname(current)
-            if parent == current:
-                break
-            if os.path.basename(current) == "skills":
-                resolved_root = parent
-                break
-            current = parent
+    if record is not None:
+        document += documents.build_provenance_footer(
+            record.provenance_rows(), jurisdiction.name
+        )
 
-        if not resolved_root:
-            # Search upwards for "startup_os"
-            current = main_file
-            while True:
-                parent = os.path.dirname(current)
-                if parent == current:
-                    break
-                if os.path.basename(current) == "startup_os":
-                    resolved_root = parent
-                    break
-                current = parent
+    missing = {key: profile.labels.get(key, key) for key in sorted(profile.pending)}
+    document += documents.build_gap_report(missing, [])
 
-    if not resolved_root:
-        resolved_root = os.getcwd()
+    return document.rstrip() + "\n"
 
-    # Standardize on StartupOS directory under the resolved project root
-    if resolved_root:
-        # If the resolved root is .rokct, the project root is the parent of .rokct
-        if os.path.basename(resolved_root) == ".rokct":
-            project_root = os.path.dirname(resolved_root)
-        # If the resolved root is core (e.g. The-Rokct-Protocol/core), the project root is the parent of core
-        elif os.path.basename(resolved_root) == "core":
-            project_root = os.path.dirname(resolved_root)
+
+def _humanise(name):
+    """`TableMountainTech` -> `Table Mountain Tech`."""
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", name)
+    spaced = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", spaced)
+    return spaced.replace("_", " ").replace("-", " ").strip()
+
+
+def _build_values(profile, jurisdiction, record, trading_name,
+                  instance_name, instance_type, warnings):
+    """Assemble the full placeholder namespace for the renderer."""
+    values = dict(profile.answers)
+
+    # Seed every question the schema knows about, so a template never renders
+    # the «not set» marker for a field the user simply has not answered yet.
+    # Unanswered fields read as "Not yet provided", which `{{#if}}` treats as
+    # falsy — templates can therefore hide a section rather than print a
+    # placeholder sentence into an executive summary.
+    for key in schemas.schema_keys(instance_type):
+        values.setdefault(key, UNANSWERED_TEXT)
+    for key in profile.pending:
+        values.setdefault(key, UNANSWERED_TEXT)
+
+    values["trading_name"] = trading_name
+    values["instance_name"] = instance_name
+    values["jurisdiction_code"] = jurisdiction.code
+    values["jurisdiction_name"] = jurisdiction.name
+    values["currency"] = jurisdiction.currency
+    values["currency_symbol"] = jurisdiction.currency_symbol
+    values["privacy_law"] = jurisdiction.privacy_law or ""
+    values["standards_body"] = jurisdiction.standards_body or ""
+    values["registry_name"] = jurisdiction.registry_name or ""
+    values["tax_authority"] = jurisdiction.tax_authority or ""
+
+    if record is not None:
+        values.update(record.as_render_dict())
+        # The legal name is only the registry's string. When unverified we show
+        # the trading name and say so, rather than inventing "<name> (Pty) Ltd".
+        if not record.is_verified("company_name"):
+            values["company_name"] = trading_name
+            values["company_name_status"] = (
+                "Trading name — legal registration not yet verified"
+            )
         else:
-            project_root = resolved_root
-            
-        return os.path.join(project_root, "StartupOS")
+            values["company_name_status"] = "Registered legal name"
 
-    return os.path.join(os.getcwd(), "StartupOS")
+        suffix_hint = jurisdictions.entity_suffix_for(
+            jurisdiction, record.get("reg_number").value if record.get("reg_number") else None
+        )
+        values["entity_type_hint"] = suffix_hint or ""
+
+        values["trademarks_details"] = _format_trademarks(record.trademarks)
+        _add_financials(values, profile, jurisdiction)
+    else:
+        values.setdefault("company_name", trading_name)
+
+    if instance_type == "life":
+        _add_life_values(values, profile, warnings)
+
+    return values
 
 
-def compile_instance(instance_type, instance_name, monorepo_root=None):
-    """
-    Compiles templates for a specific instance.
-    - Loads template folder `templates/{instance_type}/`
-    - Parses questions from `instances/{instance_type}/{instance_name}/questions.md`
-    - Searches for compliance in `monorepo_root/Compliance/{instance_name}`
-    - Performs placeholder interpolation
-    - Inject Document versioning control & bidirectional links
-    - Writes outcome to `instances/{instance_type}/{instance_name}/output/`
-    """
-    print(f"\n[StartupOS] Compiling {instance_type.upper()} suite for: {instance_name}...")
+def _format_trademarks(trademarks):
+    if not trademarks:
+        return "No registered trademarks on file."
+    lines = []
+    for entry in trademarks:
+        lines.append(
+            f'"{entry["mark"]}" | App {entry["application_number"]} | '
+            f'Filed: {entry["application_date"]} | Class {entry["international_class"]} '
+            f'({entry["nature"]}) | Status: {entry["status"]}'
+        )
+    return "  • " + "\n  • ".join(lines)
 
-    active_startup_os_root = resolve_workspace_root()
 
-    questions_path = os.path.join(active_startup_os_root, "instances", instance_type, instance_name, "questions.md")
-    output_dir = os.path.join(active_startup_os_root, "instances", instance_type, instance_name, "output")
+def _add_financials(values, profile, jurisdiction):
+    """Build financial summary blocks in the profile's own currency."""
+    symbol = jurisdiction.currency_symbol or ""
 
-    # Templates are sourced from the active StartupOS workspace templates folder
-    templates_dir = os.path.join(active_startup_os_root, "templates", instance_type)
+    def answered(key):
+        value = profile.get(key)
+        return value if value else None
 
-    if not os.path.exists(questions_path):
-        raise FileNotFoundError(f"Missing strategic source of truth: {questions_path}")
-    if not os.path.exists(templates_dir):
-        raise FileNotFoundError(f"Missing template folder: {templates_dir}")
+    year_1 = answered("projected_year_1")
+    year_2 = answered("projected_year_2")
+    year_3 = answered("projected_year_3")
 
-    # 1. Parse Strategic questions
-    q_data = parse_questions_md(questions_path)
+    rows = []
+    for label, value in (("Year 1", year_1), ("Year 2", year_2), ("Year 3", year_3)):
+        rows.append(f"*   **{label} Projections**: {value}" if value
+                    else f"*   **{label} Projections**: Pending — not yet provided")
 
-    # Calculate fallback dynamic trading name from camelCase folder
-    trading_name = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', instance_name).strip()
+    historical = []
+    for key, label in (
+        ("historical_turnover_2024", "2024"),
+        ("historical_turnover_2025", "2025"),
+        ("historical_turnover_2026_ytd", "2026 YTD"),
+    ):
+        value = answered(key)
+        if value:
+            historical.append(f"{label}: {value}")
+    if historical:
+        rows.append(f"*   **Historical Base**: {' | '.join(historical)}")
 
-    # Pre-populate base replacement dictionary with all parsed question fields
-    replacements = {
-        "trading_name": trading_name,
-        "company_name": f"{trading_name} (Pty) Ltd",
-        "full_name": q_data.get("full_name", trading_name),
-        "primary_base": q_data.get("primary_base", "Pending"),
-        "life_purpose": q_data.get("life_purpose", "Pending"),
-        "wellness_focus": q_data.get("wellness_focus", "Pending"),
-        "key_relationships": q_data.get("key_relationships", "Pending"),
+    values["fin_summary"] = "\n".join(rows)
+
+    grid = []
+    for label, value in (("Year 1", year_1), ("Year 2", year_2), ("Year 3", year_3)):
+        head = value.split("|")[0].strip() if value and "|" in value else (value or "Pending")
+        grid.append(f"• **{label}**: {head}")
+    values["fin_grid_rev"] = "<br>".join(grid)
+    values["currency_note"] = (
+        f"All figures in {jurisdiction.currency} ({symbol})."
+        if jurisdiction.currency else "Currency not specified."
+    )
+
+
+def _add_life_values(values, profile, warnings):
+    """Pronouns and the living ledger for life profiles."""
+    gender = (profile.get("gender") or "").strip().lower()
+    pronouns = (profile.get("pronouns") or "").strip().lower()
+
+    # Default to they/them. The previous engine defaulted to he/him, so every
+    # profile that had not answered the question was written about as male.
+    forms = {
+        "he_she": "They", "he_she_lower": "they",
+        "his_her": "their", "his_her_capital": "Their",
+        "him_her": "them", "himself_herself": "themselves",
     }
 
-    # Merge all questions into replacements
-    for key, val in q_data.items():
-        replacements[key] = val
+    if pronouns:
+        if pronouns.startswith("she"):
+            forms = {"he_she": "She", "he_she_lower": "she", "his_her": "her",
+                     "his_her_capital": "Her", "him_her": "her",
+                     "himself_herself": "herself"}
+        elif pronouns.startswith("he"):
+            forms = {"he_she": "He", "he_she_lower": "he", "his_her": "his",
+                     "his_her_capital": "His", "him_her": "him",
+                     "himself_herself": "himself"}
+    elif gender:
+        if any(token in gender for token in ("female", "woman", "she")):
+            forms = {"he_she": "She", "he_she_lower": "she", "his_her": "her",
+                     "his_her_capital": "Her", "him_her": "her",
+                     "himself_herself": "herself"}
+        elif any(token in gender for token in ("male", "man", "he")) and "female" not in gender:
+            forms = {"he_she": "He", "he_she_lower": "he", "his_her": "his",
+                     "his_her_capital": "His", "him_her": "him",
+                     "himself_herself": "himself"}
+        elif not any(token in gender for token in ("non-binary", "nonbinary", "they")):
+            warnings.append(
+                f"Gender {gender!r} not recognised; using they/them. Add a "
+                "'**Pronouns**' question for an exact answer."
+            )
+    else:
+        warnings.append(
+            "No pronouns declared; using they/them. Add a '**Pronouns**' "
+            "question to questions.md (e.g. 'she/her')."
+        )
 
-    # 2. Integrate Backwards-Compatible Compliance PDF Sourcing
-    if instance_type == "business":
-        if not monorepo_root:
-            # Attempt default path relative to standard desktop workspace
-            monorepo_root = "C:\\Users\\sinya\\Desktop\\RokctAI\\Monorepo"
-        
-        # Check if local compliance folder exists inside active instance folder
-        local_compliance = os.path.join(active_startup_os_root, "instances", "business", instance_name, "compliance")
-        if os.path.isdir(local_compliance):
-            compliance_dir = local_compliance
-        else:
-            compliance_dir = os.path.join(monorepo_root, "Compliance", instance_name)
-            
-        trademark_dir = os.path.join(monorepo_root, "trademark", instance_name)
+    values.update(forms)
 
-        # Parse compliance documents from monorepo
-        comp_data = parse_compliance_pdfs_standalone(compliance_dir, instance_name, primary_base=replacements.get("primary_base"))
-        tm_data = parse_trademark_pdfs_standalone(trademark_dir)
-
-        # Inject compliance fields
-        for key, val in comp_data.items():
-            if val:
-                replacements[key] = val
-
-        # Handle trademarks dynamic line injection
-        tm_lines = []
-        for tm in tm_data:
-            line = f'"{tm["mark"]}" | App {tm["application_number"]} | Filed: {tm["application_date"]} | Class {tm["international_class"]} ({tm["nature"]}) | Status: {tm["status"]}'
-            tm_lines.append(line)
-        
-        replacements["trademarks_details"] = "  • " + "\n  • ".join(tm_lines) if tm_lines else "  • No registered trademarks filed under CIPC."
-
-        # 3. Dynamic Financial Outlook Calculations
-        y1 = q_data.get("projected_year_1", "R1.0M revenue | R200k Net Profit | Phase 1 launch.")
-        y2 = q_data.get("projected_year_2", "R3.0M revenue | R800k Net Profit | Phase 2 scaling.")
-        y3 = q_data.get("projected_year_3", "R8.0M revenue | R2.5M Net Profit | National expansion.")
-
-        historical_2024 = q_data.get("historical_turnover_2024", "R0 (Pre-revenue)")
-        historical_2025 = q_data.get("historical_turnover_2025", "R0 (Pre-revenue)")
-        historical_2026_ytd = q_data.get("historical_turnover_2026_ytd", "R0 (Pre-revenue)")
-
-        # Summary Block Generation
-        fin_summary = f"""*   **Year 1 Projections**: {y1}
-*   **Year 2 Projections**: {y2}
-*   **Year 3 Projections**: {y3}
-*   **Historical Base**: 2024: {historical_2024} | 2025: {historical_2025} | 2026 YTD: {historical_2026_ytd}"""
-        
-        # Grid block for Lean Canvas Markdown Table
-        y1_rev = y1.split('|')[0].strip() if '|' in y1 else y1
-        y2_rev = y2.split('|')[0].strip() if '|' in y2 else y2
-        y3_rev = y3.split('|')[0].strip() if '|' in y3 else y3
-
-        fin_grid_rev = f"• **Year 1**: {y1_rev}<br>• **Year 2**: {y2_rev}<br>• **Year 3**: {y3_rev}"
-
-        replacements["fin_summary"] = fin_summary
-        replacements["fin_grid_rev"] = fin_grid_rev
-
-    elif instance_type == "life":
-        # Parse the milestone log if present in the questions.md file
-        milestones = []
-        try:
-            with open(questions_path, 'r', encoding='utf-8') as f:
-                questions_content = f.read()
-            
-            # Find the section "## 4. Conversational Milestone Log"
-            log_marker = "## 4. Conversational Milestone Log"
-            if log_marker in questions_content:
-                log_part = questions_content.split(log_marker)[1]
-                # Match lines starting with * or - and **[date] (category)**: text
-                matches = re.findall(r"(?:\*|-)\s+\*\*\[([^\]]+)\]\s*\(([^)]+)\)\*\*:\s*(.*)", log_part)
-                for date, category, text in matches:
-                    milestones.append({
-                        "date": date.strip(),
-                        "category": category.strip(),
-                        "text": text.strip()
-                    })
-        except Exception as e:
-            print(f"  Error parsing milestone log: {e}")
-
-        # Format milestones for the Alive CV
-        cv_lines = []
-        for m in milestones:
-            cv_lines.append(f"*   **{m['date']}** | *{m['category']}* — {m['text']}")
-        replacements["living_ledger_cv"] = "\n".join(cv_lines) if cv_lines else "*   *No professional milestones logged yet. Share milestones ambiently with Hermes!*"
-
-        # Resolve dynamic pronouns from gender
-        gender_input = q_data.get("gender", "male").lower()
-        if "female" in gender_input or "woman" in gender_input:
-            replacements["he_she"] = "She"
-            replacements["he_she_lower"] = "she"
-            replacements["his_her"] = "her"
-            replacements["his_her_capital"] = "Her"
-            replacements["him_her"] = "her"
-        elif "non-binary" in gender_input or "they" in gender_input:
-            replacements["he_she"] = "They"
-            replacements["he_she_lower"] = "they"
-            replacements["his_her"] = "their"
-            replacements["his_her_capital"] = "Their"
-            replacements["him_her"] = "them"
-        else:
-            # Default to male / he / him
-            replacements["he_she"] = "He"
-            replacements["he_she_lower"] = "he"
-            replacements["his_her"] = "his"
-            replacements["his_her_capital"] = "His"
-            replacements["him_her"] = "him"
-
-        # Format milestones for the Evolving Obituary
-        obituary_lines = []
-        for m in milestones:
-            year_part = m['date'].split('-')[0] if '-' in m['date'] else m['date']
-            obituary_lines.append(f"- In {year_part}, {replacements['he_she_lower']} achieved a milestone in *{m['category']}*: {m['text']}")
-        replacements["living_ledger_obituary"] = "\n".join(obituary_lines) if obituary_lines else f"*   *Generational legacy wins will appear here as they are written in {replacements['his_her']} story.*"
-
-    # Ensure all missing keys in replacements defaults to an empty string to avoid rendering issues
-    # Scan template files to find placeholder tags
-    template_files = glob.glob(os.path.join(templates_dir, "*.md"))
-    all_placeholders = set()
-    for t_file in template_files:
-        with open(t_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        found = re.findall(r"\{\{([a-zA-Z0-9_]+)\}\}", content)
-        all_placeholders.update(found)
-
-    for p_holder in all_placeholders:
-        replacements.setdefault(p_holder, f"Pending — update questions.md for '{p_holder}'")
-
-    # 4. Process Rendering & Write Output
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for t_file in template_files:
-        filename = os.path.basename(t_file)
-        with open(t_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # Step A: Placeholder substitution
-        rendered_content = content
-        for key, val in replacements.items():
-            rendered_content = rendered_content.replace(f"{{{{{key}}}}}", str(val))
-
-        # Step B: Inject ROKCT Protocol Document Version Control Block
-        version_block = """---
-
-> [!IMPORTANT]
-> **Document Version Control**:
-> *   **Version**: `1.0.0` (Venture-Grade Release)
-> *   **Last Updated**: `2026-05-22`
-> *   **Security ID**: `sinyage.1aedb8` (POPIA Segregated)
-
-"""
-        # Place version block after primary title rule (only standalone lines containing '---')
-        lines = rendered_content.split("\n")
-        split_idx = -1
-        for idx, l in enumerate(lines):
-            if l.strip() == "---":
-                split_idx = idx
-                break
-
-        if split_idx != -1:
-            lines[split_idx] = version_block.strip()
-            rendered_content = "\n".join(lines)
-        else:
-            if len(lines) >= 2 and lines[0].startswith("#") and lines[1].startswith("##"):
-                rendered_content = lines[0] + "\n" + lines[1] + "\n\n" + version_block + "\n".join(lines[2:])
-            else:
-                rendered_content = version_block + rendered_content
-
-        # Step C: Inject Bidirectional Dependencies Footers
-        footer_links = FOOTER_MAPS.get(instance_type, {}).get(filename)
-        if footer_links:
-            footer_block = "\n\n---\n\n## Strategic Document Mappings & Dependencies\n\n"
-            footer_block += "> [!NOTE]\n"
-            footer_block += "> **Bidirectional Strategic Alignment Map**:\n"
-            for link_file, link_desc, link_title in footer_links:
-                footer_block += f"> *   **[{link_title}]({link_file})**: {link_desc}\n"
-            
-            rendered_content += footer_block
-
-        # Write rendered file
-        out_path = os.path.join(output_dir, filename)
-        with open(out_path, 'w', encoding='utf-8') as f:
-            f.write(rendered_content)
-        
-        print(f"  Generated compiled file: {filename}")
-
-    print(f"[Success] Successfully completed compilation! Output files are staged in: {output_dir}")
+    milestones = profile.milestones
+    if milestones:
+        values["living_ledger_cv"] = "\n".join(
+            f"*   **{item.date}** | *{item.category}* — {item.text}"
+            for item in sorted(milestones, key=lambda m: m.date)
+        )
+        values["living_ledger_obituary"] = "\n".join(
+            f"- In {item.date.split('-')[0]}, {forms['he_she_lower']} reached a "
+            f"milestone in *{item.category}*: {item.text}"
+            for item in sorted(milestones, key=lambda m: m.date)
+        )
+        values["milestone_count"] = str(len(milestones))
+    else:
+        values["living_ledger_cv"] = (
+            "*No milestones logged yet. Share them with Hermes and they appear here.*"
+        )
+        values["living_ledger_obituary"] = (
+            "*Legacy milestones will appear here as they are recorded.*"
+        )
+        values["milestone_count"] = "0"

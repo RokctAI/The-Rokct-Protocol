@@ -13,7 +13,9 @@
 This evolving biography records the legacy, achievements, and lessons of {{full_name}}, establishing an evergreen blueprint for future generations:
 
 *   **Geographical Foundations**: {{he_she}} established {{his_her}} primary base of operations and family roots in **{{primary_base}}**.
+{{#if wellness_focus}}
 *   **Biological High-Performance & Stewardship**: In all things, {{he_she_lower}} maintained a dedicated focus on: *"{{wellness_focus}}"*
+{{/if}}
 
 ---
 
@@ -26,13 +28,19 @@ This evolving biography records the legacy, achievements, and lessons of {{full_
 ---
 
 ## 3. Generational Legacy & Trust Circle
+{{#if key_relationships}}
 *   **Nominated Custodians & Trustees**: {{key_relationships}}
+{{/if}}
+{{#if legacy_vision}}
 *   **Generational Legacy Vision**: {{legacy_vision}}
+{{/if}}
+{{#if business_ownership}}
 *   **Commercial Asset Footprint**: {{business_ownership}}
+{{/if}}
 
 ---
 
 > [!NOTE]
 > **Generational Heritage Document Control**:
-> *   **Status**: Evolving Legacy Document
-> *   **Security ID**: `sinyage.1aedb8` (Estate Protected)
+> *   **Status**: Evolving legacy document — regenerated whenever a milestone is logged.
+> *   **Contains personal data**{{#if privacy_law}} subject to {{privacy_law}}{{/if}}. Store and share accordingly.

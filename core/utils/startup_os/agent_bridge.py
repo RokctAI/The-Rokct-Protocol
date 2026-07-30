@@ -1,209 +1,385 @@
+"""Hermes agent bridge — programmatic read/write/provision APIs.
+
+Everything here is reachable from a conversational handler, which means every
+argument is untrusted input. `auto_provision_profile` in particular is called
+with an entity name lifted from a WhatsApp message; the previous version passed
+that string straight into `os.path.join`, so a name of `../../../ESCAPED` wrote
+`questions.md` outside the workspace. Names are now validated by
+`paths.sanitize_instance_name` before any path is built, and the resolved path
+is re-checked for containment.
+
+Writes go through `safe_io`: locked, snapshotted, atomic. Failures are returned
+rather than printed and swallowed — the old code caught every compile exception,
+printed a warning and returned `True`, so a user was told their answer was
+saved while the documents silently did not regenerate.
+"""
+
 import os
 import re
-import shutil
+from datetime import date
 from pathlib import Path
-from core.compiler import compile_instance, resolve_workspace_root
+
+from core import paths as path_utils
+from core import safe_io
+from core import schemas
+from core.compiler import compile_instance
+from core.errors import ProfileNotFoundError, QuestionNotFoundError, StartupOSError
+from core.parser import (
+    MILESTONE_HEADING_RE,
+    MILESTONE_SECTION_HEADING,
+    canonical_key,
+    locate_answer_span,
+    locate_question,
+)
+
+
+class BridgeResult:
+    """What a bridge call did, including whether recompilation succeeded."""
+
+    def __init__(self, changed, path, compiled=None, error=None):
+        self.changed = changed
+        self.path = path
+        self.compiled = compiled
+        self.error = error
+
+    @property
+    def ok(self):
+        return self.changed and self.error is None
+
+    def __bool__(self):
+        return self.ok
+
+    def __repr__(self):
+        return (f"BridgeResult(changed={self.changed}, path={self.path!r}, "
+                f"error={self.error!r})")
+
 
 def _parse_instance_details(filepath):
-    """Helper to extract instance_type and instance_name from a questions.md path."""
-    normalized_path = Path(filepath).resolve()
-    parts = normalized_path.parts
+    """Extract `(instance_type, instance_name)` from a questions.md path."""
+    parts = Path(filepath).resolve().parts
     if "instances" in parts:
-        idx = parts.index("instances")
-        if idx + 2 < len(parts):
-            return parts[idx + 1].lower(), parts[idx + 2]
-    # Regex fallback
+        index = parts.index("instances")
+        if index + 2 < len(parts):
+            return parts[index + 1].lower(), parts[index + 2]
+
     match = re.search(r"instances[/\\](business|life)[/\\]([^/\\]+)", str(filepath), re.IGNORECASE)
     if match:
         return match.group(1).lower(), match.group(2)
     return None, None
 
 
-def update_profile_answer(filepath, question_label, new_answer):
+def _recompile(filepath, workspace_root=None, quiet=True):
+    """Recompile the instance owning `filepath`. Returns `(result, error)`."""
+    instance_type, instance_name = _parse_instance_details(filepath)
+    if not instance_type or not instance_name:
+        return None, (
+            f"Could not determine the instance from {filepath!r}; downstream "
+            "documents were not regenerated."
+        )
+    try:
+        return compile_instance(
+            instance_type=instance_type,
+            instance_name=instance_name,
+            workspace_root=workspace_root,
+            quiet=quiet,
+        ), None
+    except StartupOSError as exc:
+        return None, f"Recompilation failed: {exc}"
+    except Exception as exc:  # noqa: BLE001 - surfaced to the caller, not swallowed
+        return None, f"Recompilation failed unexpectedly: {exc}"
+
+
+def auto_provision_profile(instance_type, instance_name, primary_base=None,
+                           key_relationships=None, jurisdiction=None,
+                           workspace_root=None, seed=None, full=False):
+    """Create a new business or life profile.
+
+    Returns the path to `questions.md`. An existing profile is never
+    overwritten. Raises `UnsafeNameError` for any name that is not a plain
+    identifier — path separators, `..`, reserved Windows device names and
+    over-long strings are all rejected before a path is constructed.
     """
-    Programmatically updates the answer to a specific strategic question in questions.md.
-    Preserves all file headers, spacing, and formatting.
+    instance_type = path_utils.validate_instance_type(instance_type)
+    instance_name = path_utils.sanitize_instance_name(instance_name)
+
+    root = path_utils.resolve_workspace_root(workspace_root, verbose=False)
+    directory = path_utils.instance_dir(root, instance_type, instance_name)
+    os.makedirs(directory, exist_ok=True)
+
+    questions_file = os.path.join(directory, "questions.md")
+    if os.path.exists(questions_file):
+        return questions_file
+
+    display_name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", instance_name).strip()
+
+    seed_values = dict(seed or {})
+    seed_values.setdefault("trading_name" if instance_type == "business" else "full_name",
+                           display_name)
+    if primary_base:
+        seed_values.setdefault("primary_base", primary_base)
+    if jurisdiction:
+        seed_values.setdefault("jurisdiction", str(jurisdiction).strip().upper())
+    if key_relationships and instance_type == "life":
+        seed_values.setdefault("key_relationships", key_relationships)
+
+    content = schemas.render_questions_md(instance_type, display_name, seed_values,
+                                          include_full=full)
+    safe_io.atomic_write(questions_file, content)
+    return questions_file
+
+
+def update_profile_answer(filepath, question_label, new_answer,
+                          recompile=True, workspace_root=None):
+    """Replace the answer to one question, preserving file structure.
+
+    Handles multi-line answers on both sides: the full span of the previous
+    answer is removed, and a multi-line `new_answer` is written back with the
+    continuation indent the file already uses.
     """
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Profile questions file not found: {filepath}")
+        raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")
 
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
+    target_key = canonical_key(question_label)
+    if not target_key:
+        raise QuestionNotFoundError(f"Question label {question_label!r} is empty after canonicalisation.")
 
-    lines = content.split('\n')
-    updated = False
-    
-    # Locate the target question line
-    for idx, line in enumerate(lines):
-        q_match = re.match(r"\*\s+\*\*([^*]+)\*\*:\s*(.*)", line)
-        if q_match:
-            q_label = q_match.group(1).strip()
-            # Compare canonicalized labels
-            c_target = re.sub(r"[^a-z0-9_]+", "_", question_label.lower()).strip("_")
-            c_current = re.sub(r"[^a-z0-9_]+", "_", q_label.lower()).strip("_")
-            
-            if c_target == c_current:
-                # Scan subsequent lines for the Answer pattern
-                for offset in range(1, 3):
-                    if idx + offset < len(lines):
-                        next_line = lines[idx + offset]
-                        a_match = re.match(r"(\s*(?:\*|-)\s+\*\*Answer\*\*:\s*)(.*)", next_line)
-                        if a_match:
-                            prefix = a_match.group(1)
-                            # Replace with the new answer line preserving indentation
-                            lines[idx + offset] = f"{prefix}{new_answer}"
-                            updated = True
-                            break
-            if updated:
+    outcome = {"found": False}
+
+    def transform(content):
+        lines = content.split("\n")
+        question_index = locate_question(lines, question_label)
+        if question_index is None:
+            return None
+
+        span = locate_answer_span(lines, question_index)
+        if span is None:
+            # The question exists but has no answer bullet; insert one using the
+            # question's own indent plus four spaces.
+            question_indent = len(lines[question_index]) - len(lines[question_index].lstrip())
+            prefix = " " * (question_indent + 4) + "*   **Answer**: "
+            rendered = _render_answer(new_answer, prefix, question_indent + 8)
+            lines[question_index + 1:question_index + 1] = rendered
+            outcome["found"] = True
+            return "\n".join(lines)
+
+        answer_index, last_index, indent = span
+        marker = re.match(r"^(\s*(?:\*|-)\s+\*\*Answer\*\*:\s*)", lines[answer_index])
+        prefix = marker.group(1) if marker else " " * indent + "*   **Answer**: "
+        rendered = _render_answer(new_answer, prefix, indent + 4)
+
+        lines[answer_index:last_index + 1] = rendered
+        outcome["found"] = True
+        return "\n".join(lines)
+
+    changed = safe_io.update_file(filepath, transform)
+
+    if not outcome["found"]:
+        raise QuestionNotFoundError(
+            f"Could not find question {question_label!r} in {filepath}. "
+            "Labels are matched case- and punctuation-insensitively; check "
+            "the question exists."
+        )
+
+    compiled, error = (None, None)
+    if recompile:
+        compiled, error = _recompile(filepath, workspace_root)
+
+    return BridgeResult(changed=True, path=filepath, compiled=compiled, error=error)
+
+
+def _render_answer(answer, prefix, continuation_indent):
+    """Format a possibly multi-line answer as markdown lines."""
+    text = "" if answer is None else str(answer)
+    parts = text.split("\n")
+    rendered = [prefix + parts[0].strip()]
+    for part in parts[1:]:
+        rendered.append(" " * continuation_indent + part.strip())
+    return rendered
+
+
+def log_ambient_milestone(filepath, category, entry_text, entry_date=None,
+                          recompile=True, workspace_root=None, deduplicate=True):
+    """Append a conversational milestone to the living ledger.
+
+    Duplicate suppression compares the normalised entry text against existing
+    milestones, so repeating an achievement in conversation does not produce a
+    second CV line.
+    """
+    if not os.path.exists(filepath):
+        raise ProfileNotFoundError(f"Target questions file not found: {filepath}")
+
+    clean_entry = " ".join(str(entry_text).split()).strip()
+    if not clean_entry:
+        raise StartupOSError("Milestone entry text is empty.")
+
+    clean_category = " ".join(str(category).split()).strip() or "General"
+    stamp = (entry_date or date.today())
+    stamp = stamp.isoformat() if hasattr(stamp, "isoformat") else str(stamp)
+
+    outcome = {"duplicate": False}
+
+    def transform(content):
+        if deduplicate and _is_duplicate(content, clean_entry):
+            outcome["duplicate"] = True
+            return None
+
+        lines = content.rstrip("\n").split("\n")
+        if not any(MILESTONE_HEADING_RE.match(line) for line in lines):
+            lines.extend(["", "---", "", MILESTONE_SECTION_HEADING, ""])
+
+        lines.append(f"*   **[{stamp}] ({clean_category})**: {clean_entry}")
+        return "\n".join(lines) + "\n"
+
+    changed = safe_io.update_file(filepath, transform)
+
+    if outcome["duplicate"]:
+        return BridgeResult(changed=False, path=filepath,
+                            error="Milestone already logged; nothing appended.")
+
+    compiled, error = (None, None)
+    if recompile:
+        compiled, error = _recompile(filepath, workspace_root)
+
+    return BridgeResult(changed=changed, path=filepath, compiled=compiled, error=error)
+
+
+def _is_duplicate(content, entry_text):
+    """True when an equivalent milestone already exists."""
+    normalised = _normalise(entry_text)
+    if not normalised:
+        return False
+    for line in content.split("\n"):
+        match = re.match(r"^[ \t]*[*-]\s+\*\*\[[^\]]+\]\s*\([^)]+\)\*\*\s*:\s*(.*)$", line)
+        if match and _normalise(match.group(1)) == normalised:
+            return True
+    return False
+
+
+def _normalise(text):
+    return re.sub(r"[^a-z0-9]+", " ", str(text).lower()).strip()
+
+
+def ensure_question(filepath, question_label, prompt, answer, recompile=False,
+                    workspace_root=None):
+    """Add a question to an existing questions.md if it is not already there.
+
+    Written for the jurisdiction migration: profiles created before jurisdiction
+    was a declared field compile as UNKNOWN, which correctly suppresses every
+    regulated section but means an existing South African venture loses its
+    B-BBEE block until the question is added. This makes that a one-liner
+    instead of a hand edit across every profile.
+    """
+    if not os.path.exists(filepath):
+        raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")
+
+    outcome = {"added": False}
+
+    def transform(content):
+        lines = content.split("\n")
+        if locate_question(lines, question_label) is not None:
+            return None
+
+        # Insert after the first section heading, before its first question.
+        insert_at = None
+        for index, line in enumerate(lines):
+            if line.lstrip().startswith("## "):
+                insert_at = index + 1
+                break
+        if insert_at is None:
+            insert_at = len(lines)
+
+        block = [
+            f"*   **{question_label}**: {prompt}",
+            f"    *   **Answer**: {answer}",
+        ]
+        lines[insert_at:insert_at] = block
+        outcome["added"] = True
+        return "\n".join(lines)
+
+    changed = safe_io.update_file(filepath, transform)
+    if not outcome["added"]:
+        return BridgeResult(changed=False, path=filepath,
+                            error=f"'{question_label}' is already present.")
+
+    compiled, error = (None, None)
+    if recompile:
+        compiled, error = _recompile(filepath, workspace_root)
+
+    return BridgeResult(changed=changed, path=filepath, compiled=compiled, error=error)
+
+
+def expand_profile(filepath, instance_type, recompile=False, workspace_root=None):
+    """Append every schema question the file does not already have.
+
+    Used to bring a profile created against the core question set up to the
+    full set the complete document suite draws on, without disturbing any
+    existing answer. Questions are appended under their own schema section
+    heading so the file stays readable.
+    """
+    if not os.path.exists(filepath):
+        raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")
+
+    instance_type = path_utils.validate_instance_type(instance_type)
+    added = []
+
+    def transform(content):
+        lines = content.rstrip("\n").split("\n")
+
+        # Insert before the milestone log if there is one; it should stay last.
+        insert_at = len(lines)
+        for index, line in enumerate(lines):
+            if MILESTONE_HEADING_RE.match(line):
+                insert_at = index
                 break
 
-    if not updated:
-        raise ValueError(f"Could not find question label '{question_label}' in {filepath}")
+        block = []
+        for section in schemas.schema_for(instance_type):
+            missing = [
+                question for question in section.questions
+                if locate_question(lines, question.label) is None
+            ]
+            if not missing:
+                continue
+            block.extend(["", "---", "", f"## {section.title}"])
+            for question in missing:
+                hint = f" (e.g. {question.example})" if question.example else ""
+                placeholder = f"Pending — {question.prompt.rstrip('?').lower()}{hint}"
+                marker = " *(required)*" if question.required else ""
+                block.append(f"*   **{question.label}**{marker}: {question.prompt}")
+                block.append(f"    *   **Answer**: {placeholder}")
+                added.append(question.key)
 
-    # Write changes back
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-    
-    # Auto-compile downstream deliverables to keep CV/Obituary in sync
-    try:
-        inst_type, inst_name = _parse_instance_details(filepath)
-        if inst_type and inst_name:
-            compile_instance(instance_type=inst_type, instance_name=inst_name)
-    except Exception as e:
-        print(f"[Warning] Bridge auto-compilation failed: {e}")
-        
-    return True
+        if not block:
+            return None
 
+        block.append("")
+        lines[insert_at:insert_at] = block
+        return "\n".join(lines) + "\n"
 
-def auto_provision_profile(instance_type, instance_name, primary_base=None, key_relationships=None):
-    """
-    Dynamically provisions a new Business or Life strategic profile with default questions template.
-    If 'business', sets up business questions and folder.
-    If 'life', sets up personal life questions and folder.
-    """
-    # Dynamic workspace lookup for active instances
-    active_startup_os_root = resolve_workspace_root()
-    
-    instance_dir = os.path.abspath(os.path.join(active_startup_os_root, "instances", instance_type, instance_name))
-    os.makedirs(instance_dir, exist_ok=True)
-    
-    questions_path = os.path.abspath(os.path.join(instance_dir, "questions.md"))
-    
-    # If the file already exists, don't overwrite it
-    if os.path.exists(questions_path):
-        return questions_path
+    changed = safe_io.update_file(filepath, transform)
 
-    # Clean display trading name
-    display_name = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', instance_name).strip()
+    if not added:
+        return BridgeResult(changed=False, path=filepath,
+                            error="Profile already has every schema question.")
 
-    if instance_type == "business":
-        template_content = f"""# Business Strategic Questions: {display_name}
+    compiled, error = (None, None)
+    if recompile:
+        compiled, error = _recompile(filepath, workspace_root)
 
-This file is the Single Source of Truth (SSOT) for {display_name}'s strategic, operational, and compliance variables.
-
----
-
-## 1. Venture Identity & Foundations
-*   **Trading Name**: What is the primary commercial brand or trading name?
-    *   **Answer**: {display_name}
-*   **Primary Base**: What is your primary geographical base of operations?
-    *   **Answer**: {primary_base if primary_base else "Cape Town, South Africa"}
-*   **Core Value Proposition**: What is your product or service's unique value statement?
-    *   **Answer**: Pending — dynamic startup values and unique technical IP.
-*   **Customer Segments**: Who are the primary target users and demographic segments?
-    *   **Answer**: Emerging corporate leaders, developers, and local merchant segments.
-
----
-
-## 2. Operations & Power Resilience
-*   **Power Continuity Strategy**: How does your venture manage regional load shedding or grid failure?
-    *   **Answer**: Off-grid hybrid solar array with active battery storage bank.
-
----
-
-## 3. Financial Projections
-*   **Projected Year 1**: What is the target Year 1 revenue and profit projection?
-    *   **Answer**: R1.5M revenue | R300k Net Profit | MVP launch and scaling.
-*   **Projected Year 2**: What is the target Year 2 revenue and profit projection?
-    *   **Answer**: R4.0M revenue | R1.2M Net Profit | Regional expansion.
-*   **Projected Year 3**: What is the target Year 3 revenue and profit projection?
-    *   **Answer**: R10.0M revenue | R3.5M Net Profit | Platform licensing.
-"""
-    else:
-        # Life Profile
-        template_content = f"""# Life Strategic Questions: {display_name}
-
-This file is the Single Source of Truth (SSOT) for {display_name}'s life development and tactical growth variables.
-
----
-
-## 1. Personal Identity & Focus
-*   **Full Name**: What is your full name?
-    *   **Answer**: {display_name}
-*   **Gender**: What is your gender?
-    *   **Answer**: Male
-*   **Primary Base**: What is your primary geographical base of operations?
-    *   **Answer**: {primary_base if primary_base else "Cape Town, South Africa"}
-*   **Life Purpose**: What is your high-level core mission or purpose statement?
-    *   **Answer**: Pending — write a core purpose or dynamic mission statement here.
-*   **Wellness Focus**: What is your primary wellness or biological high-performance goal?
-    *   **Answer**: Restore daily sleep depth and improve physical energy compound metrics.
-
----
-
-## 2. Relationships & Stewardship
-*   **Key Relationships**: Who are the primary partners, confidants, or trustees in your life?
-    *   **Answer**: {key_relationships if key_relationships else "Immediate family and key professional mentors."}
-*   **Legacy Vision**: What is the key long-term stewardship goal?
-    *   **Answer**: Establish a generational legacy, write evergreen blueprints, and protect family assets.
-
----
-
-## 3. Venture & Career Integration
-*   **Business Ownership**: Do you own a registered business or run a side hustle?
-    *   **Answer**: Pending — specify registered companies or active side hustles here.
-"""
-
-    with open(questions_path, 'w', encoding='utf-8') as f:
-        f.write(template_content)
-        
-    return questions_path
+    result = BridgeResult(changed=changed, path=filepath, compiled=compiled, error=error)
+    result.added = added
+    return result
 
 
-def log_ambient_milestone(filepath, category, entry_text):
-    """
-    Appends a conversational milestone/achievement logged by the Hermes agent.
-    If the section doesn't exist, appends it dynamically to the questions.md profile.
-    """
+def read_profile(filepath):
+    """Parse a profile and return the ParsedProfile, for agent read paths."""
+    from core.parser import parse_questions_md
     if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Target questions file not found: {filepath}")
+        raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")
+    return parse_questions_md(filepath)
 
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
 
-    # Append to the legacy or personal identity section
-    clean_entry = entry_text.strip()
-    
-    # We can either append to a dedicated milestone list or inside the answer sections.
-    # For now, let's append a log line at the end of the file or in a dedicated "Logged Wins" log
-    log_header = "\n\n## 4. Conversational Milestone Log (Living Ledger)\n"
-    
-    if "## 4. Conversational Milestone Log" not in content:
-        content += log_header
-        
-    import datetime
-    today = datetime.date.today().strftime("%Y-%m-%d")
-    content += f"\n*   **[{today}] ({category})**: {clean_entry}"
-
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(content)
-        
-    # Auto-compile downstream deliverables to keep CV/Obituary in sync
-    try:
-        inst_type, inst_name = _parse_instance_details(filepath)
-        if inst_type and inst_name:
-            compile_instance(instance_type=inst_type, instance_name=inst_name)
-    except Exception as e:
-        print(f"[Warning] Bridge auto-compilation failed: {e}")
-        
-    return True
+def profile_path(instance_type, instance_name, workspace_root=None):
+    """Resolve the questions.md path for an instance, with validation."""
+    root = path_utils.resolve_workspace_root(workspace_root, verbose=False)
+    return path_utils.questions_path(root, instance_type, instance_name)

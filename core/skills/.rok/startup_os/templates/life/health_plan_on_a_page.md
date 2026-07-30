@@ -6,7 +6,11 @@ Our body is the biological foundation that hosts all personal creativity, mental
 ---
 
 ## 2. Dynamic Health Parameters
+{{#if wellness_focus}}
 *   **Primary Wellness Goal**: {{wellness_focus}}
+{{else}}
+*   **Primary Wellness Goal**: _not recorded — answer **Wellness Focus** in questions.md_
+{{/if}}
 *   **Athletic Baseline Targets**: VO2 Max optimization, lean muscle retention, joint mobility.
 *   **Sleep Protocol**: Restoring deep sleep recovery as the ultimate performance enhancer.
 
@@ -22,7 +26,11 @@ Our body is the biological foundation that hosts all personal creativity, mental
 ### B. Nutritional Matrix (Fuel Processing)
 *   **Strategy**: Whole-food, low-inflammatory fuel profile tailored to sustained cognitive performance.
 *   **Primary Sourcing**: Organic green vegetables, clean protein options, and mineral-dense carbohydrates.
-*   **Hydration SANS Standard**: Minimum of 3 liters of purified water daily (meeting SANS 241 criteria).
+*   **Hydration**: A consistent daily water intake{{#if_jurisdiction ZA}}, meeting SANS 241 potable-water criteria{{/if_jurisdiction}}.
+
+> [!NOTE]
+> This plan is a personal protocol recorded by its owner, not medical advice.
+> Discuss changes with a qualified clinician.
 
 ### C. Physical Conditioning (Hardware Strength)
 *   **Resistance Routine**: 3 sessions weekly targeting functional compound movements (deadlifts, squats, overhead press).

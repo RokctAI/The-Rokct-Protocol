@@ -13,24 +13,41 @@
 
 ## 2. Dynamic Personal Profile & Metrics
 *   **Full Name**: {{full_name}}
-*   **Life Stage Focus**: Legacy Sowing & Financial Independence
 *   **Primary Base**: {{primary_base}}
+{{#if current_role}}
+*   **Current Role**: {{current_role}}
+{{/if}}
+{{#if key_relationships}}
 *   **Key Relationships**: {{key_relationships}}
-*   **Current Wellness Status**: {{wellness_focus}}
+{{/if}}
+{{#if dependants}}
+*   **Dependants**: {{dependants}}
+{{/if}}
+{{#if wellness_focus}}
+*   **Current Wellness Focus**: {{wellness_focus}}
+{{/if}}
+{{#if business_ownership}}
 *   **Venture & Career Integration**: {{business_ownership}}
+{{/if}}
 
 ---
 
 ## 3. The Ideal Daily Rhythm (The OS Loop)
 
-To turn our values into tangible reality, we run a daily operating system structured into four core cycles:
+{{#if daily_rhythm}}
+{{daily_rhythm}}
+{{else}}
+_No daily rhythm recorded yet. Answer **Daily Rhythm** in questions.md and this
+section fills with your own schedule. The four-cycle shape below is a starting
+suggestion, not a description of how you currently spend your day:_
 
-| **Time Block** | **Operational Phase** | **Focus & Deliverables** |
-| :--- | :--- | :--- |
-| **05:00 - 08:00** | **The Sowing Cycle** | Deep work, reading scripture/philosophy, writing, and hard engineering. |
-| **08:00 - 12:00** | **The Harvest Cycle** | Strategic sessions, business builds, active collaborations, and client audits. |
-| **12:00 - 16:00** | **The Stewardship Cycle** | Admin tasks, physical training, food prep, and community runs. |
-| **16:00 - 21:30** | **The relational Cycle** | Dinner with loved ones, reading, system wind-down, and sleep preparation. |
+| Cycle | Purpose |
+| :--- | :--- |
+| **Sowing** | Deep work: the hardest, highest-leverage task of the day, done first. |
+| **Harvest** | Operations: meetings, collaboration, client and business execution. |
+| **Stewardship** | Upkeep: admin, training, food, errands. |
+| **Relational** | People and wind-down: family, reading, sleep preparation. |
+{{/if}}
 
 ---
 

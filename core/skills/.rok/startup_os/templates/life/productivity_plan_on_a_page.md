@@ -14,8 +14,18 @@
 
 *   **Owner**: {{full_name}}
 *   **Operating Base**: {{primary_base}}
+{{#if accountability_partner}}
+*   **Accountability Partner**: {{accountability_partner}}
+{{/if}}
+{{#if skill_focus}}
+*   **Capability In Focus**: {{skill_focus}}
+{{/if}}
+{{#if business_ownership}}
 *   **Primary Venture Focus**: {{business_ownership}}
+{{/if}}
+{{#if wellness_focus}}
 *   **Current Wellness Alignment**: {{wellness_focus}}
+{{/if}}
 
 ---
 

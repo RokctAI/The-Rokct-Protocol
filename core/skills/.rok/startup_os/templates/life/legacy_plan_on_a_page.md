@@ -14,6 +14,9 @@
 
 *   **Custodian**: {{full_name}}
 *   **Stewardship Location**: {{primary_base}}
+{{#if dependants}}
+*   **Dependants**: {{dependants}}
+{{/if}}
 *   **Historical Legacy Wins**: Refer to dynamic milestone logs.
 
 ---
@@ -33,6 +36,6 @@ We implement absolute protection for encrypted vault files using a short-lived s
 ## 4. Legacy Milestones (12-Month Horizon)
 
 1.  **Obituary Draft Baseline**: Establish a singleton draft of the evolving biography and keep it dynamically updated via milestones.
-2.  **Legacy Vault Encryption**: Store wills, guardianship preferences, and key assets in an offline-ready, POPIA-compliant schema.
+2.  **Legacy Vault Encryption**: Store wills, guardianship preferences, and key assets in an offline-ready, encrypted schema{{#if privacy_law}} aligned to {{privacy_law}}{{/if}}.
 3.  **Nominee Access Map**: Define and verify access levels for all primary executors and relationship partners.
 4.  **Partner Integrations**: Wire the funeral parlor partner desk dashboard for automated, direct document dispatch during execution.

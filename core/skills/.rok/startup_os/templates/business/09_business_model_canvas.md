@@ -1,52 +1,106 @@
 # {{company_name}} — Business Model Canvas
 
-## 1. The Corporate Model Canvas Grid
+{{#unless reg_number}}
+> [!NOTE]
+> **{{company_name}}** is the trading name. No registration certificate has been
+> verified for this venture, so no registered legal name, registration number or
+> regulatory status is asserted in this document.
+{{/unless}}
 
-The following canvas outlines the full enterprise architecture, illustrating how strategic partnerships, operational assets, distribution channels, and compliance features coordinate to deliver our unique value proposition:
+## 1. Canvas Grid
 
-| **Key Partners** | **Key Activities** | **Value Propositions** | **Customer Relationships** | **Customer Segments** |
+{{#if industry}}Sector: **{{industry}}**. {{/if}}{{#if primary_base}}Base of operations: **{{primary_base}}**.{{/if}}
+
+| Key Partners | Key Activities | Value Proposition | Customer Relationships | Customer Segments |
 | :--- | :--- | :--- | :--- | :--- |
-| • **{{key_suppliers}}**<br>• Local Distribution Anchors<br>• Strategic Funding Bodies | • Product Research & Design<br>• Strategic Growth Loops<br>• Operational Quality Control | • **Premium Core Value**: Highly scalable enterprise delivery<br>• Automated strategic transparency<br>• **B-BBEE Compliance**: {{bee_level}} Status | • Strategic Joint-Ventures<br>• Transparent Operations<br>• Direct Digital Support | • Mid-to-Large Regional Buyers<br>• Local Informal Retailers<br>• Multi-Tenant Enterprises |
-| | **Key Resources** | | **Channels** | |
-| | • Direct Intellectual Property<br>• Certified Facilities<br>• Agile Executive Team | | • Dedicated Direct Sales<br>• Referral Loop Mechanics<br>• Digital Portals | |
-| **Cost Structure** | | | | **Revenue Streams** |
-| :--- | :--- | :--- | :--- | :--- |
-| • Product Manufacturing / Service Setup<br>• Regulatory Compliance & Auditing<br>• Personnel & Strategic Operations | | | | • Direct Wholesale Product Sales / Service Retainers<br>• Dynamic API Licensing Fees<br>• Value-Added Ancillary Revenue |
+| {{key_suppliers}} | {{primary_products}} | {{core_value_proposition}} | {{growth_strategy}} | {{customer_segments}} |
+
+| Key Resources | Channels |
+| :--- | :--- |
+| {{#if unfair_advantage}}{{unfair_advantage}}{{else}}_Not yet defined — answer **Unfair Advantage** in questions.md._{{/if}} | {{growth_strategy}} |
+
+| Cost Structure | Revenue Streams |
+| :--- | :--- |
+| Personnel ({{personnel_count}}), supplier and delivery costs, infrastructure, regulatory and audit fees | {{primary_products}} |
 
 ---
 
-## 2. In-Depth Business Block Breakdown
+## 2. Block Breakdown
 
 ### A. Key Partners
-1. **Core Suppliers**: Automated sourcing through certified vendors like **{{key_suppliers}}**.
-2. **Regulatory & Compliance Partners**: Active relationships with regional licensing boards, ensuring seamless quality checks.
-3. **Logistics Networks**: Leveraging dynamic gig-fleets and dedicated internal routes to maintain maximum fulfillment speed.
+{{#if key_suppliers}}
+Primary strategic suppliers and vendors: **{{key_suppliers}}**.
+{{else}}
+_Key partners not yet recorded. Answer **Key Suppliers** in questions.md._
+{{/if}}
+
+{{#if_feature company_registry}}
+Regulatory relationships are maintained with {{registry_name}} for corporate
+standing{{#if tax_authority}} and {{tax_authority}} for tax matters{{/if}}.
+{{/if_feature}}
 
 ### B. Key Activities
-1. **Research & Development**: Continuous product iterations to outpace regional competition.
-2. **Quality Assurance**: Physical or digital audits to meet national benchmarks (e.g. SANS standards).
-3. **Referral Sourcing**: Driving organic merchant adoption by offering volume discount models and ecosystem integrations.
+{{#if primary_products}}
+Delivery and development of: **{{primary_products}}**.
+{{/if}}
+{{#if vision_statement}}
+These activities serve the stated vision: *{{vision_statement}}*
+{{/if}}
 
-### C. Unique Value Proposition
-* **Decoupled Architecture**: High-speed offline capabilities and independent modular databases.
-* **Maximized Compliance Rating**: Maintaining an active **{{bee_level}}** status to unlock large enterprise supply chains and government grants.
-* **Growth Velocity**: Rapid customer onboarding using optimized local loops.
+### C. Value Proposition
+{{#if core_value_proposition}}
+{{core_value_proposition}}
+{{else}}
+_No value proposition recorded. This is a required field — answer
+**Core Value Proposition** in questions.md._
+{{/if}}
+
+{{#if_feature bbee}}
+{{#if bee_level}}
+*   **B-BBEE contribution status**: {{bee_level}}{{#if bee_procurement_recognition}} ({{bee_procurement_recognition}} procurement recognition){{/if}} — verified against the certificate on file.
+{{else}}
+*   **B-BBEE contribution status**: no certificate on file. No B-BBEE status is
+    claimed for this venture. Place `BEE.pdf` in the compliance folder to have
+    a verified status reflected here.
+{{/if}}
+{{/if_feature}}
 
 ### D. Key Resources
-1. **Proprietary Technology**: Specialized databases, routing engines, or manufacturing setups.
-2. **Certified Assets**: Fully licensed operational facilities and vehicle fleets.
-3. **Core Personnel**: Guided by a dedicated leadership team: **{{board_directors}}**.
+{{#if unfair_advantage}}
+{{unfair_advantage}}
+{{/if}}
+*   **Team**: {{personnel_count}}
+{{#if board_directors}}
+*   **Leadership**: {{board_directors}}
+{{/if}}
+{{#if_feature trademarks}}
+*   **Registered marks**:
+{{trademarks_details}}
+{{/if_feature}}
 
 ### E. Customer Segments
-* **Primary Enterprises**: Corporate anchors requiring custom integrations or bulk product supply.
-* **Secondary Spazas/Merchants**: Independent entrepreneurs seeking low-friction tech or affordable wholesale products.
+{{#if customer_segments}}
+{{customer_segments}}
+{{else}}
+_Customer segments not yet recorded._
+{{/if}}
+{{#if key_competitors}}
+
+Competing for these customers today: {{key_competitors}}.
+{{/if}}
 
 ### F. Cost Structure
-* **Fixed Infrastructure**: Maintaining operational space, servers, or hardware setup.
-* **Variable Logistics**: Dynamic transport costs, fuel, and merchant commission shares.
-* **B-BBEE and Compliance**: Continuous auditing fees to maintain certification status.
+*   **People**: {{personnel_count}}
+*   **Supply and delivery**: {{key_suppliers}}
+{{#if_feature company_registry}}
+*   **Compliance**: registry filings{{#if_feature bbee}}, B-BBEE verification{{/if_feature}}{{#if_feature tax_clearance}}, tax clearance renewals{{/if_feature}}, and sector licensing.
+{{/if_feature}}
 
 ### G. Revenue Streams
-* **Direct Sales**: Core cash-generative product shipments.
-* **Platform Commissions**: Percentage splits on dynamic platform deliveries.
-* **Dynamic Overrides**: Flexible commercial margins from strategic pricing models.
+{{#if primary_products}}
+Revenue is generated by: {{primary_products}}.
+{{/if}}
+{{#if funding_requirement}}
+
+**Capital requirement**: {{funding_requirement}}
+{{/if}}

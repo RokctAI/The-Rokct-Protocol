@@ -7,11 +7,14 @@ This canvas maps the architecture of personal development, time investments, rel
 | **Key Partners** | **Key Activities** | **Core Value Proposition** | **Relational Channels** | **Life Recipients** |
 | :--- | :--- | :--- | :--- | :--- |
 | • **{{key_relationships}}**<br>• Core Professional Mentors<br>• Wellness Partners | • Purpose-Driven Work<br>• Continuous Learning<br>• Physical Conditioning | • **Core Life Mission**: {{life_purpose}}<br>• Personal autonomy & resilience<br>• Legacy contribution | • Active Listening<br>• Family Gatherings<br>• Shared Values | • Loved Ones & Family<br>• Core Community / Network<br>• Future Successors |
-| | **Key Resources** | | **Channels** | |
-| | • Physical Senses & Health<br>• Deep Intellectual Property<br>• Time Availability | | • Professional Networks<br>• Creative Publications<br>• One-on-One Mentorship | |
-| **Relational & Energetic Costs** | | | | **Legacy Harvest** |
-| :--- | :--- | :--- | :--- | :--- |
-| • Weekly high-priority time allocations<br>• Cognitive attention management<br>• Financial investment in health/growth | | | | • Financial Independence & Family Wealth<br>• Mentored successors carrying the light<br>• Created works (books, code, enterprises) |
+
+| Key Resources | Channels |
+| :--- | :--- |
+| • Physical health and energy<br>• Accumulated expertise<br>• Time availability | • Professional networks<br>• Published work<br>• One-on-one mentorship |
+
+| Relational & Energetic Costs | Legacy Harvest |
+| :--- | :--- |
+| • Weekly high-priority time allocations<br>• Cognitive attention management<br>• Financial investment in health/growth | • Financial independence and family wealth<br>• Mentored successors<br>• Created works (books, code, enterprises) |
 
 ---
 
@@ -26,7 +29,9 @@ This canvas maps the architecture of personal development, time investments, rel
 1. **Deep Work**: Blocks of focused cognitive efforts to build enduring IP, code, and systems.
 2. **Wellness Rituals**: Dynamic exercise, deep recovery, and nutrition protocols that sustain life force.
 3. **Legacy Sowing**: Mentoring others and documenting frameworks to scale knowledge.
+{{#if business_ownership}}
 4. **Venture & Career Integration**: {{business_ownership}}
+{{/if}}
 
 ### C. Core Value Proposition
 * **Dynamic Living**: Balancing physical high performance, financial expansion, and emotional depth.

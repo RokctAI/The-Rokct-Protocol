@@ -1,296 +1,252 @@
 # compliance-silent
-import sys
-_trace_id_propagation = {"X-Trace-Id": "compliance"}
+"""Seed a life profile's living ledger from an existing CV.
+
+The previous version of this script opened the PDF, then returned twelve
+hardcoded milestones belonging to one named individual — employers, colleges,
+dates and a skills inventory — regardless of whose CV was passed in. Running it
+against anyone else's CV wrote that person's history into their profile under
+their own name.
+
+This version extracts what the document actually contains. When it cannot find
+anything, it says so and writes nothing. `--dry-run` is the default posture for
+review: read the extraction before it touches the SSOT.
+"""
+
+import argparse
 import os
 import re
-import argparse
-import urllib.request
-import io
-import zipfile
+import sys
 
-# Try to import pypdf gracefully
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _bootstrap  # noqa: E402
+
 try:
     import pypdf
 except ImportError:
     pypdf = None
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+_MONTHS = {
+    "jan": "01", "feb": "02", "mar": "03", "apr": "04", "may": "05", "jun": "06",
+    "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+}
 
-def fetch_core_from_github():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(script_dir)
+# Section headings commonly found in CVs, mapped to the ledger category used.
+_SECTION_PATTERNS = (
+    (re.compile(r"^\s*(work\s+)?experience|employment(\s+history)?|career", re.IGNORECASE),
+     "Professional Experience"),
+    (re.compile(r"^\s*education|qualifications|academic", re.IGNORECASE),
+     "Education & Credentials"),
+    (re.compile(r"^\s*(certifications?|licen[cs]es?|training|courses?)", re.IGNORECASE),
+     "Certifications & Training"),
+    (re.compile(r"^\s*(awards?|honou?rs?|nominations?|recognition)", re.IGNORECASE),
+     "Awards & Recognition"),
+    (re.compile(r"^\s*(publications?|patents?|talks?|speaking)", re.IGNORECASE),
+     "Publications & Talks"),
+    (re.compile(r"^\s*(skills?|competenc|technical\s+profile|expertise)", re.IGNORECASE),
+     "Skills & Expertise"),
+    (re.compile(r"^\s*(volunteer|community|service)", re.IGNORECASE),
+     "Community & Service"),
+    (re.compile(r"^\s*(references?|referees?|contact|personal\s+details)", re.IGNORECASE),
+     None),  # explicitly excluded — contact details are not milestones
+)
 
-    core_dir = os.path.join(parent_dir, "core")
-    os.makedirs(core_dir, exist_ok=True)
+_DATE_RE = re.compile(
+    r"\b(?:(?P<month>[A-Za-z]{3,9})\s+)?(?P<year>19\d{2}|20\d{2})\b"
+)
 
-    init_py = os.path.join(core_dir, "__init__.py")
-    if not os.path.exists(init_py):
-        with open(init_py, 'w') as f:
-            f.write("")
 
-    core_files = ["compiler.py", "parser.py", "agent_bridge.py"]
-    github_raw_core = f"{GITHUB_RAW_BASE}/core/utils/startup_os"
+def normalise_date(month_text, year_text):
+    """Map an extracted month/year to an ISO date, defaulting to January."""
+    month = "01"
+    if month_text:
+        month = _MONTHS.get(month_text[:3].lower(), "01")
+    return f"{year_text}-{month}-01"
 
-    for f_name in core_files:
-        dest_file = os.path.join(core_dir, f_name)
-        url = f"{github_raw_core}/{f_name}"
+
+def read_pdf_text(path):
+    if pypdf is None:
+        raise ImportError("pypdf is not installed. Run: pip install pypdf")
+    reader = pypdf.PdfReader(path)
+    pages = []
+    for page in reader.pages:
         try:
-            print(f"[StartupOS] Fetching core engine from GitHub: {f_name}")
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as response:
-                with open(dest_file, 'wb') as f:
-                    f.write(response.read())
-        except Exception as e:
-            if not os.path.exists(dest_file):
-                print(f"[Error] Failed to fetch core engine {f_name}: {e}", file=sys.stderr)
-                sys.exit(1)
-            else:
-                print(f"[Warning] Using cached core engine {f_name} (fetch failed: {e})", file=sys.stderr)
+            pages.append(page.extract_text() or "")
+        except Exception:
+            pages.append("")
+    return "\n".join(pages)
 
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
 
-fetch_core_from_github()
+def clean_lines(text):
+    """Drop page furniture: page numbers and repeated header/footer lines."""
+    raw = [line.strip() for line in text.replace("\r\n", "\n").split("\n")]
+    counts = {}
+    for line in raw:
+        if line:
+            counts[line] = counts.get(line, 0) + 1
 
-try:
-    from core.compiler import compile_instance, resolve_workspace_root
-except ImportError as e:
-    print(f"[Error] Sourced seeding imports failed: {e}", file=sys.stderr)
-    sys.exit(1)
-
-def parse_month_year(date_str):
-    """Maps MONTH YYYY to YYYY-MM-DD. Defaults to YYYY-01-01 if month is missing."""
-    months = {
-        "JAN": "01", "FEB": "02", "MAR": "03", "APR": "04", "MAY": "05", "JUN": "06",
-        "JUL": "07", "AUG": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"
-    }
-    date_str = date_str.upper().strip()
-    # Check for Month Year
-    match = re.search(r"([A-Z]{3})\s*(\d{4})", date_str)
-    if match:
-        m = months.get(match.group(1), "01")
-        y = match.group(2)
-        return f"{y}-{m}-01"
-    # Check for Year only
-    match_y = re.search(r"(\d{4})", date_str)
-    if match_y:
-        return f"{match_y.group(1)}-01-01"
-    return "2026-01-01"
-
-def clean_pdf_artifacts(text):
-    text = re.sub(r'Rendani Sinyage\s+\d+', '', text)
-    text = re.sub(r'--- PAGE \d+ ---', '', text)
-    text = re.sub(r'\b\d+\b\s*\n\s*Rendani Sinyage', '', text)
-    lines = []
-    for line in text.split('\n'):
-        l = line.strip()
-        if l in ["1", "2", "3", "4", "Rendani Sinyage", "Rendani Sinyage 1", "Rendani Sinyage 2", "Rendani Sinyage 3", "Rendani Sinyage 4"]:
+    cleaned = []
+    for line in raw:
+        if not line:
             continue
-        lines.append(line)
-    return '\n'.join(lines)
+        if re.fullmatch(r"\d{1,3}", line):
+            continue
+        if re.fullmatch(r"page\s+\d+(\s+of\s+\d+)?", line, re.IGNORECASE):
+            continue
+        # A short line repeated on most pages is a running header or footer.
+        if counts.get(line, 0) >= 3 and len(line) < 60:
+            continue
+        cleaned.append(line)
+    return cleaned
 
-def extract_milestones_from_cv(pdf_path):
-    # Parse PDF using pypdf to extract structured professional history
-    # uses regex to isolate Awards, Experience, and Education sections
-    if not os.path.exists(pdf_path):
-        raise FileNotFoundError(f"PDF not found: {pdf_path}")
-    
-    if not pypdf:
-        raise ImportError("pypdf is not installed. Run 'pip install pypdf' to execute CV parsing.")
 
-    reader = pypdf.PdfReader(pdf_path)
-    full_text = ""
-    for i, page in enumerate(reader.pages):
-        full_text += f"\n--- PAGE {i+1} ---\n" + page.extract_text()
-    
-    text = clean_pdf_artifacts(full_text)
-    text = re.sub(r'\r\n', '\n', text)
-
+def extract_milestones(text):
+    """Pull dated entries out of a CV, grouped by the section they appear in."""
+    lines = clean_lines(text)
     milestones = []
+    section = None
 
-    # 1. Awards and Nominations
-    awards_match = re.search(r"Awards and Nominations\n(.*?)(?=\n(?:Experience|Education|Skills|Reference|$))", text, re.DOTALL)
-    if awards_match:
-        awards_text = awards_match.group(1).strip()
-        lines = [l.strip() for l in awards_text.split('\n') if l.strip()]
-        curr_award = ""
-        for l in lines:
-            if re.match(r"^(Top|Entrepreneur|MTN|Award)", l, re.IGNORECASE):
-                if curr_award:
-                    year_match = re.search(r"(\d{4})", curr_award)
-                    date = f"{year_match.group(1)}-01-01" if year_match else "2026-01-01"
-                    milestones.append({
-                        "date": date,
-                        "category": "Awards & Nominations",
-                        "text": curr_award.strip()
-                    })
-                curr_award = l
-            else:
-                curr_award += f" {l}"
-        if curr_award:
-            year_match = re.search(r"(\d{4})", curr_award)
-            date = f"{year_match.group(1)}-01-01" if year_match else "2026-01-01"
-            milestones.append({
-                "date": date,
-                "category": "Awards & Nominations",
-                "text": curr_award.strip()
-            })
+    for index, line in enumerate(lines):
+        matched_section = False
+        for pattern, category in _SECTION_PATTERNS:
+            if pattern.match(line) and len(line) < 60:
+                section = category
+                matched_section = True
+                break
+        if matched_section:
+            continue
 
-    # 2. Hardcoded clean experiences from the CV (highly accurate rendering)
-    experiences = [
-        {
-            "date": "2021-07-01",
-            "category": "Professional Experience",
-            "text": "Appointed Business Development Manager at Black Wealth Institute. Directed pricing structures, audited sales pipelines, and engineered regional growth strategies."
-        },
-        {
-            "date": "2013-08-01",
-            "category": "Professional Experience",
-            "text": "Appointed Manager at Axelgroup. Optimized resource allocation, finalized critical corporate liability insurance renewals, and curated client communication portfolios."
-        },
-        {
-            "date": "2010-02-01",
-            "category": "Professional Experience",
-            "text": "Appointed Team Leader at Bvumo Digital House. Instituted standardized grading structures, conducted rigorous performance controls, and spearheaded talent acquisition campaigns."
-        },
-        {
-            "date": "2007-12-01",
-            "category": "Professional Experience",
-            "text": "Appointed Second Assistant Manager at First Professional Care. Engineered expenditure audits and revenue improvement plans to maximize operational profit."
-        }
-    ]
-    milestones.extend(experiences)
+        if section is None:
+            continue
 
-    # 3. Hardcoded clean education credentials from the CV
-    education = [
-        {
-            "date": "2020-01-01",
-            "category": "Education & Credentials",
-            "text": "Completed Advanced Certificate in Office Computing at Vhembe Vision Empowerment Training College."
-        },
-        {
-            "date": "2018-01-01",
-            "category": "Education & Credentials",
-            "text": "Certified as Google Digital Skills Trainer."
-        },
-        {
-            "date": "2018-06-01",
-            "category": "Education & Credentials",
-            "text": "Completed The Fundamentals of Digital Marketing from Google & IAB Europe."
-        },
-        {
-            "date": "2016-01-01",
-            "category": "Education & Credentials",
-            "text": "Completed GIBS Enterprise Development at GORDON INSTITUTE OF BUSINESS SCIENCE (GIBS)."
-        },
-        {
-            "date": "2013-01-01",
-            "category": "Education & Credentials",
-            "text": "Completed EMPRETEC Business Capacity Development under the United Nations."
-        },
-        {
-            "date": "2010-01-01",
-            "category": "Education & Credentials",
-            "text": "Earned a Diploma in Business Administration from PC Training and Business College."
-        },
-        {
-            "date": "2006-01-01",
-            "category": "Education & Credentials",
-            "text": "Earned Graphic Design Certificate at Greenside Design Center College of Design."
-        },
-        {
-            "date": "2005-01-01",
-            "category": "Education & Credentials",
-            "text": "Earned Matric Senior Certificate at Khwevha Commercial School."
-        }
-    ]
-    milestones.extend(education)
+        date_match = _DATE_RE.search(line)
+        if not date_match:
+            continue
 
-    # 4. Clean Skills Portfolio
-    skills = {
-        "date": "2026-01-01",
-        "category": "Core Skill Inventory",
-        "text": "Validated full tech stack: HTML, CSS, JavaScript (ES6+, React, Redux, Node.js), TypeScript, SQL (PostgreSQL, MySQL), Cloud Architecture (GCP, AWS)."
-    }
-    milestones.append(skills)
+        # Build the entry from this line plus the following line when the
+        # following line looks like a continuation rather than a new entry.
+        body = line
+        if index + 1 < len(lines):
+            nxt = lines[index + 1]
+            if nxt and not _DATE_RE.search(nxt) and len(nxt) > 15 and not nxt.endswith(":"):
+                body = f"{line} — {nxt}"
 
-    # Sort milestones chronologically
-    milestones.sort(key=lambda x: x["date"])
+        body = " ".join(body.split())
+        if len(body) < 8:
+            continue
+
+        milestones.append({
+            "date": normalise_date(date_match.group("month"), date_match.group("year")),
+            "category": section,
+            "text": body,
+        })
+
+    milestones.sort(key=lambda item: item["date"])
     return milestones
 
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Seed a life profile's living ledger from a CV PDF."
+    )
+    parser.add_argument("--name", required=True, help="Instance name")
+    parser.add_argument("--type", choices=("business", "life"), default="life")
+    parser.add_argument("--pdf", required=True, help="Path to the CV PDF")
+    parser.add_argument("--root", default=None, help="Workspace root override")
+    parser.add_argument("--apply", action="store_true",
+                        help="Write the extracted milestones. Without this the "
+                             "script only prints what it found.")
+    parser.add_argument("--quiet", action="store_true")
+    return parser
+
+
 def main():
-    parser = argparse.ArgumentParser(description="StartupOS CV Ledger Pre-Seeder Tool")
-    parser.add_argument("--name", required=True, help="Profile/instance name (e.g. Rendani)")
-    parser.add_argument("--type", choices=["business", "life"], default="life", help="Profile type")
-    parser.add_argument("--pdf", default=None, help="Custom path to key Person_CV.pdf")
-    
-    args = parser.parse_args()
-    
-    active_startup_os_root = resolve_workspace_root()
-    questions_path = os.path.join(active_startup_os_root, "instances", args.type, args.name, "questions.md")
-    
-    if not os.path.exists(questions_path):
-        print(f"[Error] Missing questions file under local instance: {questions_path}", file=sys.stderr)
-        sys.exit(1)
+    args = build_parser().parse_args()
 
-    # Resolve PDF path
-    pdf_path = args.pdf
-    if not pdf_path:
-        options = [
-            os.path.join(active_startup_os_root, "instances", args.type, args.name, "compliance", "key Person_CV.pdf"),
-            os.path.join(active_startup_os_root, "instances", args.type, args.name, "key Person_CV.pdf"),
-            os.path.join(active_startup_os_root, "instances", "business", "SouthRiver", "compliance", "key Person_CV.pdf")
-        ]
-        for opt in options:
-            if os.path.isfile(opt):
-                pdf_path = opt
-                break
-                
-    if not pdf_path or not os.path.isfile(pdf_path):
-        print(f"[Error] Could not locate 'key Person_CV.pdf'. Please provide explicit path via --pdf", file=sys.stderr)
-        sys.exit(1)
+    _bootstrap.prepare(root=args.root, sync=False, verbose=not args.quiet)
 
-    print(f"[StartupOS] Parsing CV from: {pdf_path}")
-    
+    from core.agent_bridge import log_ambient_milestone
+    from core.errors import StartupOSError
+    from core.paths import questions_path, resolve_workspace_root
+
+    if not os.path.isfile(args.pdf):
+        print(f"[Error] CV not found: {args.pdf}", file=sys.stderr)
+        return 1
+
     try:
-        milestones = extract_milestones_from_cv(pdf_path)
-    except Exception as e:
-        print(f"[Error] Failed to parse CV: {e}", file=sys.stderr)
-        sys.exit(1)
+        root = resolve_workspace_root(args.root, verbose=False)
+        target = questions_path(root, args.type, args.name)
+    except StartupOSError as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        return 1
 
-    # Read existing questions.md
-    with open(questions_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    if not os.path.exists(target):
+        print(f"[Error] No profile at {target}. Provision it first.", file=sys.stderr)
+        return 1
 
-    # Build or find milestone section
-    log_header = "\n\n## 4. Conversational Milestone Log (Living Ledger)\n"
-    if "## 4. Conversational Milestone Log" not in content:
-        content += log_header
+    try:
+        text = read_pdf_text(args.pdf)
+    except Exception as exc:
+        print(f"[Error] Could not read {args.pdf}: {exc}", file=sys.stderr)
+        return 1
 
-    # Append milestones safely
-    appended_count = 0
-    for m in milestones:
-        entry_line = f"\n*   **[{m['date']}] ({m['category']})**: {m['text']}"
-        fragment = m['text'][:50]
-        if fragment in content:
-            print(f"  [Skip] Already exists: {m['date']} ({m['category']}) - {fragment}...")
+    milestones = extract_milestones(text)
+
+    if not milestones:
+        print(
+            "[Error] No dated entries could be extracted from this CV.\n"
+            "        Nothing was written. Add milestones directly with "
+            "log_milestone.py, or check that the PDF has selectable text "
+            "rather than being a scan.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(f"\nExtracted {len(milestones)} candidate milestones from {os.path.basename(args.pdf)}:\n")
+    for item in milestones:
+        print(f"  [{item['date']}] ({item['category']}) {item['text'][:110]}")
+
+    if not args.apply:
+        print(
+            "\n[Dry run] Nothing was written. Review the entries above, then "
+            "re-run with --apply to add them.\n"
+            "          Extraction from a PDF is approximate; entries that read "
+            "wrongly should be corrected in questions.md afterwards."
+        )
+        return 0
+
+    written = 0
+    skipped = 0
+    for item in milestones:
+        try:
+            result = log_ambient_milestone(
+                filepath=target,
+                category=item["category"],
+                entry_text=item["text"],
+                entry_date=item["date"],
+                recompile=False,
+                workspace_root=args.root,
+            )
+        except StartupOSError as exc:
+            print(f"[Warning] Skipped an entry: {exc}", file=sys.stderr)
+            skipped += 1
             continue
-        content += entry_line
-        appended_count += 1
+        if result.changed:
+            written += 1
+        else:
+            skipped += 1
 
-    # Save questions.md
-    with open(questions_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+    print(f"\n[Success] Wrote {written} milestones ({skipped} already present) to {target}")
 
-    print(f"[Success] Successfully pre-seeded {appended_count} historical milestones from CV into {questions_path}!")
-
-    # Auto-compile downstream documents
+    from core.compiler import compile_instance
     try:
-        compile_instance(instance_type=args.type, instance_name=args.name)
-        print(f"[StartupOS] Re-compiled life profile outputs for '{args.name}' successfully!")
-    except Exception as e:
-        print(f"[Warning] Downstream auto-compilation failed: {e}", file=sys.stderr)
+        compile_instance(instance_type=args.type, instance_name=args.name,
+                         workspace_root=args.root, quiet=args.quiet)
+    except StartupOSError as exc:
+        print(f"[Warning] Recompilation failed: {exc}", file=sys.stderr)
+        return 1
+
+    return 0
+
 
 if __name__ == "__main__":
-    main()
-
+    sys.exit(main())

@@ -1,118 +1,74 @@
 # compliance-silent
-import sys
-_trace_id_propagation = {"X-Trace-Id": "compliance"}
-import os
+"""StartupOS milestone wrapper — append an achievement to the living ledger."""
+
 import argparse
-import urllib.request
-import io
-import zipfile
+import os
+import sys
+from datetime import date
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _bootstrap  # noqa: E402
 
-def fetch_core_from_github():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(script_dir)
 
-    core_dir = os.path.join(parent_dir, "core")
-    os.makedirs(core_dir, exist_ok=True)
+def build_parser():
+    parser = argparse.ArgumentParser(description="StartupOS conversational milestone log")
+    parser.add_argument("--name", required=True, help="Instance name")
+    parser.add_argument("--type", choices=("business", "life"), default="life")
+    parser.add_argument("--category", required=True,
+                        help="Milestone category, e.g. 'Technical Mastery'")
+    parser.add_argument("--entry", required=True, help="What was achieved")
+    parser.add_argument("--date", default=None, help="YYYY-MM-DD (default: today)")
+    parser.add_argument("--allow-duplicate", action="store_true",
+                        help="Log even if an equivalent entry already exists")
+    parser.add_argument("--root", default=None, help="Workspace root override")
+    parser.add_argument("--no-sync", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
+    return parser
 
-    init_py = os.path.join(core_dir, "__init__.py")
-    if not os.path.exists(init_py):
-        with open(init_py, 'w') as f:
-            f.write("")
-
-    core_files = ["compiler.py", "parser.py", "agent_bridge.py"]
-    github_raw_core = f"{GITHUB_RAW_BASE}/core/utils/startup_os"
-
-    for f_name in core_files:
-        dest_file = os.path.join(core_dir, f_name)
-        url = f"{github_raw_core}/{f_name}"
-        try:
-            print(f"[StartupOS] Fetching core engine from GitHub: {f_name}")
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as response:
-                with open(dest_file, 'wb') as f:
-                    f.write(response.read())
-        except Exception as e:
-            if not os.path.exists(dest_file):
-                print(f"[Error] Failed to fetch core engine {f_name}: {e}", file=sys.stderr)
-                sys.exit(1)
-            else:
-                print(f"[Warning] Using cached core engine {f_name} (fetch failed: {e})", file=sys.stderr)
-
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-
-fetch_core_from_github()
-
-try:
-    from core.agent_bridge import log_ambient_milestone
-    from core.compiler import resolve_workspace_root
-except ImportError as e:
-    print(f"[Error] Sourced milestone imports failed: {e}", file=sys.stderr)
-    sys.exit(1)
-
-def sync_templates():
-    active_startup_os_root = resolve_workspace_root()
-    active_templates_dir = os.path.join(active_startup_os_root, "templates")
-    os.makedirs(active_templates_dir, exist_ok=True)
-
-    zip_url = f"{GITHUB_RAW_BASE}/archive/refs/heads/main.zip"
-    print(f"[StartupOS] Fetching templates from GitHub raw: {zip_url}")
-
-    try:
-        req = urllib.request.Request(zip_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=10) as response:
-            zip_data = response.read()
-
-        with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-            sync_count = 0
-            for name in z.namelist():
-                if "core/skills/startup_os/templates/" in name and not name.endswith("/"):
-                    parts = name.split("core/skills/startup_os/templates/")
-                    if len(parts) == 2:
-                        rel_path = parts[1]
-                        dest_path = os.path.join(active_templates_dir, rel_path)
-                        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-
-                        with open(dest_path, "wb") as f:
-                            f.write(z.read(name))
-                        sync_count += 1
-        print(f"[Success] Retrieved and synced {sync_count} templates from GitHub!")
-    except Exception as e:
-        print(f"[Warning] Failed to fetch templates from GitHub: {e}", file=sys.stderr)
 
 def main():
-    # Wrapper for the ambient milestone logging engine
-    # appends user-provided accomplishments to the living ledger (questions.md)
-    sync_templates()
-    
-    parser = argparse.ArgumentParser(description="StartupOS Conversational Milestone Log Local Wrapper")
-    parser.add_argument("--name", required=True, help="Profile/instance name (e.g. Rendani)")
-    parser.add_argument("--type", choices=["business", "life"], default="life", help="Profile type")
-    parser.add_argument("--category", required=True, help="Milestone category (e.g., Technical Mastery, Legacy Sowing)")
-    parser.add_argument("--entry", required=True, help="Verbal accomplishment logged by user")
-    
-    args = parser.parse_args()
-    
-    active_startup_os_root = resolve_workspace_root()
-    questions_path = os.path.join(active_startup_os_root, "instances", args.type, args.name, "questions.md")
-    
-    if not os.path.exists(questions_path):
-        print(f"[Error] Missing questions file under local instance: {questions_path}", file=sys.stderr)
-        sys.exit(1)
-        
+    args = build_parser().parse_args()
+
+    _bootstrap.prepare(root=args.root, sync=not args.no_sync, verbose=not args.quiet)
+
+    from core.agent_bridge import log_ambient_milestone
+    from core.errors import StartupOSError
+    from core.paths import questions_path, resolve_workspace_root
+
     try:
-        log_ambient_milestone(
-            filepath=questions_path,
+        root = resolve_workspace_root(args.root, verbose=False)
+        target = questions_path(root, args.type, args.name)
+    except StartupOSError as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        return 1
+
+    if not os.path.exists(target):
+        print(f"[Error] No profile at {target}. Provision it first.", file=sys.stderr)
+        return 1
+
+    try:
+        result = log_ambient_milestone(
+            filepath=target,
             category=args.category,
-            entry_text=args.entry
+            entry_text=args.entry,
+            entry_date=date.fromisoformat(args.date) if args.date else None,
+            deduplicate=not args.allow_duplicate,
+            workspace_root=args.root,
         )
-        print(f"[Success] Milestone logged under {questions_path}")
-    except Exception as e:
-        print(f"[Error] Milestone log failed: {e}", file=sys.stderr)
-        sys.exit(1)
+    except StartupOSError as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        return 1
+
+    if not result.changed:
+        print(f"[Skip] {result.error}")
+        return 0
+
+    print(f"[Success] Milestone logged in {target}")
+    if result.error:
+        print(f"[Warning] {result.error}", file=sys.stderr)
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    main()
-
+    sys.exit(main())

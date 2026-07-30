@@ -1,0 +1,5 @@
+# Runtime cache written by scripts/_bootstrap.py when the skill runs.
+# The engine's canonical home is core/utils/startup_os/ — these are copies
+# fetched at run time and must never be committed back.
+core/
+engine.lock.json

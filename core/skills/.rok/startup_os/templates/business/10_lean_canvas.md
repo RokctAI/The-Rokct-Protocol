@@ -1,45 +1,91 @@
 # {{company_name}} — Lean Canvas
 
-## 1. The Lean Startup Grid Layout
+## 1. Lean Grid
 
-The following canvas focuses on high-priority customer problems, unique value positioning, unfair advantages, and early customer channels:
+| Problem | Solution | Unique Value Proposition | Unfair Advantage | Customer Segments |
+| :--- | :--- | :--- | :--- | :--- |
+| {{#if key_operational_risks}}{{key_operational_risks}}{{else}}_Not yet defined_{{/if}} | {{primary_products}} | {{core_value_proposition}} | {{unfair_advantage}} | {{customer_segments}} |
 
-| **Problem** | **Solution** | **Unique Value Proposition** | **Unfair Advantage** | **Customer Segments** |
-| :--- | :--- | :--- | :--- | :--- |
-| • High regional logistics OPEX<br>• Traditional software/ops complexity<br>• Lack of unified digital profiles<br>• Outdated manual recordkeeping | • Dynamic offline-first engine<br>• Integrated local gig-fleets<br>• SANS/POPIA compliant flows<br>• Automated strategic compilers | • **Zero-Dependency Platform**: Immediate local execution<br>• **Ecosystem Referrals**: Interconnected value loops<br>• **B-BBEE Advantage**: Level 1 Status | • Proprietary Drift-Sync databases<br>• Established regional sandboxes<br>• Broad local network referrals<br>• B-BBEE Level 1 Youth Enterprise | • Rural and peri-urban merchants<br>• Regional food & beverage producers<br>• Independent local bakkie owners<br>• Multi-tenant enterprises |
-| | **Key Metrics** | | **Channels** | |
-| | • Monthly Active Users (MAU)<br>• Total Digital Volume (ZAR)<br>• Customer Acquisition Cost (CAC)<br>• Average Order Value (AOV) | | • Wholesale depot vouchers<br>• Local brand advocate programs<br>• Manufacturer referral loops<br>• Direct sales onboarding | |
-| **Cost Structure** | | | | **Revenue Streams** |
-| :--- | :--- | :--- | :--- | :--- |
-| • Infrastructure & Cloud Operating Costs<br>• Variable gig-driver delivery commissions<br>• B-BBEE Audit & Licensing certification fees | | | | • Wholesale product markup margins<br>• Last-mile platform delivery commissions<br>• Enterprise SaaS API license tiers |
+| Key Metrics | Channels |
+| :--- | :--- |
+| Revenue, gross margin, customer acquisition cost, retention | {{growth_strategy}} |
+
+| Cost Structure | Revenue Streams |
+| :--- | :--- |
+| Personnel, suppliers, infrastructure, compliance | {{primary_products}} |
 
 ---
 
-## 2. In-Depth Lean Block Breakdown
+## 2. Lean Block Breakdown
 
-### A. The Core Problems
-1. **Inefficient Sourcing and Logistics**: Businesses lose margins due to empty delivery runs and high middleman fees.
-2. **Connectivity and Power Failures**: Standard cloud tools are rendered useless by grid load-shedding and poor data coverage.
-3. **The Credit Exclusion Black Hole**: Micro-businesses operating purely in cash cannot build reliable profiles for standard financial products.
+### A. The Problem
+{{#if key_operational_risks}}
+{{key_operational_risks}}
+{{else}}
+_The problem this venture solves has not been recorded. Answer
+**Key Operational Risks** and **Core Value Proposition** in questions.md._
+{{/if}}
 
-### B. The Solutions
-1. **Dynamic Gig Sourcing**: Orchestrated local youth vehicle pools matched automatically with supply requests.
-2. **Offline-First Synchronization**: Local database queues that record operations offline and sync seamlessly when network returns.
-3. **Dynamic Ledger Digitization**: Instantly turning raw supplier receipts and cash volumes into clear, bank-auditable statements.
+### B. The Solution
+{{#if primary_products}}
+{{primary_products}}
+{{/if}}
+{{#if business_continuity_strategy}}
+
+**Continuity**: {{business_continuity_strategy}}
+{{/if}}
 
 ### C. Unique Value Proposition
-* **The Symbiotic Local Loop**: Linking independent logistics drivers, water/food producers, and local retail shops in a self-reinforcing network.
-* **Rapid Strategic Turnkey**: Helping startups scale their operational and strategic profile immediately under a unified framework.
+{{#if core_value_proposition}}
+{{core_value_proposition}}
+{{else}}
+_Required field not yet answered._
+{{/if}}
 
-### D. Unfair Technical Advantages
-* **B-BBEE Level 1 Enterprise Status**: Positioned perfectly to absorb corporate enterprise development (ED) and supplier development (SD) grants.
-* **Bespoke Regional Sandboxes**: Existing active pilots (e.g., in Limpopo/Vhembe and Western Cape) serving as proven templates.
+### D. Unfair Advantage
+{{#if unfair_advantage}}
+{{unfair_advantage}}
+{{else}}
+_No defensible advantage recorded yet. Investors will ask — answer
+**Unfair Advantage** in questions.md._
+{{/if}}
 
-### E. Customer Channels
-* **Direct Manufacturer Recommendations**: Sourcing down-market retail users at zero Customer Acquisition Cost (CAC) by tying tech discounts to physical product purchases.
-* **Community-Led Onboarding**: Word-of-mouth campaigns run by local micro-depot operators and gig-drivers.
+{{#if_feature bbee}}
+{{#if bee_level}}
+*   **Preferential procurement standing**: {{bee_level}}. Verified from the
+    B-BBEE certificate on file; may support access to enterprise and supplier
+    development programmes.
+{{/if}}
+{{/if_feature}}
 
-### F. Key Metrics (KPIs)
-* **Transaction Ledger Scale**: Cumulative volume of transaction value processed.
-* **Fintech Credit Conversion**: Volume of users moving from cash-only onto alternative digital credit scores.
-* **Retention/Churn Ratio**: Weekly active merchant retention rates.
+{{#if_feature trademarks}}
+{{#if trademarks_details}}
+*   **Registered intellectual property**:
+{{trademarks_details}}
+{{/if}}
+{{/if_feature}}
+
+### E. Channels
+{{#if growth_strategy}}
+{{growth_strategy}}
+{{else}}
+_Customer acquisition loop not yet recorded._
+{{/if}}
+
+### F. Customer Segments
+{{customer_segments}}
+{{#if key_competitors}}
+
+**Competitive set**: {{key_competitors}}
+{{/if}}
+
+### G. Key Metrics
+Track these from first revenue:
+
+*   **Revenue** — {{currency_note}}
+*   **Gross margin** by product or service line
+*   **Customer acquisition cost** and payback period
+*   **Retention / churn** over a rolling 90 days
+{{#if funding_requirement}}
+*   **Runway** against the stated capital requirement: {{funding_requirement}}
+{{/if}}
