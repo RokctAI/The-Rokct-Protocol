@@ -7,7 +7,7 @@ import subprocess
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
-ROUTER_FILE = os.path.join(PROJECT_ROOT, "lib", "core", "presentation", "routes", "app_router.dart")
+ROUTER_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "app_router.dart")
 MAIN_FILE = os.path.join(PROJECT_ROOT, "lib", "main.dart")
 DB_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "app_database.dart")
 TRKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "tr_keys.dart")
@@ -144,7 +144,7 @@ def save_state(state):
 
 def get_host_routes():
     """Host-composition routes (ADR-005): pages that live in the host's own
-    composition files (lib/core/presentation/routes/*_route_pages.dart)
+    composition files (lib/presentation/routes/*_route_pages.dart)
     rather than inside any SDK's lib/ — typically because they import
     another SDK directly (cross-SDK composition), which ADR-005 forbids
     inside a single SDK's own lib/. No SDK manifest can declare these, and
