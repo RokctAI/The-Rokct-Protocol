@@ -43,11 +43,10 @@ def main():
     with open(tmp_composer, "w", encoding="utf-8") as f:
         f.write(composer_code)
         
-    # We write it to its expected name so internal imports succeed
-    had_installer_base = os.path.exists(tmp_installer_base)
-    if not had_installer_base:
-        with open(tmp_installer_base, "w", encoding="utf-8") as f:
-            f.write(installer_base_code)
+    # Always overwrite with the freshly-fetched copy: a stale local file left
+    # over from a prior run must never shadow fixes pushed to GitHub.
+    with open(tmp_installer_base, "w", encoding="utf-8") as f:
+        f.write(installer_base_code)
 
     try:
         result = subprocess.run([sys.executable, tmp_composer] + sys.argv[1:], check=False)
@@ -55,7 +54,7 @@ def main():
     finally:
         if os.path.exists(tmp_composer):
             os.unlink(tmp_composer)
-        if not had_installer_base and os.path.exists(tmp_installer_base):
+        if os.path.exists(tmp_installer_base):
             os.unlink(tmp_installer_base)
 
 
