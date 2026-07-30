@@ -358,6 +358,77 @@ def ensure_pubspec_overrides():
     except Exception as e:
         print(f"[!] Error ensuring pubspec.yaml dependency_overrides: {e}")
 
+def _run_build_runner(cwd, label):
+    """build_runner in `cwd`, with the same --force-jit/fallback dance as the
+    host run. Returns True on success."""
+    build = subprocess.run(
+        ["dart", "run", "build_runner", "build", "--force-jit"],
+        cwd=cwd, shell=True, capture_output=True, text=True,
+    )
+    if build.returncode != 0 and "Could not find an option named" in (
+            build.stdout + build.stderr):
+        build = subprocess.run(
+            ["dart", "run", "build_runner", "build",
+             "--delete-conflicting-outputs"],
+            cwd=cwd, shell=True, capture_output=True, text=True,
+        )
+    if build.returncode == 0:
+        print(f"[+] Regenerated code for {label}.")
+        return True
+    print(f"[!] Code generation failed for {label} (exit {build.returncode}).")
+    print((build.stdout or "")[-2000:], end="")
+    print((build.stderr or "")[-2000:], end="")
+    return False
+
+
+def run_sdk_code_generation():
+    """Regenerate codegen INSIDE each composed SDK cache that needs it.
+
+    Table/TrKeys injection rewrites sources in `.rokct/cache/<sdk>` — most
+    consequentially the drift `AppDatabase` in base_sdk, whose companion
+    `.g.dart` then no longer matches (missing table getters, entity types
+    that "aren't defined"). The host's own build_runner run does NOT fix
+    this: build_runner only generates for the package it runs in, and each
+    cache is a separate path-dependency package.
+
+    Without this step a from-scratch compose (CI, or any clean checkout)
+    produces a tree that cannot compile, and the only recovery is running
+    build_runner by hand in each cache — which is exactly the kind of
+    undocumented manual step composing is supposed to remove.
+
+    Only caches that actually declare build_runner are touched, so SDKs with
+    no generated code cost nothing.
+    """
+    cache_root = os.path.join(PROJECT_ROOT, ".rokct", "cache")
+    if not os.path.isdir(cache_root):
+        return
+    print("\n[*] Regenerating code inside composed SDK caches...")
+    for name in sorted(os.listdir(cache_root)):
+        sdk_dir = os.path.join(cache_root, name)
+        pubspec = os.path.join(sdk_dir, "pubspec.yaml")
+        if not os.path.isfile(pubspec):
+            continue
+        try:
+            with open(pubspec, "r", encoding="utf-8") as f:
+                needs_codegen = "build_runner" in f.read()
+        except Exception:
+            continue
+        if not needs_codegen:
+            continue
+        # Not every cache can resolve standalone: an SDK whose pubspec
+        # points base_sdk at a path relative to ITS OWN repo has no valid
+        # base_sdk from inside the cache. Those ship their generated code
+        # from source instead, so a failed pub get here is expected and not
+        # worth failing the compose over.
+        pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
+                             shell=True, capture_output=True, text=True)
+        if pub.returncode != 0:
+            print(f"[*] {name}_sdk does not resolve standalone; skipping "
+                  f"its codegen (it ships generated sources).")
+            continue
+        _run_build_runner(sdk_dir, f"{name}_sdk")
+
+
 def run_code_generation():
     """Runs `flutter pub get` then `build_runner build`.
 
@@ -473,6 +544,7 @@ def main():
 
     ensure_pubspec_overrides()
     remove_stale_widget_test()
+    run_sdk_code_generation()
     run_code_generation()
 
 if __name__ == "__main__":
