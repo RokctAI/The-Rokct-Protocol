@@ -381,6 +381,51 @@ def _run_build_runner(cwd, label):
     return False
 
 
+import re
+
+def _fix_cache_dependency_override_paths(sdk_dir, pubspec):
+    """Rewrite dependency_overrides path: entries that still point at an
+    SDK's OWN repo location (e.g. `../../../core/base/dart`) so they match
+    the already-correct `dependencies:` path for the same package once
+    copied into `.rokct/cache/<sdk>` (e.g. `../base`).
+
+    Source pubspec.yaml files declare both a `dependencies.<pkg>.path`
+    (correct relative to the cache layout, where every SDK cache sits as a
+    sibling under `.rokct/cache/`) and a `dependency_overrides.<pkg>.path`
+    (correct only relative to the SDK's own standalone repo, for local dev
+    codegen there). The installer copies the file verbatim, so the override
+    silently breaks `pub get` inside the cache even though the matching
+    dependency entry is fine — previously misread as "this SDK can't
+    resolve standalone" and skipped rather than fixed.
+    """
+    try:
+        with open(pubspec, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return
+    if "dependency_overrides:" not in content:
+        return
+    deps_part, _, overrides_part = content.partition("dependency_overrides:")
+    changed = False
+    for pkg, dep_path in re.findall(r"^  (\w+):\n    path:\s*(\S+)\s*$", deps_part, re.MULTILINE):
+        new_overrides_part, n = re.subn(
+            rf"(^  {pkg}:\n    path:\s*)\S+\s*$",
+            rf"\g<1>{dep_path}",
+            overrides_part,
+            flags=re.MULTILINE,
+        )
+        if n and new_overrides_part != overrides_part:
+            overrides_part = new_overrides_part
+            changed = True
+    if changed:
+        try:
+            with open(pubspec, "w", encoding="utf-8") as f:
+                f.write(deps_part + "dependency_overrides:" + overrides_part)
+            print(f"[*] Fixed dependency_overrides path(s) in {os.path.basename(sdk_dir)}/pubspec.yaml to match cache layout")
+        except Exception as e:
+            print(f"[!] Could not fix dependency_overrides in {pubspec}: {e}")
+
+
 def run_sdk_code_generation():
     """Regenerate codegen INSIDE each composed SDK cache that needs it.
 
@@ -415,11 +460,12 @@ def run_sdk_code_generation():
             continue
         if not needs_codegen:
             continue
-        # Not every cache can resolve standalone: an SDK whose pubspec
-        # points base_sdk at a path relative to ITS OWN repo has no valid
-        # base_sdk from inside the cache. Those ship their generated code
-        # from source instead, so a failed pub get here is expected and not
-        # worth failing the compose over.
+        # Some caches carry a dependency_overrides path that's broken
+        # relative to the cache layout (see _fix_cache_dependency_override_paths)
+        # even though the matching dependencies path is fine; fix it before
+        # attempting pub get so those SDKs resolve standalone instead of
+        # being (wrongly) treated as unable to.
+        _fix_cache_dependency_override_paths(sdk_dir, pubspec)
         pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
                              shell=True, capture_output=True, text=True)
         if pub.returncode != 0:
