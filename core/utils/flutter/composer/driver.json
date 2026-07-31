@@ -94,6 +94,33 @@
       "path": "../agent/agent/dart",
       "ref": "main",
       "_comment": "Disabled as per requirements"
+    },
+    {
+      "name": "revenue_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/revenue/dart",
+      "ref": "main",
+      "_comment": "Driver income/statistics pages, under a driver/ role folder with an app_type.driver manifest block. Shared with manager.json, which takes the manager variant from the same SDK."
+    },
+    {
+      "name": "merchants_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/dart",
+      "ref": "main",
+      "_comment": "Story UI the driver app shows; base_sdk already owns story_data/story_request, so only the presentation needed a home."
+    },
+    {
+      "name": "products_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/dart",
+      "ref": "main",
+      "_comment": "restaurant_item / product_item / maps_list widgets used by the driver app."
     }
   ]
 }
