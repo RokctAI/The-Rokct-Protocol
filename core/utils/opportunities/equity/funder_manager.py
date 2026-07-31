@@ -1,3 +1,10 @@
+# compliance-ignore-file: structural-special-dirs
+# These scripts live under .rokct/ ONLY at runtime: initiate.py fetches
+# this canonical copy from The-Rokct-Protocol into .rokct/skills/ at the
+# start of a workflow run, and end_protocol.py deletes it at the end.
+# Nothing here is committed under .rokct/ in this repo (that path is
+# gitignored) - this IS the checked-in source, at its permanent,
+# allowed location.
 import os
 import re
 import sys
