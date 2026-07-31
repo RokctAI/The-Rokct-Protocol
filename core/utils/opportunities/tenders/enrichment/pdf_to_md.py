@@ -10,6 +10,7 @@ import pdfplumber
 import shutil
 from pathlib import Path
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 # Add utils to path
 sys.path.append(str(Path(__file__).parent.parent / 'utils'))
@@ -63,7 +64,7 @@ def clean_markdown(text):
     
     for line in lines:
         # Fix MD010: Hard tabs
-        line = line.replace('\\t', '    ')
+        line = line.replace('\t', '    ')
         
         # MD029: Ordered list item prefix
         # Detect if line starts with a digit followed by . or )
@@ -192,11 +193,27 @@ def main():
         print(f"Invalid format in {todo_path}")
         return
 
-    for item in todo_list:
-        # item might be "03_tenders/ocds-xxx.md" or "ocds-xxx"
-        tender_id = str(item).replace('.md', '')
-        print(f"Processing {tender_id}...")
-        process_tender(tender_id)
+    # PER_TENDER_TIMEOUT_SECONDS: pdfplumber's page-by-page parse has no
+    # timeout of its own, unlike every network call in this file (60s PDF
+    # fetch above, 15s in extract_requirements.py). A single hung or
+    # pathological PDF here previously stalled the whole SEQUENTIAL run
+    # indefinitely - consistent with the scheduled Jul 27 run dying after
+    # 2h29m with "runner lost communication" (a crashed/unresponsive VM,
+    # not the 6-hour default job timeout). This bounds the damage to one
+    # tender's wall-clock budget and lets the batch continue past it.
+    PER_TENDER_TIMEOUT_SECONDS = 180
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        for item in todo_list:
+            # item might be "03_tenders/ocds-xxx.md" or "ocds-xxx"
+            tender_id = str(item).replace('.md', '')
+            print(f"Processing {tender_id}...")
+            future = executor.submit(process_tender, tender_id)
+            try:
+                future.result(timeout=PER_TENDER_TIMEOUT_SECONDS)
+            except FutureTimeoutError:
+                log_failure(tender_id, f"Timed out after "
+                            f"{PER_TENDER_TIMEOUT_SECONDS}s (likely a "
+                            f"pathological or oversized PDF) - skipped")
 
 if __name__ == "__main__":
     main()
