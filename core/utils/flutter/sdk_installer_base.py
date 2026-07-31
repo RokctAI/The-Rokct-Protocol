@@ -307,7 +307,22 @@ def install_sdk_files_and_routes(sdk_name):
             if os.path.exists(file_dest):
                 current_dest_hash = file_hash(file_dest)
                 last_known_hash = package_state.get("files", {}).get(rel_dest)
-                if last_known_hash and current_dest_hash != last_known_hash:
+                if last_known_hash is None:
+                    # The file is already here but this installer has never
+                    # written it, so it is the host app's own - not a stale
+                    # copy of ours. Overwriting it destroys work nobody asked
+                    # us to touch, and on a first-ever compose that is exactly
+                    # what used to happen: paas_driver's pubspec.yaml was
+                    # replaced wholesale by base_sdk's template, silently
+                    # dropping six dependencies its code still used
+                    # (charts_flutter, map_launcher, auto_size_text,
+                    # calendar_date_picker2, workmanager, percent_indicator).
+                    # The old guard could not catch it because it required a
+                    # previously-stored hash, which by definition no first
+                    # compose has.
+                    print(f"  [!] WARNING: {rel_dest} already exists and was not installed by this SDK. Skipping to avoid overwriting the app's own file - merge manually if you want the template's version.")
+                    continue
+                if current_dest_hash != last_known_hash:
                     # User modified the template file, skip and warn
                     print(f"  [!] WARNING: {rel_dest} has been modified by a developer. Skipping overwrite to prevent data loss. Please merge changes manually.")
                     continue
