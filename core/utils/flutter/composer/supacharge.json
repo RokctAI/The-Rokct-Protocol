@@ -141,5 +141,14 @@
       "path": "../productivity/processing/dart",
       "ref": "sdk-refork-2026-07-11"
     }
+  ],
+  "host_routes": [
+    {
+      "path": "/onboarding-intro",
+      "page": "OnboardingRoute.page",
+      "type": "MaterialRoute",
+      "import": "package:${package}/presentation/routes/onboarding_route_pages.dart",
+      "_comment": "Host composition file (imports lms_sdk directly, so ADR-005 forbids it living inside any single SDK's lib/) — Supacharge's onboarding-carousel entry surface. auth_sdk's login/register/reset routes are NOT here — auth_sdk now owns them directly via its own manifest + templated auth_route_pages.dart, installed automatically into every app that installs auth_sdk."
+    }
   ]
 }
