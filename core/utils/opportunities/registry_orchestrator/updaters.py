@@ -99,6 +99,10 @@ def save_jules_todo(base_dir, todo_list, filename="todo.json", title_prefix="Ten
     todo_path = base_dir / '.rokct' / 'agent' / filename
     todo_path.parent.mkdir(parents=True, exist_ok=True)
     
+    # rglob() enumeration order is filesystem-dependent, not stable across
+    # runs - sorting here is what keeps the queue file byte-identical (and
+    # therefore un-committed) when the underlying pending set hasn't changed.
+    todo_list = sorted(todo_list)
     data = {
         "title": f"{title_prefix}: {datetime.now().strftime('%Y-%m-%d')}",
         "pending_count": len(todo_list),
