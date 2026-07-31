@@ -152,15 +152,6 @@
       "path": "../corporate/revenue/dart",
       "ref": "main",
       "_comment": "Owns the manager income/statistics pages. Its manager templates predate the lib/src/common/ wrap and the core/ install drop, so they need rewriting before they compile; and its role-specific code belongs under a manager/ folder with an app_type.manager manifest block, not at lib/src/ root."
-    },
-    {
-      "name": "zones_sdk",
-      "enabled": true,
-      "source": "git",
-      "git": "https://github.com/RokctAI/zones",
-      "path": "../zones/zones/dart",
-      "ref": "main",
-      "_comment": "Manager merchant delivery-zone page, declared under app_type.manager. Shared with driver.json, which takes the app_type.driver page from the same manifest."
     }
   ]
 }
