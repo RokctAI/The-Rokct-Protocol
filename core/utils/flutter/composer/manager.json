@@ -55,6 +55,14 @@
       "ref": "main"
     },
     {
+      "name": "kitchen_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/dart",
+      "ref": "main"
+    },
+    {
       "name": "hardware_sdk",
       "enabled": true,
       "source": "git",
