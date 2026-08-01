@@ -315,23 +315,39 @@ def remove_stale_widget_test():
         print(f"[!] Error checking/removing stale widget_test.dart: {e}")
 
 def ensure_lib_gitignore():
-    """Make the app ignore its own generated lib/, except main.dart.
+    """Ensure the app ignores its own generated lib/.
 
-    Everything the composer writes into lib/ is regenerated on every run, so
-    tracking it turns each recompose into churn. main.dart is the one
-    exception: it is hand-authored app composition (this app's AppRoutes and
-    EmbeddedWidgets implementations, its brand-colour injection), which is why
-    the installer refuses to overwrite it once edited.
+    TRANSITIONAL - this asserts the CURRENT state, not the intended one.
 
-    Those are two halves of one rule - "everything in lib/ is generated except
-    main.dart" - and only the overwrite half was automated, leaving the ignore
-    half to whoever remembered to copy it from another app.
+    Intended (owner, 2026-08-01): lib/ is generated IN FULL, main.dart
+    included, and anything app-specific is declared in a manifest instead.
+    Then this writes a plain `lib/` with no negation. Treating main.dart as
+    hand-authored is what breaks minilauncher, paas_manager and paas_pos - the
+    installer skips it, no markers are injected, and compose reports success
+    while wiring up no SDKs at all. Protecting one file does not prevent
+    hand-edits being lost in generated locations; it institutionalises the
+    exception.
 
-    The `lib/*` spelling is not interchangeable with `lib/`: git cannot
-    re-include a path whose PARENT DIRECTORY is excluded, so a bare `lib/` rule
-    makes the `!lib/main.dart` negation silently inert and the app's only
-    hand-written file ends up untracked - a fresh clone then has no main.dart
-    and cannot build. An existing bare rule is therefore upgraded, not left.
+    Current, and why the negation is still written: supacharge's main.dart
+    still hand-authors an EmbeddedWidgets implementation (`introPage`), which
+    has no declarative home yet. Its six AppRoutes overrides HAVE already
+    migrated - base_sdk, lms_sdk and auth_sdk now inject byte-identical bodies
+    via manifest `app_routes` - so `introPage` is the only remaining blocker.
+    Until it has somewhere to live, a compose that overwrote main.dart would
+    destroy real work.
+
+    Migration order: give EmbeddedWidgets a declarative home (an
+    `embedded_widgets` manifest list plus a host-level list in composer.json,
+    since OnboardingIntroRouteView is app-specific) -> declare supacharge's
+    introPage there -> drop the installer's main.dart guard -> simplify this
+    to plain `lib/`.
+
+    On the spelling, while the negation stands: `lib/*` is NOT interchangeable
+    with `lib/`. Git cannot re-include a path whose PARENT DIRECTORY is
+    excluded, so a bare `lib/` makes `!lib/main.dart` silently inert and the
+    app's one hand-written file goes untracked. An existing bare `lib/` is
+    therefore left ALONE rather than rewritten - under the intended model it is
+    the correct end state, and compose must not revert a deliberate choice.
     """
     path = os.path.join(PROJECT_ROOT, ".gitignore")
     try:
@@ -344,14 +360,20 @@ def ensure_lib_gitignore():
         has_negation = any(l.strip() == "!lib/main.dart" for l in lines)
         bare = [i for i, l in enumerate(lines) if l.strip() in ("lib/", "lib")]
 
-        if has_star and has_negation and not bare:
+        if has_star and has_negation:
             return
 
-        for i in bare:
-            lines[i] = "lib/*"
-            print("[*] .gitignore: upgraded bare 'lib/' to 'lib/*' so "
-                  "'!lib/main.dart' can take effect")
-        has_star = has_star or bool(bare)
+        if bare:
+            # A deliberate plain `lib/` is the INTENDED end state (see
+            # docstring). Rewriting it would make the correct configuration
+            # unsettable and would revert an owner decision on every compose.
+            # Note it and leave it: while main.dart is still hand-authored this
+            # means it is untracked here, which the app owner should resolve by
+            # completing the migration rather than by us overriding them.
+            print("[*] .gitignore: found a plain 'lib/' rule - leaving it as is. "
+                  "Note main.dart is untracked under this rule; that is correct "
+                  "once main.dart is fully generated.")
+            return
 
         block = []
         if not has_star:
