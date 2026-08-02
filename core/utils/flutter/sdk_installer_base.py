@@ -511,8 +511,17 @@ def update_main_dependencies():
     sdk_imports = []
     sdk_registrations = []
     
-    # Generate imports and register statements for all active packages
-    for pkg_name in sorted(state.get("packages", {}).keys()):
+    # Generate imports and register statements for all active packages.
+    # base_sdk must register first - base_di.dart documents this precondition
+    # ("BEFORE any feature SDK's *SdkDependencies.register") because other
+    # SDKs' DI can resolve base_sdk singletons. Plain alphabetical sort put
+    # auth_sdk ahead of base_sdk and violated that silently (found via
+    # paas_driver's hand-written pre-block workaround, which masked it).
+    package_names = sorted(state.get("packages", {}).keys())
+    if "base_sdk" in package_names:
+        package_names.remove("base_sdk")
+        package_names.insert(0, "base_sdk")
+    for pkg_name in package_names:
         if pkg_name == "core_sdk":
             continue
         # Shared SDK import and dependency call
