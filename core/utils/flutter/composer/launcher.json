@@ -55,6 +55,15 @@
       "ref": "main"
     },
     {
+      "name": "productivity_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/dart",
+      "ref": "main",
+      "_comment": "Owns tasks (tasks_table, task_service, TasksRoute). The launcher's home is tasks-first, so this is the source for that screen and for productivity glance signals."
+    },
+    {
       "name": "corporate_sdk",
       "enabled": true,
       "source": "git",

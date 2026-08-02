@@ -432,6 +432,8 @@ def install_sdk_files_and_routes(sdk_name):
     update_database_registration()
     update_tr_keys_registration()
     update_constants_overrides()
+    update_layout_integrations()
+    update_app_routes()
     return True
 
 def update_router_table():
