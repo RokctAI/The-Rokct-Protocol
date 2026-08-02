@@ -315,39 +315,34 @@ def remove_stale_widget_test():
         print(f"[!] Error checking/removing stale widget_test.dart: {e}")
 
 def ensure_lib_gitignore():
-    """Ensure the app ignores its own generated lib/.
+    """Ensure the app ignores its generated lib/ - all of it, main.dart included.
 
-    TRANSITIONAL - this asserts the CURRENT state, not the intended one.
+    Owner decision (2026-08-02): "run compose fresh at build time, don't
+    special-case main.dart as a tracked exception."
 
-    Intended (owner, 2026-08-01): lib/ is generated IN FULL, main.dart
-    included, and anything app-specific is declared in a manifest instead.
-    Then this writes a plain `lib/` with no negation. Treating main.dart as
-    hand-authored is what breaks minilauncher, paas_manager and paas_pos - the
-    installer skips it, no markers are injected, and compose reports success
-    while wiring up no SDKs at all. Protecting one file does not prevent
-    hand-edits being lost in generated locations; it institutionalises the
-    exception.
+    Everything under lib/ is produced by compose, so none of it is tracked and
+    a fresh checkout regenerates it. main.dart is NOT an exception: it is
+    generated from base_sdk's template, and anything app-specific belongs in a
+    manifest - `app_routes` for navigation, `host_routes` in composer.json for
+    host-composed pages - all of which ARE tracked and are the real source of
+    truth.
 
-    Current, and why the negation is still written: supacharge's main.dart
-    still hand-authors an EmbeddedWidgets implementation (`introPage`), which
-    has no declarative home yet. Its six AppRoutes overrides HAVE already
-    migrated - base_sdk, lms_sdk and auth_sdk now inject byte-identical bodies
-    via manifest `app_routes` - so `introPage` is the only remaining blocker.
-    Until it has somewhere to live, a compose that overwrote main.dart would
-    destroy real work.
+    An earlier version of this wrote `lib/*` plus `!lib/main.dart` to keep
+    main.dart tracked. That was wrong, and the evidence is what treating
+    main.dart as hand-authored actually cost: minilauncher, paas_manager and
+    paas_pos each kept a main.dart with no @generated markers, so compose
+    injected no SDK wiring and reported success while producing an app that
+    registered nothing. Protecting one file does not stop hand-edits being lost
+    in generated locations - it institutionalises the exception and hides the
+    breakage.
 
-    Migration order: give EmbeddedWidgets a declarative home (an
-    `embedded_widgets` manifest list plus a host-level list in composer.json,
-    since OnboardingIntroRouteView is app-specific) -> declare supacharge's
-    introPage there -> drop the installer's main.dart guard -> simplify this
-    to plain `lib/`.
-
-    On the spelling, while the negation stands: `lib/*` is NOT interchangeable
-    with `lib/`. Git cannot re-include a path whose PARENT DIRECTORY is
-    excluded, so a bare `lib/` makes `!lib/main.dart` silently inert and the
-    app's one hand-written file goes untracked. An existing bare `lib/` is
-    therefore left ALONE rather than rewritten - under the intended model it is
-    the correct end state, and compose must not revert a deliberate choice.
+    NOT retroactive by design. An app that already carries the `lib/*` +
+    `!lib/main.dart` pair keeps it, because supacharge's main.dart still
+    hand-authors an EmbeddedWidgets implementation (`introPage`) that has
+    nowhere declarative to live yet. Rewriting its rule here would not delete
+    that code, but it would stop tracking the only copy of it. Once
+    EmbeddedWidgets has a declarative home and supacharge's is migrated, drop
+    the pair from that app and this function will keep it plain thereafter.
     """
     path = os.path.join(PROJECT_ROOT, ".gitignore")
     try:
@@ -356,44 +351,24 @@ def ensure_lib_gitignore():
             with open(path, "r", encoding="utf-8") as f:
                 lines = f.read().split(NL)
 
+        has_plain = any(l.strip() in ("lib/", "lib") for l in lines)
         has_star = any(l.strip() == "lib/*" for l in lines)
-        has_negation = any(l.strip() == "!lib/main.dart" for l in lines)
-        bare = [i for i, l in enumerate(lines) if l.strip() in ("lib/", "lib")]
 
-        if has_star and has_negation:
+        # Leave a legacy lib/* + !lib/main.dart app alone - see docstring.
+        if has_star or has_plain:
             return
 
-        if bare:
-            # A deliberate plain `lib/` is the INTENDED end state (see
-            # docstring). Rewriting it would make the correct configuration
-            # unsettable and would revert an owner decision on every compose.
-            # Note it and leave it: while main.dart is still hand-authored this
-            # means it is untracked here, which the app owner should resolve by
-            # completing the migration rather than by us overriding them.
-            print("[*] .gitignore: found a plain 'lib/' rule - leaving it as is. "
-                  "Note main.dart is untracked under this rule; that is correct "
-                  "once main.dart is fully generated.")
-            return
-
-        block = []
-        if not has_star:
-            block += [
-                "",
-                "# Everything in lib/ is regenerated by compose, so it is not tracked -",
-                "# EXCEPT main.dart, which is hand-authored app composition and which the",
-                "# installer likewise refuses to overwrite. Note 'lib/*' not 'lib/': git",
-                "# cannot re-include a file whose parent directory is excluded, so a bare",
-                "# 'lib/' rule would make the negation below silently inert.",
-                "lib/*",
-            ]
-        if not has_negation:
-            block.append("!lib/main.dart")
-
-        if block:
-            while lines and lines[-1].strip() == "":
-                lines.pop()
-            lines += block + [""]
-            print("[*] .gitignore: ensured lib/* + !lib/main.dart")
+        while lines and lines[-1].strip() == "":
+            lines.pop()
+        lines += [
+            "",
+            "# lib/ is generated by compose on every build - main.dart included -",
+            "# so none of it is tracked. Anything app-specific belongs in a manifest",
+            "# (app_routes, or host_routes in composer.json), which IS tracked.",
+            "lib/",
+            "",
+        ]
+        print("[*] .gitignore: ensured lib/ is ignored")
 
         with open(path, "w", encoding="utf-8", newline=NL) as f:
             f.write(NL.join(lines))
