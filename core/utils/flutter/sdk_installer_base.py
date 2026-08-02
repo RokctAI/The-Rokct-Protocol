@@ -57,6 +57,12 @@ def resolve_home_sdk():
                     pass
     return "core_sdk"
 
+# Set when this run scaffolded the app itself via `flutter create`. Those files
+# are OURS, not the host's, even though the installer has no recorded hash for
+# them - see the guard in install_sdk_files_and_routes.
+FRESH_SCAFFOLD = False
+
+
 def initialize_flutter_project():
     # If pubspec.yaml exists, we assume the project is already initialized
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
@@ -69,6 +75,8 @@ def initialize_flutter_project():
         # Run flutter create in the current directory
         # --project-name ensures the internal package name is correct
         subprocess.run(["flutter", "create", "--project-name", package_name, "."], check=True, shell=True)
+        global FRESH_SCAFFOLD
+        FRESH_SCAFFOLD = True
     except subprocess.CalledProcessError as e:
         print(f"[-] Critical Error: 'flutter create' failed: {e}")
     except FileNotFoundError:
@@ -307,7 +315,7 @@ def install_sdk_files_and_routes(sdk_name):
             if os.path.exists(file_dest):
                 current_dest_hash = file_hash(file_dest)
                 last_known_hash = package_state.get("files", {}).get(rel_dest)
-                if last_known_hash is None:
+                if last_known_hash is None and not FRESH_SCAFFOLD:
                     # The file is already here but this installer has never
                     # written it, so it is the host app's own - not a stale
                     # copy of ours. Overwriting it destroys work nobody asked
@@ -320,6 +328,18 @@ def install_sdk_files_and_routes(sdk_name):
                     # The old guard could not catch it because it required a
                     # previously-stored hash, which by definition no first
                     # compose has.
+                    #
+                    # FRESH_SCAFFOLD is the exception, and it matters: when
+                    # this same run created the app with `flutter create`
+                    # (initialize_flutter_project, called ~110 lines before the
+                    # installs), every file it emitted - main.dart,
+                    # pubspec.yaml, android/ - also has no recorded hash. Those
+                    # are our own scaffolding, not host work, so protecting
+                    # them meant a brand-new app kept Flutter's counter-app
+                    # main.dart: no @generated markers, no SDK DI injected, and
+                    # a compose that reports success while wiring up nothing.
+                    # A host file still has no hash AND no fresh scaffold, so
+                    # the paas_driver protection is untouched.
                     print(f"  [!] WARNING: {rel_dest} already exists and was not installed by this SDK. Skipping to avoid overwriting the app's own file - merge manually if you want the template's version.")
                     continue
                 if current_dest_hash != last_known_hash:
