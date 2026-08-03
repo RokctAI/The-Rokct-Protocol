@@ -37,6 +37,7 @@
 {{#if daily_rhythm}}
 {{daily_rhythm}}
 {{else}}
+
 _No daily rhythm recorded yet. Answer **Daily Rhythm** in questions.md and this
 section fills with your own schedule. The four-cycle shape below is a starting
 suggestion, not a description of how you currently spend your day:_
@@ -47,7 +48,9 @@ suggestion, not a description of how you currently spend your day:_
 | **Harvest** | Operations: meetings, collaboration, client and business execution. |
 | **Stewardship** | Upkeep: admin, training, food, errands. |
 | **Relational** | People and wind-down: family, reading, sleep preparation. |
+
 {{/if}}
+
 
 ---
 

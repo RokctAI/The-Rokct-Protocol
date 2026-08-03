@@ -3,6 +3,7 @@
 ## 1. Corporate Registry
 
 {{#if_feature company_registry}}
+
 | Parameter | Detail |
 | :--- | :--- |
 | **{{company_name_status}}** | {{company_name}} |
@@ -11,39 +12,24 @@
 | **Registration Date** | {{reg_date}} |
 | **Registered Office** | {{registered_office}} |
 | **Postal Address** | {{postal_address}} |
-{{#if_feature tax_clearance}}
 | **{{tax_authority}} Tax Reference** | {{tax_number}} |
 | **Tax Compliance Status** | {{tax_compliance_status}} |
-{{/if_feature}}
-{{#if head_office}}
 | **Head Office** | {{head_office}} |
-{{/if}}
-{{#if secondary_locations}}
 | **Other Locations** | {{secondary_locations}} |
-{{/if}}
-{{#if establishment_date}}
 | **Established** | {{establishment_date}} |
-{{/if}}
-{{#if industry}}
 | **Industry** | {{industry}} |
-{{/if}}
-{{#if target_sectors}}
 | **Target Sectors** | {{target_sectors}} |
-{{/if}}
-{{else}}
-| Parameter | Detail |
-| :--- | :--- |
-| **Trading Name** | {{trading_name}} |
-| **Jurisdiction** | {{jurisdiction_name}} |
-| **Primary Base** | {{primary_base}} |
 
 _No company-registry regime is configured for {{jurisdiction_name}}, so no
 registration details are asserted in this profile._
+
 {{/if_feature}}
+
 
 {{#if_feature bbee}}
 ### B-BBEE Contribution Status
 {{#if bee_level}}
+
 | Measure | Status |
 | :--- | :--- |
 | **Contribution Level** | {{bee_level}} |

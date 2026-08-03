@@ -71,9 +71,9 @@ Keep these current — they are what an auditor or customer asks to see:
 | Customer complaints and resolution | _to be recorded_ | Monthly |
 | Calibration and maintenance logs | _to be recorded_ | Per schedule |
 | Staff training records | _to be recorded_ | Annually |
-{{#if_feature company_registry}}
 | Certificates and licences | Compliance folder | Before expiry |
-{{/if_feature}}
+
+
 
 {{#if_jurisdiction ZA}}
 Where SANS standards or a Certificate of Acceptability apply to the product or

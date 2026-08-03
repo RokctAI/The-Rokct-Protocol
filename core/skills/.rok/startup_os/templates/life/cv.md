@@ -31,10 +31,13 @@ Below is the dynamic, continuous log of validated career wins and professional a
 {{living_ledger_cv}}
 
 {{#if key_relationships}}
+
 ---
 
 ## 3. Trustees & Nominees
+
 *   **Nominated Trust Circle**: {{key_relationships}}
+
 {{#if legacy_vision}}
 *   **Generational Stewardship Vision**: {{legacy_vision}}
 {{/if}}

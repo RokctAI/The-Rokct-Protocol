@@ -80,6 +80,7 @@ _No budget recorded. Answer **Marketing Budget** — amount and period._
 ---
 
 ## 6. Measurement
+
 | Metric | Target | Review |
 | :--- | :--- | :--- |
 | Cost per lead | _set_ | Monthly |

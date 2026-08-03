@@ -23,7 +23,7 @@
 {{#if problem_statement}}
 {{problem_statement}}
 {{else}}
-_Required for this deck. Answer **Problem Statement** in questions.md._
+*Required for this deck. Answer **Problem Statement** in questions.md.*
 {{/if}}
 
 ---
@@ -45,7 +45,7 @@ _Required for this deck. Answer **Problem Statement** in questions.md._
 *   **SAM**: {{market_size_sam}}
 *   **SOM (36 months)**: {{market_size_som}}
 {{else}}
-_Required for this deck. Answer **Market Size TAM / SAM / SOM** — with sources._
+*Required for this deck. Answer **Market Size TAM / SAM / SOM** — with sources.*
 {{/if}}
 {{#if market_trends}}
 
@@ -58,7 +58,7 @@ _Required for this deck. Answer **Market Size TAM / SAM / SOM** — with sources
 {{#if revenue_streams}}
 {{revenue_streams}}
 {{else}}
-_Required for this deck. Answer **Revenue Streams**._
+*Required for this deck. Answer **Revenue Streams**.*
 {{/if}}
 {{#if pricing_tiers}}
 
@@ -71,7 +71,7 @@ _Required for this deck. Answer **Revenue Streams**._
 {{#if achievements_to_date}}
 {{achievements_to_date}}
 {{else}}
-_No traction recorded. This is the slide investors read most carefully._
+*No traction recorded. This is the slide investors read most carefully.*
 {{/if}}
 {{#if funding_history}}
 
@@ -87,7 +87,7 @@ _No traction recorded. This is the slide investors read most carefully._
 {{#if key_competitors}}
 {{key_competitors}}
 {{else}}
-_No competitive analysis recorded._
+*No competitive analysis recorded.*
 {{/if}}
 {{/if}}
 
@@ -144,7 +144,7 @@ _No competitive analysis recorded._
 {{#if funding_requirement}}
 {{funding_requirement}}
 {{else}}
-_No capital requirement recorded. Answer **Funding Requirement**._
+*No capital requirement recorded. Answer **Funding Requirement**.*
 {{/if}}
 {{#if capital_allocation}}
 

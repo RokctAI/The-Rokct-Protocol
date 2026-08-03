@@ -11,6 +11,7 @@
 {{/if}}
 
 ### Market Sizing
+
 | Layer | Size | Meaning |
 | :--- | :--- | :--- |
 | **TAM** | {{market_size_tam}} | The whole category |

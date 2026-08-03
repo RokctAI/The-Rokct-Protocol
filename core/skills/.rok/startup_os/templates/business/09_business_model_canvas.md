@@ -44,7 +44,7 @@ standing{{#if tax_authority}} and {{tax_authority}} for tax matters{{/if}}.
 Delivery and development of: **{{primary_products}}**.
 {{/if}}
 {{#if vision_statement}}
-These activities serve the stated vision: *{{vision_statement}}*
+These activities serve the stated vision: _{{vision_statement}}_
 {{/if}}
 
 ### C. Value Proposition
