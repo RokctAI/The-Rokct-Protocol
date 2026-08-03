@@ -237,9 +237,25 @@ def update_pubspec_dependencies(sdks):
             if line.startswith(" "):
                 stripped = line.strip()
                 if stripped and stripped.endswith("_sdk:"):
+                    # Only skip this entry's OWN sub-lines (e.g. its "path:"
+                    # line), not every indented line after it - a prior
+                    # version kept skipping past subsequent _sdk: entries
+                    # and the app's real dependencies (flutter:,
+                    # cupertino_icons:, etc.) that follow them in the file,
+                    # silently dropping them on every compose after the
+                    # first _sdk: entry existed to trigger this branch.
+                    entry_indent = len(line) - len(line.lstrip(" "))
                     i += 1
-                    while i < len(lines) and (lines[i].startswith(" ") or lines[i].strip() == ""):
-                        i += 1
+                    while i < len(lines):
+                        next_line = lines[i]
+                        if next_line.strip() == "":
+                            i += 1
+                            continue
+                        next_indent = len(next_line) - len(next_line.lstrip(" "))
+                        if next_indent > entry_indent:
+                            i += 1
+                            continue
+                        break
                     continue
                 else:
                     new_lines.append(line)
