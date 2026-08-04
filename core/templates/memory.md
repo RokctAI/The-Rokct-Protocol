@@ -26,4 +26,3 @@ this file to check for past lessons or user preferences.
 > correction is received.
 
 * **[Date]** - [Lesson]
-
