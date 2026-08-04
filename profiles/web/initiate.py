@@ -229,6 +229,25 @@ def main():
                 f.write("\n".join(missing) + "\n")
             print(f"[init] Updated {gitignore_path} (added: {', '.join(missing)})")
 
+    try:
+        email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        email = ""
+    if email:
+        prefix = email.split("@")[0].replace(".", "").lower()
+        domain = email.split("@")[1].lower()
+        domain_hash = hashlib.md5(domain.encode()).hexdigest()[:6]
+        safe_id = f"{prefix}.{domain_hash}"
+        mem = os.path.join(ROKCT_DIR, "memory.md")
+        existing_mem_content = ""
+        if os.path.exists(mem):
+            with open(mem, "r", encoding="utf-8") as f:
+                existing_mem_content = f.read()
+        if safe_id not in existing_mem_content:
+            with open(mem, "a", encoding="utf-8") as f:
+                f.write(f"\n## Safe ID\n\n{safe_id}\n")
+            print(f"[init] Registered safe identity: {safe_id}")
+
     print("[init] Web profile file operations complete.")
 
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
