@@ -203,7 +203,7 @@ def main():
                 existing_mem_content = f.read()
         if safe_id not in existing_mem_content:
             with open(mem, "a", encoding="utf-8") as f:
-                f.write(f"\n\n## Safe ID\n{safe_id}\n")
+                f.write(f"\n## Safe ID\n\n{safe_id}\n")
             print(f"[init] Registered safe identity: {safe_id}")
 
     ignore = os.path.join(ROKCT_DIR, ".gitignore")
