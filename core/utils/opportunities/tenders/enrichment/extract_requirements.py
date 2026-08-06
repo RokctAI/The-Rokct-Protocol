@@ -183,6 +183,14 @@ def main():
         try:
             with open(todo_path, 'r', encoding='utf-8') as f:
                 todo_data = json.load(f)
+            # save_jules_todo (registry_orchestrator/updaters.py) writes a
+            # dict {"title", "pending_count", "files": [...]} — the same
+            # format pdf_to_md.py already accepts. This reader only took
+            # the legacy bare list, so every committed todo.json was
+            # misread as "empty" and the run fell back to the full-corpus
+            # scan that blew the 6-hour job limit.
+            if isinstance(todo_data, dict) and "files" in todo_data:
+                todo_data = todo_data["files"]
             if isinstance(todo_data, list) and todo_data:
                 for rel_path in todo_data:
                     target_files.append(root / rel_path)
