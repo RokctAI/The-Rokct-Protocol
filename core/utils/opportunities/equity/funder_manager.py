@@ -122,6 +122,18 @@ class FunderManager:
         filename = self.generate_filename(data["Organization"])
         filepath = self.registry_path / filename
 
+        # Verified-status guard: never overwrite an existing card a human has
+        # marked VERIFIED with a freshly synced (UNVERIFIED) template. A
+        # verified card only loses that status through an explicit manual
+        # edit, not an automated refresh.
+        if filepath.exists():
+            try:
+                existing = filepath.read_text(encoding='utf-8')
+            except Exception:
+                existing = ""
+            if re.search(r'Verification Status\*\*:\s*VERIFIED', existing):
+                return filepath
+
         with open(filepath, 'w') as f:
             f.write(content)
         return filepath
