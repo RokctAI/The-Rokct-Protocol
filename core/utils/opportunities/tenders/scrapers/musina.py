@@ -67,6 +67,19 @@ def normalize_date(date_str):
     return date_str
 
 
+def pub_date_from_url(url):
+    """Last-resort publication date from a WordPress upload path
+    (/wp-content/uploads/YYYY/MM/...): month-accurate, day unknown, so
+    day 01 is used. Every 'Skipped: no published date found' entry in
+    the 2026-07-14 runs was a direct-PDF link carrying exactly this
+    path — those RFQs produced no card at all because the listing page
+    showed no date next to the link and PDFs never get a pub-date scan."""
+    m = re.search(r'/uploads/(\d{4})/(\d{2})/', url)
+    if m and 1 <= int(m.group(2)) <= 12:
+        return f"{m.group(1)}-{m.group(2)}-01"
+    return None
+
+
 def calculate_fallback_date(pub_date_str):
     """Returns (date_str, is_estimated). Adds 14 days to pub date as a fallback."""
     if not pub_date_str:
@@ -322,6 +335,17 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
                 if norm and re.match(r'\d{4}-\d{2}-\d{2}', norm):
                     final_pub = norm
                     break
+
+            if not final_pub:
+                # Direct-PDF RFQs often have no date in the listing context;
+                # recover the month from the upload path instead of dropping
+                # the tender entirely (closing date stays whatever
+                # fetch_deep_details found — 'See Documents' when unknown,
+                # which generate_md flags as INCOMPLETE).
+                final_pub = pub_date_from_url(rdata['url'])
+                if final_pub:
+                    with open(failure_log, 'a', encoding='utf-8') as fl:
+                        fl.write(f"[{datetime.now().isoformat()}] Pub date approximated from upload path (day unknown, using 01) - {fid} ({rdata['url']})\n")
 
             if not final_pub:
                 with open(failure_log, 'a', encoding='utf-8') as fl:
