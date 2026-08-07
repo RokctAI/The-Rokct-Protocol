@@ -183,6 +183,14 @@ def main():
         try:
             with open(todo_path, 'r', encoding='utf-8') as f:
                 todo_data = json.load(f)
+            # save_jules_todo (registry_orchestrator/updaters.py) writes a
+            # dict {"title", "pending_count", "files": [...]} — the same
+            # format pdf_to_md.py already accepts. This reader only took
+            # the legacy bare list, so every committed todo.json was
+            # misread as "empty" and the run fell back to the full-corpus
+            # scan that blew the 6-hour job limit.
+            if isinstance(todo_data, dict) and "files" in todo_data:
+                todo_data = todo_data["files"]
             if isinstance(todo_data, list) and todo_data:
                 for rel_path in todo_data:
                     target_files.append(root / rel_path)
@@ -195,14 +203,36 @@ def main():
         use_fallback = True
 
     if use_fallback:
-        print("todo.json not found or empty — falling back to full scan")
+        # FALLBACK_LIMIT: the previous fallback enriched the ENTIRE corpus
+        # in one run. With ~1200+ cards, each a PDF fetch + pdfplumber
+        # parse (which has no parse timeout of its own), the sync-engine
+        # job ran past GitHub's 6-hour default execution limit and was
+        # canceled mid-enrichment — before maintenance/purge and before
+        # any commit, throwing away the whole (successful) OCDS sync.
+        # A missing todo.json now enriches a bounded chunk instead:
+        # cards without an AI Checklist first (never enriched), newest
+        # first, capped. Successive weekly runs work through the backlog.
+        FALLBACK_LIMIT = 200
+        print("todo.json not found or empty — falling back to bounded scan "
+              f"(unenriched/newest first, capped at {FALLBACK_LIMIT})")
         all_md_files = list(tender_dir.rglob("*.md"))
-        target_files = []
+        unenriched = []
+        enriched = []
         for f in all_md_files:
             if f.name in ["template.md", "registry_audit_log.md"] or f.name.endswith("_content.md"):
                 continue
             if f.parent == tender_dir or f.stem == f.parent.name:
-                target_files.append(f)
+                try:
+                    has_checklist = "## AI Checklist" in f.read_text(encoding='utf-8', errors='ignore')
+                except Exception:
+                    has_checklist = False
+                (enriched if has_checklist else unenriched).append(f)
+        # Sort by name, newest ids first (OCDS ids are chronological;
+        # file mtimes are useless in CI where checkout stamps everything
+        # with the same time).
+        unenriched.sort(key=lambda f: f.name, reverse=True)
+        enriched.sort(key=lambda f: f.name, reverse=True)
+        target_files = (unenriched + enriched)[:FALLBACK_LIMIT]
     else:
         # Safety filter even for todo.json items
         filtered_targets = []
