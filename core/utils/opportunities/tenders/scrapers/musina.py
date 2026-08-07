@@ -56,15 +56,78 @@ def log_failure(message):
 def normalize_date(date_str):
     if not date_str:
         return None
+    date_str = date_str.strip()
     if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
-        return date_str
-    for fmt in ('%d %B %Y', '%d %b %Y', '%B %d, %Y', '%B %d %Y'):
+        return date_str[:10]
+    # Numeric day-first formats are standard in SA municipal notices
+    # (e.g. eThekwini RFQ1003: 'no later than: 26/05/2022 at 11:00am').
+    for fmt in ('%d %B %Y', '%d %b %Y', '%B %d, %Y', '%B %d %Y',
+                '%d/%m/%Y', '%d-%m-%Y', '%d.%m.%Y'):
         try:
             dt = datetime.strptime(date_str, fmt)
             return dt.strftime('%Y-%m-%d')
         except ValueError:
             continue
     return date_str
+
+
+# One date shape shared by every closing-date pattern below: textual
+# ('8 May 2026' / 'August 3, 2026' — all-caps months included, munis
+# shout), numeric day-first ('26/05/2022', '21-05-2026'), or ISO.
+# Time-of-day suffixes ('at 11h00', '@ 11:00am') follow the capture and
+# need no handling here.
+CLOSING_DATE_RX = (
+    r'(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}'
+    r'|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}'
+    r'|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}'
+    r'|\d{4}-\d{2}-\d{2})'
+)
+
+# Patterns are anchored to submission/closing context words so advert or
+# publication dates are never grabbed by accident. Real phrasings these
+# cover (found via web search while musina.gov.za itself is
+# egress-blocked here):
+#   'Closing date: 27 November 2025 at 11:00'        (Musina RFQ23)
+#   'closing date ... 07 April 2026 @ 11h00'         (Musina RFQ51)
+#   'closing date ... 03 August 2026 at 11h00'       (Musina RFQ08, tenderbulletins.co.za)
+#   'before 8 May 2026 @ 11h00'                      (Musina RFQ61)
+#   'submitted on or before 23 January 2026 @ 11h00' (Musina RFQ listing)
+#   'placed in the Tender Box ... no later than: 26/05/2022 at 11:00am'
+#                                                    (eThekwini RFQ1003)
+#   '... deposited in the designated Tender box ... not later than the
+#    closing date and time'                          (Musina standard notice —
+#                                                     dateless here, the dated
+#                                                     variant per Ray is covered
+#                                                     by the tender-box pattern)
+EXPLICIT_CLOSING_PATTERNS = [
+    r'Closing\s*(?:date|time)(?:\s*(?:and|&)\s*time)?\s*(?:of\s+|[:\s])\s*' + CLOSING_DATE_RX,
+    r'Deadline\s*[:\s]\s*' + CLOSING_DATE_RX,
+]
+BURIED_CLOSING_PATTERNS = [
+    # 'no later than' and 'not later than' both occur in the wild; allow
+    # an optional colon ('no later than: 26/05/2022').
+    r'(?:on\s+or\s+before|not?\s+later\s+than|submitted\s+by|deposited\s+by|before)\s*:?\s+' + CLOSING_DATE_RX,
+    # Tender-box sentences put the venue between the anchor and the date
+    # ('deposited in the tender box at reception ... by/not later than
+    # <date>') — bridge a bounded gap, still ending on a submission word
+    # so published dates can't sneak in.
+    r'tender\s*box[^.\n]{0,150}?(?:not?\s+later\s+than|on\s+or\s+before|by|before)\s*:?\s+' + CLOSING_DATE_RX,
+]
+
+
+def find_closing_date(text):
+    """Scans free text (detail page or PDF) for a closing date using the
+    explicit patterns first, then the buried/loose phrasings. Returns a
+    normalized YYYY-MM-DD string or None."""
+    if not text:
+        return None
+    for pattern in EXPLICIT_CLOSING_PATTERNS + BURIED_CLOSING_PATTERNS:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            norm = normalize_date(match.group(1).strip())
+            if norm and re.match(r'\d{4}-\d{2}-\d{2}', norm):
+                return norm
+    return None
 
 
 def pub_date_from_url(url):
@@ -118,23 +181,11 @@ def fetch_deep_details(url, existing_pub):
     When no closing date is found, falls back to pub_date + 14 days (is_estimated=True).
     When pub_date is also unknown, returns (None, False, ...) → caller sets 'See Documents'.
     """
-    explicit_patterns = [
-        r'Closing\s*date\s*[:\s]\s*(\d{1,2}\s+[A-Z][a-z]+\s+\d{4})',
-        r'Closing\s*date\s*[:\s]\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})',
-        r'Deadline\s*[:\s]\s*(\d{1,2}\s+[A-Z][a-z]+\s+\d{4})'
-    ]
-    buried_patterns = [
-        r'(?:on or before|before|not later than|submitted by)\s+(\d{1,2}\s+[A-Z][a-z]+\s+\d{4})'
-    ]
-
     if url.lower().endswith('.pdf'):
         pdf_text = extract_text_from_pdf(url)
-        for pattern in explicit_patterns + buried_patterns:
-            match = re.search(pattern, pdf_text, re.IGNORECASE)
-            if match:
-                norm = normalize_date(match.group(1).strip())
-                if norm:
-                    return norm, False, None
+        norm = find_closing_date(pdf_text)
+        if norm:
+            return norm, False, None
         # Fallback: estimate from existing pub date
         val, est = calculate_fallback_date(existing_pub)
         return val, est, None
@@ -182,21 +233,10 @@ def fetch_deep_details(url, existing_pub):
                 found_pub = pub_match.group(1).strip()
 
         # 2. Look for Closing Date patterns in detail page
-        # Priority 1: Explicit patterns on detail page
-        for pattern in explicit_patterns:
-            match = re.search(pattern, text_content, re.IGNORECASE)
-            if match:
-                norm = normalize_date(match.group(1).strip())
-                if norm:
-                    return norm, False, found_pub
-
-        # Priority 2: Buried patterns on detail page
-        for pattern in buried_patterns:
-            match = re.search(pattern, text_content, re.IGNORECASE)
-            if match:
-                norm = normalize_date(match.group(1).strip())
-                if norm:
-                    return norm, False, found_pub
+        # Priority 1 & 2: Explicit then buried patterns on detail page
+        norm = find_closing_date(text_content)
+        if norm:
+            return norm, False, found_pub
 
         # Priority 3 & 4: PDF explicit then buried
         pdf_link = soup.find('a', href=re.compile(r'\.pdf$', re.I))
@@ -205,22 +245,9 @@ def fetch_deep_details(url, existing_pub):
             # hardcoded host — the source URL in sources/musinaZA.md governs.
             pdf_url = urljoin(url, pdf_link['href'])
             pdf_text = extract_text_from_pdf(pdf_url)
-
-            # Explicit in PDF
-            for pattern in explicit_patterns:
-                match = re.search(pattern, pdf_text, re.IGNORECASE)
-                if match:
-                    norm = normalize_date(match.group(1).strip())
-                    if norm:
-                        return norm, False, found_pub
-
-            # Buried in PDF
-            for pattern in buried_patterns:
-                match = re.search(pattern, pdf_text, re.IGNORECASE)
-                if match:
-                    norm = normalize_date(match.group(1).strip())
-                    if norm:
-                        return norm, False, found_pub
+            norm = find_closing_date(pdf_text)
+            if norm:
+                return norm, False, found_pub
 
         # 4. Nothing found — fall back to pub date + 14 days
         val, est = calculate_fallback_date(found_pub)
