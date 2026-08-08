@@ -509,14 +509,14 @@ def _run_build_runner(cwd, label):
     host run. Returns True on success."""
     build = subprocess.run(
         ["dart", "run", "build_runner", "build", "--force-jit"],
-        cwd=cwd, shell=True, capture_output=True, text=True,
+        cwd=cwd, shell=(os.name == "nt"), capture_output=True, text=True,
     )
     if build.returncode != 0 and "Could not find an option named" in (
             build.stdout + build.stderr):
         build = subprocess.run(
             ["dart", "run", "build_runner", "build",
              "--delete-conflicting-outputs"],
-            cwd=cwd, shell=True, capture_output=True, text=True,
+            cwd=cwd, shell=(os.name == "nt"), capture_output=True, text=True,
         )
     if build.returncode == 0:
         print(f"[+] Regenerated code for {label}.")
@@ -613,7 +613,7 @@ def run_sdk_code_generation():
         # being (wrongly) treated as unable to.
         _fix_cache_dependency_override_paths(sdk_dir, pubspec)
         pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
-                             shell=True, capture_output=True, text=True)
+                             shell=(os.name == "nt"), capture_output=True, text=True)
         if pub.returncode != 0:
             print(f"[*] {name}_sdk does not resolve standalone; skipping "
                   f"its codegen (it ships generated sources).")
@@ -649,7 +649,7 @@ def run_code_generation():
     should look at, not a reason to make the whole compose run look failed.
     """
     print("\n[*] Running flutter pub get...")
-    pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=True)
+    pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=(os.name == "nt"))
     if pub_get.returncode != 0:
         print("[!] flutter pub get failed; skipping code generation.")
         return
@@ -658,7 +658,7 @@ def run_code_generation():
     build = subprocess.run(
         ["dart", "run", "build_runner", "build", "--force-jit"],
         cwd=PROJECT_ROOT,
-        shell=True,
+        shell=(os.name == "nt"),
         capture_output=True,
         text=True,
     )
@@ -667,7 +667,7 @@ def run_code_generation():
         build = subprocess.run(
             ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
             cwd=PROJECT_ROOT,
-            shell=True,
+            shell=(os.name == "nt"),
         )
     else:
         # Either it succeeded or failed for a real reason - show the output either way.
