@@ -63,6 +63,7 @@ HEADERS = {
 STATS_LOCK = threading.Lock()
 TOTAL_SCANNED = 0
 TOTAL_DOWNGRADED = 0
+TOTAL_PROTECTED = 0
 
 def is_definitive_dead(url):
     """
@@ -166,10 +167,21 @@ def check_and_update_card(path):
     if is_downgraded:
         # Find existing status
         status_match = re.search(r'(Verification Status\*\*:\s*)(VERIFIED|IN_PROGRESS|UNVERIFIED)', content)
+        if status_match and status_match.group(2) == "VERIFIED":
+            # Verified-status guard: a card a human has marked VERIFIED is
+            # never downgraded by this automated audit — its status and
+            # Last Verified date are preserved. Un-verifying a card is an
+            # explicit manual action only. The dead link is logged so a
+            # human can review it.
+            global TOTAL_PROTECTED
+            with STATS_LOCK:
+                TOTAL_PROTECTED += 1
+            print(f"[PROTECTED] {path.relative_to(BASE_DIR)} is VERIFIED - dead link flagged for manual review, status preserved: {dead_url} ({downgrade_reason})")
+            return False
         if status_match and status_match.group(2) != "UNVERIFIED":
             # Upgrade status to UNVERIFIED
             content = re.sub(
-                r'Verification Status\*\*:\s*(VERIFIED|IN_PROGRESS)',
+                r'Verification Status\*\*:\s*IN_PROGRESS',
                 'Verification Status**: UNVERIFIED',
                 content
             )
@@ -237,6 +249,7 @@ def main():
     print("CI Link Audit Summary:")
     print(f"  Total Cards Audited: {TOTAL_SCANNED}")
     print(f"  Total Cards Downgraded to UNVERIFIED: {TOTAL_DOWNGRADED}")
+    print(f"  Total VERIFIED Cards Protected (dead link flagged, status preserved): {TOTAL_PROTECTED}")
     print("==================================================")
 
 if __name__ == "__main__":

@@ -271,6 +271,21 @@ def run():
 - **Last Verified**: {today}
 """
                 filepath = BASE_DIR / '02_grants' / filename
+
+                # Verified-status guard: dedup above is by Source URL, so a
+                # filename collision here means an existing card (possibly
+                # re-sourced or manually verified). Never overwrite a card a
+                # human has marked VERIFIED with a fresh UNVERIFIED scrape —
+                # un-verifying is an explicit manual action only.
+                if filepath.exists():
+                    try:
+                        existing_card = filepath.read_text(encoding='utf-8')
+                    except Exception:
+                        existing_card = ""
+                    if re.search(r'Verification Status\*\*:\s*VERIFIED', existing_card):
+                        scraper_logger.info(f"Skipped overwrite of VERIFIED card: {filename}")
+                        continue
+
                 filepath.write_text(card_content, encoding='utf-8')
                 scraper_logger.info(f"Created card: {filename}")
                 new_opportunities.append(source_url)
