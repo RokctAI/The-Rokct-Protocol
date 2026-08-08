@@ -724,8 +724,17 @@ def main():
     # Cache all SDKs in one consolidated fetch pass
     resolve_and_cache_sdks(sdks_to_install)
     
-    # Run the installers
+    # Run the installers. An SDK entry can set "skip_install": true in
+    # composer.json to stay fully composed - cached (with role-stripping),
+    # listed as a pubspec path dependency, and covered by per-SDK codegen -
+    # while its install.py never runs, so none of its manifest installs/
+    # routes enter the host app. For apps that consume an SDK's library
+    # code but deliberately keep that SDK's pages/routes host-owned
+    # (e.g. the host's own page already generates the same route name).
     for sdk in sdks_to_install:
+        if isinstance(sdk, dict) and sdk.get("skip_install"):
+            print(f"\n[*] Skipping installer for {sdk['name']} (skip_install in composer.json); its cache, pubspec dependency and codegen still apply.")
+            continue
         run_installer(sdk)
         
     if package_name:
