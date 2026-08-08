@@ -54,6 +54,71 @@ def check_git_availability(git_url):
     except Exception:
         return False
 
+def resolve_app_type():
+    """This host app's own flavor marker ('driver', 'manager', ...), read from
+    .rokct/config/app_type. Mirrors sdk_installer_base.py's resolve_app_type()
+    - kept as a local copy here rather than imported, since sdk_composer.py and
+    sdk_installer_base.py are fetched and used independently by compose.py."""
+    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+            return value or None
+    return None
+
+def strip_unused_role_folders(target_dir, sdk_name):
+    """After vendoring an SDK's full source into .rokct/cache/, remove role
+    folders under lib/src/ that don't apply to this host app - keep common/
+    and this app's own role only, matching the sibling-folder convention
+    (lib/src/common/, lib/src/driver/, lib/src/manager/, ...).
+
+    Why: the cache is intentionally tracked (not gitignored) so developers
+    can actually read the code their app is built against, since CI composes
+    fresh and never leaves a browsable copy anywhere else. Vendoring every
+    role's code in unstripped defeats that purpose for the roles that don't
+    apply - a driver app's cache showing manager's business logic is exactly
+    the clutter this exists to avoid, and once cache is committed, an
+    unstripped copy would carry other-role code into that app's own repo
+    history, not just a local developer's working copy.
+
+    Only strips a role folder that's a genuine sibling of common/ under
+    lib/src/ AND is declared as an app_type persona in this SDK's own
+    manifest.json (see sdk_validator.py's parse_manifests() for the same
+    read). Safe no-op if the app's own role can't be resolved, or this SDK
+    doesn't declare that role at all - stripping without that confirmation
+    risks deleting something the app actually needs.
+    """
+    current_role = resolve_app_type()
+    if not current_role:
+        return
+
+    manifest_path = os.path.join(target_dir, "manifest.json")
+    if not os.path.exists(manifest_path):
+        return
+    try:
+        with open(manifest_path, "r", encoding="utf-8-sig") as f:
+            manifest = json.load(f)
+    except Exception:
+        return
+
+    declared_personas = list((manifest.get("app_type") or {}).keys())
+    if current_role not in declared_personas:
+        # This SDK doesn't declare the app's role as a persona - nothing to
+        # strip; stripping blind here could remove code the app actually uses.
+        return
+
+    lib_src = os.path.join(target_dir, "lib", "src")
+    if not os.path.isdir(lib_src):
+        return
+
+    for persona in declared_personas:
+        if persona == current_role:
+            continue
+        persona_dir = os.path.join(lib_src, persona)
+        if os.path.isdir(persona_dir):
+            shutil.rmtree(persona_dir)
+            print(f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {current_role})")
+
 def resolve_and_cache_sdks(sdks):
     cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
     os.makedirs(cache_base, exist_ok=True)
@@ -123,6 +188,7 @@ def resolve_and_cache_sdks(sdks):
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
+                strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
                 
@@ -148,6 +214,7 @@ def resolve_and_cache_sdks(sdks):
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
+                strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
 
