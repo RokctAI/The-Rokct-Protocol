@@ -13,6 +13,7 @@ DB_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "d
 TRKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "tr_keys.dart")
 CONSTANTS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "constants", "app_constants.dart")
 INJECTED_DB_DIR = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected")
+ONBOARDING_ROUTES_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "onboarding_route_pages.dart")
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -272,12 +273,14 @@ def install_sdk_files_and_routes(sdk_name):
     installs = manifest.get("installs", []) + flavor_block.get("installs", [])
     routes = manifest.get("routes", []) + flavor_block.get("routes", [])
     app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
+    onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get("onboarding_slides", [])
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
     package_state["version"] = version
     package_state["routes"] = routes
     package_state["app_routes"] = app_routes
+    package_state["onboarding_slides"] = onboarding_slides
     
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
     
@@ -448,6 +451,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_app_assets_registration()
     update_layout_integrations()
     update_app_routes()
+    update_onboarding_slides()
     return True
 
 def update_router_table():
@@ -938,9 +942,106 @@ def update_app_routes():
             f.write(new_content)
         print(f"[*] Injected {len(all_methods)} AppRoutes method(s) into main.dart")
 
+def update_onboarding_slides():
+    """Injects OnboardingSlide entries into the onboarding shell's slide list
+    (onboarding_sdk's templates/routes/onboarding_route_pages.dart, installed
+    to lib/presentation/routes/onboarding_route_pages.dart) from each
+    installed SDK's manifest.json "onboarding_slides" list — the exact same
+    pattern update_app_routes() uses for main.dart's _HostAppRoutes block.
+    e.g. lms_sdk declares its grade-capture slide so every app that installs
+    lms_sdk + onboarding_sdk gets that step without hand-wiring it.
+
+    Each entry is keyed by "id" (unique across SDKs — a duplicate id is
+    skipped with a warning, like app_routes' duplicate methods) and sequenced
+    by its integer "order" field. Two slides declaring the SAME order is
+    surfaced with a warning, then both are kept and tie-broken
+    deterministically by id — sequencing must be stable across recomposes,
+    and dropping a slide silently would be worse than a suboptimal order.
+    An entry's "body" is the OnboardingSlide(...) Dart expression injected
+    verbatim (no trailing comma — added here); its optional "imports" list
+    (package URIs, ${package} substituted) lands in the shell's
+    @generated-onboarding-imports block so bodies can reference host
+    composition symbols (e.g. an adapter living in lms_route_pages.dart).
+
+    Apps without onboarding_sdk have no shell file — nothing to do. Apps
+    that hand-edit the installed shell keep their edits (the file sync skips
+    drifted files); this only rewrites the marker blocks.
+    """
+    if not os.path.exists(ONBOARDING_ROUTES_FILE):
+        return
+
+    state = load_state()
+    slides = []
+    all_imports = set()
+    seen_ids = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        for s in pkg_data.get("onboarding_slides", []):
+            slide_id = s.get("id")
+            body = s.get("body")
+            if not slide_id or not body:
+                continue
+            if slide_id in seen_ids:
+                print(f"  [!] onboarding_slides: '{slide_id}' already provided by {seen_ids[slide_id]}, skipping {pkg_name}'s")
+                continue
+            seen_ids[slide_id] = pkg_name
+            try:
+                order = int(s.get("order", 0))
+            except (TypeError, ValueError):
+                order = 0
+            for imp in s.get("imports", []):
+                imp = imp.replace("${package}", get_project_package_name())
+                all_imports.add(f"import '{imp}';")
+            slides.append((order, slide_id, pkg_name, body))
+
+    # Surface order collisions instead of silently picking: keep every slide,
+    # warn, and tie-break deterministically by id (already the sort key).
+    orders_seen = {}
+    for order, slide_id, pkg_name, _ in slides:
+        orders_seen.setdefault(order, []).append((slide_id, pkg_name))
+    for order, entries in sorted(orders_seen.items()):
+        if len(entries) > 1:
+            listing = ", ".join(f"'{sid}' ({pkg})" for sid, pkg in sorted(entries))
+            print(f"  [!] onboarding_slides: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+
+    slides.sort(key=lambda t: (t[0], t[1]))
+
+    slide_blocks = []
+    for order, slide_id, pkg_name, body in slides:
+        lines = [f"      // {slide_id} (order {order}, from {pkg_name})"]
+        for line in body.splitlines():
+            lines.append(f"      {line}" if line.strip() else "")
+        slide_blocks.append("\n".join(lines) + ",")
+    slides_block = "\n".join(slide_blocks)
+
+    with open(ONBOARDING_ROUTES_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    imports_block = "\n".join(sorted(all_imports))
+    imports_replacement = f"// @generated-onboarding-imports-start\n{imports_block}\n// @generated-onboarding-imports-end"
+    new_content = re.sub(
+        r"// @generated-onboarding-imports-start.*?// @generated-onboarding-imports-end",
+        imports_replacement.replace("\\", "\\\\"),
+        content,
+        flags=re.DOTALL,
+    )
+
+    slides_replacement = f"      // @generated-onboarding-slides-start\n{slides_block}\n      // @generated-onboarding-slides-end"
+    new_content = re.sub(
+        r"      // @generated-onboarding-slides-start.*?// @generated-onboarding-slides-end",
+        slides_replacement.replace("\\", "\\\\"),
+        new_content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(ONBOARDING_ROUTES_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(slides)} onboarding slide(s) into onboarding_route_pages.dart")
+
 if __name__ == "__main__":
     update_router_table()
     update_main_dependencies()
     update_database_registration()
     update_layout_integrations()
     update_app_routes()
+    update_onboarding_slides()
