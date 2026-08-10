@@ -136,6 +136,15 @@
       "ref": "main"
     },
     {
+      "name": "weather_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../zones/weather/dart",
+      "git": "https://github.com/RokctAI/zones",
+      "ref": "main",
+      "_comment": "Rebuilt at 1.1.0 (zones PR #4) with adaptive layout: minimal widget on phones, interactive view on large screens. Mirrors launch_manager.json."
+    },
+    {
       "name": "agent_sdk",
       "enabled": false,
       "source": "git",
