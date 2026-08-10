@@ -18,6 +18,11 @@ REMOTE_PREFIX = "The-Rokct-Protocol-main"
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
 
 def check_self_update():
+    if os.environ.get("CI"):
+        # CI must run the committed copy deterministically. Self-updating
+        # would re-exec whatever is on the protocol repo's main branch,
+        # discarding local fixes mid-run.
+        return
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
     if os.path.exists(dest_initiate) and os.path.abspath(__file__) == os.path.abspath(dest_initiate):
         url = f"{GITHUB_RAW_BASE}/profiles/web/initiate.py"
@@ -89,6 +94,13 @@ def copy_versioned(src_rel, dst_abs, manifest):
 
     entry = manifest.get("files", {}).get(src_rel)
     src = os.path.join(PROTOCOL_DIR, src_rel)
+    # When running from a committed .rokct/ inside the project itself,
+    # PROTOCOL_DIR resolves to PROJECT_ROOT, so src and dst can be the
+    # same file (e.g. .cursorrules). Copying a file onto itself raises
+    # shutil.SameFileError - just skip.
+    if os.path.exists(src) and os.path.abspath(src) == os.path.abspath(dst_abs):
+        print(f"[init] Skipping self-copy of {src_rel}")
+        return
     if not entry:
         if os.path.exists(src):
             shutil.copy2(src, dst_abs)
