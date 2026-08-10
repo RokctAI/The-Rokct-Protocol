@@ -144,6 +144,15 @@
       "path": "../agent/agent/dart",
       "ref": "main",
       "_comment": "Disabled as per requirements"
+    },
+    {
+      "name": "zones_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/zones/dart",
+      "ref": "main",
+      "_comment": "Delivery-zone support from the zones library (now populated), mirrored from manager.json. Role-specific pages are selected by the app_type blocks in the zones SDK manifest."
     }
   ]
 }
