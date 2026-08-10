@@ -21,7 +21,7 @@ zero `lending.`/`erpnext.` imports, but real doctype-level dependency remains:
 | `Customer` | ERPNext | **Accepted, permanent** | Applicant-identity model assumes ERPNext's `Customer` doctype throughout. Not a gap — ERPNext is a permanent dependency by standing decision. |
 | `Company` | ERPNext | **Accepted, permanent** | Every forked doctype has a `company: Link -> Company` field (multi-tenant scoping). Same status as `Customer`. |
 | `Employee` | ERPNext | Declared, dormant | Second `applicant_type` option, zero real usage found. Not a concern given ERPNext's permanent-dependency status. |
-| `CRM Lead` | Frappe CRM | **Open — genuine fork/no-fork decision** | A third, previously undisclosed external app (not ERPNext) — live in `loan_application.py`'s KYC gate, inherited from the pre-fork original. Worth a real decision on whether to fork this small doctype's worth of KYC logic away from Frappe CRM specifically. |
+| `CRM Lead` | Frappe CRM | **Resolved** (2026-08) — forked into the productivity crm SDK | Was: live in `loan_application.py`'s KYC gate, inherited from the pre-fork original, pointing at the external Frappe CRM app. Decision made: fork. The core CRM slice (18 doctypes incl. `CRM Lead` with a `kyc_status` Select field honoring polaris's contract) was ported from Frappenize/crm into `productivity/crm/frappe` (rokctai/productivity PR #3) and is composed into rcore via its `composer.json` `modules[]`. Hosts must no longer install the standalone frappe/crm app — the doctype names are intentionally identical, so composing the SDK alongside a frappe/crm install would double-define them. |
 | `Account` (ERPNext) | ERPNext | **Resolved** (2026-07) | Was feeding a pledged-asset-realization picker; replaced with free-text matching the field Phase 3 already made text-based. No fake account logic invented. |
 | HRMS (any doctype) | HRMS | **Confirmed zero dependency** | Audited directly, nothing found. |
 | Pledged-collateral/security valuation | — (never existed upstream in usable form for Polaris's model) | **Real near-term business need** (2026-07) | Not a fork gap — Polaris will offer secured lending against single physical assets (e.g. financed appliances) with repossession on default. This is genuinely simpler than upstream's formal multi-asset margined-securities system; likely worth purpose-building narrow rather than forking the original engine. Not yet scoped. |
@@ -29,9 +29,9 @@ zero `lending.`/`erpnext.` imports, but real doctype-level dependency remains:
 | GL/IRAC provisioning rates | ERPNext-style GL accounting | **Not applicable** | Polaris has no GL/ledger concept by design (the decision that made this fork fast). This whole category of upstream logic doesn't apply to Polaris's accounting model at all. |
 
 **Net assessment for future lending-adjacent forks**: the doctype/business-logic fork is genuinely clean of
-`lending`/`erpnext` Python coupling. The real open item is `CRM Lead` (Frappe CRM, not ERPNext) — worth a
-deliberate fork/no-fork call. Secured lending (pledged-asset repossession) is a real near-term feature to
-scope, not a "gap."
+`lending`/`erpnext` Python coupling. The former open item, `CRM Lead` (Frappe CRM, not ERPNext), was
+resolved 2026-08 by forking the core CRM slice into the productivity crm SDK (see table above). Secured
+lending (pledged-asset repossession) is a real near-term feature to scope, not a "gap."
 
 ## LMS (`agent/lms/frappe`, forked from `Frappenize/lms`)
 
