@@ -29,6 +29,7 @@ ASSETKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "s
 CONSTANTS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "constants", "app_constants.dart")
 INJECTED_DB_DIR = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected")
 ONBOARDING_ROUTES_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "onboarding_route_pages.dart")
+REGISTRATION_STEPS_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "registration_step_pages.dart")
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -290,6 +291,7 @@ def install_sdk_files_and_routes(sdk_name):
     routes = manifest.get("routes", []) + flavor_block.get("routes", [])
     app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
     onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get("onboarding_slides", [])
+    registration_steps = manifest.get("registration_steps", []) + flavor_block.get("registration_steps", [])
     embedded_widgets = manifest.get("embedded_widgets", []) + flavor_block.get("embedded_widgets", [])
 
     state = load_state()
@@ -298,6 +300,7 @@ def install_sdk_files_and_routes(sdk_name):
     package_state["routes"] = routes
     package_state["app_routes"] = app_routes
     package_state["onboarding_slides"] = onboarding_slides
+    package_state["registration_steps"] = registration_steps
     package_state["embedded_widgets"] = embedded_widgets
 
     # Extract and store this SDK's brand hook: the one pre-frame call that
@@ -493,6 +496,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
+    update_registration_steps()
     update_embedded_widgets()
     update_brand_hook()
     update_wiring_imports()
@@ -1131,6 +1135,107 @@ def update_onboarding_slides():
             f.write(new_content)
         print(f"[*] Injected {len(slides)} onboarding slide(s) into onboarding_route_pages.dart")
 
+def update_registration_steps():
+    """Injects RegistrationStep entries into auth_sdk's registration-steps
+    shell (auth_sdk's templates/routes/registration_step_pages.dart, installed
+    to lib/presentation/routes/registration_step_pages.dart) from each
+    installed SDK's manifest.json "registration_steps" list — the exact same
+    composition pattern update_onboarding_slides() uses for the onboarding
+    shell, applied to auth_sdk's register flow ("auth can do what we do with
+    onboarding"). e.g. lms_sdk declares its school + grade capture steps so a
+    student who registers directly (skipping onboarding) is still asked for
+    school and grade, without auth_sdk ever learning what a school is.
+
+    Each entry is keyed by "id" (unique across SDKs — a duplicate id is
+    skipped with a warning, like app_routes' duplicate methods) and sequenced
+    by its integer "order" field. Two steps declaring the SAME order is
+    surfaced with a warning, then both are kept and tie-broken
+    deterministically by id — sequencing must be stable across recomposes,
+    and dropping a step silently would be worse than a suboptimal order.
+    An entry's "body" is the RegistrationStep(...) Dart expression injected
+    verbatim (no trailing comma — added here); per-step metadata such as
+    skippable lives INSIDE that expression (RegistrationStep(skippable:
+    ...)), not in the manifest, so the installer stays a dumb pipe. The
+    optional "imports" list (package URIs, ${package} substituted) lands in
+    the shell's @generated-registration-imports block so bodies can reference
+    host composition symbols (e.g. the capture adapters living in
+    lms_route_pages.dart).
+
+    Apps without auth_sdk have no shell file — nothing to do. Apps that
+    hand-edit the installed shell keep their edits (the file sync skips
+    drifted files); this only rewrites the marker blocks.
+    """
+    if not os.path.exists(REGISTRATION_STEPS_FILE):
+        return
+
+    state = load_state()
+    steps = []
+    all_imports = set()
+    seen_ids = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        for s in pkg_data.get("registration_steps", []):
+            step_id = s.get("id")
+            body = s.get("body")
+            if not step_id or not body:
+                continue
+            if step_id in seen_ids:
+                print(f"  [!] registration_steps: '{step_id}' already provided by {seen_ids[step_id]}, skipping {pkg_name}'s")
+                continue
+            seen_ids[step_id] = pkg_name
+            try:
+                order = int(s.get("order", 0))
+            except (TypeError, ValueError):
+                order = 0
+            for imp in s.get("imports", []):
+                imp = imp.replace("${package}", get_project_package_name())
+                all_imports.add(f"import '{imp}';")
+            steps.append((order, step_id, pkg_name, body))
+
+    # Surface order collisions instead of silently picking: keep every step,
+    # warn, and tie-break deterministically by id (already the sort key).
+    orders_seen = {}
+    for order, step_id, pkg_name, _ in steps:
+        orders_seen.setdefault(order, []).append((step_id, pkg_name))
+    for order, entries in sorted(orders_seen.items()):
+        if len(entries) > 1:
+            listing = ", ".join(f"'{sid}' ({pkg})" for sid, pkg in sorted(entries))
+            print(f"  [!] registration_steps: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+
+    steps.sort(key=lambda t: (t[0], t[1]))
+
+    step_blocks = []
+    for order, step_id, pkg_name, body in steps:
+        lines = [f"      // {step_id} (order {order}, from {pkg_name})"]
+        for line in body.splitlines():
+            lines.append(f"      {line}" if line.strip() else "")
+        step_blocks.append("\n".join(lines) + ",")
+    steps_block = "\n".join(step_blocks)
+
+    with open(REGISTRATION_STEPS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    imports_block = "\n".join(sorted(all_imports))
+    imports_replacement = f"// @generated-registration-imports-start\n{imports_block}\n// @generated-registration-imports-end"
+    new_content = re.sub(
+        r"// @generated-registration-imports-start.*?// @generated-registration-imports-end",
+        imports_replacement.replace("\\", "\\\\"),
+        content,
+        flags=re.DOTALL,
+    )
+
+    steps_replacement = f"      // @generated-registration-steps-start\n{steps_block}\n      // @generated-registration-steps-end"
+    new_content = re.sub(
+        r"      // @generated-registration-steps-start.*?// @generated-registration-steps-end",
+        steps_replacement.replace("\\", "\\\\"),
+        new_content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(REGISTRATION_STEPS_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(steps)} registration step(s) into registration_step_pages.dart")
+
 def update_embedded_widgets():
     """Injects EmbeddedWidgets.I method implementations into main.dart's
     _HostEmbeddedWidgets scaffold (see the base_sdk template) from each
@@ -1323,6 +1428,7 @@ if __name__ == "__main__":
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
+    update_registration_steps()
     update_embedded_widgets()
     update_brand_hook()
     update_wiring_imports()
