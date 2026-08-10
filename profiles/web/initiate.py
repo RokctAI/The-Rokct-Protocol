@@ -202,8 +202,11 @@ def main():
     copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
     
     # Distribution of Protocol-only (RokctAI) workflows
+    # Skipped in CI: GITHUB_TOKEN lacks the `workflows` permission, so any
+    # file deployed into .github/workflows/ gets the compose commit-back
+    # remote-rejected by GitHub.
     repo_owner = detect_repo_owner()
-    if repo_owner:
+    if repo_owner and not os.environ.get("CI"):
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
         temp_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
         if not os.path.isdir(rok_workflows_src):
@@ -263,7 +266,8 @@ def main():
     print("[init] Web profile file operations complete.")
 
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
-    ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
+    if not os.environ.get("CI"):
+        ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
 
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
     if os.path.abspath(__file__) != dest_initiate:
