@@ -65,6 +65,15 @@
       "ref": "main"
     },
     {
+      "name": "calc_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/calc/dart",
+      "ref": "main",
+      "_comment": "Standalone calculator (productivity PR #4); un-gated /calc route, shared by manager and driver."
+    },
+    {
       "name": "corporate_sdk",
       "enabled": true,
       "source": "git",
