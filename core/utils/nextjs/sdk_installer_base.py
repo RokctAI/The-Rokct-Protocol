@@ -4,7 +4,22 @@ import shutil
 import hashlib
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
+# install_state.json lives inside .rokct/cache/ (an end_protocol.py
+# keep-whitelisted directory) so recorded install hashes survive session
+# cleanup and travel with the cached content they describe. The legacy root
+# location (.rokct/install_state.json) is migrated on first read.
+STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "install_state.json")
+LEGACY_STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
+
+
+def migrate_legacy_state():
+    if os.path.exists(LEGACY_STATE_FILE) and not os.path.exists(STATE_FILE):
+        try:
+            os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+            shutil.move(LEGACY_STATE_FILE, STATE_FILE)
+            print("[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json")
+        except Exception as e:
+            print(f"[!] Could not migrate legacy install_state.json: {e}")
 PACKAGE_JSON_FILE = os.path.join(PROJECT_ROOT, "package.json")
 TSCONFIG_FILE = os.path.join(PROJECT_ROOT, "tsconfig.json")
 
@@ -23,6 +38,7 @@ def file_hash(path):
 
 
 def load_state():
+    migrate_legacy_state()
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
