@@ -171,7 +171,10 @@ def main():
             print("[init] Removed .rok skill (non-RokctAI repo)")
 
     # Distribution of Protocol-only (RokctAI) workflows
-    if "RokctAI/" in origin_url:
+    # Skipped in CI: GITHUB_TOKEN lacks the `workflows` permission, so any
+    # file deployed into .github/workflows/ gets the compose commit-back
+    # remote-rejected by GitHub.
+    if "RokctAI/" in origin_url and not os.environ.get("CI"):
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
         temp_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
         if not os.path.isdir(rok_workflows_src):
@@ -233,7 +236,8 @@ def main():
             print(f"[init] Updated .gitignore (added: {', '.join(missing)})")
 
     ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
-    ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
+    if not os.environ.get("CI"):
+        ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
     ensure_file("profiles/local/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
     # Don't copy initiate.py to itself if already running from .rokct/
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
@@ -260,13 +264,14 @@ def main():
         else:
             print("[init] Standalone mode (no workspace sync)")
             # Only standalone or parent repos get the maintenance workflow (children don't need it)
-            ensure_file("workflows/maintenance.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "maintenance.yml"))
-            print("[init] Installed maintenance workflow for parent/standalone repo")
+            if not os.environ.get("CI"):
+                ensure_file("workflows/maintenance.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "maintenance.yml"))
+                print("[init] Installed maintenance workflow for parent/standalone repo")
     else:
         # If config already exists, check if it's a parent (no parent_repo set)
         with open(cfg, "r", encoding="utf-8") as f:
             config_data = json.load(f)
-            if not config_data.get("parent_repo"):
+            if not config_data.get("parent_repo") and not os.environ.get("CI"):
                 ensure_file("workflows/maintenance.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "maintenance.yml"))
                 print("[init] Verified maintenance workflow for parent/standalone repo")
 
