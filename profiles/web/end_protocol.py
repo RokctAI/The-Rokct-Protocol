@@ -64,6 +64,13 @@ def main():
         shutil.rmtree(skills_dir)
         print("[end] Deleted skills/ (unconditional cleanup)")
 
+    # compose.py's wrapper fetches this into .rokct/ at runtime and deletes it
+    # in its finally block; clean up any copy a crashed run left behind.
+    installer_base = os.path.join(ROKCT_DIR, "sdk_installer_base.py")
+    if os.path.isfile(installer_base):
+        os.remove(installer_base)
+        print("[end] Deleted sdk_installer_base.py (transient compose runtime fetch)")
+
     workflows_dir = os.path.join(ROKCT_DIR, "workflows")
     if os.path.isdir(workflows_dir):
         for f in os.listdir(workflows_dir):
