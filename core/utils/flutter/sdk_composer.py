@@ -853,8 +853,17 @@ def run_sdk_code_generation():
         # attempting pub get so those SDKs resolve standalone instead of
         # being (wrongly) treated as unable to.
         _fix_cache_dependency_override_paths(sdk_dir, pubspec)
-        pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
-                             shell=(os.name == "nt"), capture_output=True, text=True)
+        try:
+            pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
+                                 shell=(os.name == "nt"), capture_output=True, text=True)
+        except FileNotFoundError:
+            # No Flutter toolchain on PATH (e.g. a CI job that composes
+            # before installing Flutter). Codegen is a post-install phase:
+            # warn and skip it so composition itself still completes and
+            # cache state still gets recorded; rerun the composer with
+            # Flutter installed to regenerate cache sources.
+            print("[!] `flutter` not found on PATH; skipping SDK cache codegen.")
+            return
         if pub.returncode != 0:
             print(f"[*] {name}_sdk does not resolve standalone; skipping "
                   f"its codegen (it ships generated sources).")
@@ -890,7 +899,14 @@ def run_code_generation():
     should look at, not a reason to make the whole compose run look failed.
     """
     print("\n[*] Running flutter pub get...")
-    pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=(os.name == "nt"))
+    try:
+        pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=(os.name == "nt"))
+    except FileNotFoundError:
+        # Same warn-skip as run_sdk_code_generation: without Flutter on
+        # PATH the crash would otherwise just move here and still sink an
+        # otherwise-complete composition.
+        print("[!] `flutter` not found on PATH; skipping host code generation.")
+        return
     if pub_get.returncode != 0:
         print("[!] flutter pub get failed; skipping code generation.")
         return
