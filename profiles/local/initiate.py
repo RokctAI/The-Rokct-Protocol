@@ -17,6 +17,11 @@ PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
 def check_self_update():
+    if os.environ.get("CI"):
+        # CI must run the committed copy deterministically. Self-updating
+        # would re-exec whatever is on the protocol repo's main branch,
+        # discarding local fixes mid-run.
+        return
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
     if os.path.exists(dest_initiate) and os.path.abspath(__file__) == os.path.abspath(dest_initiate):
         url = f"{GITHUB_RAW_BASE}/profiles/local/initiate.py"
@@ -66,6 +71,13 @@ def file_hash(path):
 
 def copy_versioned(src_rel, dst_abs):
     src = os.path.join(PROTOCOL_DIR, src_rel)
+    # When running from a committed .rokct/ inside the project itself,
+    # PROTOCOL_DIR resolves to PROJECT_ROOT, so src and dst can be the
+    # same file (e.g. .cursorrules). Copying a file onto itself raises
+    # shutil.SameFileError - just skip.
+    if os.path.exists(src) and os.path.abspath(src) == os.path.abspath(dst_abs):
+        print(f"[init] Skipping self-copy of {src_rel}")
+        return
     manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
     if os.path.exists(manifest_path):
         with open(manifest_path, "r", encoding="utf-8") as mf:
