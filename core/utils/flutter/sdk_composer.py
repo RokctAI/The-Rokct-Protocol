@@ -3,9 +3,47 @@ import sys
 import subprocess
 import json
 import shutil
+import hashlib
 
 PROJECT_ROOT = os.getcwd()
 NL = chr(10)
+
+# Durable composer/installer state. Lives INSIDE .rokct/cache/ deliberately:
+# cache/ is on end_protocol.py's keep-whitelist, so the state survives session
+# cleanup, and the recorded versions/hashes describe the cached SDK content -
+# they should share the cache's fate (and its git-tracking policy: a host that
+# tracks its cache for self-containment tracks the state with it; a host that
+# gitignores its cache rebuilds both on the next compose, exactly as today).
+# The legacy location at .rokct/'s own root sat outside every cleanup
+# guarantee and outside the tracked-cache flow; it is migrated on first read.
+STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "install_state.json")
+LEGACY_STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
+
+def migrate_legacy_state():
+    """One-time move of .rokct/install_state.json -> .rokct/cache/. Existing
+    machines keep their recorded hash state instead of starting over."""
+    if os.path.exists(LEGACY_STATE_FILE) and not os.path.exists(STATE_FILE):
+        try:
+            os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+            shutil.move(LEGACY_STATE_FILE, STATE_FILE)
+            print("[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json")
+        except Exception as e:
+            print(f"[!] Could not migrate legacy install_state.json: {e}")
+
+def load_install_state():
+    migrate_legacy_state()
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"packages": {}}
+
+def save_install_state(state):
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
 
 def clean_sdk_name(name):
     if name.endswith("_sdk"):
@@ -119,10 +157,131 @@ def strip_unused_role_folders(target_dir, sdk_name):
             shutil.rmtree(persona_dir)
             print(f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {current_role})")
 
+# --- Version-aware cache reconciliation -------------------------------------
+# Hosts are sold with .rokct/cache/ tracked, so a compose run must not blindly
+# re-extract (and thereby clobber) cached SDK source. Per SDK, the recorded
+# manifest version + content hash in install_state.json decide:
+#   newer incoming version  -> delete the old cache dir, re-extract fresh
+#   same version, unmodified -> leave the cached copy (faster, keeps the
+#                               sold-repo self-contained property)
+#   same version, MODIFIED   -> leave it, with a loud warning - manual
+#                               modifications are never silently clobbered.
+
+# Noise excluded from the cache content hash: toolchain outputs that differ
+# per machine/run without the SDK's actual content changing.
+HASH_EXCLUDED_DIRS = {".git", ".dart_tool", "build", "__pycache__", "node_modules"}
+HASH_EXCLUDED_FILES = {"pubspec.lock", ".DS_Store", ".flutter-plugins", ".flutter-plugins-dependencies"}
+
+def cache_dir_hash(d):
+    if not os.path.isdir(d):
+        return None
+    h = hashlib.sha256()
+    for root, dirs, files in os.walk(d):
+        dirs[:] = sorted(x for x in dirs if x not in HASH_EXCLUDED_DIRS)
+        for f in sorted(files):
+            if f in HASH_EXCLUDED_FILES or f.endswith(".pyc"):
+                continue
+            p = os.path.join(root, f)
+            h.update(os.path.relpath(p, d).encode())
+            with open(p, "rb") as fh:
+                h.update(fh.read())
+    return h.hexdigest()[:16]
+
+def parse_version(v):
+    """'1.2.3' -> (1, 2, 3); tolerant of junk (unparseable -> (0,))."""
+    try:
+        return tuple(int(part) for part in str(v).strip().split("."))
+    except Exception:
+        return (0,)
+
+def read_manifest_version(sdk_dir):
+    manifest_path = os.path.join(sdk_dir, "manifest.json")
+    if not os.path.exists(manifest_path):
+        return None
+    try:
+        with open(manifest_path, "r", encoding="utf-8-sig") as f:
+            return json.load(f).get("version")
+    except Exception:
+        return None
+
+def should_extract(sdk_name, src_dir, target_dir, state, decisions):
+    """Decide whether to (re-)extract this SDK into its cache dir.
+
+    Returns True when the existing rmtree+copytree path should run. Records
+    the per-SDK decision in `decisions` so record_sdk_cache_state() knows
+    which entries to (not) update.
+    """
+    clean_name = clean_sdk_name(sdk_name)
+    if not os.path.isdir(target_dir):
+        decisions[clean_name] = "extracted"
+        return True
+
+    incoming_version = read_manifest_version(src_dir)
+    entry = state.get("sdk_cache", {}).get(clean_name)
+    cached_version = entry.get("version") if entry else read_manifest_version(target_dir)
+
+    if incoming_version and parse_version(incoming_version) > parse_version(cached_version):
+        print(f"[*] {sdk_name}: manifest version {incoming_version} is newer than cached {cached_version} - deleting old cache and re-extracting.")
+        decisions[clean_name] = "extracted"
+        return True
+
+    if incoming_version and cached_version and parse_version(incoming_version) < parse_version(cached_version):
+        print(f"[*] {sdk_name}: cached copy ({cached_version}) is newer than incoming manifest ({incoming_version}) - leaving cached copy in place.")
+        decisions[clean_name] = "left-newer"
+        return False
+
+    # Same version (or no usable version info): keep the cached copy, but
+    # check for manual modifications against the recorded hash.
+    if entry and entry.get("hash"):
+        current_hash = cache_dir_hash(target_dir)
+        if current_hash != entry["hash"]:
+            print(f"[!] WARNING: {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has LOCAL MODIFICATIONS (content hash mismatch, version {cached_version} unchanged) - leaving it in place, NOT refetching. Delete the folder to force a clean re-extract.")
+            decisions[clean_name] = "left-modified"
+            return False
+        print(f"[*] {sdk_name}: cache is up to date (version {cached_version}, unmodified) - leaving cached copy in place.")
+        decisions[clean_name] = "left-unmodified"
+        return False
+
+    # Cache exists but predates hash tracking: adopt it as the baseline
+    # rather than clobbering it - it may carry manual modifications.
+    print(f"[*] {sdk_name}: existing cache has no recorded state - adopting current copy as baseline (no re-extract).")
+    decisions[clean_name] = "adopted"
+    return False
+
+def record_sdk_cache_state(decisions):
+    """Persist each reconciled SDK's manifest version + content hash.
+
+    Re-read the state fresh before writing: the installers (which run between
+    reconciliation and this call) share the same file. An SDK left in place
+    because of local modifications keeps its OLD baseline, so the
+    modification warning persists on every compose instead of being
+    silently absorbed."""
+    if not decisions:
+        return
+    state = load_install_state()
+    sdk_cache = state.setdefault("sdk_cache", {})
+    updated = 0
+    for clean_name, decision in decisions.items():
+        if decision == "left-modified":
+            continue
+        target_dir = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean_name)
+        if not os.path.isdir(target_dir):
+            continue
+        sdk_cache[clean_name] = {
+            "version": read_manifest_version(target_dir),
+            "hash": cache_dir_hash(target_dir),
+        }
+        updated += 1
+    save_install_state(state)
+    print(f"[*] Recorded cache state for {updated} SDK(s) in {os.path.relpath(STATE_FILE, PROJECT_ROOT)}")
+
 def resolve_and_cache_sdks(sdks):
     cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
     os.makedirs(cache_base, exist_ok=True)
-    
+
+    state = load_install_state()
+    decisions = {}
+
     git_groups = {}
     local_sdks = []
     
@@ -184,6 +343,8 @@ def resolve_and_cache_sdks(sdks):
             src_dir = os.path.join(repo_source_dir, *subpath.split("/"))
             
             if os.path.exists(src_dir):
+                if not should_extract(sdk_name, src_dir, target_dir, state, decisions):
+                    continue
                 print(f"[+] Extracting {sdk_name} from {subpath} to {target_dir}...")
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
@@ -210,6 +371,8 @@ def resolve_and_cache_sdks(sdks):
         if local_path:
             src_dir = os.path.abspath(os.path.join(PROJECT_ROOT, local_path))
             if os.path.exists(src_dir):
+                if not should_extract(sdk_name, src_dir, target_dir, state, decisions):
+                    continue
                 print(f"[+] Copying local {sdk_name} from {local_path} to {target_dir}...")
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
@@ -217,6 +380,8 @@ def resolve_and_cache_sdks(sdks):
                 strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
+
+    return decisions
 
 def resolve_active_path(sdk_config):
     sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
@@ -797,8 +962,9 @@ def main():
             core_sdk = sdks_to_install.pop(core_idx)
             sdks_to_install.insert(0, core_sdk)
             
-    # Cache all SDKs in one consolidated fetch pass
-    resolve_and_cache_sdks(sdks_to_install)
+    # Cache all SDKs in one consolidated fetch pass (version-aware: an SDK
+    # whose cached copy is current is left in place, see should_extract).
+    cache_decisions = resolve_and_cache_sdks(sdks_to_install)
     
     # Run the installers. An SDK entry can set "skip_install": true in
     # composer.json to stay fully composed - cached (with role-stripping),
@@ -823,8 +989,15 @@ def main():
     ensure_lib_gitignore()
     ensure_host_readme()
     remove_stale_widget_test()
-    run_sdk_code_generation()
-    run_code_generation()
+    # Record versions/hashes in a finally block: codegen mutates the caches
+    # (generated sources, override-path fixes), so the recorded hash must be
+    # taken after it - but recording must still happen in environments where
+    # the Flutter toolchain is absent and codegen dies early.
+    try:
+        run_sdk_code_generation()
+        run_code_generation()
+    finally:
+        record_sdk_cache_state(cache_decisions)
 
 if __name__ == "__main__":
     main()

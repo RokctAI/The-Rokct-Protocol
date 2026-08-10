@@ -75,7 +75,10 @@ def main():
         print("[end] Cleaned workflows/ (kept init_protocol.md)")
 
     for item_path in ROKCT_DIR.iterdir():
-        if item_path.name in ("active_session.txt", "initiate.py"):
+        # install_state.json now lives at .rokct/cache/install_state.json
+        # (cache/ is keep-whitelisted below); a legacy copy at .rokct/'s own
+        # root is kept explicitly until the composer migrates it there.
+        if item_path.name in ("active_session.txt", "initiate.py", "install_state.json"):
             print(f"[end] Kept {item_path.name} (protocol tool)")
             continue
         if item_path.name == ".sync_ready":
