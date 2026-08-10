@@ -275,6 +275,7 @@ def install_sdk_files_and_routes(sdk_name):
     routes = manifest.get("routes", []) + flavor_block.get("routes", [])
     app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
     onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get("onboarding_slides", [])
+    embedded_widgets = manifest.get("embedded_widgets", []) + flavor_block.get("embedded_widgets", [])
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
@@ -282,6 +283,19 @@ def install_sdk_files_and_routes(sdk_name):
     package_state["routes"] = routes
     package_state["app_routes"] = app_routes
     package_state["onboarding_slides"] = onboarding_slides
+    package_state["embedded_widgets"] = embedded_widgets
+
+    # Extract and store this SDK's brand hook: the one pre-frame call that
+    # injects the app's brand palette into the shared AppStyle tokens (the
+    # kernel ships neutral defaults only). At most ONE installed SDK may
+    # declare it - normally the home SDK - and update_brand_hook() hard-errors
+    # if two do. The flavor block wins over the manifest top level, matching
+    # database's migration precedence.
+    brand_hook = flavor_block.get("brand_hook") or manifest.get("brand_hook")
+    if brand_hook:
+        package_state["brand_hook"] = brand_hook
+    else:
+        package_state.pop("brand_hook", None)
     
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
     
@@ -464,6 +478,9 @@ def install_sdk_files_and_routes(sdk_name):
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
+    update_embedded_widgets()
+    update_brand_hook()
+    update_wiring_imports()
     return True
 
 def update_router_table():
@@ -957,6 +974,13 @@ def update_app_routes():
     _HostAppRoutes' noSuchMethod. Apps that hand-edit main.dart (main.dart
     detects host edits and stops being overwritten by ensure_file/copy_dir)
     keep whatever they wrote instead — this only touches the marker block.
+
+    An entry may additionally carry an optional "imports" list (FULL import
+    lines, ${package} substituted) so the route classes its body references
+    (LoginRoute, ScheduleRoute, ...) resolve in a fully generated main.dart —
+    those lines land in the @generated-wiring-imports block via
+    update_wiring_imports(), not here. Entries without "imports" keep working
+    exactly as before.
     """
     if not os.path.exists(MAIN_FILE):
         return
@@ -1092,6 +1116,191 @@ def update_onboarding_slides():
             f.write(new_content)
         print(f"[*] Injected {len(slides)} onboarding slide(s) into onboarding_route_pages.dart")
 
+def update_embedded_widgets():
+    """Injects EmbeddedWidgets.I method implementations into main.dart's
+    _HostEmbeddedWidgets scaffold (see the base_sdk template) from each
+    installed SDK's manifest.json "embedded_widgets" list — the exact same
+    pattern update_app_routes() uses for the _HostAppRoutes block. e.g.
+    onboarding_sdk declares introPage so auth_sdk's "Skip" action can render
+    the intro carousel without importing onboarding_sdk directly (ADR-005).
+    A method is only injected if some installed SDK actually provides it;
+    anything else keeps throwing a descriptive StateError via
+    _HostEmbeddedWidgets' noSuchMethod rather than silently rendering a
+    blank widget.
+
+    Entry shape mirrors app_routes: {"method", "params" (optional, defaults
+    to no parameters), "body" (Dart statements, e.g. "return const
+    OnboardingIntroRouteView();"), "imports" (optional FULL import lines,
+    ${package} substituted, landing in the @generated-wiring-imports block
+    via update_wiring_imports())}. The same method declared by two SDKs keeps
+    the first SDK's implementation, like app_routes — but loudly: both SDK
+    names and the method are printed so the collision is fixed at the
+    manifests, not discovered at runtime.
+
+    Older host main.dart files predating the _HostEmbeddedWidgets scaffold
+    have no markers — nothing to do there beyond a printed notice; this only
+    rewrites the marker block.
+    """
+    if not os.path.exists(MAIN_FILE):
+        return
+
+    state = load_state()
+    all_methods = []
+    seen_methods = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        for w in pkg_data.get("embedded_widgets", []):
+            method = w.get("method")
+            params = w.get("params", "")
+            body = w.get("body")
+            if not method or not body:
+                continue
+            if method in seen_methods:
+                print(f"  [!] WARNING: embedded_widgets conflict: '{method}' is declared by both '{seen_methods[method]}' and '{pkg_name}' - keeping '{seen_methods[method]}'s implementation and skipping '{pkg_name}'s. Remove one manifest declaration to resolve this.")
+                continue
+            seen_methods[method] = pkg_name
+            body_lines = "\n".join(
+                f"    {line}" if line.strip() else "" for line in body.splitlines()
+            )
+            all_methods.append(
+                f"  @override\n  Widget {method}({params}) {{\n{body_lines}\n  }}\n"
+            )
+
+    with open(MAIN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "// @generated-embeddedwidgets-start" not in content:
+        print("  [i] main.dart has no @generated-embeddedwidgets markers (older host template) - skipping embedded-widget injection")
+        return
+
+    methods_block = "\n".join(all_methods)
+    replacement = f"  // @generated-embeddedwidgets-start\n{methods_block}\n  // @generated-embeddedwidgets-end"
+    new_content = re.sub(
+        r"  // @generated-embeddedwidgets-start.*?// @generated-embeddedwidgets-end",
+        lambda _: replacement,
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(MAIN_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(all_methods)} EmbeddedWidgets method(s) into main.dart")
+
+def update_brand_hook():
+    """Injects the ONE brand-hook call into main() (the base_sdk template's
+    @generated-brandhook block, placed before the SystemChrome setup so the
+    palette lands in the shared AppStyle tokens before the first frame — the
+    kernel ships neutral defaults only). Declared per-SDK as manifest.json
+    "brand_hook": {"body": "applyAppBrandColors();", "imports": [...]} —
+    normally by the home SDK, whose installed theme template defines the
+    hook function.
+
+    Exactly zero or one installed SDK may declare it. Two SDKs both claiming
+    the brand is not a tie to break silently — whichever lost would ship an
+    app wearing the wrong brand — so this raises a hard error naming every
+    declaring SDK instead of picking one.
+
+    Older host main.dart files predating the marker get a printed notice and
+    no changes; this only rewrites the marker block.
+    """
+    if not os.path.exists(MAIN_FILE):
+        return
+
+    state = load_state()
+    declared = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        hook = pkg_data.get("brand_hook")
+        if hook and hook.get("body"):
+            declared[pkg_name] = hook
+
+    if len(declared) > 1:
+        names = ", ".join(f"'{n}'" for n in sorted(declared))
+        raise RuntimeError(
+            f"brand_hook conflict: {len(declared)} installed SDKs ({names}) each declare "
+            "a \"brand_hook\" in their manifest, but at most ONE may own the app's brand "
+            "- the hook runs exactly once before the first frame. Remove the "
+            "\"brand_hook\" key from every manifest except the one true brand owner "
+            "(normally the home SDK) and recompose."
+        )
+
+    body_lines = []
+    for pkg_name, hook in declared.items():
+        for line in hook["body"].splitlines():
+            body_lines.append(f"  {line}" if line.strip() else "")
+
+    with open(MAIN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "// @generated-brandhook-start" not in content:
+        print("  [i] main.dart has no @generated-brandhook markers (older host template) - skipping brand-hook injection")
+        return
+
+    hook_block = "\n".join(body_lines)
+    replacement = f"  // @generated-brandhook-start\n{hook_block}\n  // @generated-brandhook-end"
+    new_content = re.sub(
+        r"  // @generated-brandhook-start.*?// @generated-brandhook-end",
+        lambda _: replacement,
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(MAIN_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected brand hook from {', '.join(sorted(declared)) or 'no SDK'} into main.dart")
+
+def update_wiring_imports():
+    """Regenerates main.dart's @generated-wiring-imports block (directly
+    below the @generated-sdk-imports block) from the optional "imports"
+    lists of every installed SDK's app_routes, embedded_widgets and
+    brand_hook declarations. Each entry ships FULL import lines (e.g.
+    "import 'package:${package}/presentation/routes/app_router.dart';",
+    ${package} substituted here) so the symbols its injected body references
+    resolve in a fully generated main.dart without hand-written imports.
+    Collected from full state, deduped and sorted — a removed SDK's imports
+    vanish on the next regeneration, same as every other marker block.
+
+    Older host main.dart files predating the marker get a printed notice and
+    no changes; this only rewrites the marker block.
+    """
+    if not os.path.exists(MAIN_FILE):
+        return
+
+    state = load_state()
+    package_name = get_project_package_name()
+    all_imports = set()
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        wiring_entries = list(pkg_data.get("app_routes", []))
+        wiring_entries += pkg_data.get("embedded_widgets", [])
+        if pkg_data.get("brand_hook"):
+            wiring_entries.append(pkg_data["brand_hook"])
+        for entry in wiring_entries:
+            for imp in entry.get("imports", []) or []:
+                imp = imp.replace("${package}", package_name).strip()
+                if imp:
+                    all_imports.add(imp)
+
+    with open(MAIN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "// @generated-wiring-imports-start" not in content:
+        print("  [i] main.dart has no @generated-wiring-imports markers (older host template) - skipping wiring-import injection")
+        return
+
+    imports_block = "\n".join(sorted(all_imports))
+    replacement = f"// @generated-wiring-imports-start\n{imports_block}\n// @generated-wiring-imports-end"
+    new_content = re.sub(
+        r"// @generated-wiring-imports-start.*?// @generated-wiring-imports-end",
+        lambda _: replacement,
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(MAIN_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(all_imports)} wiring import(s) into main.dart")
+
 if __name__ == "__main__":
     update_router_table()
     update_main_dependencies()
@@ -1099,3 +1308,6 @@ if __name__ == "__main__":
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
+    update_embedded_widgets()
+    update_brand_hook()
+    update_wiring_imports()
