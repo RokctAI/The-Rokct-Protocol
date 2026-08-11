@@ -18,6 +18,25 @@ def load_composer_config():
     with open(composer_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def resolve_app_type():
+    """This shell's own role marker (e.g. 'manager', 'customer', 'pos'), read
+    from .rokct/config/app_type - a plain one-line text file checked into the
+    shell's own repo, relative to the same root the shell's composer.json is
+    read from. Mirrors core/utils/flutter/sdk_installer_base.py's
+    resolve_app_type() - kept as a local copy rather than imported, since each
+    stack's composer is fetched and used independently.
+
+    Returns None when the file doesn't exist - manifests with no matching
+    app_type block then behave exactly as before (nothing filtered, nothing
+    extra merged). A tenant backend that deliberately serves ALL roles at
+    once simply declares no marker: absence = all."""
+    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+            return value or None
+    return None
+
 def extract_repo_name(git_url):
     url_path = git_url.rstrip("/")
     if url_path.endswith(".git"):
@@ -162,12 +181,36 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                 else:
                     print(f"[+] Copied DocType: {dt} -> {module_name}")
                 
+    # Role-based composition, strip side (ported from the Dart composer's
+    # strip_unused_role_folders() in core/utils/flutter/sdk_composer.py):
+    # persona folders live as siblings directly under the SDK's src/
+    # (src/manager/, src/customer/, ...) and everything NOT named after a
+    # declared persona is common. A persona folder is only excluded when it
+    # is declared as an app_type persona in this SDK's own manifest AND the
+    # shell's own role is also declared there - same guardrails as Dart: no
+    # role marker, no app_type in the manifest, or a role this SDK doesn't
+    # declare all mean nothing is excluded and the copy is exactly as before.
+    # Frappe copies whole trees rather than vendoring a cache, so the
+    # equivalent of Dart's cache-strip is to skip copying the other
+    # personas' subtrees in the src/ loop below - the observable result
+    # matches: other personas' folders are absent from the composed app.
+    current_app_type = resolve_app_type()
+    declared_personas = list((manifest.get("app_type") or {}).keys())
+    excluded_personas = set()
+    if current_app_type and current_app_type in declared_personas:
+        excluded_personas = {p for p in declared_personas if p != current_app_type}
+
     # 2. Copy Source Code Files (api.py, tasks.py, etc.)
     src_code = os.path.join(src_sdk_path, "src")
     if os.path.isdir(src_code):
         for f in os.listdir(src_code):
             src_file_path = os.path.join(src_code, f)
-            
+
+            if f in excluded_personas and os.path.isdir(src_file_path):
+                print(f"[*] Skipped unused role folder src/{f}/ from {module_name} (app role: {current_app_type})")
+                continue
+
+
             # Special redirects for global folders
             if f == "www":
                 dest_www = os.path.join(target_app_path, "www")
@@ -497,13 +540,33 @@ def main():
 
     resolved_sources = resolve_module_sources(modules)
 
+    # Role-based composition, install side (ported from the Dart installer's
+    # flavor_block handling in core/utils/flutter/sdk_installer_base.py):
+    # everything at a manifest's top level always composes regardless of role
+    # ("common gets installed regardless"). A manifest can additionally
+    # declare an "app_type" block keyed by persona (manager/customer/pos/...)
+    # whose value mirrors the manifest top-level schema - its "hooks"
+    # (whitelisted_methods, doc_events, scheduler_events, fixtures,
+    # after_install, commands, ...) and "dependencies" are merged in ONLY
+    # when the persona matches this shell's own .rokct/config/app_type
+    # marker. The matching flavor block is registered as its own compiled
+    # manifest entry so it flows through the existing merge_hooks/
+    # merge_commands/merge_dependencies machinery unchanged - all three are
+    # already additive per key. With no marker (a tenant backend serving all
+    # roles at once) or no app_type key, nothing extra is registered and the
+    # output is identical to a role-less compose.
+    current_app_type = resolve_app_type()
+
     for m in modules:
         if m.get("enabled", False):
             print(f"\n[*] Pouring module: {m['name']}...")
             manifest = compose_module(m, target_app_path, app_name, resolved_sources.get(id(m)))
             if manifest:
                 compiled_manifests[m['name']] = manifest
-                
+                flavor_block = (manifest.get("app_type") or {}).get(current_app_type) if current_app_type else None
+                if flavor_block:
+                    compiled_manifests[f"{m['name']} ({current_app_type})"] = flavor_block
+
     if compiled_manifests:
         merge_hooks(target_app_path, app_name, compiled_manifests)
         merge_commands(target_app_path, app_name, compiled_manifests)

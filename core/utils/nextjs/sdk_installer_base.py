@@ -37,6 +37,23 @@ def file_hash(path):
     return hasher.hexdigest()
 
 
+def resolve_app_type():
+    """Reads this host app's own role marker (e.g. 'manager', 'customer',
+    'pos') from .rokct/config/app_type - a plain one-line text file checked
+    into each host app's own repo. Mirrors
+    core/utils/flutter/sdk_installer_base.py's resolve_app_type() - kept as a
+    local copy here rather than imported, since each stack's installer base
+    is fetched and used independently.
+    Returns None if the file doesn't exist - manifests with no matching
+    app_type block behave exactly as before (nothing filtered)."""
+    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+            return value or None
+    return None
+
+
 def load_state():
     migrate_legacy_state()
     if os.path.exists(STATE_FILE):
@@ -140,11 +157,22 @@ def install_sdk_files(sdk_name):
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         manifest = json.load(f)
 
+    # Everything at the manifest's top level always installs regardless of
+    # role ("common gets installed regardless"). A manifest can additionally
+    # declare an "app_type" block keyed by persona (manager/customer/pos/...)
+    # whose own installs/dependencies/devDependencies/integrations/requires
+    # get merged in ONLY when they match this host app's own
+    # .rokct/config/app_type marker - the same flavor_block idea as the Dart
+    # installer (core/utils/flutter/sdk_installer_base.py), applied to the
+    # Next.js manifest schema.
+    current_app_type = resolve_app_type()
+    flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+
     version = manifest.get("version", "1.0.0")
-    installs = manifest.get("installs", [])
+    installs = manifest.get("installs", []) + flavor_block.get("installs", [])
 
     check_app_alias()
-    check_requires(sdk_name, manifest.get("requires", []))
+    check_requires(sdk_name, manifest.get("requires", []) + flavor_block.get("requires", []))
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}})
@@ -229,15 +257,21 @@ def install_sdk_files(sdk_name):
             package_state.setdefault("files", {})[rel_dest] = file_hash(file_dest)
             print(f"  [+] COPY: {rel_dest}")
 
-    # 2. Track dependencies/integrations for this package, then apply across all installed packages
-    deps_config = manifest.get("dependencies")
+    # 2. Track dependencies/integrations for this package, then apply across
+    # all installed packages. The flavor block's entries merge onto the top
+    # level's - for the dependency maps the flavor's version range wins on a
+    # same-name key (matching the Dart installer's flavor-wins precedence);
+    # integrations concatenate like installs.
+    deps_config = dict(manifest.get("dependencies") or {})
+    deps_config.update(flavor_block.get("dependencies") or {})
     if deps_config:
         package_state["dependencies"] = deps_config
-    dev_deps_config = manifest.get("devDependencies")
+    dev_deps_config = dict(manifest.get("devDependencies") or {})
+    dev_deps_config.update(flavor_block.get("devDependencies") or {})
     if dev_deps_config:
         package_state["devDependencies"] = dev_deps_config
 
-    integrations_config = manifest.get("integrations")
+    integrations_config = list(manifest.get("integrations") or []) + list(flavor_block.get("integrations") or [])
     if integrations_config:
         package_state["integrations"] = integrations_config
 
