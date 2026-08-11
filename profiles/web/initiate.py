@@ -140,6 +140,11 @@ def copy_dir(src, dst):
     print(f"[init] Synced directory {src} -> {dst}")
 
 def fetch_dir_from_github(rel_src, dst):
+    # Zip entries always use forward slashes; on Windows callers pass
+    # os.sep-separated paths (e.g. copy_dir strips PROTOCOL_DIR + os.sep,
+    # leaving "core\\skills"), which would match no entries and silently
+    # fetch 0 files.
+    rel_src = rel_src.replace(os.sep, "/")
     prefix = f"The-Rokct-Protocol-main/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
