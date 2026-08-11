@@ -289,6 +289,161 @@ def record_sdk_cache_state(decisions):
     save_install_state(state)
     print(f"[*] Recorded cache state for {updated} SDK(s) in {os.path.relpath(STATE_FILE, PROJECT_ROOT)}")
 
+# --- SDK compliance docs ------------------------------------------------------
+# SDK repos generate per-stack compliance docs at their OWN repo root under
+# docs/api/{dart,frappe,nextjs}/*.md (repo level - NOT inside <module>/dart, so
+# they sit outside the per-SDK cache extraction above). Compose stages a copy
+# of each unique repo's docs/api/ tree into .rokct/cache/_docs/<repo_name>/
+# while the shallow clone is still on disk, then ensure_docs() merges every
+# staged repo's docs into <shell_root>/docs/api/<stack>/ - so app shells carry
+# the compliance docs without ever running the compliance scanner themselves.
+# Staged under cache/ deliberately, same rationale as install_state.json: it
+# shares the cache's cleanup whitelist and git-tracking policy.
+
+DOCS_STAGE_DIRNAME = "_docs"
+DOC_STACKS = ("dart", "frappe", "nextjs")
+DOCS_MANIFEST_NAME = ".composed_docs.json"
+
+def stage_repo_docs(repo_source_dir, repo_name, cache_base):
+    """Stage one SDK repo's docs/api/ tree into .rokct/cache/_docs/<repo_name>/.
+
+    Called once per unique repo (several composer.json SDK entries can point
+    at the same repo). A repo with no docs/api is skipped silently - and any
+    previously staged copy for it is dropped as stale. Docs are a bonus
+    artifact of compose: failure here must NEVER fail the compose, so the
+    whole body is fenced with a warning instead.
+    """
+    stage_dir = os.path.join(cache_base, DOCS_STAGE_DIRNAME, repo_name)
+    try:
+        src = os.path.join(repo_source_dir, "docs", "api")
+        if not os.path.isdir(src):
+            if os.path.isdir(stage_dir):
+                shutil.rmtree(stage_dir)
+            return
+        if os.path.isdir(stage_dir):
+            shutil.rmtree(stage_dir)
+        shutil.copytree(src, stage_dir)
+        print(f"[*] Staged compliance docs from {repo_name} into {os.path.relpath(stage_dir, PROJECT_ROOT)}")
+    except Exception as e:
+        print(f"[!] Could not stage compliance docs from {repo_name}: {e} (compose continues)")
+
+def _stack_for_legacy_doc(filename):
+    """Map a pre-restructure FLAT docs/api/*.md filename to its stack dir by
+    filename token: dart / frappe(py) / nextjs(ts). The stem is padded with
+    underscores so a trailing token (e.g. auth_dart.md) still matches.
+    Returns None when no token matches - the caller leaves that file out."""
+    stem = os.path.splitext(filename)[0].lower()
+    haystack = "_%s_" % stem
+    if "_dart_" in haystack:
+        return "dart"
+    if "_frappe_" in haystack or "_py_" in haystack:
+        return "frappe"
+    if "_nextjs_" in haystack or "_ts_" in haystack:
+        return "nextjs"
+    return None
+
+def ensure_docs():
+    """Merge every staged SDK repo's compliance docs (see stage_repo_docs)
+    into <shell_root>/docs/api/<stack>/.
+
+    Same ownership idiom as ensure_host_readme()'s marker block, in manifest
+    form: docs/api/.composed_docs.json lists exactly the files the composer
+    wrote, and on each run owned files no longer produced are deleted before
+    the new set is written - so a doc removed upstream disappears from the
+    shell on the next compose. Files the manifest does not list are the
+    host's own and are never touched. Union across repos; the flattened
+    filenames are module-prefixed so collisions are unlikely - on collision,
+    last write wins with a printed warning. Idempotent, and a failure here
+    never fails the compose.
+    """
+    stage_root = os.path.join(PROJECT_ROOT, ".rokct", "cache", DOCS_STAGE_DIRNAME)
+    docs_root = os.path.join(PROJECT_ROOT, "docs", "api")
+    manifest_path = os.path.join(docs_root, DOCS_MANIFEST_NAME)
+    try:
+        # Collect the incoming doc set: {"<stack>/<file>.md": staged source}.
+        incoming = {}
+        if os.path.isdir(stage_root):
+            for repo_name in sorted(os.listdir(stage_root)):
+                repo_dir = os.path.join(stage_root, repo_name)
+                if not os.path.isdir(repo_dir):
+                    continue
+                # Per-stack layout: docs/api/{dart,frappe,nextjs}/*.md
+                for stack in DOC_STACKS:
+                    stack_dir = os.path.join(repo_dir, stack)
+                    if not os.path.isdir(stack_dir):
+                        continue
+                    for name in sorted(os.listdir(stack_dir)):
+                        if not name.endswith(".md"):
+                            continue
+                        rel = "%s/%s" % (stack, name)
+                        if rel in incoming:
+                            print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
+                        incoming[rel] = os.path.join(stack_dir, name)
+                # Legacy fallback: pre-restructure FLAT docs/api/*.md, mapped
+                # to a stack dir by filename token.
+                for name in sorted(os.listdir(repo_dir)):
+                    path = os.path.join(repo_dir, name)
+                    if not os.path.isfile(path) or not name.endswith(".md"):
+                        continue
+                    stack = _stack_for_legacy_doc(name)
+                    if not stack:
+                        print(f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out.")
+                        continue
+                    rel = "%s/%s" % (stack, name)
+                    if rel in incoming:
+                        print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
+                    incoming[rel] = path
+
+        owned = []
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    owned = json.load(f).get("files", [])
+            except Exception:
+                owned = []
+
+        # Delete owned files no longer produced. Never touch unowned files.
+        removed = 0
+        for rel in owned:
+            if rel in incoming:
+                continue
+            path = os.path.join(docs_root, *rel.split("/"))
+            if os.path.isfile(path):
+                os.remove(path)
+                removed += 1
+                try:
+                    os.rmdir(os.path.dirname(path))  # prune only-if-empty
+                except OSError:
+                    pass
+
+        if not incoming:
+            if owned:
+                if os.path.exists(manifest_path):
+                    os.remove(manifest_path)
+                try:
+                    os.rmdir(docs_root)  # prune only-if-empty
+                except OSError:
+                    pass
+                print(f"[*] docs/api: removed {removed} stale composed doc(s); no SDK docs staged.")
+            return
+
+        written = 0
+        for rel in sorted(incoming):
+            dest = os.path.join(docs_root, *rel.split("/"))
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copy2(incoming[rel], dest)
+            written += 1
+
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump({"files": sorted(incoming.keys())}, f, indent=2)
+            f.write(NL)
+        summary = f"[*] docs/api: composed {written} SDK compliance doc(s)"
+        if removed:
+            summary += f", removed {removed} stale"
+        print(summary)
+    except Exception as e:
+        print(f"[!] Could not compose SDK docs into docs/api/: {e} (compose continues)")
+
 def resolve_and_cache_sdks(sdks):
     cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
     os.makedirs(cache_base, exist_ok=True)
@@ -345,7 +500,11 @@ def resolve_and_cache_sdks(sdks):
             except Exception as e:
                 print(f"[!] Failed to clone {git_url}: {e}")
                 sys.exit(1)
-            
+
+        # Stage this repo's compliance docs (repo-root docs/api/) while the
+        # repo is on disk - once per unique repo, never fatal on failure.
+        stage_repo_docs(repo_source_dir, repo_name, cache_base)
+
         # Extract each SDK
         for sdk in group_sdks:
             sdk_name = sdk["name"]
@@ -1031,6 +1190,7 @@ def main():
     ensure_pubspec_overrides()
     ensure_lib_gitignore()
     ensure_host_readme()
+    ensure_docs()
     remove_stale_widget_test()
     # Record versions/hashes in a finally block: codegen mutates the caches
     # (generated sources, override-path fixes), so the recorded hash must be
