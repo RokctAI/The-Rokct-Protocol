@@ -30,6 +30,7 @@ CONSTANTS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "s
 INJECTED_DB_DIR = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected")
 ONBOARDING_ROUTES_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "onboarding_route_pages.dart")
 REGISTRATION_STEPS_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "registration_step_pages.dart")
+SESSION_POLICY_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "auth_session_policy.dart")
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -314,6 +315,19 @@ def install_sdk_files_and_routes(sdk_name):
         package_state["brand_hook"] = brand_hook
     else:
         package_state.pop("brand_hook", None)
+
+    # Extract and store this SDK's session policy: which account roles this
+    # composed app admits at login and where each lands (auth_sdk's
+    # AuthSessionPolicy seam). At most ONE installed SDK may declare it -
+    # normally the home SDK, typically inside its app_type flavor block so
+    # e.g. merchants_sdk scopes the seller gate to manager builds - and
+    # update_session_policy() hard-errors if two do, exactly like
+    # brand_hook. The flavor block wins over the manifest top level.
+    session_policy = flavor_block.get("session_policy") or manifest.get("session_policy")
+    if session_policy:
+        package_state["session_policy"] = session_policy
+    else:
+        package_state.pop("session_policy", None)
     
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
     
@@ -497,6 +511,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_app_routes()
     update_onboarding_slides()
     update_registration_steps()
+    update_session_policy()
     update_embedded_widgets()
     update_brand_hook()
     update_wiring_imports()
@@ -1236,6 +1251,111 @@ def update_registration_steps():
             f.write(new_content)
         print(f"[*] Injected {len(steps)} registration step(s) into registration_step_pages.dart")
 
+def update_session_policy():
+    """Injects the app's declared session policy into auth_sdk's installed
+    auth_session_policy.dart shell (templates/routes/auth_session_policy.dart
+    -> lib/presentation/routes/auth_session_policy.dart) — the seam that
+    lets a composition say which account roles may sign in and where each
+    lands, instead of the app keeping its own auth pages (manager: sellers
+    only -> /main; driver later: drivers only).
+
+    Declared as manifest.json "session_policy" (top level or app_type
+    flavor block, flavor winning):
+
+        "session_policy": {
+          "allowed_roles": [
+            {"role": "seller", "landing_route": "/main"}
+          ],
+          "rejection_message_tr_key": "access.denied",
+          "rejection_route": "/login"
+        }
+
+    allowed_roles maps each admitted role to the route PATH it lands on
+    after sign-in (paths, not route classes — same ADR-005 bridge as
+    '/registration-steps'); rejection_* are optional. Values are injected
+    into single-quoted Dart string literals, so they must not contain
+    quotes or backslashes — the installer stays a dumb pipe and rejects
+    them instead of escaping.
+
+    Exactly zero or one installed SDK may declare a policy. Two apps'
+    worth of login gates is not a tie to break silently (whichever lost
+    would admit the wrong accounts), so like brand_hook this raises a hard
+    error naming every declaring SDK.
+
+    Apps without auth_sdk have no shell file — nothing to do. With no
+    declaration the marker block is emptied, auth_sdk's built-in default
+    policy stays in force, and login behaves exactly as before the seam
+    existed (supacharge/minilauncher unchanged).
+    """
+    if not os.path.exists(SESSION_POLICY_FILE):
+        return
+
+    state = load_state()
+    declared = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        policy = pkg_data.get("session_policy")
+        if policy and policy.get("allowed_roles"):
+            declared[pkg_name] = policy
+
+    if len(declared) > 1:
+        names = ", ".join(f"'{n}'" for n in sorted(declared))
+        raise RuntimeError(
+            f"session_policy conflict: {len(declared)} installed SDKs ({names}) each declare "
+            f"a session policy, but a composed app can only admit accounts under one. "
+            f"Remove the declaration from every SDK but the app's home SDK."
+        )
+
+    def _lit(value, field):
+        value = str(value)
+        if "'" in value or "\\" in value or "\n" in value:
+            raise RuntimeError(
+                f"session_policy: {field} value {value!r} may not contain quotes, "
+                f"backslashes or newlines — it is injected into a Dart string literal verbatim."
+            )
+        return f"'{value}'"
+
+    body_lines = []
+    if declared:
+        pkg_name, policy = next(iter(declared.items()))
+        landings = []
+        for entry in policy.get("allowed_roles", []):
+            role = entry.get("role")
+            landing = entry.get("landing_route")
+            if not role or not landing:
+                print(f"  [!] session_policy: skipping allowed_roles entry without role/landing_route in {pkg_name}")
+                continue
+            landings.append(f"      {_lit(role, 'role')}: {_lit(landing, 'landing_route')},")
+        if landings:
+            body_lines.append(f"  // declared by {pkg_name}")
+            body_lines.append("  AuthSessionPolicy.I = DeclaredSessionPolicy(")
+            body_lines.append("    roleLandings: {")
+            body_lines.extend(landings)
+            body_lines.append("    },")
+            msg = policy.get("rejection_message_tr_key")
+            if msg:
+                body_lines.append(f"    rejectionMessageTrKey: {_lit(msg, 'rejection_message_tr_key')},")
+            route = policy.get("rejection_route")
+            if route:
+                body_lines.append(f"    rejectionRoute: {_lit(route, 'rejection_route')},")
+            body_lines.append("  );")
+    policy_block = "\n".join(body_lines)
+
+    with open(SESSION_POLICY_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    replacement = f"  // @generated-session-policy-start\n{policy_block}\n  // @generated-session-policy-end"
+    new_content = re.sub(
+        r"  // @generated-session-policy-start.*?// @generated-session-policy-end",
+        replacement.replace("\\", "\\\\"),
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(SESSION_POLICY_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print("[*] Injected session policy into auth_session_policy.dart" if policy_block else "[*] Cleared session policy in auth_session_policy.dart")
+
 def update_embedded_widgets():
     """Injects EmbeddedWidgets.I method implementations into main.dart's
     _HostEmbeddedWidgets scaffold (see the base_sdk template) from each
@@ -1429,6 +1549,7 @@ if __name__ == "__main__":
     update_app_routes()
     update_onboarding_slides()
     update_registration_steps()
+    update_session_policy()
     update_embedded_widgets()
     update_brand_hook()
     update_wiring_imports()
