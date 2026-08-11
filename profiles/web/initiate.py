@@ -183,6 +183,11 @@ def main():
         if not os.path.exists(dest_fname):
             copy_versioned(os.path.join("core", "templates", fname), dest_fname, manifest)
 
+    # Markdownlint config for the agent-maintained .rokct/ docs. markdownlint-cli2
+    # applies per-directory config to everything beneath .rokct/, keeping consumer
+    # repos green under the org-standard rule set without touching their root config.
+    copy_versioned(os.path.join("core", "templates", ".markdownlint.json"), os.path.join(ROKCT_DIR, ".markdownlint.json"), manifest)
+
     copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"), manifest)
 
     repo_owner = detect_repo_owner()

@@ -149,6 +149,11 @@ def main():
         if not os.path.exists(dest_t):
             ensure_file(f"core/templates/{t}", dest_t)
 
+    # Markdownlint config for the agent-maintained .rokct/ docs. markdownlint-cli2
+    # applies per-directory config to everything beneath .rokct/, keeping consumer
+    # repos green under the org-standard rule set without touching their root config.
+    copy_versioned("core/templates/.markdownlint.json", os.path.join(ROKCT_DIR, ".markdownlint.json"))
+
     ensure_file(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
     copy_dir("core/skills", os.path.join(ROKCT_DIR, "skills"))
