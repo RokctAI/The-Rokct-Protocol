@@ -32,6 +32,21 @@ ONBOARDING_ROUTES_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "rout
 REGISTRATION_STEPS_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "registration_step_pages.dart")
 SESSION_POLICY_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "auth_session_policy.dart")
 
+# File extensions treated as text during template installs: the installer
+# reads these, substitutes the literal `${package}` token with the host's
+# composer.json package_name, and writes the result (everything else is
+# byte-copied). `.rc`/`.cpp`/`.h` are included so native desktop runner
+# scaffolding (windows/runner/Runner.rc, main.cpp) can carry the app name as
+# `${package}` in shared templates instead of per-app pre-named copies. The
+# substitution is an exact-token literal replace — CMake-style `${VAR}`
+# expansions in template sources (e.g. `${BINARY_NAME}`, `${plugin}`) are
+# untouched, and an org-wide scan of every SDK's templates found no
+# .rc/.cpp/.h file containing any other `${...}` sequence.
+TEXT_SUBSTITUTION_EXTENSIONS = (
+    ".dart", ".yaml", ".json", ".txt", ".md", ".gradle", ".properties",
+    ".rc", ".cpp", ".h",
+)
+
 def file_hash(path):
     if not os.path.exists(path):
         return None
@@ -133,7 +148,7 @@ def bootstrap_home_sdk_if_missing(state):
                 shutil.copytree(src_path, dest_path)
             else:
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                if src_path.endswith((".dart", ".yaml", ".json", ".txt", ".md", ".gradle", ".properties")):
+                if src_path.endswith(TEXT_SUBSTITUTION_EXTENSIONS):
                     with open(src_path, "r", encoding="utf-8", errors="ignore") as fs:
                         content = fs.read()
                     content = content.replace("${package}", get_project_package_name())
@@ -400,7 +415,7 @@ def install_sdk_files_and_routes(sdk_name):
             os.makedirs(os.path.dirname(file_dest), exist_ok=True)
             
             # Copy binary files directly, text files with banner prepended
-            is_text = file_dest.endswith((".dart", ".yaml", ".json", ".txt", ".md", ".gradle", ".properties"))
+            is_text = file_dest.endswith(TEXT_SUBSTITUTION_EXTENSIONS)
             
             if is_text:
                 with open(file_src, "r", encoding="utf-8", errors="ignore") as fs:
