@@ -135,26 +135,26 @@ The composer pipeline (`compose_backend.py`) is responsible for compiling SDK pa
 5. **Merge Hooks**: Aggregates all `whitelisted_methods`, `fixtures`, `doc_events`, and `auth_hooks` from all active manifests and appends them dynamically to the end of `hooks.py`.
 6. **Inject Dependencies**: Appends missing Python dependencies to the root `requirements.txt` and `pyproject.toml`.
 
-### Known caveats of the git-clone fallback
+### Semantics of the git-clone fallback
 
-Two long-standing behaviors of `resolve_module_sources()`'s clone path (used
-only when no local sibling checkout of the SDK repo exists), documented here
-deliberately rather than changed:
+Two behaviors of `resolve_module_sources()`'s clone path (used only when no
+local sibling checkout of the SDK repo exists) — both were long-standing
+caveats, now fixed:
 
-1. **`ref` must be a branch or tag name, not a commit SHA.** The module's
-   `ref` is passed straight to `git clone -b <ref> --depth 1`, and
-   `git clone -b` only accepts branch/tag names — pinning a module to a raw
-   commit SHA fails the clone.
-2. **A failed clone soft-skips the module instead of failing the build.**
-   On any clone error the composer prints `[!] Failed to clone ...` and
-   `continue`s; the module then falls back to resolving its raw `path`
-   relative to the shell root, which in a single-repo checkout usually
-   doesn't exist, so it surfaces later as
-   `[-] No manifest.json found for module ... Skipping.` and composition
-   still completes "successfully". A typo'd git URL (or an expired token)
-   therefore composes a quietly incomplete app — check the compose log for
-   `Failed to clone` / `No manifest.json found` lines before trusting a
-   green build.
+1. **`ref` accepts a branch, tag, or commit SHA.** Branch and tag refs take
+   the same shallow path as before (`git clone -b <ref> --depth 1`). When
+   that fails — most notably because the ref is a raw commit SHA, which
+   `git clone -b` does not accept — `clone_ref()` falls back to a full
+   `git clone` followed by `git checkout <ref>`, so pinning a module to an
+   exact commit works.
+2. **A failed clone fails the build loudly.** If both clone strategies fail
+   (typo'd git URL, expired token, nonexistent ref), the composer prints
+   `[!] Failed to clone <url> (ref '<ref>') needed by module(s): ...` and
+   raises `CRITICAL ERROR: Failed to clone ...` — same hard-failure idiom as
+   duplicate-DocType collisions — so composition exits non-zero instead of
+   soft-skipping the module and shipping a quietly incomplete app. (A missing
+   `manifest.json` after a *successful* source resolution still soft-skips
+   the module, as before.)
 
 ---
 
