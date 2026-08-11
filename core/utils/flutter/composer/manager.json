@@ -16,10 +16,12 @@
     {
       "name": "auth_sdk",
       "enabled": true,
+      "skip_install": true,
       "source": "git",
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
-      "ref": "main"
+      "ref": "main",
+      "_comment": "Composed for its library but install.py is skipped (mirrors driver.json and launch_deliver.json): the manager app keeps auth pages host-owned, and its own login page already generates LoginRoute - installing the SDK's route shells would duplicate the name."
     },
     {
       "name": "users_sdk",
