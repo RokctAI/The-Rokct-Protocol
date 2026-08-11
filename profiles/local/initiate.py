@@ -40,7 +40,7 @@ def check_self_update():
             print(f"[init] Self-update check failed: {e}", file=sys.stderr)
 
 def fetch_from_github(rel_path, dest_path):
-    url = f"{GITHUB_RAW_BASE}/{rel_path}"
+    url = f"{GITHUB_RAW_BASE}/{rel_path.replace(os.sep, '/')}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
@@ -117,6 +117,10 @@ def copy_dir(rel_src, dst):
             ensure_file(rel, d)
 
 def fetch_dir_from_github(rel_src, dst):
+    # Zip entries always use forward slashes; on Windows callers pass
+    # os.sep-separated paths (e.g. from os.path.relpath), which would
+    # match no entries and silently fetch 0 files.
+    rel_src = rel_src.replace(os.sep, "/")
     prefix = f"The-Rokct-Protocol-main/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
