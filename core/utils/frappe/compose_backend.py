@@ -53,6 +53,28 @@ def get_subpath_in_repo(local_path, repo_name):
         return "/".join(parts[-2:])
     return normalized
 
+def remove_readonly(func, path, excinfo):
+    import stat
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+def clone_ref(git_url, ref, dest_dir):
+    """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
+    shallow path used before (`git clone -b <ref> --depth 1`); when that
+    fails - most notably because ref is a commit SHA, which `git clone -b`
+    does not accept - fall back to a full clone followed by
+    `git checkout <ref>`. Raises on failure (subprocess.CalledProcessError);
+    the caller decides how to fail the build."""
+    try:
+        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        return
+    except subprocess.CalledProcessError:
+        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+    if os.path.exists(dest_dir):
+        shutil.rmtree(dest_dir, onerror=remove_readonly)
+    subprocess.run(["git", "clone", git_url, dest_dir], check=True)
+    subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
+
 def resolve_module_sources(modules):
     """Resolve each module's source directory for modules declared with the
     rich (source/git/ref) schema, mirroring core/utils/flutter/sdk_composer.py's
@@ -89,16 +111,18 @@ def resolve_module_sources(modules):
             try:
                 os.makedirs(cache_base, exist_ok=True)
                 if os.path.exists(temp_repo_dir):
-                    def remove_readonly(func, path, excinfo):
-                        import stat
-                        os.chmod(path, stat.S_IWRITE)
-                        func(path)
                     shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
-                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, temp_repo_dir], check=True)
+                clone_ref(git_url, ref, temp_repo_dir)
                 repo_source_dir = temp_repo_dir
             except Exception as e:
-                print(f"[!] Failed to clone {git_url}: {e}")
-                continue
+                # A failed clone must fail the compose loudly. The old
+                # `continue` soft-skipped the group, so the modules later fell
+                # through to "[-] No manifest.json found ... Skipping." and a
+                # typo'd URL (or expired token) composed a quietly incomplete
+                # app that still exited 0.
+                module_names = ", ".join(str(m.get("name")) for m in group)
+                print(f"[!] Failed to clone {git_url} (ref '{ref}') needed by module(s): {module_names}: {e}")
+                raise ValueError(f"CRITICAL ERROR: Failed to clone {git_url} (ref '{ref}') for module(s) '{module_names}'! Failing build.") from e
 
         for m in group:
             subpath = get_subpath_in_repo(m.get("path", ""), repo_name)
