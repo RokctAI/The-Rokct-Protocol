@@ -106,6 +106,58 @@ for consistency across the two client SDK kinds — same shape, different manife
   silently drop — it has to be declared. Not a substitute for a real cross-SDK dependency mechanism if
   one becomes necessary later; just makes today's coupling visible instead of a silent broken import.
 
+## Role-based composition (`app_type`)
+
+Ported from the Dart composer (`core/utils/flutter/sdk_installer_base.py` / `sdk_composer.py`) so all
+three composers share one design. Two pieces:
+
+**The host's role marker** — an optional plain one-line text file at `.rokct/config/app_type` in the
+host app's own repo (e.g. `manager`, `customer`, `pos`). **Absence = all/common-only**: a host with no
+marker composes exactly as before — top-level manifest content only, every persona folder left intact
+in the cache. There is no `"all"` pseudo-role.
+
+**The manifest's `app_type` block** — optional, keyed by persona name. Each persona's value mirrors the
+manifest top level (`installs`, `dependencies`, `devDependencies`, `integrations`, `requires`) and is
+merged in ONLY when the persona matches the host's marker: `installs`/`integrations`/`requires`
+concatenate onto the top-level lists; the dependency maps merge with the flavor's version range winning
+on a same-name key (the Dart installer's flavor-wins precedence). Everything at the manifest top level
+is common and always installs.
+
+```json
+{
+  "name": "example_sdk",
+  "version": "1.0.0",
+  "installs": [{ "from": "templates/app/common", "to": "app/common" }],
+  "app_type": {
+    "manager": {
+      "installs": [{ "from": "templates/manager/app/managerpage", "to": "app/managerpage" }],
+      "dependencies": { "manager-only-pkg": "^1.0.0" },
+      "integrations": [ { "target": "...", "placeholder": "...", "replacement": "..." } ]
+    },
+    "customer": {
+      "installs": [{ "from": "templates/customer/app/customerpage", "to": "app/customerpage" }]
+    }
+  }
+}
+```
+
+**Persona template folders** — persona-specific content lives in sibling folders directly under the
+SDK's `templates/` (`templates/manager/`, `templates/customer/`, ...), each mirroring the host layout
+the same way `templates/app/...` does (so a flavor install's `from` is e.g.
+`templates/manager/app/managerpage`). This is the Next.js mirror of Dart's `lib/src/<persona>/` siblings
+of `lib/src/common/`: Next.js SDK trees have no `lib/` — their installable content root is `templates/`
+(see the on-disk convention above), so persona folders sit directly under it, and everything under
+`templates/` NOT named after a declared persona is common. There is no literal `templates/common/`.
+
+**Strip side** — after `sdk_composer.py` vendors an SDK into `.rokct/cache/<sdk>/`,
+`strip_unused_role_folders()` removes `templates/<persona>/` for every *other* declared persona, so the
+cached (and, in hosts that track their cache, committed) copy carries only common content plus this
+app's own role. Guardrails, matching Dart exactly: it is a no-op when the host role can't be resolved,
+the SDK's manifest is missing or unparseable, the manifest declares no `app_type`, or the host's role
+is not among the declared personas — stripping without that confirmation could delete something the app
+actually needs. With no marker or no `app_type` declarations anywhere, composes are byte-identical to
+the pre-role behavior.
+
 ## Installer scripts
 
 - `The-Rokct-Protocol/core/utils/nextjs/sdk_installer_base.py` — per-SDK install logic (file sync,

@@ -46,6 +46,74 @@ def authenticated_git_url(git_url):
     return git_url
 
 
+def resolve_app_type():
+    """This host app's own role marker ('manager', 'customer', ...), read
+    from .rokct/config/app_type - the same one-line marker file the Flutter
+    composer reads (see core/utils/flutter/sdk_composer.py). Mirrors
+    sdk_installer_base.py's resolve_app_type() - kept as a local copy here
+    rather than imported, since sdk_composer.py and sdk_installer_base.py are
+    fetched and used independently by a host's compose wrapper."""
+    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            value = f.read().strip().lower()
+            return value or None
+    return None
+
+
+def strip_unused_role_folders(target_dir, sdk_name):
+    """After vendoring an SDK's source into .rokct/cache/, remove persona
+    folders under templates/ that don't apply to this host app - keep the
+    common content and this app's own role only. Ported from the Dart
+    composer's strip_unused_role_folders() (core/utils/flutter/
+    sdk_composer.py), which strips lib/src/<persona>/ siblings of
+    lib/src/common/. Next.js SDK trees have no lib/ - their installable
+    content root is templates/ (see core/utils/nextjs/README.md's on-disk
+    convention) - so the persona convention here is templates/<persona>/
+    siblings of the common content: everything under templates/ NOT named
+    after a declared persona is common, and a persona's own tree
+    (templates/<persona>/app/..., referenced by its flavor block's installs)
+    mirrors the host layout the same way templates/app/... does.
+
+    Only strips a folder that is BOTH directly under templates/ AND declared
+    as an app_type persona in this SDK's own manifest.json. Safe no-op when
+    the app's own role can't be resolved, the manifest is missing or
+    unparseable, or this SDK doesn't declare the app's role at all -
+    stripping without that confirmation risks deleting something the app
+    actually needs.
+    """
+    current_role = resolve_app_type()
+    if not current_role:
+        return
+
+    manifest_path = os.path.join(target_dir, "manifest.json")
+    if not os.path.exists(manifest_path):
+        return
+    try:
+        with open(manifest_path, "r", encoding="utf-8-sig") as f:
+            manifest = json.load(f)
+    except Exception:
+        return
+
+    declared_personas = list((manifest.get("app_type") or {}).keys())
+    if current_role not in declared_personas:
+        # This SDK doesn't declare the app's role as a persona - nothing to
+        # strip; stripping blind here could remove code the app actually uses.
+        return
+
+    templates_dir = os.path.join(target_dir, "templates")
+    if not os.path.isdir(templates_dir):
+        return
+
+    for persona in declared_personas:
+        if persona == current_role:
+            continue
+        persona_dir = os.path.join(templates_dir, persona)
+        if os.path.isdir(persona_dir):
+            shutil.rmtree(persona_dir)
+            print(f"[*] Stripped unused role folder templates/{persona}/ from {sdk_name} (app role: {current_role})")
+
+
 def _rmtree_force(path):
     def remove_readonly(func, p, excinfo):
         import stat
@@ -111,6 +179,7 @@ def resolve_and_cache_sdks(sdks):
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
+                strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
 
@@ -129,6 +198,7 @@ def resolve_and_cache_sdks(sdks):
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
+                strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
 
@@ -188,6 +258,7 @@ def collect_post_install_checklist(sdks_to_install):
     """
     missing_requires = {}
     integration_issues = []
+    current_app_type = resolve_app_type()
 
     for sdk_config in sdks_to_install:
         sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
@@ -201,11 +272,16 @@ def collect_post_install_checklist(sdks_to_install):
         except Exception:
             continue
 
-        for req in manifest.get("requires", []):
+        # Same flavor_block merge as install_sdk_files(): role-scoped
+        # requires/integrations only count when the persona matches this
+        # host's own role marker.
+        flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+
+        for req in list(manifest.get("requires", [])) + list(flavor_block.get("requires", [])):
             if not os.path.exists(os.path.join(PROJECT_ROOT, req)):
                 missing_requires.setdefault(req, set()).add(sdk_name)
 
-        for integration in manifest.get("integrations", []):
+        for integration in list(manifest.get("integrations", [])) + list(flavor_block.get("integrations", [])):
             target_rel = integration.get("target")
             placeholder = integration.get("placeholder")
             if not target_rel or not placeholder:

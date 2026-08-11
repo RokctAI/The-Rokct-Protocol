@@ -56,6 +56,63 @@ All path references in python code and hook values must be genericized using the
 }
 ```
 
+### Role-based composition (`app_type`)
+
+Ported from the Dart composer (`core/utils/flutter/sdk_installer_base.py` /
+`sdk_composer.py`) so all three composers share one design. Two pieces:
+
+**The shell's role marker** — an optional plain one-line text file at
+`.rokct/config/app_type` in the app shell's own repo (e.g. `manager`,
+`customer`, `pos`), read relative to the same root as `composer.json`.
+**Absence = all roles**: a tenant backend that deliberately serves every role
+at once simply declares no marker and composes exactly as before. There is no
+`"all"` pseudo-role.
+
+**The manifest's `app_type` block** — optional, keyed by persona name. Each
+persona's value mirrors the manifest top level (`hooks`, `dependencies`), and
+is merged in ONLY when the persona matches the shell's marker. Everything at
+the manifest top level is common and always composes.
+
+```json
+{
+  "name": "orders",
+  "hooks": { "whitelisted_methods": { "...common...": "..." } },
+  "app_type": {
+    "manager": {
+      "dependencies": ["some-manager-only-pip-dep"],
+      "hooks": {
+        "whitelisted_methods": { "{app_name}.api.manager.dashboard": "{app_name}.orders.manager.dashboard.get" },
+        "scheduler_events": { "daily": ["{app_name}.orders.manager.tasks.daily_digest"] },
+        "after_install": "{app_name}.orders.manager.setup.after_install",
+        "commands": ["{app_name}.orders.manager.cli.commands"]
+      }
+    },
+    "customer": { "hooks": { "...": "..." } }
+  }
+}
+```
+
+The matching flavor block flows through the exact same
+`merge_hooks`/`merge_commands`/`merge_dependencies` machinery as a module's
+top-level manifest (it appears in `hooks.py` under a
+`# --- Module: <name> (<role>) ---` comment), so every hooks key those support
+(`whitelisted_methods`, `doc_events`, `scheduler_events`, `fixtures`,
+`auth_hooks`, `before_uninstall`, `after_install`, `commands`, ...) can be
+role-scoped.
+
+**Persona source folders** — persona-specific Python lives in sibling folders
+directly under the SDK's `src/` (`src/manager/`, `src/customer/`, ...),
+mirroring the Dart convention of `lib/src/<persona>/` siblings of
+`lib/src/common/`. There is no literal `src/common/` folder: everything under
+`src/` NOT named after a declared persona is common. During
+`compose_module()`, a persona folder is skipped (never copied into the shell)
+only when BOTH the folder's name is declared as an `app_type` persona in this
+SDK's own manifest AND the shell's marker names a *different* declared
+persona. Guardrails, matching Dart exactly: no marker, no `app_type` key in
+the manifest, or a shell role the SDK doesn't declare all mean nothing is
+skipped and nothing extra is merged — the composed output is byte-identical
+to a role-less compose.
+
 ---
 
 ## 3. Relocation Workflow
