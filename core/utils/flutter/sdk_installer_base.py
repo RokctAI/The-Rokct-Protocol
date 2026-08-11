@@ -673,20 +673,32 @@ def update_database_registration():
         if not db_config:
             continue
 
+        # Staged per SDK and committed only if EVERY table source copies: a
+        # half-registered SDK (class names and migrations referencing tables
+        # whose source drift can't see) regenerates as a broken/empty
+        # database, so an SDK with any missing source contributes nothing at
+        # all - no classes, no migration steps, no schemaVersion bump.
+        pkg_tables = []
+        pkg_imports = set()
+        broken = False
         tables = db_config.get("tables", [])
         for tbl in tables:
             t_class = tbl.get("class")
             t_imp = tbl.get("import")
-            if t_class:
-                all_tables.append(f"    {t_class},")
             if t_imp and t_imp not in copied:
                 uri = t_imp
                 pkg, _, rel = uri[len("package:"):].partition("/")
                 clean = _clean_pkg_name(pkg)
                 src = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean, "lib", *rel.split("/"))
                 if not os.path.exists(src):
-                    print(f"  [!] table import source missing, skipping: {uri}")
-                    continue
+                    print(
+                        f"  [!] {pkg_name}: table source missing ({uri}) - its cache has no lib/ "
+                        f"(stripped or pinned?); DROPPING ALL of {pkg_name}'s database registration "
+                        f"so the composed AppDatabase still compiles. "
+                        f"Delete .rokct/cache/{clean} to force a clean re-extract."
+                    )
+                    broken = True
+                    break
                 dest_name = f"{pkg}__{os.path.basename(rel)}"
                 dest = os.path.join(INJECTED_DB_DIR, dest_name)
                 with open(src, "r", encoding="utf-8-sig") as sf:
@@ -698,8 +710,14 @@ def update_database_registration():
                         f"// drift only understands table classes inside its own package.\n" + content
                     )
                 copied[uri] = f"injected/{dest_name}"
+            if t_class:
+                pkg_tables.append(f"    {t_class},")
             if t_imp in copied:
-                rel_imports.add(f"import '{copied[t_imp]}';")
+                pkg_imports.add(f"import '{copied[t_imp]}';")
+        if broken:
+            continue
+        all_tables.extend(pkg_tables)
+        rel_imports.update(pkg_imports)
 
         migration = db_config.get("migration", {})
         version = migration.get("version")
@@ -762,6 +780,21 @@ def update_tr_keys_registration():
         print(f"[-] tr_keys.dart file not found: {TRKEYS_FILE}")
         return
 
+    with open(TRKEYS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Constants base itself declares OUTSIDE the @sdk-tr-keys block. An SDK
+    # key injected under one of these names would make the composed class
+    # declare it twice ("already declared in this scope"), so those keys are
+    # skipped below - base's declaration wins. The block's current contents
+    # are excluded from the scan so keys injected by a previous run don't
+    # mask themselves on re-compose.
+    body_without_block = re.sub(
+        r"// @sdk-tr-keys-start.*?  // @sdk-tr-keys-end",
+        "", content, flags=re.DOTALL)
+    base_owned = set(
+        re.findall(r"static const String (\w+)\s*=", body_without_block))
+
     state = load_state()
     key_lines = []
     seen = {}
@@ -770,15 +803,15 @@ def update_tr_keys_registration():
         if not tr_keys:
             continue
         for field, value in tr_keys.items():
+            if field in base_owned:
+                print(f"  [!] tr_keys collision: '{field}' declared by '{pkg_name}' already exists in base tr_keys.dart - keeping base's declaration")
+                continue
             if field in seen and seen[field] != pkg_name:
                 print(f"  [!] tr_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first")
                 continue
             seen[field] = pkg_name
             escaped = value.replace("\\", "\\\\").replace("'", "\\'")
             key_lines.append(f"  static const String {field} = '{escaped}';")
-
-    with open(TRKEYS_FILE, "r", encoding="utf-8") as f:
-        content = f.read()
 
     block = "\n".join(key_lines)
     replacement = f"// @sdk-tr-keys-start\n{block}\n  // @sdk-tr-keys-end"
@@ -803,6 +836,19 @@ def update_asset_keys_registration():
         print(f"[-] app_assets.dart file not found: {ASSETKEYS_FILE}")
         return
 
+    with open(ASSETKEYS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Constants base itself declares OUTSIDE the @sdk-asset-keys block - an
+    # SDK key under one of these names would be declared twice in the
+    # composed class, so it is skipped and base's declaration wins (same
+    # scan as update_tr_keys_registration).
+    body_without_block = re.sub(
+        r"// @sdk-asset-keys-start.*?  // @sdk-asset-keys-end",
+        "", content, flags=re.DOTALL)
+    base_owned = set(
+        re.findall(r"static const String (\w+)\s*=", body_without_block))
+
     state = load_state()
     key_lines = []
     seen = {}
@@ -811,15 +857,15 @@ def update_asset_keys_registration():
         if not asset_keys:
             continue
         for field, value in asset_keys.items():
+            if field in base_owned:
+                print(f"  [!] asset_keys collision: '{field}' declared by '{pkg_name}' already exists in base app_assets.dart - keeping base's declaration")
+                continue
             if field in seen and seen[field] != pkg_name:
                 print(f"  [!] asset_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first")
                 continue
             seen[field] = pkg_name
             escaped = value.replace("\\", "\\\\").replace("'", "\\'")
             key_lines.append(f"  static const String {field} = '{escaped}';")
-
-    with open(ASSETKEYS_FILE, "r", encoding="utf-8") as f:
-        content = f.read()
 
     block = "\n".join(key_lines)
     replacement = f"// @sdk-asset-keys-start\n{block}\n  // @sdk-asset-keys-end"
