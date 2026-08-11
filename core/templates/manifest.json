@@ -5,6 +5,7 @@
     "active_session.txt": { "hash": "30b1fc64a9051ca8", "size": 21 },
     "decision_log.md": { "hash": "a5ed2f49524e9b4f", "size": 429 },
     "project_map.md": { "hash": "aecf4a6bfe0e1a14", "size": 614 },
-    "session_summary.md": { "hash": "d793a2f800954d56", "size": 745 }
+    "session_summary.md": { "hash": "d793a2f800954d56", "size": 745 },
+    ".markdownlint.json": { "hash": "9fed09e4675bcddb", "size": 346 }
   }
 }
