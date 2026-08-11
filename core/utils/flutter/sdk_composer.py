@@ -290,40 +290,101 @@ def record_sdk_cache_state(decisions):
     print(f"[*] Recorded cache state for {updated} SDK(s) in {os.path.relpath(STATE_FILE, PROJECT_ROOT)}")
 
 # --- SDK compliance docs ------------------------------------------------------
-# SDK repos generate per-stack compliance docs at their OWN repo root under
-# docs/api/{dart,frappe,nextjs}/*.md (repo level - NOT inside <module>/dart, so
-# they sit outside the per-SDK cache extraction above). Compose stages a copy
-# of each unique repo's docs/api/ tree into .rokct/cache/_docs/<repo_name>/
-# while the shallow clone is still on disk, then ensure_docs() merges every
-# staged repo's docs into <shell_root>/docs/api/<stack>/ - so app shells carry
-# the compliance docs without ever running the compliance scanner themselves.
+# SDK repos generate per-stack compliance docs INSIDE each stack directory:
+# <module>/<stack>/docs/api/*.md for stack in {dart,frappe,nextjs} (filenames
+# stay flattened-from-repo-root, e.g. fav_dart_lib_src_di_fav_di.md). Only the
+# <module>/dart subtree is extracted into the per-SDK cache, so frappe/nextjs
+# docs would be lost after the shallow clone is deleted - compose therefore
+# stages a normalized per-stack copy of EVERY stack's docs into
+# .rokct/cache/_docs/<repo_name>/<stack>/ while the clone is still on disk,
+# then ensure_docs() merges every staged repo's docs into
+# <shell_root>/<stack>/docs/api/ - so app shells carry the compliance docs
+# without ever running the compliance scanner themselves.
 # Staged under cache/ deliberately, same rationale as install_state.json: it
 # shares the cache's cleanup whitelist and git-tracking policy.
 
 DOCS_STAGE_DIRNAME = "_docs"
 DOC_STACKS = ("dart", "frappe", "nextjs")
-DOCS_MANIFEST_NAME = ".composed_docs.json"
+# Manifest lives INSIDE .rokct/cache/ for the same reason as
+# install_state.json: cache/ is on end_protocol.py's keep-whitelist, so the
+# ownership record survives session cleanup and shares the cache's
+# git-tracking policy.
+DOCS_MANIFEST_NAME = "composed_docs.json"          # <shell_root>/.rokct/cache/
+LEGACY_DOCS_MANIFEST_NAME = ".composed_docs.json"  # old <shell_root>/docs/api/
 
 def stage_repo_docs(repo_source_dir, repo_name, cache_base):
-    """Stage one SDK repo's docs/api/ tree into .rokct/cache/_docs/<repo_name>/.
+    """Stage one SDK repo's compliance docs into
+    .rokct/cache/_docs/<repo_name>/<stack>/*.md (normalized per-stack layout).
+
+    Three source layouts are recognized, newest first:
+      1. current: <module>/<stack>/docs/api/*.md for every top-level module
+      2. previous: repo-root docs/api/<stack>/*.md (unmigrated repos)
+      3. legacy:   repo-root FLAT docs/api/*.md, mapped to a stack by
+         filename token (see _stack_for_legacy_doc)
+    All three are unioned so mid-migration repos keep working; a within-repo
+    duplicate warns and the later layout in the list above wins.
 
     Called once per unique repo (several composer.json SDK entries can point
-    at the same repo). A repo with no docs/api is skipped silently - and any
+    at the same repo). A repo with no docs is skipped silently - and any
     previously staged copy for it is dropped as stale. Docs are a bonus
     artifact of compose: failure here must NEVER fail the compose, so the
     whole body is fenced with a warning instead.
     """
     stage_dir = os.path.join(cache_base, DOCS_STAGE_DIRNAME, repo_name)
     try:
-        src = os.path.join(repo_source_dir, "docs", "api")
-        if not os.path.isdir(src):
-            if os.path.isdir(stage_dir):
-                shutil.rmtree(stage_dir)
-            return
         if os.path.isdir(stage_dir):
             shutil.rmtree(stage_dir)
-        shutil.copytree(src, stage_dir)
-        print(f"[*] Staged compliance docs from {repo_name} into {os.path.relpath(stage_dir, PROJECT_ROOT)}")
+        found = {}  # "<stack>/<name>.md" -> absolute source path
+
+        def collect(stack, name, path):
+            rel = "%s/%s" % (stack, name)
+            if rel in found:
+                print(f"[!] WARNING: {repo_name} provides {rel} from more than one layout - later layout wins.")
+            found[rel] = path
+
+        # 1. Current layout: <module>/<stack>/docs/api/*.md
+        for module in sorted(os.listdir(repo_source_dir)):
+            module_dir = os.path.join(repo_source_dir, module)
+            if module.startswith(".") or not os.path.isdir(module_dir):
+                continue
+            for stack in DOC_STACKS:
+                api_dir = os.path.join(module_dir, stack, "docs", "api")
+                if not os.path.isdir(api_dir):
+                    continue
+                for name in sorted(os.listdir(api_dir)):
+                    path = os.path.join(api_dir, name)
+                    if name.endswith(".md") and os.path.isfile(path):
+                        collect(stack, name, path)
+
+        root_api = os.path.join(repo_source_dir, "docs", "api")
+        if os.path.isdir(root_api):
+            # 2. Previous layout: repo-root docs/api/<stack>/*.md
+            for stack in DOC_STACKS:
+                stack_dir = os.path.join(root_api, stack)
+                if not os.path.isdir(stack_dir):
+                    continue
+                for name in sorted(os.listdir(stack_dir)):
+                    path = os.path.join(stack_dir, name)
+                    if name.endswith(".md") and os.path.isfile(path):
+                        collect(stack, name, path)
+            # 3. Legacy FLAT docs/api/*.md, mapped by filename token.
+            for name in sorted(os.listdir(root_api)):
+                path = os.path.join(root_api, name)
+                if not os.path.isfile(path) or not name.endswith(".md"):
+                    continue
+                stack = _stack_for_legacy_doc(name)
+                if not stack:
+                    print(f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out.")
+                    continue
+                collect(stack, name, path)
+
+        if not found:
+            return
+        for rel, src in found.items():
+            dest = os.path.join(stage_dir, *rel.split("/"))
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copy2(src, dest)
+        print(f"[*] Staged {len(found)} compliance doc(s) from {repo_name} into {os.path.relpath(stage_dir, PROJECT_ROOT)}")
     except Exception as e:
         print(f"[!] Could not stage compliance docs from {repo_name}: {e} (compose continues)")
 
@@ -342,32 +403,82 @@ def _stack_for_legacy_doc(filename):
         return "nextjs"
     return None
 
+def _prune_empty_dirs_up_to(path, stop_dir):
+    """Remove empty directories from `path` upward, stopping (exclusive) at
+    stop_dir. Stops at the first non-empty directory."""
+    stop_dir = os.path.abspath(stop_dir)
+    d = os.path.abspath(path)
+    while d != stop_dir and d.startswith(stop_dir + os.sep):
+        try:
+            os.rmdir(d)
+        except OSError:
+            break
+        d = os.path.dirname(d)
+
+def _cleanup_legacy_composed_docs():
+    """One-time migration of shells composed before the per-stack nesting:
+    the old layout wrote docs to <shell_root>/docs/api/<stack>/ with the
+    manifest at docs/api/.composed_docs.json. Delete exactly the files that
+    old manifest owns (never anything else), drop the old manifest, and prune
+    the directories it emptied - the new compose then writes the same docs to
+    <shell_root>/<stack>/docs/api/."""
+    old_root = os.path.join(PROJECT_ROOT, "docs", "api")
+    old_manifest = os.path.join(old_root, LEGACY_DOCS_MANIFEST_NAME)
+    if not os.path.exists(old_manifest):
+        return
+    try:
+        with open(old_manifest, "r", encoding="utf-8") as f:
+            owned = json.load(f).get("files", [])
+    except Exception:
+        owned = []
+    removed = 0
+    for rel in owned:
+        path = os.path.join(old_root, *rel.split("/"))
+        if os.path.isfile(path):
+            os.remove(path)
+            removed += 1
+    os.remove(old_manifest)
+    for stack in DOC_STACKS:
+        _prune_empty_dirs_up_to(os.path.join(old_root, stack), PROJECT_ROOT)
+    _prune_empty_dirs_up_to(old_root, PROJECT_ROOT)
+    print(f"[*] Migrated composed docs off old docs/api/ layout: removed {removed} old composed doc(s).")
+
 def ensure_docs():
     """Merge every staged SDK repo's compliance docs (see stage_repo_docs)
-    into <shell_root>/docs/api/<stack>/.
+    into <shell_root>/<stack>/docs/api/ - i.e. top-level dart/, frappe/ and
+    nextjs/ directories in the shell holding only docs.
 
     Same ownership idiom as ensure_host_readme()'s marker block, in manifest
-    form: docs/api/.composed_docs.json lists exactly the files the composer
-    wrote, and on each run owned files no longer produced are deleted before
-    the new set is written - so a doc removed upstream disappears from the
-    shell on the next compose. Files the manifest does not list are the
-    host's own and are never touched. Union across repos; the flattened
-    filenames are module-prefixed so collisions are unlikely - on collision,
-    last write wins with a printed warning. Idempotent, and a failure here
-    never fails the compose.
+    form: <shell_root>/.rokct/cache/composed_docs.json lists exactly the
+    files the composer wrote (as paths relative to the shell root), and on
+    each run owned files no longer produced are deleted before the new set is
+    written - so a doc removed upstream disappears from the shell on the next
+    compose. Files the manifest does not list are the host's own and are
+    never touched. Shells composed before this layout are migrated first
+    (see _cleanup_legacy_composed_docs); an interim manifest at
+    .rokct/composed_docs.json (same shell-root-relative format, briefly the
+    manifest home before landing on cache/) is folded into the owned set and
+    deleted. Union across repos; the flattened filenames are module-prefixed
+    so collisions are unlikely - on collision, last write wins with a printed
+    warning. Idempotent, and a failure here never fails the compose.
     """
     stage_root = os.path.join(PROJECT_ROOT, ".rokct", "cache", DOCS_STAGE_DIRNAME)
-    docs_root = os.path.join(PROJECT_ROOT, "docs", "api")
-    manifest_path = os.path.join(docs_root, DOCS_MANIFEST_NAME)
+    manifest_path = os.path.join(PROJECT_ROOT, ".rokct", "cache", DOCS_MANIFEST_NAME)
+    interim_manifest_path = os.path.join(PROJECT_ROOT, ".rokct", DOCS_MANIFEST_NAME)
     try:
-        # Collect the incoming doc set: {"<stack>/<file>.md": staged source}.
+        _cleanup_legacy_composed_docs()
+
+        # Collect the incoming doc set:
+        # {"<stack>/docs/api/<file>.md": staged source}. stage_repo_docs
+        # normalizes every repo layout to <stack>/*.md at staging time; the
+        # flat fallback below only covers stage trees left behind by the
+        # previous composer version.
         incoming = {}
         if os.path.isdir(stage_root):
             for repo_name in sorted(os.listdir(stage_root)):
                 repo_dir = os.path.join(stage_root, repo_name)
                 if not os.path.isdir(repo_dir):
                     continue
-                # Per-stack layout: docs/api/{dart,frappe,nextjs}/*.md
                 for stack in DOC_STACKS:
                     stack_dir = os.path.join(repo_dir, stack)
                     if not os.path.isdir(stack_dir):
@@ -375,12 +486,12 @@ def ensure_docs():
                     for name in sorted(os.listdir(stack_dir)):
                         if not name.endswith(".md"):
                             continue
-                        rel = "%s/%s" % (stack, name)
+                        rel = "%s/docs/api/%s" % (stack, name)
                         if rel in incoming:
                             print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
                         incoming[rel] = os.path.join(stack_dir, name)
-                # Legacy fallback: pre-restructure FLAT docs/api/*.md, mapped
-                # to a stack dir by filename token.
+                # Fallback for stale FLAT stage trees (pre-normalization),
+                # mapped to a stack by filename token.
                 for name in sorted(os.listdir(repo_dir)):
                     path = os.path.join(repo_dir, name)
                     if not os.path.isfile(path) or not name.endswith(".md"):
@@ -389,60 +500,62 @@ def ensure_docs():
                     if not stack:
                         print(f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out.")
                         continue
-                    rel = "%s/%s" % (stack, name)
+                    rel = "%s/docs/api/%s" % (stack, name)
                     if rel in incoming:
                         print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
                     incoming[rel] = path
 
+        # Owned set: the current manifest, plus (once) the interim
+        # .rokct/composed_docs.json - same shell-root-relative format, so its
+        # entries fold straight into stale-removal and its file is dropped.
         owned = []
-        if os.path.exists(manifest_path):
+        for path in (manifest_path, interim_manifest_path):
+            if not os.path.exists(path):
+                continue
             try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
-                    owned = json.load(f).get("files", [])
+                with open(path, "r", encoding="utf-8") as f:
+                    owned.extend(json.load(f).get("files", []))
             except Exception:
-                owned = []
+                pass
+        if os.path.exists(interim_manifest_path):
+            os.remove(interim_manifest_path)
+            print("[*] Migrated interim manifest .rokct/composed_docs.json -> .rokct/cache/composed_docs.json")
 
         # Delete owned files no longer produced. Never touch unowned files.
         removed = 0
         for rel in owned:
             if rel in incoming:
                 continue
-            path = os.path.join(docs_root, *rel.split("/"))
+            path = os.path.join(PROJECT_ROOT, *rel.split("/"))
             if os.path.isfile(path):
                 os.remove(path)
                 removed += 1
-                try:
-                    os.rmdir(os.path.dirname(path))  # prune only-if-empty
-                except OSError:
-                    pass
+                _prune_empty_dirs_up_to(os.path.dirname(path), PROJECT_ROOT)
 
         if not incoming:
             if owned:
                 if os.path.exists(manifest_path):
                     os.remove(manifest_path)
-                try:
-                    os.rmdir(docs_root)  # prune only-if-empty
-                except OSError:
-                    pass
-                print(f"[*] docs/api: removed {removed} stale composed doc(s); no SDK docs staged.")
+                print(f"[*] composed docs: removed {removed} stale composed doc(s); no SDK docs staged.")
             return
 
         written = 0
         for rel in sorted(incoming):
-            dest = os.path.join(docs_root, *rel.split("/"))
+            dest = os.path.join(PROJECT_ROOT, *rel.split("/"))
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             shutil.copy2(incoming[rel], dest)
             written += 1
 
+        os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump({"files": sorted(incoming.keys())}, f, indent=2)
             f.write(NL)
-        summary = f"[*] docs/api: composed {written} SDK compliance doc(s)"
+        summary = f"[*] Composed {written} SDK compliance doc(s) into <stack>/docs/api/"
         if removed:
             summary += f", removed {removed} stale"
         print(summary)
     except Exception as e:
-        print(f"[!] Could not compose SDK docs into docs/api/: {e} (compose continues)")
+        print(f"[!] Could not compose SDK docs: {e} (compose continues)")
 
 def resolve_and_cache_sdks(sdks):
     cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
@@ -501,8 +614,9 @@ def resolve_and_cache_sdks(sdks):
                 print(f"[!] Failed to clone {git_url}: {e}")
                 sys.exit(1)
 
-        # Stage this repo's compliance docs (repo-root docs/api/) while the
-        # repo is on disk - once per unique repo, never fatal on failure.
+        # Stage this repo's compliance docs (per-stack <module>/<stack>/docs/
+        # api/, plus legacy layouts) while the repo is on disk - once per
+        # unique repo, never fatal on failure.
         stage_repo_docs(repo_source_dir, repo_name, cache_base)
 
         # Extract each SDK
