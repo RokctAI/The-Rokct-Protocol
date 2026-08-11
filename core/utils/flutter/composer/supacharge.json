@@ -149,6 +149,15 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
       "ref": "main"
+    },
+    {
+      "name": "desktop_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/desktop/dart",
+      "ref": "main",
+      "_comment": "Native desktop runner scaffolding for Windows builds. The SDK's app_type.supacharge block installs windows/ into the host with ${package}-parameterized naming (supacharge.exe, CMake project name, window title, exe metadata). Supacharge's repo already carries its own windows/ tree - the historical source of these templates - which the installer's host-file guard leaves untouched. The build_windows CI flag stays host-side in supacharge (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors manager.json/pos.json."
     }
   ],
   "host_routes": [
