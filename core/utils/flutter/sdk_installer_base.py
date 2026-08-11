@@ -309,6 +309,8 @@ def install_sdk_files_and_routes(sdk_name):
     onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get("onboarding_slides", [])
     registration_steps = manifest.get("registration_steps", []) + flavor_block.get("registration_steps", [])
     embedded_widgets = manifest.get("embedded_widgets", []) + flavor_block.get("embedded_widgets", [])
+    di_hooks = manifest.get("di_hooks", []) + flavor_block.get("di_hooks", [])
+    boot_hooks = manifest.get("boot_hooks", []) + flavor_block.get("boot_hooks", [])
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
@@ -318,6 +320,8 @@ def install_sdk_files_and_routes(sdk_name):
     package_state["onboarding_slides"] = onboarding_slides
     package_state["registration_steps"] = registration_steps
     package_state["embedded_widgets"] = embedded_widgets
+    package_state["di_hooks"] = di_hooks
+    package_state["boot_hooks"] = boot_hooks
 
     # Extract and store this SDK's brand hook: the one pre-frame call that
     # injects the app's brand palette into the shared AppStyle tokens (the
@@ -529,6 +533,8 @@ def install_sdk_files_and_routes(sdk_name):
     update_session_policy()
     update_embedded_widgets()
     update_brand_hook()
+    update_di_hooks()
+    update_boot_hooks()
     update_wiring_imports()
     return True
 
@@ -1550,11 +1556,129 @@ def update_brand_hook():
             f.write(new_content)
         print(f"[*] Injected brand hook from {', '.join(sorted(declared)) or 'no SDK'} into main.dart")
 
+def _update_main_hooks(state_key, marker, label):
+    """Shared engine for update_di_hooks()/update_boot_hooks(): regenerates
+    ONE marker-owned block in main.dart from every installed SDK's
+    manifest.json list named `state_key` — the exact same composition
+    pattern update_registration_steps() applies to auth_sdk's shell, aimed
+    at main() instead of a route shell.
+
+    Entry schema (identical for both keys, flavor-gatable under an
+    "app_type" block like every other manifest list):
+
+        {"id": "<unique across SDKs>",
+         "order": <int, optional, default 0>,
+         "body": "<Dart statements, injected verbatim>",
+         "imports": ["<FULL import lines, ${package} substituted>", ...]}
+
+    Each entry is keyed by "id" (a duplicate id is skipped with a loud
+    warning naming both SDKs, like app_routes' duplicate methods) and
+    sequenced by its integer "order" field. Two entries declaring the SAME
+    order is surfaced with a warning, then both are kept and tie-broken
+    deterministically by id — sequencing must be stable across recomposes,
+    and dropping a hook silently would be worse than a suboptimal order.
+    "body" is injected verbatim (statement lines, not an expression — no
+    comma handling); its optional "imports" list ships FULL import lines
+    that land in the @generated-wiring-imports block via
+    update_wiring_imports(), same as app_routes/embedded_widgets/brand_hook.
+
+    A removed SDK's hooks vanish on the next regeneration — the block is
+    rebuilt from full state every run. Older host main.dart files predating
+    the markers get a printed notice and no changes; this only rewrites the
+    marker block.
+    """
+    if not os.path.exists(MAIN_FILE):
+        return
+
+    state = load_state()
+    hooks = []
+    seen_ids = {}
+    for pkg_name, pkg_data in state.get("packages", {}).items():
+        for h in pkg_data.get(state_key, []):
+            hook_id = h.get("id")
+            body = h.get("body")
+            if not hook_id or not body:
+                continue
+            if hook_id in seen_ids:
+                print(f"  [!] {state_key}: '{hook_id}' already provided by {seen_ids[hook_id]}, skipping {pkg_name}'s")
+                continue
+            seen_ids[hook_id] = pkg_name
+            try:
+                order = int(h.get("order", 0))
+            except (TypeError, ValueError):
+                order = 0
+            hooks.append((order, hook_id, pkg_name, body))
+
+    # Surface order collisions instead of silently picking: keep every hook,
+    # warn, and tie-break deterministically by id (already the sort key).
+    orders_seen = {}
+    for order, hook_id, pkg_name, _ in hooks:
+        orders_seen.setdefault(order, []).append((hook_id, pkg_name))
+    for order, entries in sorted(orders_seen.items()):
+        if len(entries) > 1:
+            listing = ", ".join(f"'{hid}' ({pkg})" for hid, pkg in sorted(entries))
+            print(f"  [!] {state_key}: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+
+    hooks.sort(key=lambda t: (t[0], t[1]))
+
+    hook_blocks = []
+    for order, hook_id, pkg_name, body in hooks:
+        lines = [f"  // {hook_id} (order {order}, from {pkg_name})"]
+        for line in body.splitlines():
+            lines.append(f"  {line}" if line.strip() else "")
+        hook_blocks.append("\n".join(lines))
+    hooks_block = "\n".join(hook_blocks)
+
+    with open(MAIN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if f"// {marker}-start" not in content:
+        print(f"  [i] main.dart has no @{marker.lstrip('@')} markers (older host template) - skipping {label} injection")
+        return
+
+    replacement = f"  // {marker}-start\n{hooks_block}\n  // {marker}-end"
+    new_content = re.sub(
+        rf"  // {re.escape(marker)}-start.*?// {re.escape(marker)}-end",
+        lambda _: replacement,
+        content,
+        flags=re.DOTALL,
+    )
+
+    if new_content != content:
+        with open(MAIN_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Injected {len(hooks)} {label}(s) into main.dart")
+
+def update_di_hooks():
+    """Injects SDK-declared DI statements into main.dart's
+    @generated-di-hooks block (directly AFTER the @generated-sdk-di block,
+    so hook bodies can resolve anything the *SdkDependencies.register calls
+    just registered — base_sdk singletons included). Declared per-SDK as
+    manifest.json "di_hooks", normally inside an app_type flavor block:
+    e.g. orders_sdk's manager block registers its role DI
+    (ManagerOrdersDependencies.register) and the ADR-005 facade adapters
+    living in its OWN installed orders_adapters.dart (host-composition code,
+    reachable via ${package} imports). See _update_main_hooks for the entry
+    schema and conflict semantics."""
+    _update_main_hooks("di_hooks", "@generated-di-hooks", "DI hook")
+
+def update_boot_hooks():
+    """Injects SDK-declared boot statements into main.dart's
+    @generated-boot-hooks block (at the TOP of main(), right after
+    WidgetsFlutterBinding.ensureInitialized() and before the brand hook —
+    this generalizes brand_hook, which stays as-is for the one brand call).
+    Declared per-SDK as manifest.json "boot_hooks": e.g. comms_sdk (push
+    owner) declares the Firebase/FCM boot, a splash-holding app declares
+    FlutterNativeSplash.preserve. Bodies may await — the template's main()
+    is async. See _update_main_hooks for the entry schema and conflict
+    semantics."""
+    _update_main_hooks("boot_hooks", "@generated-boot-hooks", "boot hook")
+
 def update_wiring_imports():
     """Regenerates main.dart's @generated-wiring-imports block (directly
     below the @generated-sdk-imports block) from the optional "imports"
-    lists of every installed SDK's app_routes, embedded_widgets and
-    brand_hook declarations. Each entry ships FULL import lines (e.g.
+    lists of every installed SDK's app_routes, embedded_widgets,
+    brand_hook, di_hooks and boot_hooks declarations. Each entry ships FULL import lines (e.g.
     "import 'package:${package}/presentation/routes/app_router.dart';",
     ${package} substituted here) so the symbols its injected body references
     resolve in a fully generated main.dart without hand-written imports.
@@ -1573,6 +1697,8 @@ def update_wiring_imports():
     for pkg_name, pkg_data in state.get("packages", {}).items():
         wiring_entries = list(pkg_data.get("app_routes", []))
         wiring_entries += pkg_data.get("embedded_widgets", [])
+        wiring_entries += pkg_data.get("di_hooks", [])
+        wiring_entries += pkg_data.get("boot_hooks", [])
         if pkg_data.get("brand_hook"):
             wiring_entries.append(pkg_data["brand_hook"])
         for entry in wiring_entries:
@@ -1613,4 +1739,6 @@ if __name__ == "__main__":
     update_session_policy()
     update_embedded_widgets()
     update_brand_hook()
+    update_di_hooks()
+    update_boot_hooks()
     update_wiring_imports()
