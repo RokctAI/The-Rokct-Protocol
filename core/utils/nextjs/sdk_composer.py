@@ -295,7 +295,7 @@ def collect_post_install_checklist(sdks_to_install):
         # Same flavor_block merge as install_sdk_files(): role-scoped
         # requires/integrations only count when the persona matches this
         # host's own role marker.
-        flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+        flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
 
         for req in list(manifest.get("requires", [])) + list(flavor_block.get("requires", [])):
             if not os.path.exists(os.path.join(PROJECT_ROOT, req)):
@@ -338,11 +338,23 @@ def run_npm_install():
     if not os.path.exists(os.path.join(PROJECT_ROOT, "package.json")):
         return
     print("\n[*] Running npm install...")
-    result = subprocess.run(["npm", "install"], cwd=PROJECT_ROOT, shell=True)
+    # Pass the command as a STRING with shell=True rather than a list. A list
+    # argv with shell=True silently no-ops the arguments on POSIX
+    # (subprocess runs `sh -c "npm" install ...`, so `install` is dropped and
+    # npm just prints its usage banner), meaning dependencies were never
+    # installed while the composer reported success. A string command runs
+    # correctly on both POSIX (`sh -c "npm install"`) and Windows
+    # (`cmd /c "npm install"`, which resolves the npm.cmd shim). The command
+    # is a fixed literal with no interpolation, so there is nothing to inject.
+    result = subprocess.run("npm install", cwd=PROJECT_ROOT, shell=True)
     if result.returncode == 0:
         print("[+] npm install completed successfully.")
     else:
-        print(f"[!] npm install failed (exit {result.returncode}). Check output above.")
+        # Hard-fail loudly (consistent with the clone-failure direction of
+        # #167): a swallowed npm failure produced an app whose dependencies
+        # were missing but whose compose exited 0.
+        print(f"[!] npm install failed (exit {result.returncode}). Aborting composition.")
+        sys.exit(1)
 
 
 def main():

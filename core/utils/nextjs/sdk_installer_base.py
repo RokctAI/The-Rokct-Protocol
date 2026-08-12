@@ -166,7 +166,7 @@ def install_sdk_files(sdk_name):
     # installer (core/utils/flutter/sdk_installer_base.py), applied to the
     # Next.js manifest schema.
     current_app_type = resolve_app_type()
-    flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+    flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
 
     version = manifest.get("version", "1.0.0")
     installs = manifest.get("installs", []) + flavor_block.get("installs", [])

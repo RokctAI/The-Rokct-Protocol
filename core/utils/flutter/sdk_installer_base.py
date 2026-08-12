@@ -104,10 +104,24 @@ def initialize_flutter_project():
 
     package_name = get_project_package_name()
     print(f"[*] Project not initialized. Running 'flutter create' as {package_name}...")
+    # Validate the package name before it is interpolated into a shell string.
+    # Dart package names are lowercase snake_case identifiers, so a strict
+    # identifier regex both matches every legitimate name and neutralizes shell
+    # metacharacters (the command is run with shell=True below so `flutter` on
+    # Windows resolves the flutter.bat shim).
+    if not re.match(r"^[a-z][a-z0-9_]*$", package_name):
+        print(f"[-] Critical Error: invalid package name '{package_name}'. "
+              f"Expected a lowercase snake_case Dart package name; refusing to run 'flutter create'.")
+        return
     try:
-        # Run flutter create in the current directory
+        # Run flutter create in the current directory. Pass the command as a
+        # STRING with shell=True, not a list: a list argv with shell=True
+        # silently drops every argument on POSIX (subprocess runs
+        # `sh -c "flutter"`, so `create --project-name ... .` is lost),
+        # scaffolding nothing while reporting success. A string command runs
+        # correctly on POSIX and Windows alike.
         # --project-name ensures the internal package name is correct
-        subprocess.run(["flutter", "create", "--project-name", package_name, "."], check=True, shell=True)
+        subprocess.run(f"flutter create --project-name {package_name} .", check=True, shell=True)
         global FRESH_SCAFFOLD
         FRESH_SCAFFOLD = True
     except subprocess.CalledProcessError as e:
@@ -300,7 +314,7 @@ def install_sdk_files_and_routes(sdk_name):
     # tenant/control split on the Frappe composer side, applied here via
     # manifest content instead of separate on-disk folders.
     current_app_type = resolve_app_type()
-    flavor_block = manifest.get("app_type", {}).get(current_app_type, {}) if current_app_type else {}
+    flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
 
     version = manifest.get("version", "1.0.0")
     installs = manifest.get("installs", []) + flavor_block.get("installs", [])
