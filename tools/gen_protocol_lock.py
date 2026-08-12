@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Licensed under the MIT License.
+# Copyright 2024 RokctAI
 """Generate protocol.lock.json and rewrite the embedded pin constants.
 
 The protocol fetches parts of its own repository at runtime (skill wrappers,
@@ -38,6 +40,8 @@ LOCKFILE_NAME = "protocol.lock.json"
 _DELEGATES = "core/utils/agent_deligation"
 _ENGINE = "core/utils/startup_os"
 _SCRIPTS = "core/skills/agent_delegation/scripts"
+_OPPORTUNITIES = "core/utils/opportunities"
+_OPP_SCRIPTS = "core/skills/.rok/opportunities_registry/scripts"
 
 # Must match ENGINE_MODULES in core/skills/.rok/startup_os/scripts/_bootstrap.py.
 ENGINE_MODULES = (
@@ -53,6 +57,36 @@ ENGINE_MODULES = (
     "schemas.py",
     "compiler.py",
     "agent_bridge.py",
+)
+
+# Every backend file the opportunities_registry wrappers extract from the
+# pinned repository archive into their cache. The wrappers pull the whole
+# directory, and any extracted .py can be executed or imported by a sibling,
+# so every file is pinned. Relative to _OPPORTUNITIES.
+OPPORTUNITIES_FILES = (
+    "check_links.py",
+    "ci/check_links.py",
+    "eeip/discover_eeip.py",
+    "equity/discover_sources.py",
+    "equity/equity_sync.py",
+    "equity/funder_finder.py",
+    "equity/funder_manager.py",
+    "equity/verify_sources.py",
+    "grants/scrapers/f4c.py",
+    "maintenance/index.py",
+    "registry_orchestrator/healers.py",
+    "registry_orchestrator/index.py",
+    "registry_orchestrator/scanners.py",
+    "registry_orchestrator/send_registry_emails.py",
+    "registry_orchestrator/updaters.py",
+    "response_kits/index.py",
+    "tenders/api/ocds.py",
+    "tenders/enrichment/extract_requirements.py",
+    "tenders/enrichment/pdf_to_md.py",
+    "tenders/index.py",
+    "tenders/scrapers/musina.py",
+    "tenders/scrapers/test_musina_dates.py",
+    "tenders/utils/tender_resolver.py",
 )
 
 # Every repository path that is fetched at runtime and executed (or installed
@@ -72,7 +106,7 @@ LOCK_TARGETS = (
     "profiles/local/initiate.py",
     "profiles/web/initiate.py",
     "workflows/maintenance.yml",
-)
+) + tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
 
 # The 12 scaffold wrappers that share a byte-identical resolve_delegate().
 _WRAPPER_TARGETS = {
@@ -136,6 +170,16 @@ CONSUMERS.update({
         ("sha", "$InitiateSha256Local", "profiles/local/initiate.py"),
         ("sha", "$InitiateSha256Web", "profiles/web/initiate.py")],
 })
+
+# The 22 opportunities_registry wrappers: byte-identical copies of one file,
+# each mirroring a backend script's path and carrying the full EXPECTED_SHA256
+# dict for the archive extraction it verifies.
+_OPP_TARGETS = tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
+for _p in OPPORTUNITIES_FILES:
+    if _p == "tenders/scrapers/test_musina_dates.py":
+        continue  # extracted and pinned with the rest, but has no wrapper
+    CONSUMERS[f"{_OPP_SCRIPTS}/{_p}"] = [
+        ("ref",), ("dict", "EXPECTED_SHA256", _OPP_TARGETS)]
 
 
 def ref_pattern(path):
