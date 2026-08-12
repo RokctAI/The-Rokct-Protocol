@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol: compose.py wrapper for Flutter
-Fetches sdk_composer.py and sdk_installer_base.py from GitHub, executes composer locally.
+Fetches sdk_composer.py and sdk_installer_base.py from GitHub pinned to
+PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 """
-import os, sys, subprocess, tempfile, urllib.request
+import hashlib, os, sys, subprocess, tempfile, urllib.request
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+PROTOCOL_REF    = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
 COMPOSER_PATH   = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+EXPECTED_SHA256 = {
+    "core/utils/flutter/sdk_composer.py": "95e212ccdca24657c4dbeebacaa9436729fa3ba1c4fed5cc17c70b85a9a46c41",
+    "core/utils/flutter/sdk_installer_base.py": "65b49d2fe5a0d5681df83e0bda6855f3b53ec0e76c88da059dd3a96786c652de",
+}
 
 
 def fetch_script(path):
@@ -15,17 +22,25 @@ def fetch_script(path):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"})
         with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status == 200:
-                return resp.read().decode("utf-8")
+            if resp.status != 200:
+                return None
+            data = resp.read()
     except Exception:
-        pass
-    return None
+        return None
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != EXPECTED_SHA256[path]:
+        print(f"[compose] Integrity check failed for {path} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(f"[compose]   expected sha256 {EXPECTED_SHA256[path]}", file=sys.stderr)
+        print(f"[compose]   actual   sha256 {digest}", file=sys.stderr)
+        print("[compose] Refusing to execute unverified code.", file=sys.stderr)
+        sys.exit(1)
+    return data.decode("utf-8")
 
 
 def main():
     composer_code = fetch_script(COMPOSER_PATH)
     installer_base_code = fetch_script(INSTALLER_BASE_PATH)
-    
+
     if not composer_code or not installer_base_code:
         print("Error: Flutter composer scripts not found on GitHub.", file=sys.stderr)
         sys.exit(1)
@@ -42,7 +57,7 @@ def main():
 
     with open(tmp_composer, "w", encoding="utf-8") as f:
         f.write(composer_code)
-        
+
     # Always overwrite with the freshly-fetched copy: a stale local file left
     # over from a prior run must never shadow fixes pushed to GitHub.
     with open(tmp_installer_base, "w", encoding="utf-8") as f:
