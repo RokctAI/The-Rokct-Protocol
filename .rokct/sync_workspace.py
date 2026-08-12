@@ -16,7 +16,7 @@ CONFIG_PATH = os.path.join(ROKCT_DIR, ".workspace_config.json")
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # maintenance.yml is installed as a GitHub workflow (i.e. it is code), so the
 # fetch is pinned to a commit and SHA-256 verified before it is written.
-PROTOCOL_REF = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+PROTOCOL_REF = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
 MAINTENANCE_PATH = "workflows/maintenance.yml"
 MAINTENANCE_SHA256 = "3826ea73fee8b939c0798ae65173fb0ff6dd188758e4564b51373019bc7a7716"
 MAINTENANCE_URL = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}/{MAINTENANCE_PATH}"

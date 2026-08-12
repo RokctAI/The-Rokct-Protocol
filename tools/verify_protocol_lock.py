@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Licensed under the MIT License.
+# Copyright 2024 RokctAI
 """Verify protocol.lock.json against the embedded pins and the pinned source.
 
 Modes:
