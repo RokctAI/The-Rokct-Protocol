@@ -5,7 +5,10 @@ import shutil
 import subprocess
 import hashlib
 import json
+import time
 import urllib.request
+import urllib.error
+import http.client
 
 import io
 import zipfile
@@ -58,16 +61,42 @@ def verify_pinned(rel_posix, data):
         print("[init] Refusing to install unverified code.", file=sys.stderr)
         sys.exit(1)
 
+# Bounded retry for transient network failures (connection resets, timeouts,
+# 429/5xx): 4 attempts with 2s/4s/8s backoff. Definitive HTTP errors such as
+# 404 or 401/403 still fail fast - retrying cannot fix those.
+FETCH_ATTEMPTS = 4
+TRANSIENT_HTTP_CODES = (429, 500, 502, 503, 504)
+
+def fetch_url(url):
+    """GET url, retrying transient errors; raises the last error when out of
+    attempts (with e.fetch_attempts set so callers can report the count)."""
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code not in TRANSIENT_HTTP_CODES or attempt == FETCH_ATTEMPTS:
+                e.fetch_attempts = attempt
+                raise
+            err = e
+        except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError) as e:
+            if attempt == FETCH_ATTEMPTS:
+                e.fetch_attempts = attempt
+                raise
+            err = e
+        delay = 2 ** attempt
+        print(f"[init] Transient error fetching {url} (attempt {attempt}/{FETCH_ATTEMPTS}): {err} - retrying in {delay}s", file=sys.stderr)
+        time.sleep(delay)
+
 def fetch_from_github(rel_path, dest_path):
     rel_posix = rel_path.replace(os.sep, "/")
     url = f"{GITHUB_RAW_BASE}/{rel_posix}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = r.read()
+        data = fetch_url(url)
     except Exception as e:
-        print(f"[init] Failed to fetch {rel_path}: {e}", file=sys.stderr)
+        print(f"[init] Failed to fetch {rel_path} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}", file=sys.stderr)
         sys.exit(1)
     verify_pinned(rel_posix, data)
     with open(dest_path, "wb") as f:
@@ -99,9 +128,7 @@ def copy_versioned(src_rel, dst_abs):
             manifest = json.load(mf)
     else:
         try:
-            req = urllib.request.Request(f"{GITHUB_RAW_BASE}/core/templates/manifest.json", headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-            with urllib.request.urlopen(req, timeout=10) as r:
-                manifest = json.loads(r.read().decode())
+            manifest = json.loads(fetch_url(f"{GITHUB_RAW_BASE}/core/templates/manifest.json").decode())
         except Exception:
             manifest = {}
     entry = manifest.get("files", {}).get(src_rel.split("core/templates/")[-1] if "core/templates/" in src_rel else src_rel.split("profiles/local/")[-1])
@@ -139,9 +166,7 @@ def fetch_dir_from_github(rel_src, dst):
     prefix = f"{GITHUB_ZIP_PREFIX}/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
-        req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            z = zipfile.ZipFile(io.BytesIO(r.read()))
+        z = zipfile.ZipFile(io.BytesIO(fetch_url(GITHUB_ZIP_BASE)))
         os.makedirs(dst, exist_ok=True)
         count = 0
         for name in z.namelist():
@@ -158,7 +183,7 @@ def fetch_dir_from_github(rel_src, dst):
                 count += 1
         print(f"[init] Fetched {count} files from {rel_src}")
     except Exception as e:
-        print(f"[init] Failed to fetch directory {rel_src}: {e}", file=sys.stderr)
+        print(f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}", file=sys.stderr)
 
 def main():
     check_for_update()
