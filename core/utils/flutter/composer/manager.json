@@ -190,5 +190,7 @@
       "ref": "main",
       "_comment": "Manager merchant delivery-zone page, declared under app_type.manager. Shared with driver.json, which takes the app_type.driver page from the same manifest."
     }
-  ]
+  ],
+  "host_routes": [],
+  "_host_routes_comment": "Deliberately empty, declared explicitly (supacharge precedent): paas_manager tracks NO router copy after migration M5 - compose generates app_router.dart wholly from base_sdk's template plus each installed SDK's manifest routes. Every former host-owned route migrated to an SDK manifest (auth_sdk's login/register/reset, comms_sdk's /list-notification; the /view_map + /search_map host map pages were deleted, decision D5). Anything ADR-005-shaped a future manager feature needs goes HERE as data, never back into a tracked router file."
 }
