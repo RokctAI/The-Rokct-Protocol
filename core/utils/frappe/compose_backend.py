@@ -16,11 +16,13 @@ COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name
 # "x'; import os; os.system('id') #" used to land verbatim in hooks.py).
 # Values are also embedded with repr()/!r for defense in depth.
 #   - "dotted": a Python import path (handler / method / class path)
-#   - "doctype": a frappe DocType name (word chars, spaces, hyphens)
+#   - "doctype": a frappe DocType name (word chars, spaces, hyphens), or the
+#     literal "*" wildcard frappe accepts for doc_events registered against
+#     every doctype (e.g. core/telemetry's trace-context injector).
 #   - "event": a doc_event / scheduler bucket name (word chars)
 _HOOK_VALUE_PATTERNS = {
     "dotted": re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"),
-    "doctype": re.compile(r"^[\w \-]+$"),
+    "doctype": re.compile(r"^(\*|[\w \-]+)$"),
     "event": re.compile(r"^\w+$"),
 }
 
@@ -537,6 +539,16 @@ def merge_commands(target_app_path, app_name, compiled_manifests):
     lines.append("commands = globals().get('commands', [])")
     for idx, (cmd_path, module_name) in enumerate(entries):
         module_path, attr = cmd_path.rsplit(".", 1)
+        # These land inside a generated import STATEMENT
+        # (`from {module_path} import {attr} as ...`), so repr() can't quote
+        # them defensively the way it does for the merge_hooks assignments.
+        # Strict dotted-path / identifier validation is the only guard: the
+        # "dotted" pattern forbids newlines, semicolons, spaces, '#', etc.,
+        # so a crafted `hooks.commands` value can't smuggle extra statements
+        # into commands.py. Validated after {app_name} substitution, matching
+        # merge_hooks' ordering, and aborts loudly naming module + hook.
+        _validate_hook_value(module_path, "dotted", module_name, "commands")
+        _validate_hook_value(attr, "dotted", module_name, "commands")
         alias = f"_sdk_command_{idx}"
         lines.append(f"# --- Module: {module_name} ---")
         lines.append(f"from {module_path} import {attr} as {alias}")
