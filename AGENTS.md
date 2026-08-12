@@ -2,6 +2,8 @@
 
 Hello, Agent.
 
+> Building or modifying an SDK, app shell, or composer manifest? Read `SDK_ECOSYSTEM.md` first.
+
 This repository is your **Single Source of Truth (SSO)**. It defines the Standard.
 Your **State** (Memory) lives locally in the project's `.rokct/` folder.
 
