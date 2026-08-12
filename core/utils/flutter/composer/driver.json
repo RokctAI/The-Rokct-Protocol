@@ -16,12 +16,11 @@
     {
       "name": "auth_sdk",
       "enabled": true,
-      "skip_install": true,
       "source": "git",
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
-      "_comment": "Composed for its library (DI, offline users table) but install.py is skipped: the driver app keeps auth pages host-owned, and its own login page already generates LoginRoute - installing the SDK's route shells would duplicate the name."
+      "_comment": "Fully installed (skip_install lifted, plan M3, mirrors manager.json): auth_sdk is the source of truth for auth. Its route shells generate LoginRoute/RegisterRoute/etc. - the host's own auth pages are deleted in the same commit, so there is no duplicate-route collision. delivery_sdk's app_type.driver session_policy (deliveryman -> /home, '*' fallback -> /become-driver keeping the session) gates login via the installed auth_session_policy.dart shell."
     },
     {
       "name": "users_sdk",
