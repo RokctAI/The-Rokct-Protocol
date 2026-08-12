@@ -1,0 +1,268 @@
+# RokctAI SDK Ecosystem
+
+Audience: an AI coding agent about to create or modify an SDK. Read this before
+touching any SDK, app shell, or composer file. Every claim below is backed by a
+file in this repo or a sibling RokctAI repo; paths are repo-relative.
+
+## Mental model
+
+Apps are thin shells composed from SDKs. Each app repo (e.g. `supacharge` — a
+live-session tutoring platform, `paas_manager`, `paas_driver`) tracks almost no
+Dart code: its `lib/` is regenerated on every compose from the SDKs listed in
+its root `composer.json`. The SDKs themselves live in multi-SDK monorepos
+(`core`, `zones`, `commerce`, `Users`, `pay`, `productivity`, `agent`). This
+repo — The-Rokct-Protocol — hosts the composer toolchain
+(`core/utils/flutter/sdk_composer.py`, `core/utils/flutter/sdk_installer_base.py`,
+`core/utils/frappe/compose_backend.py`, `core/utils/nextjs/`), the canonical
+per-app composer manifest templates (`core/utils/flutter/composer/*.json`), and
+the pin lockfile (`protocol.lock.json`). CI is centralized in
+`rokctai/shared-workflows` as reusable `universal-*` workflows that app repos
+call with thin caller files.
+
+## Where the deeper docs live
+
+This file is the map, not the whole territory. The per-platform authoring
+guides are:
+
+| Topic | Doc |
+|---|---|
+| Dart SDK authoring (DDD layout, ADR-005 imports, offline doctrine) | `SDK_README.md` at the root of the `agent` repo |
+| Next.js SDKs (manifest schema, installer, `install.py`) | `core/utils/nextjs/README.md` (this repo) |
+| Frappe backend SDKs (manifest, hooks, `{app_name}` token) | `core/utils/frappe/frappe_sdk_management.md` (this repo) |
+| Composer app-manifest templates | `core/utils/flutter/composer/README.md` (this repo) |
+| Full de facto Dart manifest schema | docstrings in `core/utils/flutter/sdk_installer_base.py` (this repo) — each `update_*()` function documents one manifest key, including entry shapes and conflict semantics |
+| Lockfile / pinning procedure | `tools/README.md` (this repo) |
+
+## SDK repo layout
+
+SDK repos are multi-SDK monorepos. Each SDK is one directory with three
+platform subdirectories:
+
+```text
+<repo>/<sdk>/dart/      # Flutter package: pubspec.yaml + manifest.json + lib/ + templates/
+<repo>/<sdk>/frappe/    # Python backend: manifest.json + src/ (+ doctype/)
+<repo>/<sdk>/nextjs/    # web mirror (mostly placeholders today)
+```
+
+- `dart/manifest.json` is the **authoritative** source of the SDK's version and
+  all its declarations. The `version` in `dart/pubspec.yaml` is frequently
+  stale — when they disagree, the manifest wins.
+- `dart/templates/` holds files copied into the host app at compose time via
+  the manifest's `installs` list.
+- The Frappe side has its own smaller `frappe/manifest.json`
+  (`hooks.whitelisted_methods`, `fixtures`, `doc_events`, with `{app_name}`
+  placeholders); see `core/utils/frappe/frappe_sdk_management.md`.
+- A root `.relation` file (JSON) in each SDK repo maps cross-repo dependencies:
+  entries `{git, dart, frappe, public, ref, note}` pointing at sibling repos'
+  SDK paths.
+- Per-SDK `CHANGELOG.md` files track the manifest version.
+
+## Dart SDK manifest keys (`<sdk>/dart/manifest.json`)
+
+One line each; the authoritative semantics are the matching `update_*()`
+docstrings in `core/utils/flutter/sdk_installer_base.py`.
+
+| Key | Meaning |
+|---|---|
+| `name` | SDK package name (matches the Dart package). |
+| `version` | Authoritative semver — bump it in the same commit as any change. |
+| `installs` | `[{from, to}]` — copies `templates/` files into the host app's `lib/`. |
+| `routes` | `[{path, page, type, import}]` — auto_route entries injected into the generated `app_router.dart`; `import` uses the `${package}` placeholder. |
+| `app_routes` | `[{method, body, imports}]` — `AppRoutes.I` method implementations injected into `main.dart`'s `_HostAppRoutes` block; `body` is Dart **statements** (e.g. `"context.router.replace(LauncherHomeRoute());"`). Duplicate methods: first SDK wins, others skipped with a warning. |
+| `home_sdk` | This SDK provides the app's entry widget/home page (one per app). |
+| `app_type` | Per-persona flavor blocks (`customer`/`driver`/`manager`/`pos`/...) mirroring the top-level keys; selected by the host's `.rokct/config/app_type`; flavor block wins over top level. |
+| `session_policy` | `{allowed_roles: [{role, landing_route}], rejection_route, rejection_message_tr_key}` — post-login role gating consumed by auth_sdk's installed shell. Role `"*"` admits any authenticated account as fallback. **At most ONE installed SDK may declare it — two declarers is a hard error** (`update_session_policy()`). |
+| `boot_hooks` | Dart statements injected at the top of `main()` (may `await`), e.g. Firebase/FCM boot. |
+| `di_hooks` | DI registration statements injected into `main.dart` (e.g. role dependency + ADR-005 adapter wiring). |
+| `embedded_widgets` | Widget-provider methods injected into the host; **duplicate method name = first SDK wins, loud warning** (`update_embedded_widgets()`). |
+| `brand_hook` | The app's brand/theming boot call. **At most ONE declarer — the installer raises a hard error on conflict** (`update_brand_hook()`). |
+| `database` | `{tables, migration}` — Drift table registration + schema migration steps injected into the central `AppDatabase`. |
+| `integrations` | Marker/placeholder text injections into other SDKs' installed files (plain substring replace on a `// @marker` line). |
+| `registration_steps` | RegistrationStep entries injected into auth_sdk's registration-steps shell. |
+| `onboarding_slides` | OnboardingSlide entries injected into onboarding_sdk's shell (unique `id`, integer `order`). |
+| `tr_keys` | Translation-key constants injected into base's `tr_keys.dart` marker block. |
+| `app_assets` | Asset directory entries added to the host `pubspec.yaml` `flutter: assets:` block. |
+| `asset_keys` | `AppAssets` constants injected into base's `app_assets.dart` (first declaration wins on collision). |
+
+Hook/route entries may carry an `imports` list of FULL import lines
+(`${package}` substituted) that land in `main.dart`'s
+`@generated-wiring-imports` block (`update_wiring_imports()`).
+
+## App composition
+
+An app repo commits exactly three composition inputs:
+
+1. Root `composer.json` — the app manifest (`"name": "rokctapp_composer"`),
+   with an `sdks[]` array of `{name, enabled, source: "git", git, path, ref}`
+   entries (plus optional `home_sdk: true` on exactly one entry,
+   `skip_install`, `_comment`), and optionally `host_routes` (routes whose
+   pages import multiple SDKs and therefore cannot live inside any one SDK).
+2. `.rokct/initiate.py` — bootstraps the protocol toolchain from this repo
+   at runtime.
+3. `.rokct/config/app_type` — a one-line persona name (`supacharge`,
+   `manager`, `driver`, ...) that selects the manifest flavor blocks.
+
+To recompose:
+
+```sh
+python3 .rokct/initiate.py                          # provisions the composer under .rokct/skills/
+python3 .rokct/skills/.rok/flutter/scripts/compose.py
+```
+
+Rules:
+
+- **Never commit the provisioned toolchain** (`.rokct/skills/`, which contains
+  `compose.py` and the fetched `sdk_installer_base.py`). It is
+  session-ephemeral by design: `initiate.py` writes `skills/` into
+  `.rokct/.gitignore` and `.rokct/end_protocol.py` wipes it.
+- **Apps track zero `lib/` files.** All of `lib/` — `main.dart` included — is
+  generated by compose and gitignored. Anything app-specific lives in tracked
+  manifests (`app_routes` in SDK manifests, `host_routes` in `composer.json`),
+  never in `lib/`. If you move code from an app into an SDK, you must
+  `git rm` the app's copies — gitignore does not untrack already-tracked files.
+- The **canonical** composer manifests are the templates in
+  `core/utils/flutter/composer/*.json` in this repo. CI
+  (`shared-workflows/.github/workflows/universal-flutter-build.yml`) overwrites
+  the app's committed `composer.json` with the template matching its
+  `.rokct/config/app_type` before composing. So a change to an app's SDK list
+  goes to the protocol template — editing only the app's committed copy will be
+  clobbered.
+
+## Versioning and propagation
+
+- Bump the SDK's `dart/manifest.json` semver **in the same commit** as the
+  change, and update the SDK's `CHANGELOG.md`.
+- `shared-workflows/.github/workflows/sdk-bump-poller.yml` (cron, every 10
+  minutes) auto-discovers app shells as any org repo whose root
+  `composer.json` has a non-empty `sdks[]` array, reads every
+  `*/dart/manifest.json` version in the SDK repos those shells reference,
+  diffs against saved state, and dispatches the dependent shells' `build.yml`
+  on any version change. **No per-repo hookup files are needed** — discovery
+  is fully automatic.
+- Shells always consume SDKs at `ref: "main"` (see the composer templates), so
+  a merged SDK change plus a manifest version bump is all it takes to
+  propagate.
+
+## Pinning / lockfile (`protocol.lock.json`)
+
+This repo's runtime-fetched-and-executed files are pinned. See
+`tools/README.md` for the full procedure; the short version:
+
+- `protocol.lock.json` (repo root) records one commit `ref` plus the SHA-256
+  of every fetched-and-executed file at that commit. Consumers embed the same
+  pins as constants and verify every download before executing; mismatch
+  aborts with exit 1, no unverified fallback.
+- Bump flow: merge the change →
+  `python tools/gen_protocol_lock.py --ref origin/main` (rewrites the lockfile
+  AND every embedded constant in one shot) → merge the resulting lock-bump PR.
+  CI verifies via `.github/workflows/verify_lock.yml`
+  (`tools/verify_protocol_lock.py`).
+- **RULE: any NEW file that consumers fetch and execute must be added to this
+  flow** (see `tools/README.md` and `tools/gen_protocol_lock.py`). A new
+  installer/composer utility that ships unpinned runs whatever is on `main`.
+
+## CI
+
+- Reusable workflows live in `rokctai/shared-workflows`
+  (`universal-pipeline.yml`, `universal-flutter-build.yml`, ...). App repos
+  carry thin caller files copied from `shared-workflows/examples/workflows/`
+  with `secrets: inherit`.
+- Caller workflows carry `permissions: write-all` — that is what the shipped
+  caller templates declare (e.g. `examples/workflows/build.yml`) and what the
+  consumer repos use. Do not add narrow permissions blocks to callers.
+- CI compose prefers the app's **committed** `.rokct/initiate.py`
+  (`universal-flutter-build.yml` runs it if present and only fetches
+  `profiles/web/initiate.py` fresh as a fallback). Do not change callers to
+  fetch-fresh as the primary path.
+- Build failures are filed as issues in `RokctAI/platformstack`
+  (`universal-flutter-build.yml`, `CENTRAL_REPO`): one live issue per
+  app+platform, closed by the next green build.
+
+## Hard invariants — do not break
+
+1. **ADR-005**: feature SDKs import only `base_sdk`. Cross-SDK needs go
+   through a consumer-defined interface in `domain/interface/` plus a
+   host-app adapter wired in `templates/` (see the `agent` repo's
+   `SDK_README.md`).
+2. **PlatformStack never references SDKs or SDK repos.** It consumes compiled
+   app shells (Docker images) only; it is also the destination for CI
+   build-failure issues. Do not add composer/SDK knowledge to it.
+3. **CRM exclusivity**: CRM ships composed into the backend via the
+   `productivity` repo's `crm` SDK; a site must never also install the
+   standalone `frappe/crm` app — they define the same DocTypes (see
+   platformstack `ROKCT_ECOSYSTEM.md`).
+4. **One `session_policy` declarer per app** — installer hard-errors on two.
+5. **One `brand_hook` declarer per app** — installer raises a RuntimeError on
+   conflict.
+6. **Apps track zero `lib/` files** — compose regenerates all of `lib/`.
+
+## Introducing a new SDK — checklist
+
+1. Pick the domain monorepo it belongs in (`core`, `zones`, `commerce`,
+   `Users`, `pay`, `productivity`, `agent`). Only propose a new repo if no
+   existing domain fits — and then replicate the monorepo conventions
+   (`.relation`, `.github/workflows/` caller set, `.rokct/`).
+2. Create the three-platform skeleton: `<sdk>/dart/`, `<sdk>/frappe/`,
+   `<sdk>/nextjs/` (empty placeholder dirs are fine for platforms you don't
+   ship yet).
+3. Read the `agent` repo's root `SDK_README.md` in full before writing Dart
+   code. Follow its DDD layout (`domain/` with data/request/response slicing,
+   `infrastructure/`, `application/`, `templates/`).
+4. Write `<sdk>/dart/manifest.json` with at least `name`, `version: "1.0.0"`,
+   and `installs`. Add only the keys the SDK genuinely declares (see the key
+   table above); check the matching `update_*()` docstring in
+   `core/utils/flutter/sdk_installer_base.py` for each key's exact entry shape.
+5. Keep `dart/pubspec.yaml`'s `version` in sync at creation time, but treat
+   `manifest.json` as authoritative thereafter.
+6. Import only `base_sdk` from `lib/` (ADR-005). Anything that must touch
+   another SDK goes through an interface + adapter wired in `templates/`.
+7. Put every file destined for the host app under `dart/templates/` and list
+   it in `installs`; installed files import as `package:${package}/<to-path>`,
+   SDK-internal files as `package:<sdk_name>/src/<path>`.
+8. If there is a backend, write `<sdk>/frappe/manifest.json` per
+   `core/utils/frappe/frappe_sdk_management.md` (use the `{app_name}` token;
+   keep testable logic in frappe-free pure Python modules).
+9. If the SDK depends on SDKs in another repo, add the entry to the repo's
+   root `.relation` file.
+10. Add the SDK to the composer **template** of every app that should compose
+    it: `core/utils/flutter/composer/<app_type>.json` in THIS repo (name,
+    `enabled`, `git`, `path` like `../<repo>/<sdk>/dart`, `ref: "main"`).
+    Updating only the app repo's committed `composer.json` is not enough — CI
+    overwrites it from the template.
+11. Declare `session_policy`, `brand_hook`, or `home_sdk` only if this SDK
+    genuinely owns that concern for the app — and first check no already-
+    composed SDK declares it (grep the manifests of every SDK in the app's
+    composer template). Conflicts are hard errors.
+12. Routes: pick paths that don't collide with any composed SDK's `routes`;
+    routes whose pages must import multiple SDKs belong in the app template's
+    `host_routes`, not in your SDK.
+13. Create `<sdk>/dart/CHANGELOG.md` starting at your initial version.
+14. Recompose the target app (`python3 .rokct/initiate.py` then
+    `python3 .rokct/skills/.rok/flutter/scripts/compose.py`) and verify it
+    builds AND that `git status` in the app shows zero newly tracked `lib/`
+    files.
+15. If (and only if) you added a file to THIS repo that consumers fetch and
+    execute at runtime, run the lockfile flow: merge, then
+    `python tools/gen_protocol_lock.py --ref origin/main`, then merge the
+    lock-bump PR (`tools/README.md`).
+16. Do NOT add CI hookup files anywhere — `sdk-bump-poller.yml` discovers
+    shells and SDK repos automatically from `composer.json`.
+17. Do NOT touch PlatformStack.
+18. Future changes: bump `dart/manifest.json` semver in the same commit,
+    update the CHANGELOG, merge to `main` — the poller does the rest.
+
+### What NOT to do
+
+- Don't import a sibling SDK package from `lib/` (ADR-005).
+- Don't hand-edit or commit generated `lib/` files in an app shell.
+- Don't commit `.rokct/skills/` or any provisioned composer script.
+- Don't edit an app's committed `composer.json` as the source of truth — the
+  protocol template `core/utils/flutter/composer/<app_type>.json` is canonical.
+- Don't add a second `session_policy` or `brand_hook` declarer.
+- Don't pin an SDK to a branch other than `main` in composer templates.
+- Don't add narrow `permissions:` blocks to CI caller workflows.
+- Don't give PlatformStack any SDK or composer knowledge.
+- Don't install the standalone `frappe/crm` app on a site that composes the
+  `crm` SDK.
+- Don't ship a new protocol-fetched executable file without adding it to
+  `protocol.lock.json` via `tools/gen_protocol_lock.py`.
