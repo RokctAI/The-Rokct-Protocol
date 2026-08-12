@@ -80,6 +80,29 @@ def authenticated_git_url(git_url):
         )
     return git_url
 
+def clone_ref(git_url, ref, dest_dir):
+    """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
+    shallow path used before (`git clone -b <ref> --depth 1`); when that
+    fails - most notably because ref is a commit SHA, which `git clone -b`
+    does not accept - fall back to a full clone followed by
+    `git checkout <ref>`. Raises on failure (subprocess.CalledProcessError);
+    the caller decides how to fail the build. Same helper as the frappe
+    composer's clone_ref() (core/utils/frappe/compose_backend.py) - kept as a
+    local copy since each composer is fetched and run standalone."""
+    try:
+        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        return
+    except subprocess.CalledProcessError:
+        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+    if os.path.exists(dest_dir):
+        def remove_readonly(func, path, excinfo):
+            import stat
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+        shutil.rmtree(dest_dir, onerror=remove_readonly)
+    subprocess.run(["git", "clone", git_url, dest_dir], check=True)
+    subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
+
 def check_git_availability(git_url):
     try:
         result = subprocess.run(
@@ -608,7 +631,7 @@ def resolve_and_cache_sdks(sdks):
                     func(path)
                 if os.path.exists(temp_repo_dir):
                     shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
-                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", authenticated_git_url(git_url), temp_repo_dir], check=True)
+                clone_ref(authenticated_git_url(git_url), ref, temp_repo_dir)
                 repo_source_dir = temp_repo_dir
             except Exception as e:
                 print(f"[!] Failed to clone {git_url}: {e}")

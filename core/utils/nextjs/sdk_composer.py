@@ -122,6 +122,26 @@ def _rmtree_force(path):
     shutil.rmtree(path, onerror=remove_readonly)
 
 
+def clone_ref(git_url, ref, dest_dir):
+    """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
+    shallow path used before (`git clone -b <ref> --depth 1`); when that
+    fails - most notably because ref is a commit SHA, which `git clone -b`
+    does not accept - fall back to a full clone followed by
+    `git checkout <ref>`. Raises on failure (subprocess.CalledProcessError);
+    the caller decides how to fail the build. Same helper as the frappe
+    composer's clone_ref() (core/utils/frappe/compose_backend.py) - kept as a
+    local copy since each composer is fetched and run standalone."""
+    try:
+        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        return
+    except subprocess.CalledProcessError:
+        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+    if os.path.exists(dest_dir):
+        _rmtree_force(dest_dir)
+    subprocess.run(["git", "clone", git_url, dest_dir], check=True)
+    subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
+
+
 def resolve_and_cache_sdks(sdks):
     """Identical resolution strategy to the Flutter composer: group by git
     remote to avoid re-cloning the same repo for multiple SDKs living in it,
@@ -161,7 +181,7 @@ def resolve_and_cache_sdks(sdks):
             try:
                 if os.path.exists(temp_repo_dir):
                     _rmtree_force(temp_repo_dir)
-                subprocess.run(["git", "clone", "-b", ref, "--depth", "1", authenticated_git_url(git_url), temp_repo_dir], check=True)
+                clone_ref(authenticated_git_url(git_url), ref, temp_repo_dir)
                 repo_source_dir = temp_repo_dir
             except Exception as e:
                 print(f"[!] Failed to clone {git_url}: {e}")

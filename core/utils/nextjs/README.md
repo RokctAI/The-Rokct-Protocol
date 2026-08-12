@@ -169,7 +169,9 @@ the pre-role behavior.
 - `The-Rokct-Protocol/core/utils/nextjs/sdk_composer.py` — reads the host's `composer.json` (same shape as
   the Dart one: `{package_name, sdks: [{name, source, git, path, ref, enabled}]}`, `path` pointing at each
   SDK's `nextjs/` folder instead of `dart/`), fetches/caches each SDK, runs each `install.py`, then runs
-  `npm install` once at the end.
+  `npm install` once at the end. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
+  shallow `git clone -b <ref> --depth 1` path; a SHA (which `git clone -b` rejects) makes `clone_ref()`
+  fall back to a full clone + `git checkout <ref>` — same semantics as the Flutter and Frappe composers.
 - Each SDK's own `install.py` (same pattern as `agent/lms/dart/install.py`):
 
   ```python
