@@ -2,20 +2,37 @@
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol scaffold: update_status.py
-Fetches job_manager.py from GitHub, executes it with the status subcommand.
+Fetches job_manager.py from GitHub pinned to PROTOCOL_REF, verifies its
+SHA-256, then executes it with the status subcommand.
 """
 import os, sys, subprocess, tempfile, urllib.request
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+PROTOCOL_REF    = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
 DELEGATE_PATH   = "core/utils/agent_deligation/job_manager.py"
+DELEGATE_SHA256 = "405ac27e9f8cf26a31b4e6977f28c63732ff9712f42f771553d3d4d8d3971deb"
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 
 
 def resolve_delegate():
-    """Fetch the delegate from GitHub with retries; fall back to (and
-    refresh) a local cache under .rokct/tmp/delegate_cache/ so a transient
+    """Fetch the delegate pinned to PROTOCOL_REF from GitHub with retries and
+    verify its SHA-256 against the embedded DELEGATE_SHA256 before it can be
+    executed; fall back to (and refresh) a local cache under
+    .rokct/tmp/delegate_cache/ - also verified - so a transient
     raw.githubusercontent.com failure cannot kill a workflow mid-run.
     initiate.py pre-populates the cache at workflow start."""
-    import time
+    import hashlib, time
+
+    def verified(data, origin):
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != DELEGATE_SHA256:
+            print(f"[scaffold] Integrity check failed for {DELEGATE_PATH} ({origin}, ref {PROTOCOL_REF}):", file=sys.stderr)
+            print(f"[scaffold]   expected sha256 {DELEGATE_SHA256}", file=sys.stderr)
+            print(f"[scaffold]   actual   sha256 {digest}", file=sys.stderr)
+            print("[scaffold] Refusing to execute unverified code.", file=sys.stderr)
+            sys.exit(1)
+        return data.decode("utf-8")
+
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
     cache = os.path.join(".rokct", "tmp", "delegate_cache", os.path.basename(DELEGATE_PATH))
     for attempt in range(3):
@@ -23,11 +40,12 @@ def resolve_delegate():
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 if resp.status == 200:
-                    code = resp.read().decode("utf-8")
+                    data = resp.read()
+                    code = verified(data, "github")
                     try:
                         os.makedirs(os.path.dirname(cache), exist_ok=True)
-                        with open(cache, "w", encoding="utf-8") as f:
-                            f.write(code)
+                        with open(cache, "wb") as f:
+                            f.write(data)
                     except OSError:
                         pass
                     return code, "github"
@@ -36,9 +54,11 @@ def resolve_delegate():
         if attempt < 2:
             time.sleep(2 ** attempt)
     if os.path.exists(cache):
-        print(f"[scaffold] GitHub fetch failed after 3 attempts; using cached {os.path.basename(cache)}", file=sys.stderr)
-        with open(cache, encoding="utf-8") as f:
-            return f.read(), "cache"
+        with open(cache, "rb") as f:
+            data = f.read()
+        code = verified(data, "cache")
+        print(f"[scaffold] GitHub fetch failed after 3 attempts; using verified cached {os.path.basename(cache)}", file=sys.stderr)
+        return code, "cache"
     return None, None
 
 
