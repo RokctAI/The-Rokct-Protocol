@@ -133,5 +133,7 @@
       "ref": "main",
       "_comment": "restaurant_item / product_item / maps_list widgets used by the driver app."
     }
-  ]
+  ],
+  "host_routes": [],
+  "_host_routes_comment": "Deliberately empty, declared explicitly (supacharge precedent, mirrors manager.json): paas_driver tracks NO router copy after migration M4 - compose generates app_router.dart wholly from base_sdk's template plus each installed SDK's manifest routes. Every former host-owned route migrated to an SDK manifest (delivery_sdk's courier vertical incl. /home and /become-driver, auth_sdk's login/register/reset + /registration-steps, comms_sdk's /list-notification, zones_sdk's /delivery-zone, revenue_sdk's /income, merchants_sdk's /story, calc_sdk's /calc). Anything ADR-005-shaped a future driver feature needs goes HERE as data, never back into a tracked router file."
 }
