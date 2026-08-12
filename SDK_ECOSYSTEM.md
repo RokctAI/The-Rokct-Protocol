@@ -183,7 +183,13 @@ This repo's runtime-fetched-and-executed files are pinned. See
 1. **ADR-005**: feature SDKs import only `base_sdk`. Cross-SDK needs go
    through a consumer-defined interface in `domain/interface/` plus a
    host-app adapter wired in `templates/` (see the `agent` repo's
-   `SDK_README.md`).
+   `SDK_README.md`). The enforcer is `scripts/sdk_validator.py` in the
+   `shared-workflows` repo (its `validate_cross_sdk_imports()`), a
+   standalone audit CLI run against a single repo checkout (defaults to
+   `$GITHUB_WORKSPACE` in CI) or a full multi-repo workspace; it is not
+   currently invoked by any shared workflow (`universal-pipeline.yml` runs
+   only `compliance_scanner.py`, which `sdk_validator.py --compliance` can
+   chain into).
 2. **PlatformStack never references SDKs or SDK repos.** It consumes compiled
    app shells (Docker images) only; it is also the destination for CI
    build-failure issues. Do not add composer/SDK knowledge to it.
