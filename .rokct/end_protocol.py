@@ -9,7 +9,10 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = Path.cwd()
 ROKCT_DIR = PROJECT_ROOT / ".rokct"
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+# Manifest fetches are data-only, but pinning keeps them immutable too.
+PROTOCOL_REF = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 
 def dir_hash(d: Path):
     if not d.is_dir():

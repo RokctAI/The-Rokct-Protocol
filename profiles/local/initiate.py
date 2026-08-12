@@ -10,47 +10,69 @@ import urllib.request
 import io
 import zipfile
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
-GITHUB_ZIP_BASE = "https://github.com/RokctAI/The-Rokct-Protocol/archive/refs/heads/main.zip"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+# Every fetch below is pinned to this commit, so what this script downloads is
+# immutable; the executable targets are additionally SHA-256 verified against
+# EXPECTED_SHA256 before they are written anywhere.
+PROTOCOL_REF = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+EXPECTED_SHA256 = {
+    "profiles/local/initiate.py": "dbf7dc642c6d03745f4d4e68e897bfddf9e3db6037c2810297245695a1550406",
+    "workflows/maintenance.yml": "3826ea73fee8b939c0798ae65173fb0ff6dd188758e4564b51373019bc7a7716",
+}
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_ZIP_BASE = f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
+GITHUB_ZIP_PREFIX = f"The-Rokct-Protocol-{PROTOCOL_REF}"
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
-def check_self_update():
+def check_for_update():
+    """Data-only update check. The old self-update fetched initiate.py from
+    the mutable main branch and execv'd it - executing unpinned future code,
+    which the PROTOCOL_REF pinning exists to prevent. Now we only fetch the
+    lockfile from main AS DATA, compare its pinned ref to ours, and tell the
+    user to re-run the installer. Nothing fetched here is ever executed."""
     if os.environ.get("CI"):
-        # CI must run the committed copy deterministically. Self-updating
-        # would re-exec whatever is on the protocol repo's main branch,
-        # discarding local fixes mid-run.
+        # CI must run the committed copy deterministically.
         return
-    dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
-    if os.path.exists(dest_initiate) and os.path.abspath(__file__) == os.path.abspath(dest_initiate):
-        url = f"{GITHUB_RAW_BASE}/profiles/local/initiate.py"
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
-            with urllib.request.urlopen(req, timeout=10) as r:
-                remote_data = r.read()
-            remote_hash = hashlib.sha256(remote_data).hexdigest()[:16]
-            if remote_hash != file_hash(dest_initiate):
-                print("[init] GitHub has a newer initiate.py (local profile). Self-updating...")
-                with open(dest_initiate, "wb") as f:
-                    f.write(remote_data)
-                print("[init] Reloading initiate.py...")
-                os.execv(sys.executable, [sys.executable] + sys.argv)
-        except Exception as e:
-            print(f"[init] Self-update check failed: {e}", file=sys.stderr)
+    url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/protocol.lock.json"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            latest_ref = json.loads(r.read().decode()).get("ref", "")
+        if latest_ref and latest_ref != PROTOCOL_REF:
+            print("[init] A newer protocol version is available - re-run the installer to update.")
+    except Exception as e:
+        print(f"[init] Update check failed: {e}", file=sys.stderr)
+
+def verify_pinned(rel_posix, data):
+    """SHA-256 check for the executable fetch targets, before any write."""
+    expected = EXPECTED_SHA256.get(rel_posix)
+    if expected is None:
+        return
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != expected:
+        print(f"[init] Integrity check failed for {rel_posix} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(f"[init]   expected sha256 {expected}", file=sys.stderr)
+        print(f"[init]   actual   sha256 {digest}", file=sys.stderr)
+        print("[init] Refusing to install unverified code.", file=sys.stderr)
+        sys.exit(1)
 
 def fetch_from_github(rel_path, dest_path):
-    url = f"{GITHUB_RAW_BASE}/{rel_path.replace(os.sep, '/')}"
+    rel_posix = rel_path.replace(os.sep, "/")
+    url = f"{GITHUB_RAW_BASE}/{rel_posix}"
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
         with urllib.request.urlopen(req, timeout=10) as r:
-            with open(dest_path, "wb") as f:
-                f.write(r.read())
-        print(f"[init] Fetched {rel_path}")
+            data = r.read()
     except Exception as e:
         print(f"[init] Failed to fetch {rel_path}: {e}", file=sys.stderr)
         sys.exit(1)
+    verify_pinned(rel_posix, data)
+    with open(dest_path, "wb") as f:
+        f.write(data)
+    print(f"[init] Fetched {rel_path}")
 
 def ensure_file(rel_path, dest_path):
     src = os.path.join(PROTOCOL_DIR, rel_path)
@@ -121,7 +143,7 @@ def fetch_dir_from_github(rel_src, dst):
     # os.sep-separated paths (e.g. from os.path.relpath), which would
     # match no entries and silently fetch 0 files.
     rel_src = rel_src.replace(os.sep, "/")
-    prefix = f"The-Rokct-Protocol-main/{rel_src}/"
+    prefix = f"{GITHUB_ZIP_PREFIX}/{rel_src}/"
     try:
         print(f"[init] Fetching directory from GitHub: {rel_src}")
         req = urllib.request.Request(GITHUB_ZIP_BASE, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
@@ -134,17 +156,19 @@ def fetch_dir_from_github(rel_src, dst):
                 rel = name[len(prefix):]
                 if rel_src == "workflows" and (rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml") or rel.startswith(".rok/")):
                     continue
+                data = z.read(name)
+                verify_pinned(f"{rel_src}/{rel}", data)
                 dest = os.path.join(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
-                    f.write(z.read(name))
+                    f.write(data)
                 count += 1
         print(f"[init] Fetched {count} files from {rel_src}")
     except Exception as e:
         print(f"[init] Failed to fetch directory {rel_src}: {e}", file=sys.stderr)
 
 def main():
-    check_self_update()
+    check_for_update()
     os.makedirs(ROKCT_DIR, exist_ok=True)
 
     templates = ["memory.md", "decision_log.md", "project_map.md", "active_session.txt"]
