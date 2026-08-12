@@ -9,6 +9,36 @@ PROJECT_ROOT = os.getcwd()
 
 COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name
 
+# Manifest hook values are interpolated into generated Python source
+# (hooks.py). Before any value is written it is validated against a tight
+# regex so a malicious or malformed manifest cannot inject arbitrary code
+# through these fields (e.g. a doc_events handler of
+# "x'; import os; os.system('id') #" used to land verbatim in hooks.py).
+# Values are also embedded with repr()/!r for defense in depth.
+#   - "dotted": a Python import path (handler / method / class path)
+#   - "doctype": a frappe DocType name (word chars, spaces, hyphens)
+#   - "event": a doc_event / scheduler bucket name (word chars)
+_HOOK_VALUE_PATTERNS = {
+    "dotted": re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"),
+    "doctype": re.compile(r"^[\w \-]+$"),
+    "event": re.compile(r"^\w+$"),
+}
+
+
+def _validate_hook_value(value, kind, module_name, key):
+    """Fail the compose loudly if a manifest hook value doesn't match its
+    expected shape, naming the offending module and hook key. Returns the
+    value unchanged when valid so it can be used inline."""
+    pattern = _HOOK_VALUE_PATTERNS[kind]
+    if not isinstance(value, str) or not pattern.match(value):
+        print(
+            f"[-] Composition aborted: invalid {kind} value {value!r} in module "
+            f"'{module_name}' hook '{key}'. Refusing to write it into generated "
+            f"hooks.py (possible code injection or malformed manifest)."
+        )
+        sys.exit(1)
+    return value
+
 
 def load_composer_config():
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
@@ -372,35 +402,59 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             
         append_blocks.append(f"\n# --- Module: {module_name} ---")
         
-        # 1. Merge scheduler events
+        # 1. Merge scheduler events (deduped like the other hook lists: two
+        #    modules registering the same task under the same bucket used to
+        #    both land, running it twice per tick).
         scheduler_events = hooks.get("scheduler_events", {})
         for event_type, tasks in scheduler_events.items():
-            tasks_str = ", ".join([f"'{t}'" for t in tasks])
+            task_list = [tasks] if isinstance(tasks, str) else list(tasks)
+            for t in task_list:
+                _validate_hook_value(t, "dotted", module_name, "scheduler_events")
             append_blocks.append(f"scheduler_events = globals().get('scheduler_events', {{}})")
-            append_blocks.append(f"scheduler_events.setdefault('{event_type}', []).extend([{tasks_str}])")
-            
+            append_blocks.append(f"scheduler_events.setdefault({event_type!r}, [])")
+            append_blocks.append(f"for _t in {task_list!r}:")
+            append_blocks.append(f"    if _t not in scheduler_events[{event_type!r}]: scheduler_events[{event_type!r}].append(_t)")
+
         # 2. Merge override doctype class
         overrides = hooks.get("override_doctype_class", {})
         for doc_type, class_path in overrides.items():
+            _validate_hook_value(doc_type, "doctype", module_name, "override_doctype_class")
+            _validate_hook_value(class_path, "dotted", module_name, "override_doctype_class")
             append_blocks.append(f"override_doctype_class = globals().get('override_doctype_class', {{}})")
-            append_blocks.append(f"override_doctype_class['{doc_type}'] = '{class_path}'")
+            append_blocks.append(f"override_doctype_class[{doc_type!r}] = {class_path!r}")
 
         # 3. Merge whitelisted methods
         whitelisted = hooks.get("whitelisted_methods", {})
         if whitelisted:
             append_blocks.append(f"whitelisted_methods = globals().get('whitelisted_methods', {{}})")
             for api_key, api_val in whitelisted.items():
-                append_blocks.append(f"whitelisted_methods['{api_key}'] = '{api_val}'")
-                
-        # 4. Merge doc events
+                _validate_hook_value(api_key, "dotted", module_name, "whitelisted_methods")
+                _validate_hook_value(api_val, "dotted", module_name, "whitelisted_methods")
+                append_blocks.append(f"whitelisted_methods[{api_key!r}] = {api_val!r}")
+
+        # 4. Merge doc events. Accumulate handlers into a LIST per (doctype,
+        #    event): frappe natively supports a list of handlers for a single
+        #    doc_event, so two modules registering the same (doctype, event)
+        #    both run. Plain assignment (the old behavior) silently dropped
+        #    every handler but the last one to be composed. Handles both a
+        #    single handler string and a list of handlers in the manifest.
         events = hooks.get("doc_events", {})
         if events:
             append_blocks.append(f"doc_events = globals().get('doc_events', {{}})")
             for doc_type, evt_dict in events.items():
-                append_blocks.append(f"doc_events.setdefault('{doc_type}', {{}})")
+                _validate_hook_value(doc_type, "doctype", module_name, "doc_events")
+                append_blocks.append(f"doc_events.setdefault({doc_type!r}, {{}})")
                 for evt, handler in evt_dict.items():
-                    append_blocks.append(f"doc_events['{doc_type}']['{evt}'] = '{handler}'")
-                    
+                    _validate_hook_value(evt, "event", module_name, "doc_events")
+                    handler_list = [handler] if isinstance(handler, str) else list(handler)
+                    for h in handler_list:
+                        _validate_hook_value(h, "dotted", module_name, "doc_events")
+                    append_blocks.append(f"_ev = doc_events[{doc_type!r}].get({evt!r}) or []")
+                    append_blocks.append(f"_ev = [_ev] if isinstance(_ev, str) else list(_ev)")
+                    append_blocks.append(f"for _h in {handler_list!r}:")
+                    append_blocks.append(f"    if _h not in _ev: _ev.append(_h)")
+                    append_blocks.append(f"doc_events[{doc_type!r}][{evt!r}] = _ev")
+
         # 5. Merge fixtures
         fixs = hooks.get("fixtures", [])
         if fixs:
@@ -413,14 +467,16 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         if auths:
             append_blocks.append(f"auth_hooks = globals().get('auth_hooks', [])")
             for a in auths:
-                append_blocks.append(f"if '{a}' not in auth_hooks: auth_hooks.append('{a}')")
-                
+                _validate_hook_value(a, "dotted", module_name, "auth_hooks")
+                append_blocks.append(f"if {a!r} not in auth_hooks: auth_hooks.append({a!r})")
+
         # 7. Merge before_uninstall hooks
         before_uninstalls = hooks.get("before_uninstall", [])
         if before_uninstalls:
             append_blocks.append(f"before_uninstall = globals().get('before_uninstall', [])")
             for bu in before_uninstalls:
-                append_blocks.append(f"if '{bu}' not in before_uninstall: before_uninstall.append('{bu}')")
+                _validate_hook_value(bu, "dotted", module_name, "before_uninstall")
+                append_blocks.append(f"if {bu!r} not in before_uninstall: before_uninstall.append({bu!r})")
 
         # 8. Merge after_install hooks
         after_installs = hooks.get("after_install", [])
@@ -429,7 +485,8 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         if after_installs:
             append_blocks.append(f"after_install = globals().get('after_install', [])")
             for ai in after_installs:
-                append_blocks.append(f"if '{ai}' not in after_install: after_install.append('{ai}')")
+                _validate_hook_value(ai, "dotted", module_name, "after_install")
+                append_blocks.append(f"if {ai!r} not in after_install: after_install.append({ai!r})")
 
     if append_blocks:
         new_content = content + "\n\n" + split_marker + "\n" + "\n".join(append_blocks) + "\n# --- END OF DYNAMIC SDK HOOKS ---\n"
@@ -491,28 +548,56 @@ def merge_commands(target_app_path, app_name, compiled_manifests):
     print(f"[+] Merged {len(entries)} bench command(s) into commands.py")
 
 
+def _dep_name(dep):
+    """Extract the bare package name (lowercased) from a PEP 508-ish
+    dependency string, ignoring any version specifier or extras — so
+    'requests==2.0', 'requests>=1', 'requests[security]' and 'requests' all
+    resolve to 'requests'. Used to dedupe by NAME rather than full string,
+    consistently across requirements.txt and pyproject.toml."""
+    return re.split(r"[=<>!~;\[\s]", dep.strip(), 1)[0].strip().lower()
+
+
 def merge_dependencies(project_root, compiled_manifests):
-    # Collect all dependencies from manifests
-    all_deps = set()
+    # Collect all dependencies from manifests, deduped by package NAME so the
+    # same package pinned differently by two manifests doesn't get injected
+    # twice. Iterate deterministically (sorted) and keep the first occurrence.
+    all_deps = []
+    seen_names = set()
+    raw_deps = set()
     for manifest in compiled_manifests.values():
-        deps = manifest.get("dependencies", [])
-        for d in deps:
-            all_deps.add(d.strip())
-            
+        for d in manifest.get("dependencies", []):
+            raw_deps.add(d.strip())
+    for d in sorted(raw_deps):
+        name = _dep_name(d)
+        if name in seen_names:
+            existing = next((x for x in all_deps if _dep_name(x) == name), None)
+            if existing and existing != d:
+                print(f"[!] Dependency version conflict for '{name}': keeping '{existing}', ignoring manifest's '{d}'.")
+            continue
+        seen_names.add(name)
+        all_deps.append(d)
+
     if not all_deps:
         return
-        
-    # 1. Update requirements.txt
+
+    # 1. Update requirements.txt (dedupe by package NAME, warn on conflict)
     req_file = os.path.join(project_root, "requirements.txt")
-    existing_reqs = set()
+    existing_reqs = {}
     if os.path.exists(req_file):
         with open(req_file, "r", encoding="utf-8") as f:
             for line in f:
                 stripped = line.strip()
                 if stripped and not stripped.startswith("#"):
-                    existing_reqs.add(stripped.split("=")[0].split(">")[0].split("<")[0].strip())
-                    
-    new_reqs_to_add = [d for d in all_deps if d.split("=")[0].split(">")[0].split("<")[0].strip() not in existing_reqs]
+                    existing_reqs[_dep_name(stripped)] = stripped
+
+    new_reqs_to_add = []
+    for d in all_deps:
+        name = _dep_name(d)
+        if name in existing_reqs:
+            if existing_reqs[name] != d:
+                print(f"[!] '{name}' already in requirements.txt as '{existing_reqs[name]}', skipping manifest's '{d}' (version conflict).")
+            continue
+        new_reqs_to_add.append(d)
     if new_reqs_to_add:
         with open(req_file, "a", encoding="utf-8") as f:
             # Add a newline if file doesn't end with one
@@ -520,21 +605,32 @@ def merge_dependencies(project_root, compiled_manifests):
             for req in new_reqs_to_add:
                 f.write(f"{req}\n")
         print(f"[+] Injected Python requirements into requirements.txt: {new_reqs_to_add}")
-        
-    # 2. Update pyproject.toml
+
+    # 2. Update pyproject.toml (dedupe by package NAME, warn on conflict — a
+    #    bare 'requests' from a manifest must not land alongside an existing
+    #    'requests==2.0')
     toml_file = os.path.join(project_root, "pyproject.toml")
     if os.path.exists(toml_file):
         with open(toml_file, "r", encoding="utf-8") as f:
             toml_content = f.read()
-            
+
         # Locate the dependencies array block
         match = re.search(r"dependencies\s*=\s*\[([^\]]*)\]", toml_content)
         if match:
             deps_block = match.group(1)
             # Parse existing TOML dependency strings
             existing_toml_deps = [d.replace('"', '').replace("'", "").strip() for d in deps_block.split(",") if d.strip()]
-            
-            new_toml_deps_to_add = [d for d in all_deps if d not in existing_toml_deps]
+            existing_toml_names = {_dep_name(d): d for d in existing_toml_deps}
+
+            new_toml_deps_to_add = []
+            for d in all_deps:
+                name = _dep_name(d)
+                if name in existing_toml_names:
+                    if existing_toml_names[name] != d:
+                        print(f"[!] '{name}' already in pyproject.toml as '{existing_toml_names[name]}', skipping manifest's '{d}' (version conflict).")
+                    continue
+                existing_toml_names[name] = d
+                new_toml_deps_to_add.append(d)
             if new_toml_deps_to_add:
                 updated_deps_list = existing_toml_deps + new_toml_deps_to_add
                 toml_deps_str = ",\n    ".join([f'"{d}"' for d in updated_deps_list])
