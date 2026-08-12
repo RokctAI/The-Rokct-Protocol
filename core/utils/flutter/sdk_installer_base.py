@@ -1338,7 +1338,8 @@ def update_session_policy():
     -> lib/presentation/routes/auth_session_policy.dart) — the seam that
     lets a composition say which account roles may sign in and where each
     lands, instead of the app keeping its own auth pages (manager: sellers
-    only -> /main; driver later: drivers only).
+    only -> /main; driver: deliveryman -> /home, everyone else kept
+    signed-in on /become-driver).
 
     Declared as manifest.json "session_policy" (top level or app_type
     flavor block, flavor winning):
@@ -1353,10 +1354,27 @@ def update_session_policy():
 
     allowed_roles maps each admitted role to the route PATH it lands on
     after sign-in (paths, not route classes — same ADR-005 bridge as
-    '/registration-steps'); rejection_* are optional. Values are injected
-    into single-quoted Dart string literals, so they must not contain
-    quotes or backslashes — the installer stays a dumb pipe and rejects
-    them instead of escaping.
+    '/registration-steps'); rejection_* are optional. An entry may use the
+    FALLBACK role "*" (auth_sdk >= 1.4.0's DeclaredSessionPolicy.fallbackRole):
+    an authenticated account whose role matches no other entry is then
+    ADMITTED — token persisted, session KEPT — and lands on the fallback's
+    route instead of being rejected. Driver's shape:
+
+        "allowed_roles": [
+          {"role": "deliveryman", "landing_route": "/home"},
+          {"role": "*", "landing_route": "/become-driver"}
+        ]
+
+    Exact roles always win over "*" (auth_sdk resolves the exact landing
+    first), and with a "*" entry nothing is ever rejected, so rejection_*
+    become inert. A policy WITHOUT "*" keeps the reject behavior unchanged
+    (manager's seller-only gate). The installer is a dumb pipe here — "*"
+    is just another roleLandings key; the semantics live in auth_sdk — but
+    it does reject a duplicated role (including two "*" entries), since the
+    Dart map literal would silently keep only the last landing. Values are
+    injected into single-quoted Dart string literals, so they must not
+    contain quotes or backslashes — the installer stays a dumb pipe and
+    rejects them instead of escaping.
 
     Exactly zero or one installed SDK may declare a policy. Two apps'
     worth of login gates is not a tie to break silently (whichever lost
@@ -1399,12 +1417,20 @@ def update_session_policy():
     if declared:
         pkg_name, policy = next(iter(declared.items()))
         landings = []
+        seen_roles = set()
         for entry in policy.get("allowed_roles", []):
             role = entry.get("role")
             landing = entry.get("landing_route")
             if not role or not landing:
                 print(f"  [!] session_policy: skipping allowed_roles entry without role/landing_route in {pkg_name}")
                 continue
+            if role in seen_roles:
+                raise RuntimeError(
+                    f"session_policy: role {role!r} declared more than once in {pkg_name}'s "
+                    f"allowed_roles — the generated Dart map literal would silently keep only "
+                    f"the last landing. Keep exactly one entry per role (including the '*' fallback)."
+                )
+            seen_roles.add(role)
             landings.append(f"      {_lit(role, 'role')}: {_lit(landing, 'landing_route')},")
         if landings:
             body_lines.append(f"  // declared by {pkg_name}")
