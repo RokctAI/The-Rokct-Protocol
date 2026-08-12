@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
 The-Rokct-Protocol: compose.py wrapper
-Fetches compose_backend.py from GitHub, executes it locally in the target app shell.
+Fetches compose_backend.py from GitHub pinned to PROTOCOL_REF, verifies its
+SHA-256, then executes it locally in the target app shell.
 """
-import os, sys, subprocess, tempfile, urllib.request
+import hashlib, os, sys, subprocess, tempfile, urllib.request
 
-GITHUB_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+PROTOCOL_REF    = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
 COMPOSER_PATH   = "core/utils/frappe/compose_backend.py"
+COMPOSER_SHA256 = "3793515ec46aa3363aa251c6df28a4adf677dcbb7219ba2a3f526be36f3e6543"
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 
 
 def resolve_composer():
@@ -15,11 +19,19 @@ def resolve_composer():
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "frappe-bootstrap"})
 
         with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status == 200:
-                return resp.read().decode("utf-8")
+            if resp.status != 200:
+                return None
+            data = resp.read()
     except Exception:
-        pass
-    return None
+        return None
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != COMPOSER_SHA256:
+        print(f"[compose] Integrity check failed for {COMPOSER_PATH} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(f"[compose]   expected sha256 {COMPOSER_SHA256}", file=sys.stderr)
+        print(f"[compose]   actual   sha256 {digest}", file=sys.stderr)
+        print("[compose] Refusing to execute unverified code.", file=sys.stderr)
+        sys.exit(1)
+    return data.decode("utf-8")
 
 
 def main():

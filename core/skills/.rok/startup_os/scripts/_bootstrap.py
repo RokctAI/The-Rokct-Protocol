@@ -30,8 +30,14 @@ import urllib.request
 import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
-PROTOCOL_REF = os.environ.get("STARTUPOS_PROTOCOL_REF", "main")
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/{PROTOCOL_REPO}/{PROTOCOL_REF}"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+PROTOCOL_REF = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+# STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
+# hashes cannot vouch for other refs, so overriding also requires
+# STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
+_RUNTIME_REF = os.environ.get("STARTUPOS_PROTOCOL_REF", PROTOCOL_REF)
+UNPINNED = _RUNTIME_REF != PROTOCOL_REF
+GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/{PROTOCOL_REPO}/{_RUNTIME_REF}"
 ENGINE_PATH = "core/utils/startup_os"
 
 # Every module the engine needs. Adding a module here is what makes it
@@ -52,9 +58,25 @@ ENGINE_MODULES = (
     "agent_bridge.py",
 )
 
+# Expected SHA-256 of every engine module at PROTOCOL_REF, keyed by
+# repo-relative path. Pinned by tools/gen_protocol_lock.py.
+EXPECTED_SHA256 = {
+    "core/utils/startup_os/__init__.py": "eacdae45be5b18a599c4f84cf456158f01b654213b6a7579ac78eeff18dfdfb3",
+    "core/utils/startup_os/errors.py": "5c7c935c73207f90cfb3312737030ad9bc0334af395691691f5c03fbc50029a9",
+    "core/utils/startup_os/paths.py": "c3e157d634ff4983168ca012a841e9f658722ff080d05cd839c3332c88a36f15",
+    "core/utils/startup_os/parser.py": "f072fad3cec445fdeef2cde3389daae1a88d5b8cc2ad88dd0ddd055d67e3ba61",
+    "core/utils/startup_os/jurisdictions.py": "32f8dd085f104071f87f81bffa39839c3deed30a80bc3eed73dc132a194e556c",
+    "core/utils/startup_os/compliance.py": "20e4b41ea84fa6131be56f917a9317668e19d7165bc8457d1bf48c4350fd8863",
+    "core/utils/startup_os/template_engine.py": "5ec94fc51b0887a85294eafd8aaa52d37e4068c9c6674e738240f041af973f60",
+    "core/utils/startup_os/documents.py": "e3bae8c83659f29277471971745d2ea86c8812a33125f111cb6e23b75104b668",
+    "core/utils/startup_os/safe_io.py": "6310fce7563783537ebe130467a96dd96114cf33899f2444d39596e6ed310589",
+    "core/utils/startup_os/schemas.py": "b0dd8b45bac54ef6a804357ae98e089df968e49567326ebb4fc20f8a9978b18a",
+    "core/utils/startup_os/compiler.py": "bc5e3a35fdbaca7e080ce78b4276b5ab2d3aaecbcf8acf2000afcb3393fe304f",
+    "core/utils/startup_os/agent_bridge.py": "6e8c32a9e7567259314dfff157a27acdc2fdb860ec50578da445ef8f6fd2b7e8",
+}
+
 LOCKFILE_NAME = "engine.lock.json"
 OFFLINE = os.environ.get("STARTUPOS_OFFLINE", "").lower() in ("1", "true", "yes")
-STRICT = os.environ.get("STARTUPOS_STRICT_ENGINE", "").lower() in ("1", "true", "yes")
 FETCH_TIMEOUT = int(os.environ.get("STARTUPOS_FETCH_TIMEOUT", "15"))
 
 
@@ -74,20 +96,9 @@ def _fetch(url):
         return response.read()
 
 
-def _load_lock(core_dir):
-    path = os.path.join(core_dir, LOCKFILE_NAME)
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            return json.load(handle).get("modules", {})
-    except (OSError, ValueError):
-        return {}
-
-
 def _save_lock(core_dir, hashes):
     path = os.path.join(core_dir, LOCKFILE_NAME)
-    payload = {"repo": PROTOCOL_REPO, "ref": PROTOCOL_REF, "modules": hashes}
+    payload = {"repo": PROTOCOL_REPO, "ref": _RUNTIME_REF, "modules": hashes}
     try:
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2, sort_keys=True)
@@ -95,24 +106,54 @@ def _save_lock(core_dir, hashes):
         pass
 
 
+def _verify_module(module, payload, origin):
+    """Abort unless `payload` matches the embedded pin for `module`.
+
+    Skipped only when STARTUPOS_PROTOCOL_REF overrides the pinned ref, which
+    itself requires the explicit STARTUPOS_ALLOW_UNPINNED=1 opt-in.
+    """
+    if UNPINNED:
+        return
+    expected = EXPECTED_SHA256[f"{ENGINE_PATH}/{module}"]
+    digest = hashlib.sha256(payload).hexdigest()
+    if digest != expected:
+        print(f"[Error] Integrity check failed for engine module {module} "
+              f"({origin}, ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(f"[Error]   expected sha256 {expected}", file=sys.stderr)
+        print(f"[Error]   actual   sha256 {digest}", file=sys.stderr)
+        print("[Error] Refusing to run unverified code.", file=sys.stderr)
+        sys.exit(1)
+
+
 def fetch_engine(verbose=True):
     """Download the engine modules into `<skill>/core/`, or use the cache.
 
-    Integrity: hashes of what was fetched are recorded in `engine.lock.json`.
-    A changed hash is reported on the next run. With `STARTUPOS_STRICT_ENGINE=1`
-    a change aborts instead of warning, which is what CI should use — the whole
-    fetch-and-import pattern is remote code execution by design, and an
-    unexplained change to a module is the signal worth stopping on.
+    Integrity: every module carries an expected SHA-256 in `EXPECTED_SHA256`,
+    pinned to PROTOCOL_REF by tools/gen_protocol_lock.py. Whether a module
+    arrives from the network or from the local cache, a hash mismatch aborts —
+    the whole fetch-and-import pattern is remote code execution by design, so
+    nothing unverified is ever imported. `engine.lock.json` remains as a local
+    record of what was installed, but it is no longer the trust root.
 
-    `STARTUPOS_OFFLINE=1` skips the network entirely and runs from cache.
-    `STARTUPOS_PROTOCOL_REF=<tag>` pins to a tag or commit instead of `main`.
+    `STARTUPOS_OFFLINE=1` skips the network entirely and runs from cache
+    (still verified against the embedded hashes).
+    `STARTUPOS_PROTOCOL_REF=<ref>` overrides the pin for development; that
+    bypasses integrity verification, so it also requires
+    `STARTUPOS_ALLOW_UNPINNED=1` and warns loudly.
     """
+    if UNPINNED:
+        print(f"[Warning] STARTUPOS_PROTOCOL_REF={_RUNTIME_REF} overrides the pinned "
+              f"ref {PROTOCOL_REF}; integrity verification is BYPASSED for this run.",
+              file=sys.stderr)
+        if os.environ.get("STARTUPOS_ALLOW_UNPINNED", "").lower() not in ("1", "true", "yes"):
+            print("[Error] Refusing to run unpinned engine code without "
+                  "STARTUPOS_ALLOW_UNPINNED=1.", file=sys.stderr)
+            sys.exit(1)
+
     core_dir = _core_dir()
     os.makedirs(core_dir, exist_ok=True)
 
-    previous = _load_lock(core_dir)
     current = {}
-    changed = []
 
     for module in ENGINE_MODULES:
         destination = os.path.join(core_dir, module)
@@ -124,40 +165,30 @@ def fetch_engine(verbose=True):
                       file=sys.stderr)
                 sys.exit(1)
             with open(destination, "rb") as handle:
-                current[module] = hashlib.sha256(handle.read()).hexdigest()
+                payload = handle.read()
+            _verify_module(module, payload, "cache")
+            current[module] = hashlib.sha256(payload).hexdigest()
             continue
 
         try:
             payload = _fetch(url)
         except Exception as exc:
             if os.path.exists(destination):
-                print(f"[Warning] Using cached {module} (fetch failed: {exc})",
-                      file=sys.stderr)
                 with open(destination, "rb") as handle:
-                    current[module] = hashlib.sha256(handle.read()).hexdigest()
+                    payload = handle.read()
+                _verify_module(module, payload, "cache")
+                print(f"[Warning] Using verified cached {module} (fetch failed: {exc})",
+                      file=sys.stderr)
+                current[module] = hashlib.sha256(payload).hexdigest()
                 continue
             print(f"[Error] Could not fetch engine module {module}: {exc}", file=sys.stderr)
             sys.exit(1)
 
-        digest = hashlib.sha256(payload).hexdigest()
-        current[module] = digest
-        if module in previous and previous[module] != digest:
-            changed.append(module)
+        _verify_module(module, payload, "github")
+        current[module] = hashlib.sha256(payload).hexdigest()
 
         with open(destination, "wb") as handle:
             handle.write(payload)
-
-    if changed:
-        listed = ", ".join(changed)
-        message = (
-            f"[{'Error' if STRICT else 'Notice'}] Engine modules changed upstream "
-            f"since the last run: {listed} (repo {PROTOCOL_REPO}@{PROTOCOL_REF})."
-        )
-        print(message, file=sys.stderr)
-        if STRICT:
-            print("[Error] STARTUPOS_STRICT_ENGINE is set; refusing to run changed code.",
-                  file=sys.stderr)
-            sys.exit(1)
 
     _save_lock(core_dir, current)
 
@@ -166,7 +197,7 @@ def fetch_engine(verbose=True):
         sys.path.insert(0, skill_dir)
 
     if verbose:
-        source = "cache" if OFFLINE else f"{PROTOCOL_REPO}@{PROTOCOL_REF}"
+        source = "cache" if OFFLINE else f"{PROTOCOL_REPO}@{_RUNTIME_REF}"
         print(f"[StartupOS] Engine ready ({len(ENGINE_MODULES)} modules from {source})")
 
 
@@ -209,7 +240,7 @@ def sync_templates(workspace_root, verbose=True):
             "without them.\n"
             f"        Expected them at: {local_source}\n"
             "        Or reachable at: "
-            f"https://github.com/{PROTOCOL_REPO}/tree/{PROTOCOL_REF}/"
+            f"https://github.com/{PROTOCOL_REPO}/tree/{_RUNTIME_REF}/"
             "core/skills/.rok/startup_os/templates",
             file=sys.stderr,
         )
@@ -237,7 +268,9 @@ def _sync_templates_from_github(destination, verbose):
     Note the host: `github.com`, not `raw.githubusercontent.com`, and the path
     prefix now matches where the templates actually live.
     """
-    archive_url = f"https://github.com/{PROTOCOL_REPO}/archive/refs/heads/{PROTOCOL_REF}.zip"
+    # `archive/<ref>.zip` resolves for branches, tags and commit SHAs alike
+    # (the pinned ref is a commit SHA, which `archive/refs/heads/` cannot serve).
+    archive_url = f"https://github.com/{PROTOCOL_REPO}/archive/{_RUNTIME_REF}.zip"
     prefix = "core/skills/.rok/startup_os/templates/"
 
     if verbose:

@@ -13,6 +13,35 @@ PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 CONFIG_PATH = os.path.join(ROKCT_DIR, ".workspace_config.json")
 
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+# maintenance.yml is installed as a GitHub workflow (i.e. it is code), so the
+# fetch is pinned to a commit and SHA-256 verified before it is written.
+PROTOCOL_REF = "59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+MAINTENANCE_PATH = "workflows/maintenance.yml"
+MAINTENANCE_SHA256 = "3826ea73fee8b939c0798ae65173fb0ff6dd188758e4564b51373019bc7a7716"
+MAINTENANCE_URL = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}/{MAINTENANCE_PATH}"
+
+
+def fetch_maintenance_verified():
+    """Fetch maintenance.yml pinned to PROTOCOL_REF and verify its SHA-256
+    before returning the bytes. Returns None on fetch failure; a hash
+    mismatch aborts outright - the file becomes a GitHub workflow."""
+    try:
+        req = urllib.request.Request(MAINTENANCE_URL, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            content = r.read()
+    except Exception as e:
+        print(f"[sync] Failed to fetch maintenance workflow: {e}")
+        return None
+    digest = hashlib.sha256(content).hexdigest()
+    if digest != MAINTENANCE_SHA256:
+        print(f"[sync] Integrity check failed for {MAINTENANCE_PATH} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(f"[sync]   expected sha256 {MAINTENANCE_SHA256}", file=sys.stderr)
+        print(f"[sync]   actual   sha256 {digest}", file=sys.stderr)
+        print("[sync] Refusing to install unverified workflow.", file=sys.stderr)
+        sys.exit(1)
+    return content
+
 HEADER = "<!-- ROKCT-SYNC-START: {repo}/{session}/{ts} -->\n"
 FOOTER = "<!-- ROKCT-SYNC-END: {repo}/{session}/{ts} -->\n"
 
@@ -86,19 +115,14 @@ def get_child_repo():
     return "unknown-child"
 
 def fetch_maintenance_workflow(dest_path):
-    """Fetch maintenance.yml from the protocol remote repository."""
-    url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            content = r.read()
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            with open(dest_path, "wb") as f:
-                f.write(content)
-        return True
-    except Exception as e:
-        print(f"[sync] Failed to fetch maintenance workflow: {e}")
+    """Fetch maintenance.yml (pinned + verified) from the protocol repository."""
+    content = fetch_maintenance_verified()
+    if content is None:
         return False
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    with open(dest_path, "wb") as f:
+        f.write(content)
+    return True
 
 def check_and_update_maintenance(parent_clone):
     """Ensure parent has the maintenance workflow. Only installs if missing to avoid overriding custom cron."""
@@ -110,18 +134,14 @@ def check_and_update_maintenance(parent_clone):
         return False
 
     print("[sync] Parent is missing maintenance workflow. Installing...")
-    url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/workflows/maintenance.yml"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            remote_content = r.read()
-            os.makedirs(os.path.dirname(maintenance_path), exist_ok=True)
-            with open(maintenance_path, "wb") as f:
-                f.write(remote_content)
-        return True
-    except Exception as e:
-        print(f"[sync] Failed to install maintenance workflow: {e}")
+    remote_content = fetch_maintenance_verified()
+    if remote_content is None:
+        print("[sync] Failed to install maintenance workflow")
         return False
+    os.makedirs(os.path.dirname(maintenance_path), exist_ok=True)
+    with open(maintenance_path, "wb") as f:
+        f.write(remote_content)
+    return True
 
 def sync_to_parent(config):
     parent_repo = config.get("parent_repo")

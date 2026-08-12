@@ -5,7 +5,14 @@
 
 set -e
 
-PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main"
+# Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
+# The initiate.py fetch is pinned to this commit and its SHA-256 is verified
+# before it is executed; a mismatch aborts the install.
+PROTOCOL_REF="59b84f300a76a8a442b58dd1d8bedb75566a6c53"
+INITIATE_SHA256_LOCAL="dbf7dc642c6d03745f4d4e68e897bfddf9e3db6037c2810297245695a1550406"
+INITIATE_SHA256_WEB="fcdf8ff3fd29f0c77d947b7b5f38a75ae39abef77ce216bff30942d5b7d8ed56"
+
+PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/$PROTOCOL_REF"
 
 echo "[install] Rokct Protocol Setup"
 echo "Are you a Human or an Agent?"
@@ -26,6 +33,11 @@ else
 fi
 
 INIT_FILE="profiles/$ROKCT_PROFILE/initiate.py"
+if [[ "$ROKCT_PROFILE" == "web" ]]; then
+  INITIATE_SHA256="$INITIATE_SHA256_WEB"
+else
+  INITIATE_SHA256="$INITIATE_SHA256_LOCAL"
+fi
 
 if ! command -v python3 &>/dev/null && ! command -v python &>/dev/null; then
   echo "[install] ERROR: python is required but not installed."
@@ -37,8 +49,23 @@ PYTHON_CMD=$(command -v python3 || command -v python)
 
 mkdir -p .rokct
 
-echo "[install] Fetching $ROKCT_PROFILE initiate.py from protocol..."
+echo "[install] Fetching $ROKCT_PROFILE initiate.py from protocol (ref $PROTOCOL_REF)..."
+# BEGIN fetch-and-verify (tests/test_install.sh replaces this block with a local copy)
 curl -sSL "$PROTOCOL_RAW/$INIT_FILE" -o .rokct/initiate.py
+if command -v sha256sum &>/dev/null; then
+  ACTUAL_SHA256=$(sha256sum .rokct/initiate.py | cut -d' ' -f1)
+else
+  ACTUAL_SHA256=$(shasum -a 256 .rokct/initiate.py | cut -d' ' -f1)
+fi
+if [[ "$ACTUAL_SHA256" != "$INITIATE_SHA256" ]]; then
+  echo "[install] ERROR: integrity check failed for $INIT_FILE (ref $PROTOCOL_REF)." >&2
+  echo "[install]   expected sha256 $INITIATE_SHA256" >&2
+  echo "[install]   actual   sha256 $ACTUAL_SHA256" >&2
+  echo "[install] Refusing to execute unverified code." >&2
+  rm -f .rokct/initiate.py
+  exit 1
+fi
+# END fetch-and-verify
 
 echo "[install] Running init..."
 $PYTHON_CMD .rokct/initiate.py

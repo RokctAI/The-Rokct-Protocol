@@ -29,10 +29,10 @@ setup_temp_env() {
 
 # Patch install.sh to use local profiles instead of GitHub
 patch_installer() {
-  # Replace the curl line with a cp line
-  # Original: curl -sSL "$PROTOCOL_RAW/$INIT_FILE" -o .rokct/initiate.py
-  # Patched: cp "$INIT_FILE" .rokct/initiate.py
-  sed -i 's|curl -sSL "$PROTOCOL_RAW/\$INIT_FILE" -o .rokct/initiate.py|cp "\$INIT_FILE" .rokct/initiate.py|' "$TEST_ROOT/install.sh"
+  # Replace the whole pinned fetch-and-verify block with a local cp: the test
+  # exercises the working-tree profiles, whose hashes intentionally differ
+  # from the ones pinned at PROTOCOL_REF until the next lock bump.
+  sed -i '/# BEGIN fetch-and-verify/,/# END fetch-and-verify/c\cp "$INIT_FILE" .rokct/initiate.py' "$TEST_ROOT/install.sh"
 }
 
 test_human() {
