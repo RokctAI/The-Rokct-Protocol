@@ -212,8 +212,9 @@ This repo's runtime-fetched-and-executed files are pinned. See
    `<sdk>/nextjs/` (empty placeholder dirs are fine for platforms you don't
    ship yet).
 3. Read the `agent` repo's root `SDK_README.md` in full before writing Dart
-   code. Follow its DDD layout (`domain/` with data/request/response slicing,
-   `infrastructure/`, `application/`, `templates/`).
+   code. Follow its DDD layout (`domain/` interfaces; `infrastructure/` with
+   `models/` sliced into data/response and `repositories/`; `application/`,
+   `templates/`).
 4. Write `<sdk>/dart/manifest.json` with at least `name`, `version: "1.0.0"`,
    and `installs`. Add only the keys the SDK genuinely declares (see the key
    table above); check the matching `update_*()` docstring in
