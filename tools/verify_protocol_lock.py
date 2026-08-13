@@ -145,22 +145,64 @@ def check_pinned_content(ref, files, use_git):
             fail(f"{path} at {ref}: expected sha256 {files[path]}, got {digest}")
 
 
-def report_working_tree_drift(files):
-    """Informational only: a target edited since the pin is the normal state
-    of a PR that changes fetched code — the lock bump follows the merge."""
-    drifted = []
+def _rewrite_pins(text, rel_path, ref, files):
+    """Apply gen_protocol_lock's embedded-constant rewrite to `text` using the
+    current lockfile values. Used to compare a consumer target's working-tree
+    copy against its pinned blob MODULO the pin constants themselves."""
+    for op in gen.CONSUMERS.get(rel_path, []):
+        if op[0] == "ref":
+            text = gen.ref_pattern(rel_path).sub(r'\g<1>"%s"' % ref, text)
+        elif op[0] == "sha":
+            _, var, target = op
+            text = gen.sha_pattern(var).sub(
+                r'\g<1>"%s"' % files.get(target, ""), text)
+        elif op[0] == "dict":
+            _, var, targets = op
+            text = gen.dict_pattern(var).sub(
+                gen.format_dict(var, targets, files), text)
+    return text
+
+
+def check_working_tree_drift(ref, files, offline, use_git):
+    """A locked target whose working-tree content differs from the pinned
+    hash is an inconsistency and fails the verification. The one expected
+    exception: a target that is also a pin CONSUMER (the initiate.py
+    bootstrappers embed their own hash, so the lock-bump commit rewrites
+    them) is accepted when its working-tree copy equals the pinned blob with
+    the pin constants rewritten to the current lockfile values — i.e. the
+    only difference is the lock bump itself. Any other edit still fails."""
     for path in sorted(files):
         abs_path = os.path.join(REPO_ROOT, path)
         if not os.path.exists(abs_path):
+            fail(f"locked target {path} is missing from the working tree")
             continue
         with open(abs_path, "rb") as handle:
-            digest = hashlib.sha256(handle.read()).hexdigest()
-        if digest != files[path]:
-            drifted.append(path)
-    if drifted:
-        print("[verify] Note: working-tree content differs from the pinned hashes for "
-              f"{len(drifted)} target(s) (expected while a change is awaiting its lock "
-              "bump): " + ", ".join(drifted))
+            working = handle.read()
+        if hashlib.sha256(working).hexdigest() == files[path]:
+            continue
+        if path in gen.CONSUMERS:
+            if offline:
+                # Cannot read the pinned blob to compare modulo pins; the
+                # embedded constants were already checked against the lock.
+                print(f"[verify] Note: {path} differs from its pinned hash "
+                      "(pin-consumer target, offline mode - content not compared).")
+                continue
+            try:
+                pinned = git_show(ref, path) if use_git else fetch_pinned(ref, path)
+            except Exception:
+                pinned = None
+            if pinned is not None:
+                expected = _rewrite_pins(
+                    pinned.decode("utf-8"), path, ref, files).encode("utf-8")
+                if working == expected:
+                    # Exactly the lock bump - constants match the lockfile,
+                    # everything else matches the pinned blob.
+                    continue
+            fail(f"{path}: working tree differs from the pinned content at {ref} "
+                 "beyond the embedded pin constants")
+            continue
+        fail(f"{path}: working tree sha256 differs from the lockfile "
+             f"({files[path]}) - regenerate the lock or revert the edit")
 
 
 def main(argv=None):
@@ -179,7 +221,7 @@ def main(argv=None):
     check_embedded_constants(ref, files)
     if not args.offline:
         check_pinned_content(ref, files, use_git=args.git)
-    report_working_tree_drift(files)
+    check_working_tree_drift(ref, files, offline=args.offline, use_git=args.git)
 
     if _ERRORS:
         print(f"[verify] FAILED with {len(_ERRORS)} inconsistenc"
