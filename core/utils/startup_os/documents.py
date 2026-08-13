@@ -23,7 +23,7 @@ def split_front_matter(text):
     match = _FRONT_MATTER_RE.match(text)
     if not match:
         return "", text
-    return match.group(0), text[match.end():]
+    return match.group(0), text[match.end() :]
 
 
 def content_fingerprint(text, length=8):
@@ -61,7 +61,9 @@ def build_version_block(
     ]
 
     if completeness is not None:
-        lines.append(f"> *   **Profile completeness**: `{completeness:.0%}` of questions answered")
+        lines.append(
+            f"> *   **Profile completeness**: `{completeness:.0%}` of questions answered"
+        )
 
     if applicable_fields:
         lines.append(
@@ -135,8 +137,11 @@ def build_provenance_footer(rows, jurisdiction_name):
         "not_applicable": "Not applicable",
     }
 
-    shown = [(key, status, source) for key, status, source in rows
-             if status != "not_applicable"]
+    shown = [
+        (key, status, source)
+        for key, status, source in rows
+        if status != "not_applicable"
+    ]
     if not shown:
         return ""
 
@@ -192,7 +197,9 @@ def build_gap_report(missing_labels, warnings):
 
     if missing_labels:
         lines.append("> [!WARNING]")
-        lines.append("> **These fields are unanswered and appear as placeholders above:**")
+        lines.append(
+            "> **These fields are unanswered and appear as placeholders above:**"
+        )
         for key, label in sorted(missing_labels.items()):
             lines.append(f"> *   `{key}` — {label}")
         lines.append("")

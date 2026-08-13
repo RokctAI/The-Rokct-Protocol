@@ -45,15 +45,20 @@ def fail(message):
 def load_lockfile():
     lock_path = os.path.join(REPO_ROOT, gen.LOCKFILE_NAME)
     if not os.path.exists(lock_path):
-        print(f"[verify] {gen.LOCKFILE_NAME} not found at the repo root. "
-              "Run tools/gen_protocol_lock.py first.", file=sys.stderr)
+        print(
+            f"[verify] {gen.LOCKFILE_NAME} not found at the repo root. "
+            "Run tools/gen_protocol_lock.py first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     with open(lock_path, "r", encoding="utf-8") as handle:
         lock = json.load(handle)
     ref = lock.get("ref", "")
     if not re.fullmatch(r"[0-9a-f]{40}", ref):
-        print(f"[verify] Lockfile ref {ref!r} is not a full 40-char commit SHA.",
-              file=sys.stderr)
+        print(
+            f"[verify] Lockfile ref {ref!r} is not a full 40-char commit SHA.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     files = lock.get("files", {})
     expected_targets = set(gen.LOCK_TARGETS)
@@ -64,7 +69,9 @@ def load_lockfile():
         fail(f"{gen.LOCKFILE_NAME} has unexpected target {extra}")
     for path, digest in sorted(files.items()):
         if not re.fullmatch(r"[0-9a-f]{64}", str(digest)):
-            fail(f"{gen.LOCKFILE_NAME} entry for {path} is not a sha256 hex digest: {digest!r}")
+            fail(
+                f"{gen.LOCKFILE_NAME} entry for {path} is not a sha256 hex digest: {digest!r}"
+            )
     return ref, files
 
 
@@ -87,20 +94,27 @@ def check_embedded_constants(ref, files):
         for op in ops:
             if op[0] == "ref":
                 match = _extract_exactly_one(
-                    gen.ref_pattern(rel_path), text, rel_path, "PROTOCOL_REF constant")
+                    gen.ref_pattern(rel_path), text, rel_path, "PROTOCOL_REF constant"
+                )
                 if match is not None and match[1] != ref:
-                    fail(f"{rel_path}: PROTOCOL_REF is {match[1]}, lockfile ref is {ref}")
+                    fail(
+                        f"{rel_path}: PROTOCOL_REF is {match[1]}, lockfile ref is {ref}"
+                    )
             elif op[0] == "sha":
                 _, var, target = op
                 match = _extract_exactly_one(
-                    gen.sha_pattern(var), text, rel_path, f"{var} constant")
+                    gen.sha_pattern(var), text, rel_path, f"{var} constant"
+                )
                 if match is not None and match[1] != files.get(target):
-                    fail(f"{rel_path}: {var} is {match[1]}, lockfile says "
-                         f"{files.get(target)} for {target}")
+                    fail(
+                        f"{rel_path}: {var} is {match[1]}, lockfile says "
+                        f"{files.get(target)} for {target}"
+                    )
             elif op[0] == "dict":
                 _, var, targets = op
                 block = _extract_exactly_one(
-                    gen.dict_pattern(var), text, rel_path, f"{var} block")
+                    gen.dict_pattern(var), text, rel_path, f"{var} block"
+                )
                 if block is None:
                     continue
                 entries = dict(re.findall(r'"([^"]+)":\s*"([0-9a-f]{64})"', block))
@@ -108,8 +122,10 @@ def check_embedded_constants(ref, files):
                     if target not in entries:
                         fail(f"{rel_path}: {var} is missing an entry for {target}")
                     elif entries[target] != files.get(target):
-                        fail(f"{rel_path}: {var}[{target!r}] is {entries[target]}, "
-                             f"lockfile says {files.get(target)}")
+                        fail(
+                            f"{rel_path}: {var}[{target!r}] is {entries[target]}, "
+                            f"lockfile says {files.get(target)}"
+                        )
                 for extra in sorted(set(entries) - set(targets)):
                     fail(f"{rel_path}: {var} has an unexpected entry for {extra}")
 
@@ -117,7 +133,8 @@ def check_embedded_constants(ref, files):
 def fetch_pinned(ref, path):
     url = f"{RAW_BASE}/{ref}/{path}"
     request = urllib.request.Request(
-        url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "verify-protocol-lock"})
+        url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "verify-protocol-lock"}
+    )
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.read()
 
@@ -125,7 +142,9 @@ def fetch_pinned(ref, path):
 def git_show(ref, path):
     result = subprocess.run(
         ["git", "-C", REPO_ROOT, "show", f"{ref}:{path}"],
-        capture_output=True, check=False)
+        capture_output=True,
+        check=False,
+    )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode().strip())
     return result.stdout
@@ -154,12 +173,10 @@ def _rewrite_pins(text, rel_path, ref, files):
             text = gen.ref_pattern(rel_path).sub(r'\g<1>"%s"' % ref, text)
         elif op[0] == "sha":
             _, var, target = op
-            text = gen.sha_pattern(var).sub(
-                r'\g<1>"%s"' % files.get(target, ""), text)
+            text = gen.sha_pattern(var).sub(r'\g<1>"%s"' % files.get(target, ""), text)
         elif op[0] == "dict":
             _, var, targets = op
-            text = gen.dict_pattern(var).sub(
-                gen.format_dict(var, targets, files), text)
+            text = gen.dict_pattern(var).sub(gen.format_dict(var, targets, files), text)
     return text
 
 
@@ -184,8 +201,10 @@ def check_working_tree_drift(ref, files, offline, use_git):
             if offline:
                 # Cannot read the pinned blob to compare modulo pins; the
                 # embedded constants were already checked against the lock.
-                print(f"[verify] Note: {path} differs from its pinned hash "
-                      "(pin-consumer target, offline mode - content not compared).")
+                print(
+                    f"[verify] Note: {path} differs from its pinned hash "
+                    "(pin-consumer target, offline mode - content not compared)."
+                )
                 continue
             try:
                 pinned = git_show(ref, path) if use_git else fetch_pinned(ref, path)
@@ -193,30 +212,43 @@ def check_working_tree_drift(ref, files, offline, use_git):
                 pinned = None
             if pinned is not None:
                 expected = _rewrite_pins(
-                    pinned.decode("utf-8"), path, ref, files).encode("utf-8")
+                    pinned.decode("utf-8"), path, ref, files
+                ).encode("utf-8")
                 if working == expected:
                     # Exactly the lock bump - constants match the lockfile,
                     # everything else matches the pinned blob.
                     continue
-            fail(f"{path}: working tree differs from the pinned content at {ref} "
-                 "beyond the embedded pin constants")
+            fail(
+                f"{path}: working tree differs from the pinned content at {ref} "
+                "beyond the embedded pin constants"
+            )
             continue
-        fail(f"{path}: working tree sha256 differs from the lockfile "
-             f"({files[path]}) - regenerate the lock or revert the edit")
+        fail(
+            f"{path}: working tree sha256 differs from the lockfile "
+            f"({files[path]}) - regenerate the lock or revert the edit"
+        )
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--offline", action="store_true",
-                      help="only check embedded constants against the lockfile")
-    mode.add_argument("--git", action="store_true",
-                      help="verify pinned content via `git show` instead of the network")
+    mode.add_argument(
+        "--offline",
+        action="store_true",
+        help="only check embedded constants against the lockfile",
+    )
+    mode.add_argument(
+        "--git",
+        action="store_true",
+        help="verify pinned content via `git show` instead of the network",
+    )
     args = parser.parse_args(argv)
 
     ref, files = load_lockfile()
-    print(f"[verify] Lockfile ref {ref}, {len(files)} targets, "
-          f"{len(gen.CONSUMERS)} consumer files")
+    print(
+        f"[verify] Lockfile ref {ref}, {len(files)} targets, "
+        f"{len(gen.CONSUMERS)} consumer files"
+    )
 
     check_embedded_constants(ref, files)
     if not args.offline:
@@ -224,11 +256,17 @@ def main(argv=None):
     check_working_tree_drift(ref, files, offline=args.offline, use_git=args.git)
 
     if _ERRORS:
-        print(f"[verify] FAILED with {len(_ERRORS)} inconsistenc"
-              f"{'y' if len(_ERRORS) == 1 else 'ies'}.", file=sys.stderr)
+        print(
+            f"[verify] FAILED with {len(_ERRORS)} inconsistenc"
+            f"{'y' if len(_ERRORS) == 1 else 'ies'}.",
+            file=sys.stderr,
+        )
         return 1
-    print("[verify] OK: lockfile, embedded constants"
-          + ("" if args.offline else " and pinned content") + " are consistent.")
+    print(
+        "[verify] OK: lockfile, embedded constants"
+        + ("" if args.offline else " and pinned content")
+        + " are consistent."
+    )
     return 0
 
 

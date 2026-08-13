@@ -26,7 +26,9 @@ asserting B-BBEE Level 1 status.
 import re
 
 _VARIABLE_RE = re.compile(r"\{\{([a-zA-Z0-9_]+)\}\}")
-_BLOCK_OPEN_RE = re.compile(r"\{\{#(if|unless|if_jurisdiction|if_feature)(?:\s+([^}]*?))?\s*\}\}")
+_BLOCK_OPEN_RE = re.compile(
+    r"\{\{#(if|unless|if_jurisdiction|if_feature)(?:\s+([^}]*?))?\s*\}\}"
+)
 _ELSE_RE = re.compile(r"\{\{else\}\}")
 
 # Values that read as "we do not have this", for `{{#if}}` truthiness.
@@ -110,7 +112,7 @@ def _render_blocks(text, context, warnings, depth=0):
             output.append(text[cursor:])
             break
 
-        output.append(text[cursor:match.start()])
+        output.append(text[cursor : match.start()])
         tag = match.group(1)
         argument = (match.group(2) or "").strip()
 
@@ -120,7 +122,7 @@ def _render_blocks(text, context, warnings, depth=0):
                 f"Unclosed {{{{#{tag}}}}} block — expected {{{{/{tag}}}}}. "
                 "Rendering the block literally."
             )
-            output.append(text[match.start():match.end()])
+            output.append(text[match.start() : match.end()])
             cursor = match.end()
             continue
 
@@ -161,7 +163,7 @@ def _extract_block(text, start, tag):
             continue
         depth -= 1
         if depth == 0:
-            return text[start:next_close.start()], next_close.end()
+            return text[start : next_close.start()], next_close.end()
         cursor = next_close.end()
     return None, len(text)
 
@@ -171,7 +173,9 @@ def _split_else(body, tag):
     if tag not in ("if", "unless", "if_jurisdiction", "if_feature"):
         return body, ""
 
-    open_pattern = re.compile(r"\{\{#(if|unless|if_jurisdiction|if_feature)(?:\s+[^}]*?)?\s*\}\}")
+    open_pattern = re.compile(
+        r"\{\{#(if|unless|if_jurisdiction|if_feature)(?:\s+[^}]*?)?\s*\}\}"
+    )
     close_pattern = re.compile(r"\{\{/(if|unless|if_jurisdiction|if_feature)\}\}")
 
     depth = 0
@@ -191,7 +195,7 @@ def _split_else(body, tag):
         elif nearest is closed:
             depth -= 1
         elif depth == 0:
-            return body[:nearest.start()], body[nearest.end():]
+            return body[: nearest.start()], body[nearest.end() :]
         cursor = nearest.end()
 
     return body, ""
@@ -273,7 +277,9 @@ def check_blocks(template_text):
             stack.append((opened, line))
             continue
         if not stack:
-            errors.append(f"line {line}: {{{{/{closed}}}}} with no matching opening tag")
+            errors.append(
+                f"line {line}: {{{{/{closed}}}}} with no matching opening tag"
+            )
             continue
         expected, opened_line = stack.pop()
         if expected != closed:
@@ -291,6 +297,8 @@ def check_blocks(template_text):
 def find_placeholders(template_text):
     """All `{{name}}` placeholders in a template, excluding block syntax."""
     stripped = _BLOCK_OPEN_RE.sub("", template_text)
-    stripped = re.sub(r"\{\{/(?:if|unless|if_jurisdiction|if_feature)\}\}", "", stripped)
+    stripped = re.sub(
+        r"\{\{/(?:if|unless|if_jurisdiction|if_feature)\}\}", "", stripped
+    )
     stripped = _ELSE_RE.sub("", stripped)
     return set(_VARIABLE_RE.findall(stripped))

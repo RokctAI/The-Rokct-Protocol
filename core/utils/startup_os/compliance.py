@@ -105,9 +105,9 @@ _DATE_FORMATS = (
     "%d/%m/%Y",
     "%Y/%m/%d",
     "%d-%b-%Y",
-    "%d-%B-%Y",   # 25-October-2024 — the format that silently defeated the
-                  # legacy expiry check and let an expired BEE certificate
-                  # report as "no explicit expiry date".
+    "%d-%B-%Y",  # 25-October-2024 — the format that silently defeated the
+    # legacy expiry check and let an expired BEE certificate
+    # report as "no explicit expiry date".
     "%d %b %Y",
     "%d %B %Y",
     "%b %d, %Y",
@@ -295,7 +295,9 @@ def load_compliance(compliance_dir, trading_name, jurisdiction, trademark_dir=No
     if jurisdiction.supports(FEATURE_TAX_CLEARANCE):
         _parse_tax_pin(record, compliance_dir)
     if jurisdiction.supports(FEATURE_TRADEMARKS):
-        record.trademarks = parse_trademarks(trademark_dir or os.path.join(compliance_dir, "TradeMark"))
+        record.trademarks = parse_trademarks(
+            trademark_dir or os.path.join(compliance_dir, "TradeMark")
+        )
 
     _apply_overrides(record, compliance_dir)
     return record
@@ -326,8 +328,12 @@ def _parse_registry_document(record, compliance_dir, jurisdiction):
 
     reg_match = re.search(r"(\d{4}\s*/\s*\d{6,7}\s*/\s*\d{2})", text)
     if reg_match:
-        record.set("reg_number", re.sub(r"\s+", "", reg_match.group(1)),
-                   STATUS_VERIFIED, source)
+        record.set(
+            "reg_number",
+            re.sub(r"\s+", "", reg_match.group(1)),
+            STATUS_VERIFIED,
+            source,
+        )
 
     # The registry's own string, used verbatim. The previous engine stripped
     # any suffix off this and re-appended one derived from the enterprise-type
@@ -336,7 +342,9 @@ def _parse_registry_document(record, compliance_dir, jurisdiction):
     # runs the registration number straight onto the end of the enterprise
     # name, so a greedy class turns "EXAMPLE TRADING" into
     # "EXAMPLE TRADING 2017".
-    name_match = re.search(r"Enterprise Name:?\s*([A-Z\s\(\)&.,'-]{3,})", text, re.IGNORECASE)
+    name_match = re.search(
+        r"Enterprise Name:?\s*([A-Z\s\(\)&.,'-]{3,})", text, re.IGNORECASE
+    )
     if name_match:
         legal_name = " ".join(name_match.group(1).split()).strip(" -,.")
         if legal_name:
@@ -348,7 +356,8 @@ def _parse_registry_document(record, compliance_dir, jurisdiction):
 
     date_match = re.search(
         r"Registration Date[:\s]+(\d{1,2}\s+\w+\s+\d{4}|\d{4}[-/]\d{2}[-/]\d{2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})",
-        text, re.IGNORECASE,
+        text,
+        re.IGNORECASE,
     )
     if date_match:
         record.set("reg_date", date_match.group(1).strip(), STATUS_VERIFIED, source)
@@ -357,7 +366,9 @@ def _parse_registry_document(record, compliance_dir, jurisdiction):
     if addresses.get("postal"):
         record.set("postal_address", addresses["postal"], STATUS_VERIFIED, source)
     if addresses.get("registered"):
-        record.set("registered_office", addresses["registered"], STATUS_VERIFIED, source)
+        record.set(
+            "registered_office", addresses["registered"], STATUS_VERIFIED, source
+        )
 
 
 def _extract_addresses(text):
@@ -372,11 +383,16 @@ def _extract_addresses(text):
         return {}
 
     stop_words = (
-        "registration date", "business start date", "enterprise type",
-        "active members", "directors", "appointment", "tax",
+        "registration date",
+        "business start date",
+        "enterprise type",
+        "active members",
+        "directors",
+        "appointment",
+        "tax",
     )
     collected = []
-    for line in lines[start + 1:start + 16]:
+    for line in lines[start + 1 : start + 16]:
         if any(word in line.lower() for word in stop_words):
             break
         collected.append(line)
@@ -420,11 +436,18 @@ def _parse_bee_certificate(record, compliance_dir):
 
     level = re.search(r"(LEVEL\s+\d+\s+CONTRIBUTOR)", text, re.IGNORECASE)
     if level:
-        record.set("bee_level", " ".join(level.group(1).split()).title(), STATUS_VERIFIED, source)
+        record.set(
+            "bee_level",
+            " ".join(level.group(1).split()).title(),
+            STATUS_VERIFIED,
+            source,
+        )
 
     procurement = re.search(r"(\d+%)\s*PROCUREMENT\s*RECOGNITION", text, re.IGNORECASE)
     if procurement:
-        record.set("bee_procurement_recognition", procurement.group(1), STATUS_VERIFIED, source)
+        record.set(
+            "bee_procurement_recognition", procurement.group(1), STATUS_VERIFIED, source
+        )
 
     # Certificate identifiers always start with a digit; a bare `\S+` here
     # captured the next word on the page ("Total") when the label and value
@@ -439,16 +462,23 @@ def _parse_bee_certificate(record, compliance_dir):
     if black:
         record.set("bee_black_ownership", black.group(1), STATUS_VERIFIED, source)
 
-    youth = re.search(r"youth\s+as\s+defined.*?\n\s*(\d+(?:\.\d+)?%)", text,
-                      re.DOTALL | re.IGNORECASE)
+    youth = re.search(
+        r"youth\s+as\s+defined.*?\n\s*(\d+(?:\.\d+)?%)", text, re.DOTALL | re.IGNORECASE
+    )
     if youth:
         record.set("bee_youth_owned", youth.group(1), STATUS_VERIFIED, source)
 
     # Dates: prefer explicit labels, fall back to the last two dates on the page.
-    issue = re.search(r"Issue\s*Date\s*:?\s*([\d]{1,2}[-/\s][\w]+[-/\s][\d]{4}|[\d]{4}-[\d]{2}-[\d]{2})",
-                      text, re.IGNORECASE)
-    expiry = re.search(r"Expir\w*\s*Date\s*:?\s*([\d]{1,2}[-/\s][\w]+[-/\s][\d]{4}|[\d]{4}-[\d]{2}-[\d]{2})",
-                       text, re.IGNORECASE)
+    issue = re.search(
+        r"Issue\s*Date\s*:?\s*([\d]{1,2}[-/\s][\w]+[-/\s][\d]{4}|[\d]{4}-[\d]{2}-[\d]{2})",
+        text,
+        re.IGNORECASE,
+    )
+    expiry = re.search(
+        r"Expir\w*\s*Date\s*:?\s*([\d]{1,2}[-/\s][\w]+[-/\s][\d]{4}|[\d]{4}-[\d]{2}-[\d]{2})",
+        text,
+        re.IGNORECASE,
+    )
     if issue:
         record.set("bee_issue_date", issue.group(1).strip(), STATUS_VERIFIED, source)
     if expiry:
@@ -478,7 +508,9 @@ def _parse_tax_pin(record, compliance_dir):
 
     source = "Tax_Pin.pdf"
 
-    ref = re.search(r"Taxpayer Reference Number[:\s]+(?:IT\s*-\s*)?(\d+)", text, re.IGNORECASE)
+    ref = re.search(
+        r"Taxpayer Reference Number[:\s]+(?:IT\s*-\s*)?(\d+)", text, re.IGNORECASE
+    )
     if not ref:
         ref = re.search(r"Tax reference No:?\s*(\d+)", text, re.IGNORECASE)
     if ref:
@@ -490,19 +522,31 @@ def _parse_tax_pin(record, compliance_dir):
 
     issue = re.search(r"Issue Date:?\s*([\d/\-]+)", text, re.IGNORECASE)
     if issue:
-        record.set("tax_pin_issue_date", issue.group(1).strip(), STATUS_VERIFIED, source)
+        record.set(
+            "tax_pin_issue_date", issue.group(1).strip(), STATUS_VERIFIED, source
+        )
 
     expiry = re.search(r"PIN Expiry Date\s*:?\s*([\d/\-]+)", text, re.IGNORECASE)
     if expiry:
-        record.set("tax_pin_expiry_date", expiry.group(1).strip(), STATUS_VERIFIED, source)
+        record.set(
+            "tax_pin_expiry_date", expiry.group(1).strip(), STATUS_VERIFIED, source
+        )
 
-    status = re.search(r"Tax Compliance Status\s*:?\s*([A-Za-z ]+)", text, re.IGNORECASE)
+    status = re.search(
+        r"Tax Compliance Status\s*:?\s*([A-Za-z ]+)", text, re.IGNORECASE
+    )
     if status:
-        record.set("tax_compliance_status", status.group(1).strip(), STATUS_VERIFIED, source)
+        record.set(
+            "tax_compliance_status", status.group(1).strip(), STATUS_VERIFIED, source
+        )
     elif pin:
         # A valid PIN was issued; the status wording varies by certificate.
-        record.set("tax_compliance_status", "Compliant (per issued TCS PIN)",
-                   STATUS_VERIFIED, source)
+        record.set(
+            "tax_compliance_status",
+            "Compliant (per issued TCS PIN)",
+            STATUS_VERIFIED,
+            source,
+        )
 
 
 def parse_trademarks(trademark_dir):
@@ -528,19 +572,25 @@ def parse_trademarks(trademark_dir):
             "nature": "Ordinary",
         }
 
-        app = re.search(r"21\s*Official Application No\.?\s*(\d+/\d+)", text, re.IGNORECASE)
+        app = re.search(
+            r"21\s*Official Application No\.?\s*(\d+/\d+)", text, re.IGNORECASE
+        )
         if app:
             entry["application_number"] = app.group(1).strip()
         filed = re.search(r"22\s*Application date\s*([\d\-/]+)", text, re.IGNORECASE)
         if filed:
             entry["application_date"] = filed.group(1).strip()
-        mark = re.search(r"54\s*Representation of Trade mark\s*\n([^\n]+)", text, re.IGNORECASE)
+        mark = re.search(
+            r"54\s*Representation of Trade mark\s*\n([^\n]+)", text, re.IGNORECASE
+        )
         if mark:
             entry["mark"] = mark.group(1).strip()
         status = re.search(r"TRADE MARK STATUS:?\s*(\S+)", text, re.IGNORECASE)
         if status:
             entry["status"] = status.group(1).strip()
-        klass = re.search(r"51\s*International Classification\s*(\d+)", text, re.IGNORECASE)
+        klass = re.search(
+            r"51\s*International Classification\s*(\d+)", text, re.IGNORECASE
+        )
         if klass:
             entry["international_class"] = klass.group(1).strip()
 
@@ -607,15 +657,31 @@ def build_compliance_log(record, folder_name, today=None):
     if jurisdiction.supports(FEATURE_COMPANY_REGISTRY):
         lines.append(_registry_section(record, jurisdiction, folder_name))
     if jurisdiction.supports(FEATURE_BBEE):
-        lines.append(_expiry_section(
-            record, today, "B-BBEE Certificate", "bee_level",
-            "bee_expiry_date", "bee_cert_number", "BEE.pdf", folder_name,
-        ))
+        lines.append(
+            _expiry_section(
+                record,
+                today,
+                "B-BBEE Certificate",
+                "bee_level",
+                "bee_expiry_date",
+                "bee_cert_number",
+                "BEE.pdf",
+                folder_name,
+            )
+        )
     if jurisdiction.supports(FEATURE_TAX_CLEARANCE):
-        lines.append(_expiry_section(
-            record, today, f"{jurisdiction.tax_authority} Tax Compliance PIN",
-            "tax_pin", "tax_pin_expiry_date", "tax_number", "Tax_Pin.pdf", folder_name,
-        ))
+        lines.append(
+            _expiry_section(
+                record,
+                today,
+                f"{jurisdiction.tax_authority} Tax Compliance PIN",
+                "tax_pin",
+                "tax_pin_expiry_date",
+                "tax_number",
+                "Tax_Pin.pdf",
+                folder_name,
+            )
+        )
 
     if record.warnings:
         lines.append("## Parser Notes\n")
@@ -645,7 +711,9 @@ def _registry_section(record, jurisdiction, folder_name):
     )
 
 
-def _expiry_section(record, today, title, primary_key, expiry_key, ref_key, filename, folder_name):
+def _expiry_section(
+    record, today, title, primary_key, expiry_key, ref_key, filename, folder_name
+):
     if not record.is_verified(primary_key):
         return (
             f"> [!IMPORTANT]\n"
@@ -718,8 +786,10 @@ def compliance_exit_status(record, today=None):
             pending = True
             messages.append(f"PENDING  {key}")
 
-    for expiry_key, label in (("bee_expiry_date", "B-BBEE certificate"),
-                              ("tax_pin_expiry_date", "Tax compliance PIN")):
+    for expiry_key, label in (
+        ("bee_expiry_date", "B-BBEE certificate"),
+        ("tax_pin_expiry_date", "Tax compliance PIN"),
+    ):
         field = record.get(expiry_key)
         if not field or not field.is_applicable or not field.is_verified:
             continue

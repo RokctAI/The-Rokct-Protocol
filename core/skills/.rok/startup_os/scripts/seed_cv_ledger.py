@@ -26,33 +26,65 @@ except ImportError:
     pypdf = None
 
 _MONTHS = {
-    "jan": "01", "feb": "02", "mar": "03", "apr": "04", "may": "05", "jun": "06",
-    "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+    "jan": "01",
+    "feb": "02",
+    "mar": "03",
+    "apr": "04",
+    "may": "05",
+    "jun": "06",
+    "jul": "07",
+    "aug": "08",
+    "sep": "09",
+    "oct": "10",
+    "nov": "11",
+    "dec": "12",
 }
 
 # Section headings commonly found in CVs, mapped to the ledger category used.
 _SECTION_PATTERNS = (
-    (re.compile(r"^\s*(work\s+)?experience|employment(\s+history)?|career", re.IGNORECASE),
-     "Professional Experience"),
-    (re.compile(r"^\s*education|qualifications|academic", re.IGNORECASE),
-     "Education & Credentials"),
-    (re.compile(r"^\s*(certifications?|licen[cs]es?|training|courses?)", re.IGNORECASE),
-     "Certifications & Training"),
-    (re.compile(r"^\s*(awards?|honou?rs?|nominations?|recognition)", re.IGNORECASE),
-     "Awards & Recognition"),
-    (re.compile(r"^\s*(publications?|patents?|talks?|speaking)", re.IGNORECASE),
-     "Publications & Talks"),
-    (re.compile(r"^\s*(skills?|competenc|technical\s+profile|expertise)", re.IGNORECASE),
-     "Skills & Expertise"),
-    (re.compile(r"^\s*(volunteer|community|service)", re.IGNORECASE),
-     "Community & Service"),
-    (re.compile(r"^\s*(references?|referees?|contact|personal\s+details)", re.IGNORECASE),
-     None),  # explicitly excluded — contact details are not milestones
+    (
+        re.compile(
+            r"^\s*(work\s+)?experience|employment(\s+history)?|career", re.IGNORECASE
+        ),
+        "Professional Experience",
+    ),
+    (
+        re.compile(r"^\s*education|qualifications|academic", re.IGNORECASE),
+        "Education & Credentials",
+    ),
+    (
+        re.compile(
+            r"^\s*(certifications?|licen[cs]es?|training|courses?)", re.IGNORECASE
+        ),
+        "Certifications & Training",
+    ),
+    (
+        re.compile(r"^\s*(awards?|honou?rs?|nominations?|recognition)", re.IGNORECASE),
+        "Awards & Recognition",
+    ),
+    (
+        re.compile(r"^\s*(publications?|patents?|talks?|speaking)", re.IGNORECASE),
+        "Publications & Talks",
+    ),
+    (
+        re.compile(
+            r"^\s*(skills?|competenc|technical\s+profile|expertise)", re.IGNORECASE
+        ),
+        "Skills & Expertise",
+    ),
+    (
+        re.compile(r"^\s*(volunteer|community|service)", re.IGNORECASE),
+        "Community & Service",
+    ),
+    (
+        re.compile(
+            r"^\s*(references?|referees?|contact|personal\s+details)", re.IGNORECASE
+        ),
+        None,
+    ),  # explicitly excluded — contact details are not milestones
 )
 
-_DATE_RE = re.compile(
-    r"\b(?:(?P<month>[A-Za-z]{3,9})\s+)?(?P<year>19\d{2}|20\d{2})\b"
-)
+_DATE_RE = re.compile(r"\b(?:(?P<month>[A-Za-z]{3,9})\s+)?(?P<year>19\d{2}|20\d{2})\b")
 
 
 def normalise_date(month_text, year_text):
@@ -127,18 +159,27 @@ def extract_milestones(text):
         body = line
         if index + 1 < len(lines):
             nxt = lines[index + 1]
-            if nxt and not _DATE_RE.search(nxt) and len(nxt) > 15 and not nxt.endswith(":"):
+            if (
+                nxt
+                and not _DATE_RE.search(nxt)
+                and len(nxt) > 15
+                and not nxt.endswith(":")
+            ):
                 body = f"{line} — {nxt}"
 
         body = " ".join(body.split())
         if len(body) < 8:
             continue
 
-        milestones.append({
-            "date": normalise_date(date_match.group("month"), date_match.group("year")),
-            "category": section,
-            "text": body,
-        })
+        milestones.append(
+            {
+                "date": normalise_date(
+                    date_match.group("month"), date_match.group("year")
+                ),
+                "category": section,
+                "text": body,
+            }
+        )
 
     milestones.sort(key=lambda item: item["date"])
     return milestones
@@ -152,9 +193,12 @@ def build_parser():
     parser.add_argument("--type", choices=("business", "life"), default="life")
     parser.add_argument("--pdf", required=True, help="Path to the CV PDF")
     parser.add_argument("--root", default=None, help="Workspace root override")
-    parser.add_argument("--apply", action="store_true",
-                        help="Write the extracted milestones. Without this the "
-                             "script only prints what it found.")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write the extracted milestones. Without this the "
+        "script only prints what it found.",
+    )
     parser.add_argument("--quiet", action="store_true")
     return parser
 
@@ -201,7 +245,9 @@ def main():
         )
         return 1
 
-    print(f"\nExtracted {len(milestones)} candidate milestones from {os.path.basename(args.pdf)}:\n")
+    print(
+        f"\nExtracted {len(milestones)} candidate milestones from {os.path.basename(args.pdf)}:\n"
+    )
     for item in milestones:
         print(f"  [{item['date']}] ({item['category']}) {item['text'][:110]}")
 
@@ -235,12 +281,19 @@ def main():
         else:
             skipped += 1
 
-    print(f"\n[Success] Wrote {written} milestones ({skipped} already present) to {target}")
+    print(
+        f"\n[Success] Wrote {written} milestones ({skipped} already present) to {target}"
+    )
 
     from core.compiler import compile_instance
+
     try:
-        compile_instance(instance_type=args.type, instance_name=args.name,
-                         workspace_root=args.root, quiet=args.quiet)
+        compile_instance(
+            instance_type=args.type,
+            instance_name=args.name,
+            workspace_root=args.root,
+            quiet=args.quiet,
+        )
     except StartupOSError as exc:
         print(f"[Warning] Recompilation failed: {exc}", file=sys.stderr)
         return 1

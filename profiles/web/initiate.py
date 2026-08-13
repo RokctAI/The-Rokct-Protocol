@@ -21,13 +21,22 @@ EXPECTED_SHA256 = {
     "profiles/web/initiate.py": "1a94e9ff0612e97c49c5ecf55792f70338607e7c64b787abf2df5b24285eee60",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
-GITHUB_ZIP_BASE = f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
-PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GITHUB_ZIP_BASE = (
+    f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
+)
+PROTOCOL_DIR = (
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if "profiles" in os.path.abspath(__file__)
+    else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 REMOTE_PREFIX = f"The-Rokct-Protocol-{PROTOCOL_REF}"
 
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
+
 
 def check_for_update():
     """Data-only update check. The old self-update fetched initiate.py from
@@ -40,13 +49,19 @@ def check_for_update():
         return
     url = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/protocol.lock.json"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"},
+        )
         with urllib.request.urlopen(req, timeout=10) as r:
             latest_ref = json.loads(r.read().decode()).get("ref", "")
         if latest_ref and latest_ref != PROTOCOL_REF:
-            print("[init] A newer protocol version is available - re-run the installer to update.")
+            print(
+                "[init] A newer protocol version is available - re-run the installer to update."
+            )
     except Exception as e:
         print(f"[init] Update check failed: {e}", file=sys.stderr)
+
 
 def verify_pinned(rel_posix, data):
     """SHA-256 check for the executable fetch targets, before any write."""
@@ -55,11 +70,15 @@ def verify_pinned(rel_posix, data):
         return
     digest = hashlib.sha256(data).hexdigest()
     if digest != expected:
-        print(f"[init] Integrity check failed for {rel_posix} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(
+            f"[init] Integrity check failed for {rel_posix} (ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[init]   expected sha256 {expected}", file=sys.stderr)
         print(f"[init]   actual   sha256 {digest}", file=sys.stderr)
         print("[init] Refusing to install unverified code.", file=sys.stderr)
         sys.exit(1)
+
 
 # Bounded retry for transient network failures (connection resets, timeouts,
 # 429/5xx): 4 attempts with 2s/4s/8s backoff. Definitive HTTP errors such as
@@ -67,12 +86,19 @@ def verify_pinned(rel_posix, data):
 FETCH_ATTEMPTS = 4
 TRANSIENT_HTTP_CODES = (429, 500, 502, 503, 504)
 
+
 def fetch_url(url):
     """GET url, retrying transient errors; raises the last error when out of
     attempts (with e.fetch_attempts set so callers can report the count)."""
     for attempt in range(1, FETCH_ATTEMPTS + 1):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-bootstrap"})
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "X-Trace-Id": "initiate-bootstrap",
+                },
+            )
             with urllib.request.urlopen(req, timeout=10) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
@@ -80,14 +106,23 @@ def fetch_url(url):
                 e.fetch_attempts = attempt
                 raise
             err = e
-        except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError) as e:
+        except (
+            urllib.error.URLError,
+            http.client.HTTPException,
+            ConnectionError,
+            TimeoutError,
+        ) as e:
             if attempt == FETCH_ATTEMPTS:
                 e.fetch_attempts = attempt
                 raise
             err = e
-        delay = 2 ** attempt
-        print(f"[init] Transient error fetching {url} (attempt {attempt}/{FETCH_ATTEMPTS}): {err} - retrying in {delay}s", file=sys.stderr)
+        delay = 2**attempt
+        print(
+            f"[init] Transient error fetching {url} (attempt {attempt}/{FETCH_ATTEMPTS}): {err} - retrying in {delay}s",
+            file=sys.stderr,
+        )
         time.sleep(delay)
+
 
 def fetch_file_from_github(rel_path, dest_path):
     rel_posix = rel_path.replace(os.sep, "/")
@@ -96,18 +131,23 @@ def fetch_file_from_github(rel_path, dest_path):
     try:
         data = fetch_url(url)
     except Exception as e:
-        print(f"[init] Failed to fetch {rel_path} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}", file=sys.stderr)
+        print(
+            f"[init] Failed to fetch {rel_path} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     verify_pinned(rel_posix, data)
     with open(dest_path, "wb") as f:
         f.write(data)
     print(f"[init] Fetched {rel_path}")
 
+
 def file_hash(path):
     if not os.path.exists(path):
         return None
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
+
 
 def ensure_file(rel_path, dest_path):
     src = os.path.join(PROTOCOL_DIR, rel_path)
@@ -119,6 +159,7 @@ def ensure_file(rel_path, dest_path):
         print(f"[init] Updated {rel_path}")
     else:
         fetch_file_from_github(rel_path, dest_path)
+
 
 def copy_versioned(src_rel, dst_abs):
     dst_dir = os.path.dirname(dst_abs)
@@ -144,6 +185,7 @@ def copy_versioned(src_rel, dst_abs):
         fetch_file_from_github(src_rel, dst_abs)
     print(f"[init] Copied {src_rel} -> {dst_abs}")
 
+
 def copy_dir(src, dst):
     if not os.path.isdir(src):
         # Remote mode - derive path from src
@@ -153,7 +195,13 @@ def copy_dir(src, dst):
     os.makedirs(dst, exist_ok=True)
     for item in os.listdir(src):
         # Skip sync files, maintenance, and the init guide - handled separately
-        if item in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml", "init_protocol.md", ".rok"):
+        if item in (
+            "sync_workspace.py",
+            "sync_workspace.yml",
+            "maintenance.yml",
+            "init_protocol.md",
+            ".rok",
+        ):
             continue
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -163,6 +211,7 @@ def copy_dir(src, dst):
             copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d)
     print(f"[init] Synced directory {src} -> {dst}")
 
+
 def safe_extract_path(dst, rel):
     """Resolve an archive-controlled relative path under dst, refusing any
     entry that escapes the destination (zip-slip). Same realpath+commonpath
@@ -170,9 +219,13 @@ def safe_extract_path(dst, rel):
     dest = os.path.realpath(os.path.join(dst, rel))
     base = os.path.realpath(dst)
     if os.path.commonpath([base, dest]) != base:
-        print(f"[init] Refusing to extract archive entry outside destination: {rel}", file=sys.stderr)
+        print(
+            f"[init] Refusing to extract archive entry outside destination: {rel}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return dest
+
 
 def fetch_dir_from_github(rel_src, dst):
     # Zip entries always use forward slashes; on Windows callers pass
@@ -188,8 +241,12 @@ def fetch_dir_from_github(rel_src, dst):
         count = 0
         for name in z.namelist():
             if name.startswith(prefix) and not name.endswith("/"):
-                rel = name[len(prefix):]
-                if rel_src == "workflows" and (rel in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml") or rel.startswith(".rok/")):
+                rel = name[len(prefix) :]
+                if rel_src == "workflows" and (
+                    rel
+                    in ("sync_workspace.py", "sync_workspace.yml", "maintenance.yml")
+                    or rel.startswith(".rok/")
+                ):
                     continue
                 data = z.read(name)
                 verify_pinned(f"{rel_src}/{rel}", data)
@@ -200,23 +257,37 @@ def fetch_dir_from_github(rel_src, dst):
                 count += 1
         print(f"[init] Fetched {count} files from {rel_src}")
     except Exception as e:
-        print(f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}", file=sys.stderr)
+        print(
+            f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}",
+            file=sys.stderr,
+        )
+
 
 def detect_repo_owner():
     try:
-        url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
+        url = subprocess.check_output(
+            ["git", "config", "--get", "remote.origin.url"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
         if "RokctAI/" in url:
             return url.split("RokctAI/")[-1].replace(".git", "")
     except Exception:
         pass
     return None
 
+
 def main():
     check_for_update()
     os.makedirs(ROKCT_DIR, exist_ok=True)
 
     core_templates_src = os.path.join(PROTOCOL_DIR, "core", "templates")
-    for fname in ["memory.md", "decision_log.md", "project_map.md", "active_session.txt"]:
+    for fname in [
+        "memory.md",
+        "decision_log.md",
+        "project_map.md",
+        "active_session.txt",
+    ]:
         dest_fname = os.path.join(ROKCT_DIR, fname)
         if not os.path.exists(dest_fname):
             copy_versioned(os.path.join("core", "templates", fname), dest_fname)
@@ -224,13 +295,19 @@ def main():
     # Markdownlint config for the agent-maintained .rokct/ docs. markdownlint-cli2
     # applies per-directory config to everything beneath .rokct/, keeping consumer
     # repos green under the org-standard rule set without touching their root config.
-    copy_versioned(os.path.join("core", "templates", ".markdownlint.json"), os.path.join(ROKCT_DIR, ".markdownlint.json"))
+    copy_versioned(
+        os.path.join("core", "templates", ".markdownlint.json"),
+        os.path.join(ROKCT_DIR, ".markdownlint.json"),
+    )
 
     copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
     repo_owner = detect_repo_owner()
     if repo_owner:
-        copy_dir(os.path.join(PROTOCOL_DIR, "core", "skills"), os.path.join(ROKCT_DIR, "skills"))
+        copy_dir(
+            os.path.join(PROTOCOL_DIR, "core", "skills"),
+            os.path.join(ROKCT_DIR, "skills"),
+        )
     else:
         core_skills_dir = os.path.join(PROTOCOL_DIR, "core", "skills")
         dst = os.path.join(ROKCT_DIR, "skills")
@@ -240,10 +317,15 @@ def main():
             if os.path.isdir(s) and item != ".rok":
                 copy_dir(s, os.path.join(dst, item))
 
-    copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"))
+    copy_versioned(
+        os.path.join("profiles", "web", "rules.md"),
+        os.path.join(ROKCT_DIR, "profiles.md"),
+    )
 
-    copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
-    
+    copy_dir(
+        os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows")
+    )
+
     # Distribution of Protocol-only (RokctAI) workflows
     # Skipped in CI: GITHUB_TOKEN lacks the `workflows` permission, so any
     # file deployed into .github/workflows/ gets the compose commit-back
@@ -288,7 +370,9 @@ def main():
             print(f"[init] Updated {gitignore_path} (added: {', '.join(missing)})")
 
     try:
-        email = subprocess.check_output(["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL).strip()
+        email = subprocess.check_output(
+            ["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
     except Exception:
         email = ""
     if email:
@@ -308,25 +392,36 @@ def main():
 
     print("[init] Web profile file operations complete.")
 
-    ensure_file("workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py"))
+    ensure_file(
+        "workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py")
+    )
     if not os.environ.get("CI"):
-        ensure_file("workflows/sync_workspace.yml", os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"))
+        ensure_file(
+            "workflows/sync_workspace.yml",
+            os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"),
+        )
 
     dest_initiate = os.path.join(ROKCT_DIR, "initiate.py")
     if os.path.abspath(__file__) != dest_initiate:
         shutil.copy2(os.path.abspath(__file__), dest_initiate)
         print("[init] Copied initiate.py -> .rokct/initiate.py")
 
-    ensure_file("profiles/web/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py"))
+    ensure_file(
+        "profiles/web/end_protocol.py", os.path.join(ROKCT_DIR, "end_protocol.py")
+    )
 
     config_path = os.path.join(ROKCT_DIR, ".workspace_config.json")
     if not os.path.exists(config_path):
         repo_owner = detect_repo_owner()
         if repo_owner:
             parent_repo = "RokctAI/occultation"
-            print(f"[init] Detected RokctAI repo — routing working files to {parent_repo}")
+            print(
+                f"[init] Detected RokctAI repo — routing working files to {parent_repo}"
+            )
         else:
-            print("[init] Not a RokctAI repo — skipping workspace config (web agent cannot prompt for parent repo)")
+            print(
+                "[init] Not a RokctAI repo — skipping workspace config (web agent cannot prompt for parent repo)"
+            )
             parent_repo = None
 
         if parent_repo:
@@ -337,14 +432,15 @@ def main():
                     "memory.md",
                     "decision_log.md",
                     "project_map.md",
-                    "active_session.txt"
-                ]
+                    "active_session.txt",
+                ],
             }
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(workspace_config, f, indent=2)
-            print(f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}")
+            print(
+                f"[init] Created .rokct/.workspace_config.json pointing to {workspace_config['parent_repo']}"
+            )
+
 
 if __name__ == "__main__":
     main()
-
-

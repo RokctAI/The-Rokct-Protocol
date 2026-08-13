@@ -21,7 +21,8 @@ def _load_engine():
     if "core" in sys.modules and hasattr(sys.modules["core"], "__path__"):
         return
     spec = importlib.util.spec_from_file_location(
-        "core", os.path.join(_ENGINE_DIR, "__init__.py"),
+        "core",
+        os.path.join(_ENGINE_DIR, "__init__.py"),
         submodule_search_locations=[_ENGINE_DIR],
     )
     module = importlib.util.module_from_spec(spec)
@@ -49,6 +50,7 @@ class TempWorkspace:
 
     def __exit__(self, *exc):
         import shutil
+
         shutil.rmtree(self.dir, ignore_errors=True)
         return False
 
@@ -64,8 +66,8 @@ def write(path, content):
 # Path safety — CONFIRMED: `../../../ESCAPED` wrote outside the workspace.
 # --------------------------------------------------------------------------
 
-class TestPathSafety(unittest.TestCase):
 
+class TestPathSafety(unittest.TestCase):
     def test_traversal_in_instance_name_is_rejected(self):
         for name in ("../../../ESCAPED", "..", "a/b", "a\\b", "/etc/passwd", "C:\\x"):
             with self.assertRaises(UnsafeNameError, msg=name):
@@ -107,8 +109,8 @@ class TestPathSafety(unittest.TestCase):
 # Parser — CONFIRMED losses: multi-line answers, `-` bullets, key collisions.
 # --------------------------------------------------------------------------
 
-class TestParser(unittest.TestCase):
 
+class TestParser(unittest.TestCase):
     def _parse(self, body):
         with TempWorkspace() as root:
             path = write(os.path.join(root, "questions.md"), body)
@@ -120,8 +122,9 @@ class TestParser(unittest.TestCase):
             "    *   **Answer**: First line of the vision\n"
             "        second line that used to be discarded\n"
         )
-        self.assertIn("second line that used to be discarded",
-                      profile.get("vision_statement"))
+        self.assertIn(
+            "second line that used to be discarded", profile.get("vision_statement")
+        )
 
     def test_paragraph_answer_survives_blank_line(self):
         profile = self._parse(
@@ -154,6 +157,7 @@ class TestParser(unittest.TestCase):
 
     def test_round_trip_preserves_a_bulleted_answer(self):
         from core.agent_bridge import update_profile_answer
+
         value = "*   **CEO**: capital.\n*   **CTO**: architecture."
         with TempWorkspace() as root:
             path = write(
@@ -166,16 +170,12 @@ class TestParser(unittest.TestCase):
             self.assertIn("CTO", reparsed)
 
     def test_dash_bullets_are_parsed(self):
-        profile = self._parse(
-            "-   **Industry**: q\n"
-            "    -   **Answer**: Logistics\n"
-        )
+        profile = self._parse("-   **Industry**: q\n    -   **Answer**: Logistics\n")
         self.assertEqual(profile.get("industry"), "Logistics")
 
     def test_required_marker_does_not_hide_the_question(self):
         profile = self._parse(
-            "*   **Trading Name** *(required)*: q\n"
-            "    *   **Answer**: Acme\n"
+            "*   **Trading Name** *(required)*: q\n    *   **Answer**: Acme\n"
         )
         self.assertEqual(profile.get("trading_name"), "Acme")
 
@@ -189,16 +189,12 @@ class TestParser(unittest.TestCase):
         self.assertTrue(any("collides" in w for w in profile.warnings))
 
     def test_answer_line_is_not_captured_as_a_question(self):
-        profile = self._parse(
-            "*   **Industry**: q\n"
-            "    *   **Answer**: Health\n"
-        )
+        profile = self._parse("*   **Industry**: q\n    *   **Answer**: Health\n")
         self.assertNotIn("answer", profile.answers)
 
     def test_pending_answers_count_as_unanswered(self):
         profile = self._parse(
-            "*   **Industry**: q\n"
-            "    *   **Answer**: Pending — tell me later\n"
+            "*   **Industry**: q\n    *   **Answer**: Pending — tell me later\n"
         )
         self.assertNotIn("industry", profile.answers)
         self.assertIn("industry", profile.pending)
@@ -217,20 +213,23 @@ class TestParser(unittest.TestCase):
 # South African; "Sa Pa, Vietnam" produced a (Pty) Ltd with B-BBEE Level 1.
 # --------------------------------------------------------------------------
 
-class TestJurisdiction(unittest.TestCase):
 
+class TestJurisdiction(unittest.TestCase):
     def test_sa_pa_vietnam_is_not_south_africa(self):
         warnings = []
         resolved = jurisdictions.resolve({"primary_base": "Sa Pa, Vietnam"}, warnings)
         self.assertNotEqual(resolved.code, "ZA")
 
     def test_explicit_code_wins(self):
-        resolved = jurisdictions.resolve({"jurisdiction": "DE",
-                                          "primary_base": "South Africa"}, [])
+        resolved = jurisdictions.resolve(
+            {"jurisdiction": "DE", "primary_base": "South Africa"}, []
+        )
         self.assertEqual(resolved.code, "DE")
 
     def test_full_country_name_in_base_is_inferred(self):
-        resolved = jurisdictions.resolve({"primary_base": "Cape Town, South Africa"}, [])
+        resolved = jurisdictions.resolve(
+            {"primary_base": "Cape Town, South Africa"}, []
+        )
         self.assertEqual(resolved.code, "ZA")
 
     def test_unknown_when_nothing_declared(self):
@@ -239,8 +238,11 @@ class TestJurisdiction(unittest.TestCase):
         self.assertEqual(resolved.features, frozenset())
 
     def test_only_south_africa_has_bbee(self):
-        with_bbee = [code for code in jurisdictions.all_codes()
-                     if jurisdictions.get(code).supports(jurisdictions.FEATURE_BBEE)]
+        with_bbee = [
+            code
+            for code in jurisdictions.all_codes()
+            if jurisdictions.get(code).supports(jurisdictions.FEATURE_BBEE)
+        ]
         self.assertEqual(with_bbee, ["ZA"])
 
 
@@ -248,8 +250,8 @@ class TestJurisdiction(unittest.TestCase):
 # Compliance — the headline defect: fabricated B-BBEE and tax standing.
 # --------------------------------------------------------------------------
 
-class TestCompliance(unittest.TestCase):
 
+class TestCompliance(unittest.TestCase):
     def test_south_african_venture_without_certificate_is_pending_not_level_1(self):
         with TempWorkspace() as root:
             record = compliance.load_compliance(
@@ -279,8 +281,9 @@ class TestCompliance(unittest.TestCase):
 
     def test_bbee_cannot_be_set_outside_south_africa(self):
         record = compliance.ComplianceRecord(jurisdictions.get("US"), "Acme")
-        accepted = record.set("bee_level", "Level 1 Contributor",
-                              compliance.STATUS_OVERRIDE, "override")
+        accepted = record.set(
+            "bee_level", "Level 1 Contributor", compliance.STATUS_OVERRIDE, "override"
+        )
         self.assertFalse(accepted)
         self.assertEqual(record.render("bee_level"), compliance.NOT_APPLICABLE_TEXT)
         self.assertTrue(any("Ignored" in w for w in record.warnings))
@@ -288,7 +291,9 @@ class TestCompliance(unittest.TestCase):
     def test_company_name_is_never_derived_from_the_folder(self):
         with TempWorkspace() as root:
             record = compliance.load_compliance(
-                os.path.join(root, "missing"), "TableMountainTech", jurisdictions.get("ZA")
+                os.path.join(root, "missing"),
+                "TableMountainTech",
+                jurisdictions.get("ZA"),
             )
             self.assertFalse(record.is_verified("company_name"))
             self.assertNotIn("(Pty) Ltd", record.render("company_name"))
@@ -322,8 +327,12 @@ class TestComplianceDates(unittest.TestCase):
 
     def test_expired_certificate_is_flagged(self):
         record = compliance.ComplianceRecord(jurisdictions.get("ZA"), "Acme")
-        record.set("bee_level", "Level 1 Contributor", compliance.STATUS_VERIFIED, "BEE.pdf")
-        record.set("bee_expiry_date", "25-October-2024", compliance.STATUS_VERIFIED, "BEE.pdf")
+        record.set(
+            "bee_level", "Level 1 Contributor", compliance.STATUS_VERIFIED, "BEE.pdf"
+        )
+        record.set(
+            "bee_expiry_date", "25-October-2024", compliance.STATUS_VERIFIED, "BEE.pdf"
+        )
         log = compliance.build_compliance_log(record, "Acme", date(2026, 7, 29))
         self.assertIn("EXPIRED", log)
 
@@ -332,8 +341,12 @@ class TestComplianceDates(unittest.TestCase):
 
     def test_valid_certificate_is_not_flagged(self):
         record = compliance.ComplianceRecord(jurisdictions.get("ZA"), "Acme")
-        record.set("bee_level", "Level 2 Contributor", compliance.STATUS_VERIFIED, "BEE.pdf")
-        record.set("bee_expiry_date", "2027-01-01", compliance.STATUS_VERIFIED, "BEE.pdf")
+        record.set(
+            "bee_level", "Level 2 Contributor", compliance.STATUS_VERIFIED, "BEE.pdf"
+        )
+        record.set(
+            "bee_expiry_date", "2027-01-01", compliance.STATUS_VERIFIED, "BEE.pdf"
+        )
         log = compliance.build_compliance_log(record, "Acme", date(2026, 7, 29))
         self.assertIn("is valid", log)
 
@@ -343,8 +356,8 @@ class TestComplianceDates(unittest.TestCase):
 # a `|` in a value silently added table columns.
 # --------------------------------------------------------------------------
 
-class TestTemplateEngine(unittest.TestCase):
 
+class TestTemplateEngine(unittest.TestCase):
     def _ctx(self, values, code="ZA"):
         entry = jurisdictions.get(code)
         return template_engine.RenderContext(values, entry, entry.features)
@@ -369,18 +382,25 @@ class TestTemplateEngine(unittest.TestCase):
     def test_jurisdiction_block(self):
         template = "{{#if_jurisdiction ZA,NA}}SADC{{/if_jurisdiction}}"
         self.assertIn("SADC", template_engine.render(template, self._ctx({}, "NA"))[0])
-        self.assertNotIn("SADC", template_engine.render(template, self._ctx({}, "US"))[0])
+        self.assertNotIn(
+            "SADC", template_engine.render(template, self._ctx({}, "US"))[0]
+        )
 
     def test_pending_value_is_falsy(self):
         template = "{{#if x}}YES{{else}}NO{{/if}}"
-        for value in ("Pending — add BEE.pdf", "Not yet provided",
-                      "Not applicable", ""):
+        for value in (
+            "Pending — add BEE.pdf",
+            "Not yet provided",
+            "Not applicable",
+            "",
+        ):
             text, _ = template_engine.render(template, self._ctx({"x": value}))
             self.assertEqual(text.strip(), "NO", value)
 
     def test_real_value_is_truthy(self):
-        text, _ = template_engine.render("{{#if x}}YES{{else}}NO{{/if}}",
-                                         self._ctx({"x": "Level 2 Contributor"}))
+        text, _ = template_engine.render(
+            "{{#if x}}YES{{else}}NO{{/if}}", self._ctx({"x": "Level 2 Contributor"})
+        )
         self.assertEqual(text.strip(), "YES")
 
     def test_nested_blocks(self):
@@ -391,9 +411,7 @@ class TestTemplateEngine(unittest.TestCase):
     def test_mismatched_block_tag_is_reported(self):
         # `{{#if_feature}}` closed with `{{/if}}` — a typo that renders the
         # whole block literally into the finished document.
-        errors = template_engine.check_blocks(
-            "{{#if_feature bbee}}text{{/if}}"
-        )
+        errors = template_engine.check_blocks("{{#if_feature bbee}}text{{/if}}")
         self.assertTrue(errors)
         self.assertIn("if_feature", errors[0])
 
@@ -411,8 +429,12 @@ class TestTemplateEngine(unittest.TestCase):
 
     def test_shipped_templates_are_structurally_sound(self):
         root = os.path.join(
-            os.path.dirname(_ENGINE_DIR), os.pardir,
-            "skills", ".rok", "startup_os", "templates",
+            os.path.dirname(_ENGINE_DIR),
+            os.pardir,
+            "skills",
+            ".rok",
+            "startup_os",
+            "templates",
         )
         if not os.path.isdir(root):
             self.skipTest("templates not present")
@@ -436,12 +458,16 @@ class TestTemplateEngine(unittest.TestCase):
 # the first `---`, which shredded YAML front matter.
 # --------------------------------------------------------------------------
 
-class TestDocuments(unittest.TestCase):
 
+class TestDocuments(unittest.TestCase):
     def test_front_matter_survives(self):
-        source = "---\ntitle: Investor Memo\nconfidential: true\n---\n\n# Acme\n\nBody.\n"
+        source = (
+            "---\ntitle: Investor Memo\nconfidential: true\n---\n\n# Acme\n\nBody.\n"
+        )
         result = documents.insert_version_block(source, "> [!IMPORTANT]\n> Control\n")
-        self.assertTrue(result.startswith("---\ntitle: Investor Memo\nconfidential: true\n---"))
+        self.assertTrue(
+            result.startswith("---\ntitle: Investor Memo\nconfidential: true\n---")
+        )
         self.assertIn("Control", result)
         self.assertLess(result.index("confidential: true"), result.index("Control"))
 
@@ -470,8 +496,8 @@ class TestDocuments(unittest.TestCase):
 # Safe IO — CONFIRMED absent: no locking, no atomicity, no history.
 # --------------------------------------------------------------------------
 
-class TestSafeIO(unittest.TestCase):
 
+class TestSafeIO(unittest.TestCase):
     def test_atomic_write_and_snapshot(self):
         with TempWorkspace() as root:
             path = os.path.join(root, "questions.md")
@@ -505,26 +531,62 @@ class TestSafeIO(unittest.TestCase):
 # template used, and templates needed fields provisioning never asked for.
 # --------------------------------------------------------------------------
 
-class TestSchemas(unittest.TestCase):
 
+class TestSchemas(unittest.TestCase):
     TEMPLATE_ROOT = os.path.join(
-        os.path.dirname(_ENGINE_DIR), os.pardir,
-        "skills", ".rok", "startup_os", "templates",
+        os.path.dirname(_ENGINE_DIR),
+        os.pardir,
+        "skills",
+        ".rok",
+        "startup_os",
+        "templates",
     )
 
     ENGINE_SUPPLIED = {
-        "trading_name", "instance_name", "company_name", "company_name_status",
-        "entity_type_hint", "jurisdiction_code", "jurisdiction_name", "currency",
-        "currency_symbol", "currency_note", "privacy_law", "standards_body",
-        "registry_name", "tax_authority", "trademarks_details", "fin_summary",
-        "fin_grid_rev", "living_ledger_cv", "living_ledger_obituary",
-        "milestone_count", "he_she", "he_she_lower", "his_her", "his_her_capital",
-        "him_her", "himself_herself", "reg_number", "reg_date",
-        "registered_office", "postal_address", "tax_number", "tax_pin",
-        "tax_pin_issue_date", "tax_pin_expiry_date", "tax_compliance_status",
-        "bee_level", "bee_procurement_recognition", "bee_black_ownership",
-        "bee_youth_owned", "bee_disabled_owned", "bee_rural_owned",
-        "bee_cert_number", "bee_issue_date", "bee_expiry_date",
+        "trading_name",
+        "instance_name",
+        "company_name",
+        "company_name_status",
+        "entity_type_hint",
+        "jurisdiction_code",
+        "jurisdiction_name",
+        "currency",
+        "currency_symbol",
+        "currency_note",
+        "privacy_law",
+        "standards_body",
+        "registry_name",
+        "tax_authority",
+        "trademarks_details",
+        "fin_summary",
+        "fin_grid_rev",
+        "living_ledger_cv",
+        "living_ledger_obituary",
+        "milestone_count",
+        "he_she",
+        "he_she_lower",
+        "his_her",
+        "his_her_capital",
+        "him_her",
+        "himself_herself",
+        "reg_number",
+        "reg_date",
+        "registered_office",
+        "postal_address",
+        "tax_number",
+        "tax_pin",
+        "tax_pin_issue_date",
+        "tax_pin_expiry_date",
+        "tax_compliance_status",
+        "bee_level",
+        "bee_procurement_recognition",
+        "bee_black_ownership",
+        "bee_youth_owned",
+        "bee_disabled_owned",
+        "bee_rural_owned",
+        "bee_cert_number",
+        "bee_issue_date",
+        "bee_expiry_date",
     }
 
     def _placeholders(self, instance_type):
@@ -552,19 +614,24 @@ class TestSchemas(unittest.TestCase):
         uncollected, _unused = schemas.validate_schema_against_templates(
             "business", self._placeholders("business"), self.ENGINE_SUPPLIED
         )
-        self.assertEqual(uncollected, [], f"templates need fields nobody asks for: {uncollected}")
+        self.assertEqual(
+            uncollected, [], f"templates need fields nobody asks for: {uncollected}"
+        )
 
     def test_every_life_placeholder_is_collected(self):
         uncollected, _unused = schemas.validate_schema_against_templates(
             "life", self._placeholders("life"), self.ENGINE_SUPPLIED
         )
-        self.assertEqual(uncollected, [], f"templates need fields nobody asks for: {uncollected}")
+        self.assertEqual(
+            uncollected, [], f"templates need fields nobody asks for: {uncollected}"
+        )
 
     def test_full_provisioned_file_round_trips_through_the_parser(self):
         with TempWorkspace() as root:
             for instance_type in ("business", "life"):
                 content = schemas.render_questions_md(
-                    instance_type, "Acme",
+                    instance_type,
+                    "Acme",
                     {"trading_name": "Acme", "jurisdiction": "ZA"},
                     include_full=True,
                 )
@@ -572,8 +639,9 @@ class TestSchemas(unittest.TestCase):
                 profile = parse_questions_md(path)
                 parsed = set(profile.answers) | set(profile.pending)
                 missing = schemas.schema_keys(instance_type) - parsed
-                self.assertEqual(missing, set(),
-                                 f"{instance_type}: parser missed {missing}")
+                self.assertEqual(
+                    missing, set(), f"{instance_type}: parser missed {missing}"
+                )
 
     def test_default_provisioning_writes_only_core_questions(self):
         # A new user should not meet fifty prompts; `expand` adds the rest.
@@ -586,6 +654,7 @@ class TestSchemas(unittest.TestCase):
 
     def test_expand_adds_every_missing_question(self):
         from core.agent_bridge import expand_profile
+
         with TempWorkspace() as root:
             path = write(
                 os.path.join(root, "instances", "business", "Acme", "questions.md"),

@@ -21,6 +21,7 @@ def _bootstrap_package():
     """
     try:
         import core.compiler  # noqa: F401
+
         return
     except ImportError:
         pass
@@ -57,8 +58,11 @@ from core.errors import StartupOSError  # noqa: E402
 
 
 def _add_common(parser):
-    parser.add_argument("--root", default=None,
-                        help="Workspace root override (else $STARTUPOS_ROOT, then discovery)")
+    parser.add_argument(
+        "--root",
+        default=None,
+        help="Workspace root override (else $STARTUPOS_ROOT, then discovery)",
+    )
 
 
 def build_parser():
@@ -68,35 +72,60 @@ def build_parser():
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    compile_parser = subparsers.add_parser("compile", help="Compile an instance's document suite")
-    compile_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, required=True)
+    compile_parser = subparsers.add_parser(
+        "compile", help="Compile an instance's document suite"
+    )
+    compile_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
     compile_parser.add_argument("--name", required=True, help="Instance folder name")
-    compile_parser.add_argument("--compliance-root", default=None,
-                                help="Directory containing per-instance compliance folders")
-    compile_parser.add_argument("--monorepo-root", default=None,
-                                help="Deprecated alias: <root>/Compliance is used")
+    compile_parser.add_argument(
+        "--compliance-root",
+        default=None,
+        help="Directory containing per-instance compliance folders",
+    )
+    compile_parser.add_argument(
+        "--monorepo-root",
+        default=None,
+        help="Deprecated alias: <root>/Compliance is used",
+    )
     compile_parser.add_argument("--quiet", action="store_true")
     _add_common(compile_parser)
 
     provision_parser = subparsers.add_parser("provision", help="Create a new profile")
-    provision_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, required=True)
+    provision_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
     provision_parser.add_argument("--name", required=True)
-    provision_parser.add_argument("--base", default=None, help="Primary geographic base")
-    provision_parser.add_argument("--jurisdiction", default=None,
-                                  help=f"ISO country code: {', '.join(jurisdictions.all_codes())}")
-    provision_parser.add_argument("--relationships", default=None, help="Life profiles only")
+    provision_parser.add_argument(
+        "--base", default=None, help="Primary geographic base"
+    )
+    provision_parser.add_argument(
+        "--jurisdiction",
+        default=None,
+        help=f"ISO country code: {', '.join(jurisdictions.all_codes())}",
+    )
+    provision_parser.add_argument(
+        "--relationships", default=None, help="Life profiles only"
+    )
     _add_common(provision_parser)
 
     milestone_parser = subparsers.add_parser("milestone", help="Log a milestone")
-    milestone_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, default="life")
+    milestone_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, default="life"
+    )
     milestone_parser.add_argument("--name", required=True)
     milestone_parser.add_argument("--category", required=True)
     milestone_parser.add_argument("--entry", required=True)
-    milestone_parser.add_argument("--date", default=None, help="YYYY-MM-DD (default: today)")
+    milestone_parser.add_argument(
+        "--date", default=None, help="YYYY-MM-DD (default: today)"
+    )
     _add_common(milestone_parser)
 
     answer_parser = subparsers.add_parser("answer", help="Update one answer")
-    answer_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, required=True)
+    answer_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
     answer_parser.add_argument("--name", required=True)
     answer_parser.add_argument("--question", required=True, help="Question label")
     answer_parser.add_argument("--value", required=True)
@@ -105,7 +134,9 @@ def build_parser():
     check_parser = subparsers.add_parser(
         "check", help="Compliance gate for CI: exit 0 ok, 1 pending, 2 expired"
     )
-    check_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, default="business")
+    check_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, default="business"
+    )
     check_parser.add_argument("--name", required=True)
     check_parser.add_argument("--compliance-root", default=None)
     _add_common(check_parser)
@@ -120,11 +151,17 @@ def build_parser():
         "migrate",
         help="Add a Jurisdiction question to profiles created before it existed",
     )
-    migrate_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, default=None)
-    migrate_parser.add_argument("--name", default=None,
-                                help="One profile; omit to migrate every profile")
-    migrate_parser.add_argument("--jurisdiction", required=True,
-                                help=f"ISO code: {', '.join(jurisdictions.all_codes())}")
+    migrate_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, default=None
+    )
+    migrate_parser.add_argument(
+        "--name", default=None, help="One profile; omit to migrate every profile"
+    )
+    migrate_parser.add_argument(
+        "--jurisdiction",
+        required=True,
+        help=f"ISO code: {', '.join(jurisdictions.all_codes())}",
+    )
     migrate_parser.add_argument("--dry-run", action="store_true")
     _add_common(migrate_parser)
 
@@ -132,7 +169,9 @@ def build_parser():
         "expand",
         help="Add the full question set to a profile created with the core set",
     )
-    expand_parser.add_argument("--type", choices=path_utils.INSTANCE_TYPES, required=True)
+    expand_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
     expand_parser.add_argument("--name", required=True)
     _add_common(expand_parser)
 
@@ -167,8 +206,10 @@ def cmd_provision(args):
     )
     print(f"[Success] Profile provisioned at: {path}")
     if not args.jurisdiction:
-        print("[Note] No --jurisdiction given. Regulated compliance sections stay "
-              "suppressed until a '**Jurisdiction**' answer is set.")
+        print(
+            "[Note] No --jurisdiction given. Regulated compliance sections stay "
+            "suppressed until a '**Jurisdiction**' answer is set."
+        )
     return 0
 
 
@@ -237,28 +278,65 @@ def cmd_check(args):
 def cmd_lint(args):
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
     engine_supplied = {
-        "trading_name", "instance_name", "company_name", "company_name_status",
-        "entity_type_hint", "jurisdiction_code", "jurisdiction_name", "currency",
-        "currency_symbol", "currency_note", "privacy_law", "standards_body",
-        "registry_name", "tax_authority", "trademarks_details", "fin_summary",
-        "fin_grid_rev", "living_ledger_cv", "living_ledger_obituary",
-        "milestone_count", "he_she", "he_she_lower", "his_her", "his_her_capital",
-        "him_her", "himself_herself",
-        "company_name", "reg_number", "reg_date", "registered_office",
-        "postal_address", "tax_number", "tax_pin", "tax_pin_issue_date",
-        "tax_pin_expiry_date", "tax_compliance_status", "bee_level",
-        "bee_procurement_recognition", "bee_black_ownership", "bee_youth_owned",
-        "bee_disabled_owned", "bee_rural_owned", "bee_cert_number",
-        "bee_issue_date", "bee_expiry_date",
+        "trading_name",
+        "instance_name",
+        "company_name",
+        "company_name_status",
+        "entity_type_hint",
+        "jurisdiction_code",
+        "jurisdiction_name",
+        "currency",
+        "currency_symbol",
+        "currency_note",
+        "privacy_law",
+        "standards_body",
+        "registry_name",
+        "tax_authority",
+        "trademarks_details",
+        "fin_summary",
+        "fin_grid_rev",
+        "living_ledger_cv",
+        "living_ledger_obituary",
+        "milestone_count",
+        "he_she",
+        "he_she_lower",
+        "his_her",
+        "his_her_capital",
+        "him_her",
+        "himself_herself",
+        "company_name",
+        "reg_number",
+        "reg_date",
+        "registered_office",
+        "postal_address",
+        "tax_number",
+        "tax_pin",
+        "tax_pin_issue_date",
+        "tax_pin_expiry_date",
+        "tax_compliance_status",
+        "bee_level",
+        "bee_procurement_recognition",
+        "bee_black_ownership",
+        "bee_youth_owned",
+        "bee_disabled_owned",
+        "bee_rural_owned",
+        "bee_cert_number",
+        "bee_issue_date",
+        "bee_expiry_date",
     }
 
     # Answers the engine consumes to build other placeholders, rather than
     # templates referencing them directly. Reporting these as "unused" would be
     # wrong — dropping them would break financials, pronouns and jurisdiction.
     engine_consumed = {
-        "jurisdiction", "pronouns", "gender",
-        "projected_year_1", "projected_year_2", "projected_year_3",
-        "historical_turnover_2024", "historical_turnover_2025",
+        "jurisdiction",
+        "pronouns",
+        "gender",
+        "projected_year_1",
+        "projected_year_2",
+        "projected_year_3",
+        "historical_turnover_2024",
+        "historical_turnover_2025",
         "historical_turnover_2026_ytd",
     }
 
@@ -293,8 +371,10 @@ def cmd_lint(args):
         )
         unused = [name for name in unused if name not in engine_consumed]
 
-        print(f"[lint] {instance_type}: {template_count} templates, "
-              f"{len(placeholders)} distinct placeholders")
+        print(
+            f"[lint] {instance_type}: {template_count} templates, "
+            f"{len(placeholders)} distinct placeholders"
+        )
         if block_errors:
             exit_code = max(exit_code, 1)
             print("  BLOCK STRUCTURE errors (the block renders literally):")
@@ -302,8 +382,10 @@ def cmd_lint(args):
                 print(f"    - {error}")
         if uncollected:
             exit_code = max(exit_code, 1)
-            print("  MISSING from the question schema (templates ask for these, "
-                  "nothing collects them):")
+            print(
+                "  MISSING from the question schema (templates ask for these, "
+                "nothing collects them):"
+            )
             for name in uncollected:
                 print(f"    - {name}")
         if unused:
@@ -322,8 +404,11 @@ def cmd_migrate(args):
     code = args.jurisdiction.strip().upper()
     entry = jurisdictions.get(code)
     if not entry.is_known:
-        print(f"[Error] Unknown jurisdiction {args.jurisdiction!r}. "
-              f"Known codes: {', '.join(jurisdictions.all_codes())}", file=sys.stderr)
+        print(
+            f"[Error] Unknown jurisdiction {args.jurisdiction!r}. "
+            f"Known codes: {', '.join(jurisdictions.all_codes())}",
+            file=sys.stderr,
+        )
         return 1
 
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
@@ -334,9 +419,14 @@ def cmd_migrate(args):
         directory = os.path.join(root, "instances", instance_type)
         if not os.path.isdir(directory):
             continue
-        names = [args.name] if args.name else sorted(
-            entry_name for entry_name in os.listdir(directory)
-            if os.path.isdir(os.path.join(directory, entry_name))
+        names = (
+            [args.name]
+            if args.name
+            else sorted(
+                entry_name
+                for entry_name in os.listdir(directory)
+                if os.path.isdir(os.path.join(directory, entry_name))
+            )
         )
         for name in names:
             candidate = path_utils.questions_path(root, instance_type, name)
@@ -347,8 +437,10 @@ def cmd_migrate(args):
         print("No profiles found to migrate.")
         return 1
 
-    prompt = ("Which country's company law and tax regime does this apply under? "
-              "Use an ISO country code.")
+    prompt = (
+        "Which country's company law and tax regime does this apply under? "
+        "Use an ISO country code."
+    )
     changed = 0
     conflicts = []
 
@@ -364,20 +456,27 @@ def cmd_migrate(args):
             conflicts.append((instance_type, name, inferred.code))
 
         if args.dry_run:
-            note = f"   <-- WARNING: Primary Base suggests {inferred.code}" if mismatch else ""
+            note = (
+                f"   <-- WARNING: Primary Base suggests {inferred.code}"
+                if mismatch
+                else ""
+            )
             print(f"  would set Jurisdiction={code} on {instance_type}/{name}{note}")
             continue
 
         if mismatch and not args.name:
-            print(f"  {instance_type}/{name}: SKIPPED — Primary Base suggests "
-                  f"{inferred.code}, not {code}. Migrate it explicitly with "
-                  f"--name {name} --jurisdiction {inferred.code}")
+            print(
+                f"  {instance_type}/{name}: SKIPPED — Primary Base suggests "
+                f"{inferred.code}, not {code}. Migrate it explicitly with "
+                f"--name {name} --jurisdiction {inferred.code}"
+            )
             continue
         result = ensure_question(path, "Jurisdiction", prompt, code)
         if result.changed:
             changed += 1
-            print(f"  {instance_type}/{name}: Jurisdiction set to {code} "
-                  f"({entry.name})")
+            print(
+                f"  {instance_type}/{name}: Jurisdiction set to {code} ({entry.name})"
+            )
         else:
             print(f"  {instance_type}/{name}: {result.error}")
 
@@ -388,8 +487,10 @@ def cmd_migrate(args):
         print("  Migrate them individually with the right code.")
 
     if not args.dry_run:
-        print(f"\n[Success] Migrated {changed} of {len(targets)} profiles. "
-              "Recompile them to pick up the jurisdiction-specific sections.")
+        print(
+            f"\n[Success] Migrated {changed} of {len(targets)} profiles. "
+            "Recompile them to pick up the jurisdiction-specific sections."
+        )
     return 0
 
 
@@ -406,8 +507,10 @@ def cmd_expand(args):
 
     added = getattr(result, "added", [])
     print(f"[Success] Added {len(added)} questions to {target}")
-    print("          Answer them, then recompile. Unanswered ones appear under "
-          "Completion Gaps rather than as claims.")
+    print(
+        "          Answer them, then recompile. Unanswered ones appear under "
+        "Completion Gaps rather than as claims."
+    )
     return 0
 
 
@@ -422,7 +525,8 @@ def cmd_list(args):
         if not os.path.isdir(directory):
             continue
         names = sorted(
-            entry for entry in os.listdir(directory)
+            entry
+            for entry in os.listdir(directory)
             if os.path.isdir(os.path.join(directory, entry))
         )
         print(f"{instance_type}: {', '.join(names) if names else '(none)'}")

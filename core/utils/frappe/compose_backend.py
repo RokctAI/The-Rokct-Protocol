@@ -50,6 +50,7 @@ def load_composer_config():
     with open(composer_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def resolve_app_type():
     """This shell's own role marker (e.g. 'manager', 'customer', 'pos'), read
     from .rokct/config/app_type - a plain one-line text file checked into the
@@ -69,26 +70,31 @@ def resolve_app_type():
             return value or None
     return None
 
+
 def extract_repo_name(git_url):
     url_path = git_url.rstrip("/")
     if url_path.endswith(".git"):
         url_path = url_path[:-4]
     return os.path.basename(url_path)
 
+
 def get_subpath_in_repo(local_path, repo_name):
     normalized = local_path.replace("\\", "/").strip("/")
     parts = normalized.split("/")
     for idx, part in enumerate(parts):
         if part.lower() == repo_name.lower():
-            return "/".join(parts[idx + 1:])
+            return "/".join(parts[idx + 1 :])
     if len(parts) >= 2:
         return "/".join(parts[-2:])
     return normalized
 
+
 def remove_readonly(func, path, excinfo):
     import stat
+
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
 
 def clone_ref(git_url, ref, dest_dir):
     """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
@@ -104,14 +110,21 @@ def clone_ref(git_url, ref, dest_dir):
     universal lint/build "Compose SDK Modules" steps). The 10-minute cap
     turns a stall into a loud, retryable failure."""
     try:
-        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True, timeout=600)
+        subprocess.run(
+            ["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir],
+            check=True,
+            timeout=600,
+        )
         return
     except subprocess.CalledProcessError:
-        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+        print(
+            f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs..."
+        )
     if os.path.exists(dest_dir):
         shutil.rmtree(dest_dir, onerror=remove_readonly)
     subprocess.run(["git", "clone", git_url, dest_dir], check=True, timeout=600)
     subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
+
 
 def resolve_module_sources(modules):
     """Resolve each module's source directory for modules declared with the
@@ -140,7 +153,9 @@ def resolve_module_sources(modules):
         local_repo_path = os.path.join(workspace_parent, repo_name)
 
         if os.path.exists(local_repo_path):
-            print(f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy.")
+            print(
+                f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy."
+            )
             repo_source_dir = local_repo_path
         else:
             ref = group[0].get("ref", "main")
@@ -150,19 +165,34 @@ def resolve_module_sources(modules):
             # same explicit ROKCT_ALLOW_UNPINNED_SDKS escape hatch as the
             # flutter/nextjs composers.
             if not re.fullmatch(r"[0-9a-f]{40}", (ref or "").lower()):
-                if os.environ.get("ROKCT_ALLOW_UNPINNED_SDKS", "").lower() in ("1", "true", "yes"):
-                    print(f"[!] WARNING: cloning {git_url} at mutable ref '{ref}'; proceeding "
-                          "because ROKCT_ALLOW_UNPINNED_SDKS is set. Content is UNVERIFIED.")
+                if os.environ.get("ROKCT_ALLOW_UNPINNED_SDKS", "").lower() in (
+                    "1",
+                    "true",
+                    "yes",
+                ):
+                    print(
+                        f"[!] WARNING: cloning {git_url} at mutable ref '{ref}'; proceeding "
+                        "because ROKCT_ALLOW_UNPINNED_SDKS is set. Content is UNVERIFIED."
+                    )
                 else:
                     module_names = ", ".join(str(m.get("name")) for m in group)
-                    print(f"[!] Module(s) {module_names} use mutable ref '{ref}' for {git_url}.", file=sys.stderr)
-                    print("[!] Pin \"ref\" to a full commit SHA, or set ROKCT_ALLOW_UNPINNED_SDKS=1 "
-                          "to run unpinned anyway.", file=sys.stderr)
+                    print(
+                        f"[!] Module(s) {module_names} use mutable ref '{ref}' for {git_url}.",
+                        file=sys.stderr,
+                    )
+                    print(
+                        '[!] Pin "ref" to a full commit SHA, or set ROKCT_ALLOW_UNPINNED_SDKS=1 '
+                        "to run unpinned anyway.",
+                        file=sys.stderr,
+                    )
                     raise ValueError(
                         f"CRITICAL ERROR: refusing to clone {git_url} at mutable ref '{ref}' "
-                        f"for module(s) '{module_names}' without a pin. Failing build.")
+                        f"for module(s) '{module_names}' without a pin. Failing build."
+                    )
             temp_repo_dir = os.path.join(cache_base, f"{repo_name}_frappe")
-            print(f"[*] Fetching repository {git_url} (ref {ref}) into {temp_repo_dir}...")
+            print(
+                f"[*] Fetching repository {git_url} (ref {ref}) into {temp_repo_dir}..."
+            )
             try:
                 os.makedirs(cache_base, exist_ok=True)
                 if os.path.exists(temp_repo_dir):
@@ -176,8 +206,12 @@ def resolve_module_sources(modules):
                 # typo'd URL (or expired token) composed a quietly incomplete
                 # app that still exited 0.
                 module_names = ", ".join(str(m.get("name")) for m in group)
-                print(f"[!] Failed to clone {git_url} (ref '{ref}') needed by module(s): {module_names}: {e}")
-                raise ValueError(f"CRITICAL ERROR: Failed to clone {git_url} (ref '{ref}') for module(s) '{module_names}'! Failing build.") from e
+                print(
+                    f"[!] Failed to clone {git_url} (ref '{ref}') needed by module(s): {module_names}: {e}"
+                )
+                raise ValueError(
+                    f"CRITICAL ERROR: Failed to clone {git_url} (ref '{ref}') for module(s) '{module_names}'! Failing build."
+                ) from e
 
         for m in group:
             subpath = get_subpath_in_repo(m.get("path", ""), repo_name)
@@ -185,23 +219,27 @@ def resolve_module_sources(modules):
 
     return resolved
 
+
 def find_target_app_dir(config):
     # Try to resolve app name from configuration or folder name
     app_name = config.get("name", "").replace("_app", "")
     if not app_name:
         app_name = os.path.basename(PROJECT_ROOT)
-    
+
     # Frappe apps are nested as apps/app_name/app_name
     target_path = os.path.join(PROJECT_ROOT, "apps", app_name, app_name)
     if not os.path.exists(target_path):
         # Fallback to local package directory in case of simple workspace
         target_path = os.path.join(PROJECT_ROOT, app_name)
-    
+
     if not os.path.exists(target_path):
-        print(f"[!] Target app package directory not found for: {app_name}. Tried: {target_path}")
+        print(
+            f"[!] Target app package directory not found for: {app_name}. Tried: {target_path}"
+        )
         sys.exit(1)
-        
+
     return app_name, target_path
+
 
 def compose_module(module_config, target_app_path, app_name, resolved_src_dir=None):
     module_name = module_config["name"]
@@ -216,19 +254,21 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
         return None
 
     manifest_path = os.path.join(src_sdk_path, "manifest.json")
-    
+
     if not os.path.exists(manifest_path):
-        print(f"[-] No manifest.json found for module {module_name} at {src_sdk_path}. Skipping.")
+        print(
+            f"[-] No manifest.json found for module {module_name} at {src_sdk_path}. Skipping."
+        )
         return None
-        
+
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-        
+
     dest_module_path = os.path.join(target_app_path, module_name)
     if os.path.exists(dest_module_path):
         shutil.rmtree(dest_module_path)
     os.makedirs(dest_module_path, exist_ok=True)
-    
+
     # 1. Copy DocTypes
     src_doctype = os.path.join(src_sdk_path, "doctype")
     dest_doctype = os.path.join(dest_module_path, "doctype")
@@ -239,9 +279,11 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
             dest_dt_path = os.path.join(dest_doctype, dt)
             if os.path.isdir(src_dt_path):
                 if dt in COMPILED_DOCTYPES:
-                    raise ValueError(f"CRITICAL ERROR: Duplicate DocType '{dt}' detected! Already compiled by module '{COMPILED_DOCTYPES[dt]}'. Failing build.")
+                    raise ValueError(
+                        f"CRITICAL ERROR: Duplicate DocType '{dt}' detected! Already compiled by module '{COMPILED_DOCTYPES[dt]}'. Failing build."
+                    )
                 COMPILED_DOCTYPES[dt] = module_name
-                
+
                 if os.path.exists(dest_dt_path):
                     shutil.rmtree(dest_dt_path)
                 shutil.copytree(src_dt_path, dest_dt_path)
@@ -254,12 +296,16 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         data["module"] = manifest.get("name", module_name)
                         with open(json_file, "w", encoding="utf-8") as jf:
                             json.dump(data, jf, indent=2)
-                        print(f"[+] Compiled DocType: {dt} -> {manifest.get('name', module_name)} (Module injected from manifest)")
+                        print(
+                            f"[+] Compiled DocType: {dt} -> {manifest.get('name', module_name)} (Module injected from manifest)"
+                        )
                     except Exception as je:
-                        print(f"[!] Warning: Failed to inject module into {dt}.json: {je}")
+                        print(
+                            f"[!] Warning: Failed to inject module into {dt}.json: {je}"
+                        )
                 else:
                     print(f"[+] Copied DocType: {dt} -> {module_name}")
-                
+
     # Role-based composition, strip side (ported from the Dart composer's
     # strip_unused_role_folders() in core/utils/flutter/sdk_composer.py):
     # persona folders live as siblings directly under the SDK's src/
@@ -286,9 +332,10 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
             src_file_path = os.path.join(src_code, f)
 
             if f in excluded_personas and os.path.isdir(src_file_path):
-                print(f"[*] Skipped unused role folder src/{f}/ from {module_name} (app role: {current_app_type})")
+                print(
+                    f"[*] Skipped unused role folder src/{f}/ from {module_name} (app role: {current_app_type})"
+                )
                 continue
-
 
             # Special redirects for global folders
             if f == "www":
@@ -298,7 +345,9 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                     s_file = os.path.join(src_file_path, item)
                     d_file = os.path.join(dest_www, item)
                     if os.path.exists(d_file):
-                        raise ValueError(f"CRITICAL ERROR: Duplicate global www file '{item}' detected! (Attempted by: '{module_name}'). Failing build.")
+                        raise ValueError(
+                            f"CRITICAL ERROR: Duplicate global www file '{item}' detected! (Attempted by: '{module_name}'). Failing build."
+                        )
                     if item.endswith((".py", ".js", ".html", ".json")):
                         with open(s_file, "r", encoding="utf-8") as sf:
                             content = sf.read()
@@ -309,19 +358,23 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         shutil.copy2(s_file, d_file)
                 print(f"[+] Merged global www files from: {module_name}")
                 continue
-                
+
             if f == "patches":
                 dest_patches = os.path.join(target_app_path, "patches")
                 os.makedirs(dest_patches, exist_ok=True)
                 # Ensure __init__.py exists in patches
-                with open(os.path.join(dest_patches, "__init__.py"), "w", encoding="utf-8") as init_f:
+                with open(
+                    os.path.join(dest_patches, "__init__.py"), "w", encoding="utf-8"
+                ) as init_f:
                     init_f.write("")
                 for item in os.listdir(src_file_path):
                     if item.endswith(".py") and item != "__init__.py":
                         s_file = os.path.join(src_file_path, item)
                         d_file = os.path.join(dest_patches, item)
                         if os.path.exists(d_file):
-                            raise ValueError(f"CRITICAL ERROR: Duplicate global patch file '{item}' detected! (Attempted by: '{module_name}'). Failing build.")
+                            raise ValueError(
+                                f"CRITICAL ERROR: Duplicate global patch file '{item}' detected! (Attempted by: '{module_name}'). Failing build."
+                            )
                         with open(s_file, "r", encoding="utf-8") as sf:
                             content = sf.read()
                         content = content.replace("{app_name}", app_name)
@@ -333,18 +386,26 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         existing_patches = []
                         if os.path.exists(patches_txt_path):
                             with open(patches_txt_path, "r", encoding="utf-8") as pf:
-                                existing_patches = [line.strip() for line in pf.readlines() if line.strip()]
+                                existing_patches = [
+                                    line.strip()
+                                    for line in pf.readlines()
+                                    if line.strip()
+                                ]
                         full_patch_path = f"{app_name}.patches.{patch_name}"
                         if full_patch_path not in existing_patches:
                             with open(patches_txt_path, "a", encoding="utf-8") as pf:
                                 pf.write(f"{full_patch_path}\n")
-                            print(f"[+] Registered patch: '{full_patch_path}' -> patches.txt")
+                            print(
+                                f"[+] Registered patch: '{full_patch_path}' -> patches.txt"
+                            )
                 print(f"[+] Merged global patches from: {module_name}")
                 continue
 
             dest_file_path = os.path.join(dest_module_path, f)
             if os.path.exists(dest_file_path):
-                raise ValueError(f"CRITICAL ERROR: Duplicate source file/folder '{f}' in module '{module_name}'! Failing build.")
+                raise ValueError(
+                    f"CRITICAL ERROR: Duplicate source file/folder '{f}' in module '{module_name}'! Failing build."
+                )
             if os.path.isfile(src_file_path):
                 # Copy file and replace {app_name} placeholders dynamically
                 if src_file_path.endswith((".py", ".js", ".html", ".json")):
@@ -359,6 +420,7 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
             elif os.path.isdir(src_file_path):
                 if os.path.exists(dest_file_path):
                     shutil.rmtree(dest_file_path)
+
                 # Copy tree and compile placeholders for text files
                 def copy_and_resolve(src, dst):
                     os.makedirs(dst, exist_ok=True)
@@ -376,27 +438,31 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                                     df.write(content)
                             else:
                                 shutil.copy2(s, d)
+
                 copy_and_resolve(src_file_path, dest_file_path)
                 print(f"[+] Copied Source Directory: {f} -> {module_name}")
 
     # 3. Create Frappe Module Package registration markers
-    with open(os.path.join(dest_module_path, "__init__.py"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(dest_module_path, "__init__.py"), "w", encoding="utf-8"
+    ) as f:
         f.write("# Generated by Rokct Backend Composer\n")
-        
+
     # Append to root modules.txt of the app shell if not present
     root_modules_path = os.path.join(target_app_path, "modules.txt")
     existing_modules = []
     if os.path.exists(root_modules_path):
         with open(root_modules_path, "r", encoding="utf-8") as f:
             existing_modules = [line.strip() for line in f.readlines() if line.strip()]
-            
+
     if module_name not in existing_modules:
         with open(root_modules_path, "a", encoding="utf-8") as f:
             f.write(f"{module_name}\n")
         print(f"[+] Injected module registration: '{module_name}' -> root modules.txt")
-        
+
     print(f"[+] Module {module_name} registration files written.")
     return manifest
+
 
 def merge_hooks(target_app_path, app_name, compiled_manifests):
     hooks_file = os.path.join(target_app_path, "hooks.py")
@@ -415,7 +481,7 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         content = content.split(split_marker)[0].strip()
 
     append_blocks = []
-    
+
     for module_name, manifest in compiled_manifests.items():
         hooks = manifest.get("hooks", {})
         # Dynamically inject the app_name into placeholders
@@ -424,9 +490,9 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         hooks = json.loads(hooks_str)
         if not hooks:
             continue
-            
+
         append_blocks.append(f"\n# --- Module: {module_name} ---")
-        
+
         # 1. Merge scheduler events (deduped like the other hook lists: two
         #    modules registering the same task under the same bucket used to
         #    both land, running it twice per tick).
@@ -435,26 +501,44 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             task_list = [tasks] if isinstance(tasks, str) else list(tasks)
             for t in task_list:
                 _validate_hook_value(t, "dotted", module_name, "scheduler_events")
-            append_blocks.append(f"scheduler_events = globals().get('scheduler_events', {{}})")
+            append_blocks.append(
+                f"scheduler_events = globals().get('scheduler_events', {{}})"
+            )
             append_blocks.append(f"scheduler_events.setdefault({event_type!r}, [])")
             append_blocks.append(f"for _t in {task_list!r}:")
-            append_blocks.append(f"    if _t not in scheduler_events[{event_type!r}]: scheduler_events[{event_type!r}].append(_t)")
+            append_blocks.append(
+                f"    if _t not in scheduler_events[{event_type!r}]: scheduler_events[{event_type!r}].append(_t)"
+            )
 
         # 2. Merge override doctype class
         overrides = hooks.get("override_doctype_class", {})
         for doc_type, class_path in overrides.items():
-            _validate_hook_value(doc_type, "doctype", module_name, "override_doctype_class")
-            _validate_hook_value(class_path, "dotted", module_name, "override_doctype_class")
-            append_blocks.append(f"override_doctype_class = globals().get('override_doctype_class', {{}})")
-            append_blocks.append(f"override_doctype_class[{doc_type!r}] = {class_path!r}")
+            _validate_hook_value(
+                doc_type, "doctype", module_name, "override_doctype_class"
+            )
+            _validate_hook_value(
+                class_path, "dotted", module_name, "override_doctype_class"
+            )
+            append_blocks.append(
+                f"override_doctype_class = globals().get('override_doctype_class', {{}})"
+            )
+            append_blocks.append(
+                f"override_doctype_class[{doc_type!r}] = {class_path!r}"
+            )
 
         # 3. Merge whitelisted methods
         whitelisted = hooks.get("whitelisted_methods", {})
         if whitelisted:
-            append_blocks.append(f"whitelisted_methods = globals().get('whitelisted_methods', {{}})")
+            append_blocks.append(
+                f"whitelisted_methods = globals().get('whitelisted_methods', {{}})"
+            )
             for api_key, api_val in whitelisted.items():
-                _validate_hook_value(api_key, "dotted", module_name, "whitelisted_methods")
-                _validate_hook_value(api_val, "dotted", module_name, "whitelisted_methods")
+                _validate_hook_value(
+                    api_key, "dotted", module_name, "whitelisted_methods"
+                )
+                _validate_hook_value(
+                    api_val, "dotted", module_name, "whitelisted_methods"
+                )
                 append_blocks.append(f"whitelisted_methods[{api_key!r}] = {api_val!r}")
 
         # 4. Merge doc events. Accumulate handlers into a LIST per (doctype,
@@ -471,11 +555,17 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 append_blocks.append(f"doc_events.setdefault({doc_type!r}, {{}})")
                 for evt, handler in evt_dict.items():
                     _validate_hook_value(evt, "event", module_name, "doc_events")
-                    handler_list = [handler] if isinstance(handler, str) else list(handler)
+                    handler_list = (
+                        [handler] if isinstance(handler, str) else list(handler)
+                    )
                     for h in handler_list:
                         _validate_hook_value(h, "dotted", module_name, "doc_events")
-                    append_blocks.append(f"_ev = doc_events[{doc_type!r}].get({evt!r}) or []")
-                    append_blocks.append(f"_ev = [_ev] if isinstance(_ev, str) else list(_ev)")
+                    append_blocks.append(
+                        f"_ev = doc_events[{doc_type!r}].get({evt!r}) or []"
+                    )
+                    append_blocks.append(
+                        f"_ev = [_ev] if isinstance(_ev, str) else list(_ev)"
+                    )
                     append_blocks.append(f"for _h in {handler_list!r}:")
                     append_blocks.append(f"    if _h not in _ev: _ev.append(_h)")
                     append_blocks.append(f"doc_events[{doc_type!r}][{evt!r}] = _ev")
@@ -486,22 +576,28 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             append_blocks.append(f"fixtures = globals().get('fixtures', [])")
             for f in fixs:
                 append_blocks.append(f"fixtures.append({repr(f)})")
-                
+
         # 6. Merge auth hooks
         auths = hooks.get("auth_hooks", [])
         if auths:
             append_blocks.append(f"auth_hooks = globals().get('auth_hooks', [])")
             for a in auths:
                 _validate_hook_value(a, "dotted", module_name, "auth_hooks")
-                append_blocks.append(f"if {a!r} not in auth_hooks: auth_hooks.append({a!r})")
+                append_blocks.append(
+                    f"if {a!r} not in auth_hooks: auth_hooks.append({a!r})"
+                )
 
         # 7. Merge before_uninstall hooks
         before_uninstalls = hooks.get("before_uninstall", [])
         if before_uninstalls:
-            append_blocks.append(f"before_uninstall = globals().get('before_uninstall', [])")
+            append_blocks.append(
+                f"before_uninstall = globals().get('before_uninstall', [])"
+            )
             for bu in before_uninstalls:
                 _validate_hook_value(bu, "dotted", module_name, "before_uninstall")
-                append_blocks.append(f"if {bu!r} not in before_uninstall: before_uninstall.append({bu!r})")
+                append_blocks.append(
+                    f"if {bu!r} not in before_uninstall: before_uninstall.append({bu!r})"
+                )
 
         # 8. Merge after_install hooks
         after_installs = hooks.get("after_install", [])
@@ -511,10 +607,19 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             append_blocks.append(f"after_install = globals().get('after_install', [])")
             for ai in after_installs:
                 _validate_hook_value(ai, "dotted", module_name, "after_install")
-                append_blocks.append(f"if {ai!r} not in after_install: after_install.append({ai!r})")
+                append_blocks.append(
+                    f"if {ai!r} not in after_install: after_install.append({ai!r})"
+                )
 
     if append_blocks:
-        new_content = content + "\n\n" + split_marker + "\n" + "\n".join(append_blocks) + "\n# --- END OF DYNAMIC SDK HOOKS ---\n"
+        new_content = (
+            content
+            + "\n\n"
+            + split_marker
+            + "\n"
+            + "\n".join(append_blocks)
+            + "\n# --- END OF DYNAMIC SDK HOOKS ---\n"
+        )
         with open(hooks_file, "w", encoding="utf-8") as f:
             f.write(new_content)
         print("[+] Merged dynamic Hooks successfully into hooks.py")
@@ -607,7 +712,9 @@ def merge_dependencies(project_root, compiled_manifests):
         if name in seen_names:
             existing = next((x for x in all_deps if _dep_name(x) == name), None)
             if existing and existing != d:
-                print(f"[!] Dependency version conflict for '{name}': keeping '{existing}', ignoring manifest's '{d}'.")
+                print(
+                    f"[!] Dependency version conflict for '{name}': keeping '{existing}', ignoring manifest's '{d}'."
+                )
             continue
         seen_names.add(name)
         all_deps.append(d)
@@ -630,7 +737,9 @@ def merge_dependencies(project_root, compiled_manifests):
         name = _dep_name(d)
         if name in existing_reqs:
             if existing_reqs[name] != d:
-                print(f"[!] '{name}' already in requirements.txt as '{existing_reqs[name]}', skipping manifest's '{d}' (version conflict).")
+                print(
+                    f"[!] '{name}' already in requirements.txt as '{existing_reqs[name]}', skipping manifest's '{d}' (version conflict)."
+                )
             continue
         new_reqs_to_add.append(d)
     if new_reqs_to_add:
@@ -639,7 +748,9 @@ def merge_dependencies(project_root, compiled_manifests):
             f.write("\n# Composed SDK Dependencies\n")
             for req in new_reqs_to_add:
                 f.write(f"{req}\n")
-        print(f"[+] Injected Python requirements into requirements.txt: {new_reqs_to_add}")
+        print(
+            f"[+] Injected Python requirements into requirements.txt: {new_reqs_to_add}"
+        )
 
     # 2. Update pyproject.toml (dedupe by package NAME, warn on conflict — a
     #    bare 'requests' from a manifest must not land alongside an existing
@@ -654,7 +765,11 @@ def merge_dependencies(project_root, compiled_manifests):
         if match:
             deps_block = match.group(1)
             # Parse existing TOML dependency strings
-            existing_toml_deps = [d.replace('"', '').replace("'", "").strip() for d in deps_block.split(",") if d.strip()]
+            existing_toml_deps = [
+                d.replace('"', "").replace("'", "").strip()
+                for d in deps_block.split(",")
+                if d.strip()
+            ]
             existing_toml_names = {_dep_name(d): d for d in existing_toml_deps}
 
             new_toml_deps_to_add = []
@@ -662,7 +777,9 @@ def merge_dependencies(project_root, compiled_manifests):
                 name = _dep_name(d)
                 if name in existing_toml_names:
                     if existing_toml_names[name] != d:
-                        print(f"[!] '{name}' already in pyproject.toml as '{existing_toml_names[name]}', skipping manifest's '{d}' (version conflict).")
+                        print(
+                            f"[!] '{name}' already in pyproject.toml as '{existing_toml_names[name]}', skipping manifest's '{d}' (version conflict)."
+                        )
                     continue
                 existing_toml_names[name] = d
                 new_toml_deps_to_add.append(d)
@@ -670,14 +787,19 @@ def merge_dependencies(project_root, compiled_manifests):
                 updated_deps_list = existing_toml_deps + new_toml_deps_to_add
                 toml_deps_str = ",\n    ".join([f'"{d}"' for d in updated_deps_list])
                 new_dependencies_field = f"dependencies = [\n    {toml_deps_str}\n]"
-                toml_content = toml_content.replace(match.group(0), new_dependencies_field)
+                toml_content = toml_content.replace(
+                    match.group(0), new_dependencies_field
+                )
                 with open(toml_file, "w", encoding="utf-8") as f:
                     f.write(toml_content)
-                print(f"[+] Injected dependencies into pyproject.toml: {new_toml_deps_to_add}")
+                print(
+                    f"[+] Injected dependencies into pyproject.toml: {new_toml_deps_to_add}"
+                )
+
 
 def main():
     print("[*] Starting Frappe App Backend Composition...")
-    
+
     # Clean and restore target app shell workspace using Git
     print("[*] Cleaning and restoring target app shell workspace using Git...")
     try:
@@ -685,11 +807,13 @@ def main():
         subprocess.run(["git", "clean", "-fd"], check=True, capture_output=True)
         print("[+] Workspace cleaned successfully.")
     except Exception as e:
-        print(f"[!] Warning: Git clean/restore failed (perhaps not a git repo or git not in PATH): {e}")
+        print(
+            f"[!] Warning: Git clean/restore failed (perhaps not a git repo or git not in PATH): {e}"
+        )
 
     config = load_composer_config()
     app_name, target_app_path = find_target_app_dir(config)
-    
+
     modules = config.get("modules", [])
     compiled_manifests = {}
 
@@ -715,19 +839,28 @@ def main():
     for m in modules:
         if m.get("enabled", False):
             print(f"\n[*] Pouring module: {m['name']}...")
-            manifest = compose_module(m, target_app_path, app_name, resolved_sources.get(id(m)))
+            manifest = compose_module(
+                m, target_app_path, app_name, resolved_sources.get(id(m))
+            )
             if manifest:
-                compiled_manifests[m['name']] = manifest
-                flavor_block = (manifest.get("app_type") or {}).get(current_app_type) if current_app_type else None
+                compiled_manifests[m["name"]] = manifest
+                flavor_block = (
+                    (manifest.get("app_type") or {}).get(current_app_type)
+                    if current_app_type
+                    else None
+                )
                 if flavor_block:
-                    compiled_manifests[f"{m['name']} ({current_app_type})"] = flavor_block
+                    compiled_manifests[f"{m['name']} ({current_app_type})"] = (
+                        flavor_block
+                    )
 
     if compiled_manifests:
         merge_hooks(target_app_path, app_name, compiled_manifests)
         merge_commands(target_app_path, app_name, compiled_manifests)
         merge_dependencies(PROJECT_ROOT, compiled_manifests)
-        
+
     print("\n[+] Frappe backend composition complete.")
+
 
 if __name__ == "__main__":
     main()

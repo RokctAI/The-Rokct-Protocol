@@ -36,26 +36,78 @@ resolve_workspace_root = path_utils.resolve_workspace_root
 FOOTER_MAPS = {
     "business": {
         "01_executive_summary.md": [
-            ("02_company_description.md", "Legal identity, mission and delivery model", "Company Description"),
-            ("03_market_analysis.md", "Sizing, competition and segments", "Market Analysis"),
-            ("07_financial_model.md", "Revenue streams and projections", "Financial Model"),
-            ("annexures/investor_pitch_deck.md", "Slide-by-slide investment case", "Investor Pitch Deck"),
+            (
+                "02_company_description.md",
+                "Legal identity, mission and delivery model",
+                "Company Description",
+            ),
+            (
+                "03_market_analysis.md",
+                "Sizing, competition and segments",
+                "Market Analysis",
+            ),
+            (
+                "07_financial_model.md",
+                "Revenue streams and projections",
+                "Financial Model",
+            ),
+            (
+                "annexures/investor_pitch_deck.md",
+                "Slide-by-slide investment case",
+                "Investor Pitch Deck",
+            ),
         ],
         "02_company_description.md": [
-            ("business_profile.md", "Institution-ready corporate summary", "Business Profile"),
-            ("06_technical_architecture.md", "How the offering is built and delivered", "Delivery Architecture"),
-            ("08_risk_and_mitigation.md", "Risk register and compliance exposure", "Risk & Mitigation"),
-            ("annexures/succession_plan.md", "Leadership continuity", "Succession Plan"),
+            (
+                "business_profile.md",
+                "Institution-ready corporate summary",
+                "Business Profile",
+            ),
+            (
+                "06_technical_architecture.md",
+                "How the offering is built and delivered",
+                "Delivery Architecture",
+            ),
+            (
+                "08_risk_and_mitigation.md",
+                "Risk register and compliance exposure",
+                "Risk & Mitigation",
+            ),
+            (
+                "annexures/succession_plan.md",
+                "Leadership continuity",
+                "Succession Plan",
+            ),
         ],
         "03_market_analysis.md": [
             ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
-            ("05_marketing_and_sales.md", "How the market is reached", "Marketing & Sales"),
-            ("10_lean_canvas.md", "Problem, solution and advantage on one grid", "Lean Canvas"),
+            (
+                "05_marketing_and_sales.md",
+                "How the market is reached",
+                "Marketing & Sales",
+            ),
+            (
+                "10_lean_canvas.md",
+                "Problem, solution and advantage on one grid",
+                "Lean Canvas",
+            ),
         ],
         "04_product_ecosystem.md": [
-            ("06_technical_architecture.md", "Build and delivery detail", "Delivery Architecture"),
-            ("annexures/product_pricing_list.md", "Prices and commercial terms", "Price List"),
-            ("09_business_model_canvas.md", "How the offering creates value", "Business Model Canvas"),
+            (
+                "06_technical_architecture.md",
+                "Build and delivery detail",
+                "Delivery Architecture",
+            ),
+            (
+                "annexures/product_pricing_list.md",
+                "Prices and commercial terms",
+                "Price List",
+            ),
+            (
+                "09_business_model_canvas.md",
+                "How the offering creates value",
+                "Business Model Canvas",
+            ),
         ],
         "05_marketing_and_sales.md": [
             ("03_market_analysis.md", "Who the market is", "Market Analysis"),
@@ -65,71 +117,187 @@ FOOTER_MAPS = {
         ],
         "06_technical_architecture.md": [
             ("04_product_ecosystem.md", "What is delivered", "Products & Services"),
-            ("operational_plan_on_a_page.md", "1-Page operating summary", "Operational Plan on a Page"),
-            ("annexures/business_continuity_plan.md", "Failure and recovery", "Business Continuity Plan"),
-            ("annexures/quality_management_system.md", "Quality controls and records", "Quality Management System"),
+            (
+                "operational_plan_on_a_page.md",
+                "1-Page operating summary",
+                "Operational Plan on a Page",
+            ),
+            (
+                "annexures/business_continuity_plan.md",
+                "Failure and recovery",
+                "Business Continuity Plan",
+            ),
+            (
+                "annexures/quality_management_system.md",
+                "Quality controls and records",
+                "Quality Management System",
+            ),
         ],
         "07_financial_model.md": [
-            ("financial_plan_on_a_page.md", "1-Page financial summary", "Financial Plan on a Page"),
-            ("annexures/product_pricing_list.md", "Price points behind the model", "Price List"),
-            ("annexures/investor_pitch_deck.md", "The funding ask", "Investor Pitch Deck"),
+            (
+                "financial_plan_on_a_page.md",
+                "1-Page financial summary",
+                "Financial Plan on a Page",
+            ),
+            (
+                "annexures/product_pricing_list.md",
+                "Price points behind the model",
+                "Price List",
+            ),
+            (
+                "annexures/investor_pitch_deck.md",
+                "The funding ask",
+                "Investor Pitch Deck",
+            ),
         ],
         "08_risk_and_mitigation.md": [
-            ("annexures/business_continuity_plan.md", "Continuity and recovery targets", "Business Continuity Plan"),
+            (
+                "annexures/business_continuity_plan.md",
+                "Continuity and recovery targets",
+                "Business Continuity Plan",
+            ),
             ("annexures/succession_plan.md", "Key-person cover", "Succession Plan"),
-            ("compliance_log.md", "Certificate status and expiry warnings", "Compliance Log"),
+            (
+                "compliance_log.md",
+                "Certificate status and expiry warnings",
+                "Compliance Log",
+            ),
         ],
         "09_business_model_canvas.md": [
             ("10_lean_canvas.md", "Venture Strategic Lean Canvas", "Lean Canvas"),
-            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
-            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page"),
+            (
+                "business_plan_on_a_page.md",
+                "1-Page Commercial Mechanics",
+                "Business Plan on a Page",
+            ),
+            (
+                "financial_plan_on_a_page.md",
+                "1-Page Financial Projections",
+                "Financial Plan on a Page",
+            ),
         ],
         "10_lean_canvas.md": [
-            ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
-            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
-            ("03_market_analysis.md", "Market sizing and competition", "Market Analysis"),
+            (
+                "09_business_model_canvas.md",
+                "High-Level 9-Box Canvas Grid",
+                "Business Model Canvas",
+            ),
+            (
+                "business_plan_on_a_page.md",
+                "1-Page Commercial Mechanics",
+                "Business Plan on a Page",
+            ),
+            (
+                "03_market_analysis.md",
+                "Market sizing and competition",
+                "Market Analysis",
+            ),
         ],
         "business_plan_on_a_page.md": [
             ("01_executive_summary.md", "The long-form summary", "Executive Summary"),
-            ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
+            (
+                "09_business_model_canvas.md",
+                "High-Level 9-Box Canvas Grid",
+                "Business Model Canvas",
+            ),
             ("10_lean_canvas.md", "Venture Strategic Lean Canvas", "Lean Canvas"),
-            ("financial_plan_on_a_page.md", "1-Page Financial Projections", "Financial Plan on a Page"),
+            (
+                "financial_plan_on_a_page.md",
+                "1-Page Financial Projections",
+                "Financial Plan on a Page",
+            ),
         ],
         "business_profile.md": [
-            ("02_company_description.md", "Full company description", "Company Description"),
-            ("compliance_log.md", "Certificate status and expiry warnings", "Compliance Log"),
+            (
+                "02_company_description.md",
+                "Full company description",
+                "Company Description",
+            ),
+            (
+                "compliance_log.md",
+                "Certificate status and expiry warnings",
+                "Compliance Log",
+            ),
             ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
         ],
         "financial_plan_on_a_page.md": [
             ("07_financial_model.md", "Full financial model", "Financial Model"),
-            ("09_business_model_canvas.md", "High-Level 9-Box Canvas Grid", "Business Model Canvas"),
-            ("business_plan_on_a_page.md", "1-Page Commercial Mechanics", "Business Plan on a Page"),
+            (
+                "09_business_model_canvas.md",
+                "High-Level 9-Box Canvas Grid",
+                "Business Model Canvas",
+            ),
+            (
+                "business_plan_on_a_page.md",
+                "1-Page Commercial Mechanics",
+                "Business Plan on a Page",
+            ),
         ],
         "strategic_plan_on_a_page.md": [
             ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
-            ("project_plan_on_a_page.md", "Projects delivering the strategy", "Project Plan on a Page"),
-            ("people_plan_on_a_page.md", "Team required to deliver it", "People Plan on a Page"),
+            (
+                "project_plan_on_a_page.md",
+                "Projects delivering the strategy",
+                "Project Plan on a Page",
+            ),
+            (
+                "people_plan_on_a_page.md",
+                "Team required to deliver it",
+                "People Plan on a Page",
+            ),
         ],
         "marketing_plan_on_a_page.md": [
             ("annexures/marketing_plan.md", "Full marketing plan", "Marketing Plan"),
-            ("05_marketing_and_sales.md", "Marketing and sales strategy", "Marketing & Sales"),
+            (
+                "05_marketing_and_sales.md",
+                "Marketing and sales strategy",
+                "Marketing & Sales",
+            ),
         ],
         "sales_plan_on_a_page.md": [
             ("annexures/sales_plan.md", "Full sales plan", "Sales Plan"),
-            ("annexures/sales_terms_and_conditions.md", "Standard terms of sale", "Terms of Sale"),
+            (
+                "annexures/sales_terms_and_conditions.md",
+                "Standard terms of sale",
+                "Terms of Sale",
+            ),
             ("annexures/product_pricing_list.md", "Price list", "Price List"),
         ],
         "operational_plan_on_a_page.md": [
-            ("06_technical_architecture.md", "Build and delivery detail", "Delivery Architecture"),
-            ("annexures/quality_management_system.md", "Quality controls", "Quality Management System"),
-            ("annexures/business_continuity_plan.md", "Continuity planning", "Business Continuity Plan"),
+            (
+                "06_technical_architecture.md",
+                "Build and delivery detail",
+                "Delivery Architecture",
+            ),
+            (
+                "annexures/quality_management_system.md",
+                "Quality controls",
+                "Quality Management System",
+            ),
+            (
+                "annexures/business_continuity_plan.md",
+                "Continuity planning",
+                "Business Continuity Plan",
+            ),
         ],
         "people_plan_on_a_page.md": [
-            ("annexures/succession_plan.md", "Key-person cover and succession", "Succession Plan"),
-            ("strategic_plan_on_a_page.md", "What the team is being built for", "Strategic Plan on a Page"),
+            (
+                "annexures/succession_plan.md",
+                "Key-person cover and succession",
+                "Succession Plan",
+            ),
+            (
+                "strategic_plan_on_a_page.md",
+                "What the team is being built for",
+                "Strategic Plan on a Page",
+            ),
         ],
         "project_plan_on_a_page.md": [
-            ("strategic_plan_on_a_page.md", "Objectives the projects serve", "Strategic Plan on a Page"),
+            (
+                "strategic_plan_on_a_page.md",
+                "Objectives the projects serve",
+                "Strategic Plan on a Page",
+            ),
             ("people_plan_on_a_page.md", "Resourcing", "People Plan on a Page"),
         ],
         "annexures/investor_pitch_deck.md": [
@@ -139,61 +307,149 @@ FOOTER_MAPS = {
         ],
         "annexures/business_continuity_plan.md": [
             ("08_risk_and_mitigation.md", "The risk register", "Risk & Mitigation"),
-            ("annexures/succession_plan.md", "Key-person continuity", "Succession Plan"),
+            (
+                "annexures/succession_plan.md",
+                "Key-person continuity",
+                "Succession Plan",
+            ),
         ],
         "annexures/succession_plan.md": [
-            ("people_plan_on_a_page.md", "Team and key-person risk", "People Plan on a Page"),
-            ("annexures/business_continuity_plan.md", "Operational continuity", "Business Continuity Plan"),
+            (
+                "people_plan_on_a_page.md",
+                "Team and key-person risk",
+                "People Plan on a Page",
+            ),
+            (
+                "annexures/business_continuity_plan.md",
+                "Operational continuity",
+                "Business Continuity Plan",
+            ),
         ],
         "annexures/marketing_plan.md": [
-            ("marketing_plan_on_a_page.md", "1-Page summary", "Marketing Plan on a Page"),
+            (
+                "marketing_plan_on_a_page.md",
+                "1-Page summary",
+                "Marketing Plan on a Page",
+            ),
             ("03_market_analysis.md", "Market sizing and segments", "Market Analysis"),
         ],
         "annexures/sales_plan.md": [
             ("sales_plan_on_a_page.md", "1-Page summary", "Sales Plan on a Page"),
-            ("annexures/sales_terms_and_conditions.md", "Terms sales may agree", "Terms of Sale"),
+            (
+                "annexures/sales_terms_and_conditions.md",
+                "Terms sales may agree",
+                "Terms of Sale",
+            ),
         ],
         "annexures/product_pricing_list.md": [
-            ("annexures/sales_terms_and_conditions.md", "Full terms of sale", "Terms of Sale"),
+            (
+                "annexures/sales_terms_and_conditions.md",
+                "Full terms of sale",
+                "Terms of Sale",
+            ),
             ("07_financial_model.md", "Margin and cost basis", "Financial Model"),
         ],
         "annexures/quality_management_system.md": [
-            ("operational_plan_on_a_page.md", "1-Page operating summary", "Operational Plan on a Page"),
+            (
+                "operational_plan_on_a_page.md",
+                "1-Page operating summary",
+                "Operational Plan on a Page",
+            ),
             ("compliance_log.md", "Certificate status", "Compliance Log"),
         ],
         "annexures/sales_terms_and_conditions.md": [
-            ("annexures/product_pricing_list.md", "Prices these terms apply to", "Price List"),
+            (
+                "annexures/product_pricing_list.md",
+                "Prices these terms apply to",
+                "Price List",
+            ),
             ("annexures/sales_plan.md", "How they are used in the field", "Sales Plan"),
         ],
     },
     "life": {
         "09_life_model_canvas.md": [
-            ("10_life_lean_canvas.md", "Personal Lean Growth Canvas", "Personal Lean Canvas"),
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "10_life_lean_canvas.md",
+                "Personal Lean Growth Canvas",
+                "Personal Lean Canvas",
+            ),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
         "10_life_lean_canvas.md": [
-            ("09_life_model_canvas.md", "Personal Life Model Canvas", "Personal Life Canvas"),
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "09_life_model_canvas.md",
+                "Personal Life Model Canvas",
+                "Personal Life Canvas",
+            ),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
         "life_plan_on_a_page.md": [
-            ("09_life_model_canvas.md", "Personal Life Model Canvas", "Personal Life Canvas"),
-            ("10_life_lean_canvas.md", "Personal Lean Growth Canvas", "Personal Lean Canvas"),
-            ("health_plan_on_a_page.md", "1-Page Biological Conditioning Plan", "Health Plan on a Page"),
-            ("financial_legacy_plan_on_a_page.md", "1-Page Multigenerational Stewardship Plan", "Financial Legacy Plan on a Page"),
-            ("productivity_plan_on_a_page.md", "1-Page Master Accountability Plan", "Productivity Plan on a Page"),
-            ("legacy_plan_on_a_page.md", "1-Page Legacy Preservations Plan", "Legacy Plan on a Page"),
+            (
+                "09_life_model_canvas.md",
+                "Personal Life Model Canvas",
+                "Personal Life Canvas",
+            ),
+            (
+                "10_life_lean_canvas.md",
+                "Personal Lean Growth Canvas",
+                "Personal Lean Canvas",
+            ),
+            (
+                "health_plan_on_a_page.md",
+                "1-Page Biological Conditioning Plan",
+                "Health Plan on a Page",
+            ),
+            (
+                "financial_legacy_plan_on_a_page.md",
+                "1-Page Multigenerational Stewardship Plan",
+                "Financial Legacy Plan on a Page",
+            ),
+            (
+                "productivity_plan_on_a_page.md",
+                "1-Page Master Accountability Plan",
+                "Productivity Plan on a Page",
+            ),
+            (
+                "legacy_plan_on_a_page.md",
+                "1-Page Legacy Preservations Plan",
+                "Legacy Plan on a Page",
+            ),
         ],
         "health_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
         "financial_legacy_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
         "productivity_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
         "legacy_plan_on_a_page.md": [
-            ("life_plan_on_a_page.md", "1-Page Life Rhythm Plan", "Life Plan on a Page"),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
+            ),
         ],
     },
 }
@@ -236,8 +492,9 @@ class CompileResult:
         return "\n".join(lines)
 
 
-def resolve_compliance_dir(workspace_root, instance_type, instance_name,
-                           compliance_root=None, warnings=None):
+def resolve_compliance_dir(
+    workspace_root, instance_type, instance_name, compliance_root=None, warnings=None
+):
     """Locate the compliance evidence directory for an instance.
 
     Order: explicit argument, environment variable, instance-local
@@ -265,7 +522,8 @@ def resolve_compliance_dir(workspace_root, instance_type, instance_name,
             return candidate
 
     local = os.path.join(
-        path_utils.instance_dir(workspace_root, instance_type, instance_name), "compliance"
+        path_utils.instance_dir(workspace_root, instance_type, instance_name),
+        "compliance",
     )
     if os.path.isdir(local):
         return local
@@ -279,8 +537,14 @@ def resolve_compliance_dir(workspace_root, instance_type, instance_name,
     return local  # canonical location; caller reports it as missing
 
 
-def compile_instance(instance_type, instance_name, monorepo_root=None,
-                     workspace_root=None, compliance_root=None, quiet=False):
+def compile_instance(
+    instance_type,
+    instance_name,
+    monorepo_root=None,
+    workspace_root=None,
+    compliance_root=None,
+    quiet=False,
+):
     """Compile the template suite for one instance.
 
     `monorepo_root` is accepted for backwards compatibility and treated as
@@ -329,8 +593,15 @@ def compile_instance(instance_type, instance_name, monorepo_root=None,
         )
         warnings.extend(record.warnings)
 
-    values = _build_values(profile, jurisdiction, record, trading_name,
-                           instance_name, instance_type, warnings)
+    values = _build_values(
+        profile,
+        jurisdiction,
+        record,
+        trading_name,
+        instance_name,
+        instance_type,
+        warnings,
+    )
 
     context = template_engine.RenderContext(
         values=values, jurisdiction=jurisdiction, features=jurisdiction.features
@@ -372,7 +643,9 @@ def compile_instance(instance_type, instance_name, monorepo_root=None,
             print(f"  Generated: {relative_name}")
 
     if record is not None:
-        log_text = compliance_mod.build_compliance_log(record, instance_name, generated_on)
+        log_text = compliance_mod.build_compliance_log(
+            record, instance_name, generated_on
+        )
         safe_io.atomic_write(os.path.join(out_dir, "compliance_log.md"), log_text)
         written_names.add("compliance_log.md")
         result.written.append("compliance_log.md")
@@ -410,8 +683,16 @@ def _iter_templates(template_root):
             yield absolute, relative
 
 
-def _assemble(rendered, filename, instance_name, instance_type, jurisdiction,
-              record, profile, generated_on):
+def _assemble(
+    rendered,
+    filename,
+    instance_name,
+    instance_type,
+    jurisdiction,
+    record,
+    profile,
+    generated_on,
+):
     """Wrap a rendered body with control block, footers and gap report."""
     fingerprint = documents.content_fingerprint(rendered)
 
@@ -450,8 +731,9 @@ def _humanise(name):
     return spaced.replace("_", " ").replace("-", " ").strip()
 
 
-def _build_values(profile, jurisdiction, record, trading_name,
-                  instance_name, instance_type, warnings):
+def _build_values(
+    profile, jurisdiction, record, trading_name, instance_name, instance_type, warnings
+):
     """Assemble the full placeholder namespace for the renderer."""
     values = dict(profile.answers)
 
@@ -489,7 +771,8 @@ def _build_values(profile, jurisdiction, record, trading_name,
             values["company_name_status"] = "Registered legal name"
 
         suffix_hint = jurisdictions.entity_suffix_for(
-            jurisdiction, record.get("reg_number").value if record.get("reg_number") else None
+            jurisdiction,
+            record.get("reg_number").value if record.get("reg_number") else None,
         )
         values["entity_type_hint"] = suffix_hint or ""
 
@@ -511,8 +794,8 @@ def _format_trademarks(trademarks):
     for entry in trademarks:
         lines.append(
             f'"{entry["mark"]}" | App {entry["application_number"]} | '
-            f'Filed: {entry["application_date"]} | Class {entry["international_class"]} '
-            f'({entry["nature"]}) | Status: {entry["status"]}'
+            f"Filed: {entry['application_date']} | Class {entry['international_class']} "
+            f"({entry['nature']}) | Status: {entry['status']}"
         )
     return "  • " + "\n  • ".join(lines)
 
@@ -531,8 +814,11 @@ def _add_financials(values, profile, jurisdiction):
 
     rows = []
     for label, value in (("Year 1", year_1), ("Year 2", year_2), ("Year 3", year_3)):
-        rows.append(f"*   **{label} Projections**: {value}" if value
-                    else f"*   **{label} Projections**: Pending — not yet provided")
+        rows.append(
+            f"*   **{label} Projections**: {value}"
+            if value
+            else f"*   **{label} Projections**: Pending — not yet provided"
+        )
 
     historical = []
     for key, label in (
@@ -550,12 +836,17 @@ def _add_financials(values, profile, jurisdiction):
 
     grid = []
     for label, value in (("Year 1", year_1), ("Year 2", year_2), ("Year 3", year_3)):
-        head = value.split("|")[0].strip() if value and "|" in value else (value or "Pending")
+        head = (
+            value.split("|")[0].strip()
+            if value and "|" in value
+            else (value or "Pending")
+        )
         grid.append(f"• **{label}**: {head}")
     values["fin_grid_rev"] = "<br>".join(grid)
     values["currency_note"] = (
         f"All figures in {jurisdiction.currency} ({symbol})."
-        if jurisdiction.currency else "Currency not specified."
+        if jurisdiction.currency
+        else "Currency not specified."
     )
 
 
@@ -567,29 +858,55 @@ def _add_life_values(values, profile, warnings):
     # Default to they/them. The previous engine defaulted to he/him, so every
     # profile that had not answered the question was written about as male.
     forms = {
-        "he_she": "They", "he_she_lower": "they",
-        "his_her": "their", "his_her_capital": "Their",
-        "him_her": "them", "himself_herself": "themselves",
+        "he_she": "They",
+        "he_she_lower": "they",
+        "his_her": "their",
+        "his_her_capital": "Their",
+        "him_her": "them",
+        "himself_herself": "themselves",
     }
 
     if pronouns:
         if pronouns.startswith("she"):
-            forms = {"he_she": "She", "he_she_lower": "she", "his_her": "her",
-                     "his_her_capital": "Her", "him_her": "her",
-                     "himself_herself": "herself"}
+            forms = {
+                "he_she": "She",
+                "he_she_lower": "she",
+                "his_her": "her",
+                "his_her_capital": "Her",
+                "him_her": "her",
+                "himself_herself": "herself",
+            }
         elif pronouns.startswith("he"):
-            forms = {"he_she": "He", "he_she_lower": "he", "his_her": "his",
-                     "his_her_capital": "His", "him_her": "him",
-                     "himself_herself": "himself"}
+            forms = {
+                "he_she": "He",
+                "he_she_lower": "he",
+                "his_her": "his",
+                "his_her_capital": "His",
+                "him_her": "him",
+                "himself_herself": "himself",
+            }
     elif gender:
         if any(token in gender for token in ("female", "woman", "she")):
-            forms = {"he_she": "She", "he_she_lower": "she", "his_her": "her",
-                     "his_her_capital": "Her", "him_her": "her",
-                     "himself_herself": "herself"}
-        elif any(token in gender for token in ("male", "man", "he")) and "female" not in gender:
-            forms = {"he_she": "He", "he_she_lower": "he", "his_her": "his",
-                     "his_her_capital": "His", "him_her": "him",
-                     "himself_herself": "himself"}
+            forms = {
+                "he_she": "She",
+                "he_she_lower": "she",
+                "his_her": "her",
+                "his_her_capital": "Her",
+                "him_her": "her",
+                "himself_herself": "herself",
+            }
+        elif (
+            any(token in gender for token in ("male", "man", "he"))
+            and "female" not in gender
+        ):
+            forms = {
+                "he_she": "He",
+                "he_she_lower": "he",
+                "his_her": "his",
+                "his_her_capital": "His",
+                "him_her": "him",
+                "himself_herself": "himself",
+            }
         elif not any(token in gender for token in ("non-binary", "nonbinary", "they")):
             warnings.append(
                 f"Gender {gender!r} not recognised; using they/them. Add a "

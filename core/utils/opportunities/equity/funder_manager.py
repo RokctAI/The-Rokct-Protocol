@@ -11,8 +11,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
+
 class FunderManager:
-    def __init__(self, registry_path='01_equity/'):
+    def __init__(self, registry_path="01_equity/"):
         self.registry_path = Path(registry_path)
         self.existing_orgs = self._load_existing_orgs()
         self.template = """---
@@ -50,16 +51,18 @@ class FunderManager:
             return orgs
 
         # Regex to match the Organization field in markdown
-        org_regex = re.compile(r"^\s*-?\s*\*\*Organization\*\*:\s*(.*)", re.IGNORECASE | re.MULTILINE)
+        org_regex = re.compile(
+            r"^\s*-?\s*\*\*Organization\*\*:\s*(.*)", re.IGNORECASE | re.MULTILINE
+        )
 
         for file in self.registry_path.glob("*.md"):
-            if file.name in ['template.md', 'registry_audit_log.md', 'readme.md']:
+            if file.name in ["template.md", "registry_audit_log.md", "readme.md"]:
                 continue
             try:
                 content = file.read_text()
                 match = org_regex.search(content)
                 if match:
-                    name = match.group(1).strip().strip('[]').lower()
+                    name = match.group(1).strip().strip("[]").lower()
                     orgs.add(name)
             except Exception:
                 pass
@@ -82,13 +85,18 @@ class FunderManager:
         fname = name.lower()
 
         # Replace spaces (including non-breaking spaces) with underscores
-        fname = re.sub(r'\s+', '_', fname)
+        fname = re.sub(r"\s+", "_", fname)
 
         # Strip out characters that are invalid on Windows: ? : * " < > | \
-        fname = re.sub(r'[?:*"<>|\\]', '', fname)
+        fname = re.sub(r'[?:*"<>|\\]', "", fname)
 
         # Other replacements from original logic
-        fname = fname.replace("'", "").replace("&", "and").replace(".", "").replace("-", "_")
+        fname = (
+            fname.replace("'", "")
+            .replace("&", "and")
+            .replace(".", "")
+            .replace("-", "_")
+        )
 
         if not fname.endswith(".md"):
             fname += ".md"
@@ -128,15 +136,16 @@ class FunderManager:
         # edit, not an automated refresh.
         if filepath.exists():
             try:
-                existing = filepath.read_text(encoding='utf-8')
+                existing = filepath.read_text(encoding="utf-8")
             except Exception:
                 existing = ""
-            if re.search(r'Verification Status\*\*:\s*VERIFIED', existing):
+            if re.search(r"Verification Status\*\*:\s*VERIFIED", existing):
                 return filepath
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             f.write(content)
         return filepath
+
 
 if __name__ == "__main__":
     manager = FunderManager()
