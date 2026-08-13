@@ -50,8 +50,10 @@ class BridgeResult:
         return self.ok
 
     def __repr__(self):
-        return (f"BridgeResult(changed={self.changed}, path={self.path!r}, "
-                f"error={self.error!r})")
+        return (
+            f"BridgeResult(changed={self.changed}, path={self.path!r}, "
+            f"error={self.error!r})"
+        )
 
 
 def _parse_instance_details(filepath):
@@ -62,7 +64,9 @@ def _parse_instance_details(filepath):
         if index + 2 < len(parts):
             return parts[index + 1].lower(), parts[index + 2]
 
-    match = re.search(r"instances[/\\](business|life)[/\\]([^/\\]+)", str(filepath), re.IGNORECASE)
+    match = re.search(
+        r"instances[/\\](business|life)[/\\]([^/\\]+)", str(filepath), re.IGNORECASE
+    )
     if match:
         return match.group(1).lower(), match.group(2)
     return None, None
@@ -89,9 +93,16 @@ def _recompile(filepath, workspace_root=None, quiet=True):
         return None, f"Recompilation failed unexpectedly: {exc}"
 
 
-def auto_provision_profile(instance_type, instance_name, primary_base=None,
-                           key_relationships=None, jurisdiction=None,
-                           workspace_root=None, seed=None, full=False):
+def auto_provision_profile(
+    instance_type,
+    instance_name,
+    primary_base=None,
+    key_relationships=None,
+    jurisdiction=None,
+    workspace_root=None,
+    seed=None,
+    full=False,
+):
     """Create a new business or life profile.
 
     Returns the path to `questions.md`. An existing profile is never
@@ -113,8 +124,9 @@ def auto_provision_profile(instance_type, instance_name, primary_base=None,
     display_name = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", instance_name).strip()
 
     seed_values = dict(seed or {})
-    seed_values.setdefault("trading_name" if instance_type == "business" else "full_name",
-                           display_name)
+    seed_values.setdefault(
+        "trading_name" if instance_type == "business" else "full_name", display_name
+    )
     if primary_base:
         seed_values.setdefault("primary_base", primary_base)
     if jurisdiction:
@@ -122,14 +134,16 @@ def auto_provision_profile(instance_type, instance_name, primary_base=None,
     if key_relationships and instance_type == "life":
         seed_values.setdefault("key_relationships", key_relationships)
 
-    content = schemas.render_questions_md(instance_type, display_name, seed_values,
-                                          include_full=full)
+    content = schemas.render_questions_md(
+        instance_type, display_name, seed_values, include_full=full
+    )
     safe_io.atomic_write(questions_file, content)
     return questions_file
 
 
-def update_profile_answer(filepath, question_label, new_answer,
-                          recompile=True, workspace_root=None):
+def update_profile_answer(
+    filepath, question_label, new_answer, recompile=True, workspace_root=None
+):
     """Replace the answer to one question, preserving file structure.
 
     Handles multi-line answers on both sides: the full span of the previous
@@ -141,7 +155,9 @@ def update_profile_answer(filepath, question_label, new_answer,
 
     target_key = canonical_key(question_label)
     if not target_key:
-        raise QuestionNotFoundError(f"Question label {question_label!r} is empty after canonicalisation.")
+        raise QuestionNotFoundError(
+            f"Question label {question_label!r} is empty after canonicalisation."
+        )
 
     outcome = {"found": False}
 
@@ -155,10 +171,12 @@ def update_profile_answer(filepath, question_label, new_answer,
         if span is None:
             # The question exists but has no answer bullet; insert one using the
             # question's own indent plus four spaces.
-            question_indent = len(lines[question_index]) - len(lines[question_index].lstrip())
+            question_indent = len(lines[question_index]) - len(
+                lines[question_index].lstrip()
+            )
             prefix = " " * (question_indent + 4) + "*   **Answer**: "
             rendered = _render_answer(new_answer, prefix, question_indent + 8)
-            lines[question_index + 1:question_index + 1] = rendered
+            lines[question_index + 1 : question_index + 1] = rendered
             outcome["found"] = True
             return "\n".join(lines)
 
@@ -167,7 +185,7 @@ def update_profile_answer(filepath, question_label, new_answer,
         prefix = marker.group(1) if marker else " " * indent + "*   **Answer**: "
         rendered = _render_answer(new_answer, prefix, indent + 4)
 
-        lines[answer_index:last_index + 1] = rendered
+        lines[answer_index : last_index + 1] = rendered
         outcome["found"] = True
         return "\n".join(lines)
 
@@ -197,8 +215,15 @@ def _render_answer(answer, prefix, continuation_indent):
     return rendered
 
 
-def log_ambient_milestone(filepath, category, entry_text, entry_date=None,
-                          recompile=True, workspace_root=None, deduplicate=True):
+def log_ambient_milestone(
+    filepath,
+    category,
+    entry_text,
+    entry_date=None,
+    recompile=True,
+    workspace_root=None,
+    deduplicate=True,
+):
     """Append a conversational milestone to the living ledger.
 
     Duplicate suppression compares the normalised entry text against existing
@@ -213,7 +238,7 @@ def log_ambient_milestone(filepath, category, entry_text, entry_date=None,
         raise StartupOSError("Milestone entry text is empty.")
 
     clean_category = " ".join(str(category).split()).strip() or "General"
-    stamp = (entry_date or date.today())
+    stamp = entry_date or date.today()
     stamp = stamp.isoformat() if hasattr(stamp, "isoformat") else str(stamp)
 
     outcome = {"duplicate": False}
@@ -233,8 +258,11 @@ def log_ambient_milestone(filepath, category, entry_text, entry_date=None,
     changed = safe_io.update_file(filepath, transform)
 
     if outcome["duplicate"]:
-        return BridgeResult(changed=False, path=filepath,
-                            error="Milestone already logged; nothing appended.")
+        return BridgeResult(
+            changed=False,
+            path=filepath,
+            error="Milestone already logged; nothing appended.",
+        )
 
     compiled, error = (None, None)
     if recompile:
@@ -249,7 +277,9 @@ def _is_duplicate(content, entry_text):
     if not normalised:
         return False
     for line in content.split("\n"):
-        match = re.match(r"^[ \t]*[*-]\s+\*\*\[[^\]]+\]\s*\([^)]+\)\*\*\s*:\s*(.*)$", line)
+        match = re.match(
+            r"^[ \t]*[*-]\s+\*\*\[[^\]]+\]\s*\([^)]+\)\*\*\s*:\s*(.*)$", line
+        )
         if match and _normalise(match.group(1)) == normalised:
             return True
     return False
@@ -259,8 +289,9 @@ def _normalise(text):
     return re.sub(r"[^a-z0-9]+", " ", str(text).lower()).strip()
 
 
-def ensure_question(filepath, question_label, prompt, answer, recompile=False,
-                    workspace_root=None):
+def ensure_question(
+    filepath, question_label, prompt, answer, recompile=False, workspace_root=None
+):
     """Add a question to an existing questions.md if it is not already there.
 
     Written for the jurisdiction migration: profiles created before jurisdiction
@@ -298,8 +329,11 @@ def ensure_question(filepath, question_label, prompt, answer, recompile=False,
 
     changed = safe_io.update_file(filepath, transform)
     if not outcome["added"]:
-        return BridgeResult(changed=False, path=filepath,
-                            error=f"'{question_label}' is already present.")
+        return BridgeResult(
+            changed=False,
+            path=filepath,
+            error=f"'{question_label}' is already present.",
+        )
 
     compiled, error = (None, None)
     if recompile:
@@ -335,7 +369,8 @@ def expand_profile(filepath, instance_type, recompile=False, workspace_root=None
         block = []
         for section in schemas.schema_for(instance_type):
             missing = [
-                question for question in section.questions
+                question
+                for question in section.questions
                 if locate_question(lines, question.label) is None
             ]
             if not missing:
@@ -359,14 +394,19 @@ def expand_profile(filepath, instance_type, recompile=False, workspace_root=None
     changed = safe_io.update_file(filepath, transform)
 
     if not added:
-        return BridgeResult(changed=False, path=filepath,
-                            error="Profile already has every schema question.")
+        return BridgeResult(
+            changed=False,
+            path=filepath,
+            error="Profile already has every schema question.",
+        )
 
     compiled, error = (None, None)
     if recompile:
         compiled, error = _recompile(filepath, workspace_root)
 
-    result = BridgeResult(changed=changed, path=filepath, compiled=compiled, error=error)
+    result = BridgeResult(
+        changed=changed, path=filepath, compiled=compiled, error=error
+    )
     result.added = added
     return result
 
@@ -374,6 +414,7 @@ def expand_profile(filepath, instance_type, recompile=False, workspace_root=None
 def read_profile(filepath):
     """Parse a profile and return the ParsedProfile, for agent read paths."""
     from core.parser import parse_questions_md
+
     if not os.path.exists(filepath):
         raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")
     return parse_questions_md(filepath)

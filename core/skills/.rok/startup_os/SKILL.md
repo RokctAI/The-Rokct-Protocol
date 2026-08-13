@@ -131,7 +131,11 @@ resolved path is confirmed to sit inside the workspace before anything is
 written. Writes are locked, snapshotted to `.history/`, and atomic.
 
 ```python
-from core.agent_bridge import auto_provision_profile, log_ambient_milestone, update_profile_answer
+from core.agent_bridge import (
+    auto_provision_profile,
+    log_ambient_milestone,
+    update_profile_answer,
+)
 
 path = auto_provision_profile(
     instance_type="business",

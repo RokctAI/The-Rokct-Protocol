@@ -30,7 +30,10 @@ _SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 # Reserved device names on Windows. `CON`, `NUL` etc. resolve to devices
 # regardless of extension, so a profile named "CON" would hang or corrupt.
 _WINDOWS_RESERVED = {
-    "con", "prn", "aux", "nul",
+    "con",
+    "prn",
+    "aux",
+    "nul",
     *(f"com{i}" for i in range(1, 10)),
     *(f"lpt{i}" for i in range(1, 10)),
 }
@@ -47,7 +50,9 @@ def sanitize_instance_name(name):
     if name is None:
         raise UnsafeNameError("Instance name is required.")
     if not isinstance(name, str):
-        raise UnsafeNameError(f"Instance name must be a string, got {type(name).__name__}.")
+        raise UnsafeNameError(
+            f"Instance name must be a string, got {type(name).__name__}."
+        )
 
     candidate = name.strip()
     if not candidate:
@@ -67,11 +72,15 @@ def sanitize_instance_name(name):
     if candidate in (os.curdir, os.pardir):
         raise UnsafeNameError(f"Instance name {name!r} is a path traversal token.")
     if candidate.endswith((".", " ")):
-        raise UnsafeNameError(f"Instance name {name!r} may not end with '.' or a space.")
+        raise UnsafeNameError(
+            f"Instance name {name!r} may not end with '.' or a space."
+        )
 
     stem = candidate.split(".")[0].lower()
     if stem in _WINDOWS_RESERVED:
-        raise UnsafeNameError(f"Instance name {name!r} is a reserved device name on Windows.")
+        raise UnsafeNameError(
+            f"Instance name {name!r} is a reserved device name on Windows."
+        )
 
     return candidate
 
@@ -152,6 +161,7 @@ def resolve_workspace_root(explicit=None, verbose=True):
     The rule that fired is printed, so a surprising output location is
     diagnosable from the log instead of by reading five heuristics.
     """
+
     def _announce(rule, path):
         if verbose:
             print(f"[StartupOS] Workspace root via {rule}: {path}")
@@ -195,8 +205,10 @@ def _resolve_frappe_root():
     """Return the Frappe-hosted workspace path, or None when not under Frappe."""
     try:
         import sys
+
         if "frappe" in sys.modules:
             import frappe
+
             if hasattr(frappe, "get_site_path"):
                 return frappe.get_site_path(WORKSPACE_DIRNAME)
     except Exception:
@@ -214,13 +226,17 @@ def instance_dir(root, instance_type, instance_name):
     """Build a validated, contained path to an instance directory."""
     instance_type = validate_instance_type(instance_type)
     instance_name = sanitize_instance_name(instance_name)
-    candidate = os.path.join(os.path.abspath(root), "instances", instance_type, instance_name)
+    candidate = os.path.join(
+        os.path.abspath(root), "instances", instance_type, instance_name
+    )
     assert_contained(root, candidate)
     return candidate
 
 
 def questions_path(root, instance_type, instance_name):
-    return os.path.join(instance_dir(root, instance_type, instance_name), "questions.md")
+    return os.path.join(
+        instance_dir(root, instance_type, instance_name), "questions.md"
+    )
 
 
 def output_dir(root, instance_type, instance_name):

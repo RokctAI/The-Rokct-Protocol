@@ -17,9 +17,13 @@ def migrate_legacy_state():
         try:
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
             shutil.move(LEGACY_STATE_FILE, STATE_FILE)
-            print("[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json")
+            print(
+                "[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json"
+            )
         except Exception as e:
             print(f"[!] Could not migrate legacy install_state.json: {e}")
+
+
 PACKAGE_JSON_FILE = os.path.join(PROJECT_ROOT, "package.json")
 TSCONFIG_FILE = os.path.join(PROJECT_ROOT, "tsconfig.json")
 
@@ -80,8 +84,10 @@ def check_app_alias():
     since the host may use a differently-configured but equivalent alias.
     """
     if not os.path.exists(TSCONFIG_FILE):
-        print("[!] WARNING: no tsconfig.json found at project root. SDK templates assume the "
-              "'@/*' -> './*' path alias (create-next-app default); imports may not resolve.")
+        print(
+            "[!] WARNING: no tsconfig.json found at project root. SDK templates assume the "
+            "'@/*' -> './*' path alias (create-next-app default); imports may not resolve."
+        )
         return
     try:
         with open(TSCONFIG_FILE, "r", encoding="utf-8-sig") as f:
@@ -89,8 +95,10 @@ def check_app_alias():
         # tsconfig.json commonly has comments; do a light substring check rather than a strict
         # JSON parse so this doesn't false-fail on a valid-but-commented file.
         if '"@/*"' not in raw:
-            print("[!] WARNING: tsconfig.json does not declare the '@/*' path alias. "
-                  "SDK templates use '@/app/...' imports and will not resolve without it.")
+            print(
+                "[!] WARNING: tsconfig.json does not declare the '@/*' path alias. "
+                "SDK templates use '@/app/...' imports and will not resolve without it."
+            )
     except Exception:
         pass
 
@@ -108,8 +116,10 @@ def check_requires(sdk_name, requires):
     """
     missing = [r for r in requires if not os.path.exists(os.path.join(PROJECT_ROOT, r))]
     if missing:
-        print(f"  [!] WARNING: {sdk_name} expects these host-app paths to already exist "
-              f"(not provided by this SDK): {', '.join(missing)}")
+        print(
+            f"  [!] WARNING: {sdk_name} expects these host-app paths to already exist "
+            f"(not provided by this SDK): {', '.join(missing)}"
+        )
 
 
 def resolve_sdk_path(sdk_name):
@@ -166,13 +176,19 @@ def install_sdk_files(sdk_name):
     # installer (core/utils/flutter/sdk_installer_base.py), applied to the
     # Next.js manifest schema.
     current_app_type = resolve_app_type()
-    flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
+    flavor_block = (
+        (manifest.get("app_type") or {}).get(current_app_type, {})
+        if current_app_type
+        else {}
+    )
 
     version = manifest.get("version", "1.0.0")
     installs = manifest.get("installs", []) + flavor_block.get("installs", [])
 
     check_app_alias()
-    check_requires(sdk_name, manifest.get("requires", []) + flavor_block.get("requires", []))
+    check_requires(
+        sdk_name, manifest.get("requires", []) + flavor_block.get("requires", [])
+    )
 
     state = load_state()
     package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}})
@@ -201,7 +217,9 @@ def install_sdk_files(sdk_name):
                     abs_src = os.path.join(root, filename)
                     rel_to_src = os.path.relpath(abs_src, src_path)
                     abs_dest = os.path.join(dest_path, rel_to_src)
-                    rel_dest = os.path.relpath(abs_dest, PROJECT_ROOT).replace("\\", "/")
+                    rel_dest = os.path.relpath(abs_dest, PROJECT_ROOT).replace(
+                        "\\", "/"
+                    )
                     files_to_sync.append((abs_src, abs_dest, rel_dest))
         else:
             rel_dest = to_rel.replace("\\", "/")
@@ -213,8 +231,10 @@ def install_sdk_files(sdk_name):
                 current_dest_hash = file_hash(file_dest)
                 last_known_hash = package_state.get("files", {}).get(rel_dest)
                 if last_known_hash and current_dest_hash != last_known_hash:
-                    print(f"  [!] WARNING: {rel_dest} has been modified by a developer. "
-                          f"Skipping overwrite to prevent data loss. Please merge changes manually.")
+                    print(
+                        f"  [!] WARNING: {rel_dest} has been modified by a developer. "
+                        f"Skipping overwrite to prevent data loss. Please merge changes manually."
+                    )
                     continue
 
             os.makedirs(os.path.dirname(file_dest), exist_ok=True)
@@ -238,12 +258,18 @@ def install_sdk_files(sdk_name):
                     insert_idx = 0
                     for idx, line in enumerate(lines):
                         trimmed = line.strip()
-                        if trimmed == '"use server";' or trimmed == "'use server';" \
-                                or trimmed == '"use client";' or trimmed == "'use client';":
+                        if (
+                            trimmed == '"use server";'
+                            or trimmed == "'use server';"
+                            or trimmed == '"use client";'
+                            or trimmed == "'use client';"
+                        ):
                             # Directive prologues must stay the first statement in the file.
                             insert_idx = idx + 1
                             break
-                        if trimmed.startswith("import ") or trimmed.startswith("export "):
+                        if trimmed.startswith("import ") or trimmed.startswith(
+                            "export "
+                        ):
                             insert_idx = idx
                             break
                     lines.insert(insert_idx, banner)
@@ -271,7 +297,9 @@ def install_sdk_files(sdk_name):
     if dev_deps_config:
         package_state["devDependencies"] = dev_deps_config
 
-    integrations_config = list(manifest.get("integrations") or []) + list(flavor_block.get("integrations") or [])
+    integrations_config = list(manifest.get("integrations") or []) + list(
+        flavor_block.get("integrations") or []
+    )
     if integrations_config:
         package_state["integrations"] = integrations_config
 
@@ -309,7 +337,10 @@ def update_package_json_dependencies():
                 pkg["dependencies"][dep_name] = dep_version
                 added.append(f"{dep_name}@{dep_version}")
         for dep_name, dep_version in pkg_data.get("devDependencies", {}).items():
-            if dep_name not in pkg["devDependencies"] and dep_name not in pkg["dependencies"]:
+            if (
+                dep_name not in pkg["devDependencies"]
+                and dep_name not in pkg["dependencies"]
+            ):
                 pkg["devDependencies"][dep_name] = dep_version
                 added.append(f"{dep_name}@{dep_version} (dev)")
 
@@ -344,13 +375,17 @@ def update_integrations():
             replacement = integration.get("replacement")
             if not target_rel or not placeholder or not replacement:
                 continue
-            by_target.setdefault(target_rel, []).append((pkg_name, placeholder, replacement))
+            by_target.setdefault(target_rel, []).append(
+                (pkg_name, placeholder, replacement)
+            )
 
     for target_rel, entries in by_target.items():
         target_abs = os.path.join(PROJECT_ROOT, target_rel)
         if not os.path.exists(target_abs):
             for pkg_name, _, _ in entries:
-                print(f"  [-] Integration target not found: {target_rel} (from {pkg_name})")
+                print(
+                    f"  [-] Integration target not found: {target_rel} (from {pkg_name})"
+                )
             continue
 
         with open(target_abs, "r", encoding="utf-8") as f:
@@ -367,7 +402,9 @@ def update_integrations():
                 continue
             insert_after = anchor or placeholder
             if insert_after not in content:
-                print(f"  [!] WARNING: placeholder not found in {target_rel}, skipping integration for {pkg_name}")
+                print(
+                    f"  [!] WARNING: placeholder not found in {target_rel}, skipping integration for {pkg_name}"
+                )
                 continue
             content = content.replace(insert_after, f"{insert_after}\n{replacement}", 1)
             anchor = replacement

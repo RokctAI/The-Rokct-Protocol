@@ -11,15 +11,21 @@ import _bootstrap  # noqa: E402
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="StartupOS conversational milestone log")
+    parser = argparse.ArgumentParser(
+        description="StartupOS conversational milestone log"
+    )
     parser.add_argument("--name", required=True, help="Instance name")
     parser.add_argument("--type", choices=("business", "life"), default="life")
-    parser.add_argument("--category", required=True,
-                        help="Milestone category, e.g. 'Technical Mastery'")
+    parser.add_argument(
+        "--category", required=True, help="Milestone category, e.g. 'Technical Mastery'"
+    )
     parser.add_argument("--entry", required=True, help="What was achieved")
     parser.add_argument("--date", default=None, help="YYYY-MM-DD (default: today)")
-    parser.add_argument("--allow-duplicate", action="store_true",
-                        help="Log even if an equivalent entry already exists")
+    parser.add_argument(
+        "--allow-duplicate",
+        action="store_true",
+        help="Log even if an equivalent entry already exists",
+    )
     parser.add_argument("--root", default=None, help="Workspace root override")
     parser.add_argument("--no-sync", action="store_true")
     parser.add_argument("--quiet", action="store_true")

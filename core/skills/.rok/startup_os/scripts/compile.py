@@ -18,12 +18,19 @@ def build_parser():
     parser.add_argument("--type", choices=("business", "life"), required=True)
     parser.add_argument("--name", required=True, help="Instance folder name")
     parser.add_argument("--root", default=None, help="Workspace root override")
-    parser.add_argument("--compliance-root", default=None,
-                        help="Directory holding per-instance compliance folders")
-    parser.add_argument("--monorepo-root", default=None,
-                        help="Deprecated alias; <root>/Compliance is used")
-    parser.add_argument("--no-sync", action="store_true",
-                        help="Skip template installation")
+    parser.add_argument(
+        "--compliance-root",
+        default=None,
+        help="Directory holding per-instance compliance folders",
+    )
+    parser.add_argument(
+        "--monorepo-root",
+        default=None,
+        help="Deprecated alias; <root>/Compliance is used",
+    )
+    parser.add_argument(
+        "--no-sync", action="store_true", help="Skip template installation"
+    )
     parser.add_argument("--quiet", action="store_true")
     return parser
 

@@ -12,12 +12,18 @@ import _bootstrap  # noqa: E402
 def build_parser():
     parser = argparse.ArgumentParser(description="StartupOS profile provisioner")
     parser.add_argument("--type", choices=("business", "life"), required=True)
-    parser.add_argument("--name", required=True,
-                        help="Instance name: letters, digits, dot, dash, underscore")
+    parser.add_argument(
+        "--name",
+        required=True,
+        help="Instance name: letters, digits, dot, dash, underscore",
+    )
     parser.add_argument("--base", default=None, help="Primary geographic base")
-    parser.add_argument("--jurisdiction", default=None,
-                        help="ISO country code (ZA, US, GB, DE...). Without it, "
-                             "regulated compliance sections stay suppressed.")
+    parser.add_argument(
+        "--jurisdiction",
+        default=None,
+        help="ISO country code (ZA, US, GB, DE...). Without it, "
+        "regulated compliance sections stay suppressed.",
+    )
     parser.add_argument("--relationships", default=None, help="Life profiles only")
     parser.add_argument("--root", default=None, help="Workspace root override")
     parser.add_argument("--no-sync", action="store_true")
@@ -48,9 +54,11 @@ def main():
 
     print(f"[Success] Profile provisioned at: {path}")
     if not args.jurisdiction:
-        print("[Note] No --jurisdiction supplied. Company-registry, tax and "
-              "B-BBEE sections stay suppressed until a '**Jurisdiction**' "
-              "answer is set in questions.md.")
+        print(
+            "[Note] No --jurisdiction supplied. Company-registry, tax and "
+            "B-BBEE sections stay suppressed until a '**Jurisdiction**' "
+            "answer is set in questions.md."
+        )
     return 0
 
 

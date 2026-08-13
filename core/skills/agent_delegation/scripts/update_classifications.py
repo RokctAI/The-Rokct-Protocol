@@ -5,13 +5,17 @@ The-Rokct-Protocol scaffold: update_classifications.py
 Wrapper that exposes is_duplicate_theme by importing from job_manager.py,
 fetched pinned to PROTOCOL_REF and SHA-256 verified before it is executed.
 """
+
 import hashlib, os, sys, urllib.request, importlib.util
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "15f0befa044853caa915597e6921d7f98d3a4fbb"
-DELEGATE_PATH   = "core/utils/agent_delegation/job_manager.py"
+PROTOCOL_REF = "15f0befa044853caa915597e6921d7f98d3a4fbb"
+DELEGATE_PATH = "core/utils/agent_delegation/job_manager.py"
 DELEGATE_SHA256 = "405ac27e9f8cf26a31b4e6977f28c63732ff9712f42f771553d3d4d8d3971deb"
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
+
 
 def _fetch_verified():
     """Fetch DELEGATE_PATH pinned to PROTOCOL_REF; verify its SHA-256 against
@@ -20,7 +24,9 @@ def _fetch_verified():
     there is no unverified fallback."""
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"}
+        )
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status != 200:
                 return None
@@ -29,12 +35,16 @@ def _fetch_verified():
         return None
     digest = hashlib.sha256(data).hexdigest()
     if digest != DELEGATE_SHA256:
-        print(f"[scaffold] Integrity check failed for {DELEGATE_PATH} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(
+            f"[scaffold] Integrity check failed for {DELEGATE_PATH} (ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[scaffold]   expected sha256 {DELEGATE_SHA256}", file=sys.stderr)
         print(f"[scaffold]   actual   sha256 {digest}", file=sys.stderr)
         print("[scaffold] Refusing to execute unverified code.", file=sys.stderr)
         sys.exit(1)
     return data.decode("utf-8")
+
 
 def _load_module():
     code = _fetch_verified()
@@ -46,26 +56,35 @@ def _load_module():
     exec(code, module.__dict__)
     return module
 
+
 _mod = _load_module()
 if _mod:
     is_duplicate_theme = _mod.is_duplicate_theme
 else:
+
     def is_duplicate_theme(*args, **kwargs):
         raise RuntimeError("Failed to load job_manager.py from GitHub")
+
 
 if __name__ == "__main__":
     if _mod and hasattr(_mod, "main"):
         # If run directly as a script, execute the CLI with "classify" subcommand
         import tempfile, subprocess
+
         code = _fetch_verified()
         if code is None:
-            print("Error running classify: could not fetch job_manager.py", file=sys.stderr)
+            print(
+                "Error running classify: could not fetch job_manager.py",
+                file=sys.stderr,
+            )
             sys.exit(1)
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
             tmp.write(code)
             tmp_path = tmp.name
         try:
-            result = subprocess.run([sys.executable, tmp_path, "classify"] + sys.argv[1:], check=False)
+            result = subprocess.run(
+                [sys.executable, tmp_path, "classify"] + sys.argv[1:], check=False
+            )
             sys.exit(result.returncode)
         finally:
             os.unlink(tmp_path)

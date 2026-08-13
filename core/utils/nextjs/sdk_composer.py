@@ -13,7 +13,11 @@ ALLOW_UNPINNED_ENV = "ROKCT_ALLOW_UNPINNED_SDKS"
 
 
 def _is_commit_sha(ref):
-    return bool(ref) and len(ref) == 40 and all(c in "0123456789abcdef" for c in ref.lower())
+    return (
+        bool(ref)
+        and len(ref) == 40
+        and all(c in "0123456789abcdef" for c in ref.lower())
+    )
 
 
 def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
@@ -31,13 +35,19 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
     installer = os.path.join(target_dir, "install.py")
     if expected:
         if not os.path.exists(installer):
-            print(f"[!] {sdk_name}: composer.json pins install.py to sha256 {expected}, "
-                  f"but the cloned SDK has no install.py. Refusing to continue.", file=sys.stderr)
+            print(
+                f"[!] {sdk_name}: composer.json pins install.py to sha256 {expected}, "
+                f"but the cloned SDK has no install.py. Refusing to continue.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         with open(installer, "rb") as f:
             actual = hashlib.sha256(f.read()).hexdigest()
         if actual != expected:
-            print(f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):", file=sys.stderr)
+            print(
+                f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):",
+                file=sys.stderr,
+            )
             print(f"[!]   expected sha256 {expected}", file=sys.stderr)
             print(f"[!]   actual   sha256 {actual}", file=sys.stderr)
             print("[!] Refusing to execute unverified SDK installer.", file=sys.stderr)
@@ -47,14 +57,26 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
     if _is_commit_sha(ref):
         return
     if os.environ.get(ALLOW_UNPINNED_ENV, "").lower() in ("1", "true", "yes"):
-        print(f"[!] WARNING: {sdk_name} was cloned from mutable ref '{ref}' without a sha256 pin; "
-              f"proceeding because {ALLOW_UNPINNED_ENV} is set. Its install.py runs UNVERIFIED.")
+        print(
+            f"[!] WARNING: {sdk_name} was cloned from mutable ref '{ref}' without a sha256 pin; "
+            f"proceeding because {ALLOW_UNPINNED_ENV} is set. Its install.py runs UNVERIFIED."
+        )
         return
-    print(f"[!] {sdk_name} was cloned from mutable ref '{ref}' and its install.py is unpinned.", file=sys.stderr)
-    print("[!] Pin it: set \"ref\" to a full commit SHA or add \"sha256\" (of install.py) to its "
-          "composer.json entry.", file=sys.stderr)
-    print(f"[!] To run unpinned anyway, set {ALLOW_UNPINNED_ENV}=1 explicitly.", file=sys.stderr)
+    print(
+        f"[!] {sdk_name} was cloned from mutable ref '{ref}' and its install.py is unpinned.",
+        file=sys.stderr,
+    )
+    print(
+        '[!] Pin it: set "ref" to a full commit SHA or add "sha256" (of install.py) to its '
+        "composer.json entry.",
+        file=sys.stderr,
+    )
+    print(
+        f"[!] To run unpinned anyway, set {ALLOW_UNPINNED_ENV}=1 explicitly.",
+        file=sys.stderr,
+    )
     sys.exit(1)
+
 
 # SDKs that could not be resolved, cached or installed this run. A composer
 # that silently omits an SDK and still exits 0 produces a quietly incomplete
@@ -82,7 +104,7 @@ def get_subpath_in_repo(local_path, repo_name):
     parts = normalized.split("/")
     for idx, part in enumerate(parts):
         if part.lower() == repo_name.lower():
-            return "/".join(parts[idx + 1:])
+            return "/".join(parts[idx + 1 :])
     if len(parts) >= 2:
         return "/".join(parts[-2:])
     return normalized
@@ -166,14 +188,18 @@ def strip_unused_role_folders(target_dir, sdk_name):
         persona_dir = os.path.join(templates_dir, persona)
         if os.path.isdir(persona_dir):
             shutil.rmtree(persona_dir)
-            print(f"[*] Stripped unused role folder templates/{persona}/ from {sdk_name} (app role: {current_role})")
+            print(
+                f"[*] Stripped unused role folder templates/{persona}/ from {sdk_name} (app role: {current_role})"
+            )
 
 
 def _rmtree_force(path):
     def remove_readonly(func, p, excinfo):
         import stat
+
         os.chmod(p, stat.S_IWRITE)
         func(p)
+
     shutil.rmtree(path, onerror=remove_readonly)
 
 
@@ -187,10 +213,14 @@ def clone_ref(git_url, ref, dest_dir):
     composer's clone_ref() (core/utils/frappe/compose_backend.py) - kept as a
     local copy since each composer is fetched and run standalone."""
     try:
-        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        subprocess.run(
+            ["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True
+        )
         return
     except subprocess.CalledProcessError:
-        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+        print(
+            f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs..."
+        )
     if os.path.exists(dest_dir):
         _rmtree_force(dest_dir)
     subprocess.run(["git", "clone", git_url, dest_dir], check=True)
@@ -212,7 +242,9 @@ def resolve_and_cache_sdks(sdks):
 
     for sdk in sdks:
         if not isinstance(sdk, dict):
-            local_sdks.append({"name": sdk, "path": f"../SDKs/{clean_sdk_name(sdk)}/nextjs"})
+            local_sdks.append(
+                {"name": sdk, "path": f"../SDKs/{clean_sdk_name(sdk)}/nextjs"}
+            )
             continue
         source = sdk.get("source", "local")
         if source == "git" and sdk.get("git"):
@@ -228,7 +260,9 @@ def resolve_and_cache_sdks(sdks):
         is_local_available = os.path.exists(local_repo_path)
 
         if is_local_available:
-            print(f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy.")
+            print(
+                f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy."
+            )
             repo_source_dir = local_repo_path
         else:
             ref = group_sdks[0].get("ref", "main")
@@ -258,9 +292,13 @@ def resolve_and_cache_sdks(sdks):
                 if not is_local_available:
                     # Content came from a network clone - enforce the pin
                     # before its install.py can ever be executed.
-                    enforce_sdk_pin(sdk_name, sdk, target_dir, group_sdks[0].get("ref", "main"))
+                    enforce_sdk_pin(
+                        sdk_name, sdk, target_dir, group_sdks[0].get("ref", "main")
+                    )
             else:
-                print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
+                print(
+                    f"[!] Error: Path {subpath} not found in repository {repo_source_dir}"
+                )
                 FAILED_SDKS.append(sdk_name)
 
         if not is_local_available and os.path.exists(temp_repo_dir):
@@ -274,13 +312,17 @@ def resolve_and_cache_sdks(sdks):
         if local_path:
             src_dir = os.path.abspath(os.path.join(PROJECT_ROOT, local_path))
             if os.path.exists(src_dir):
-                print(f"[+] Copying local {sdk_name} from {local_path} to {target_dir}...")
+                print(
+                    f"[+] Copying local {sdk_name} from {local_path} to {target_dir}..."
+                )
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
                 strip_unused_role_folders(target_dir, sdk_name)
             else:
-                print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
+                print(
+                    f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping."
+                )
                 FAILED_SDKS.append(sdk_name)
 
 
@@ -302,8 +344,13 @@ def run_installer(sdk_config):
 
     print(f"\n[*] Executing Installer for {sdk_name}...")
     try:
-        result = subprocess.run([sys.executable, installer_script], cwd=PROJECT_ROOT,
-                                 capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            [sys.executable, installer_script],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
         # install_sdk_files() genuinely prints its non-fatal warnings (missing
         # `requires` paths, missing integration markers) — but capture_output
         # meant they were captured into result.stdout and then discarded here
@@ -323,7 +370,9 @@ def run_installer(sdk_config):
             lf.write(f"Exit Code: {e.returncode}\n")
             lf.write(f"Stdout:\n{e.stdout}\n")
             lf.write(f"Stderr:\n{e.stderr}\n")
-        print(f"[!] Installer for {sdk_name} failed. Error log written to: .rokct/agent/logs/{sdk_name}_install_error.log")
+        print(
+            f"[!] Installer for {sdk_name} failed. Error log written to: .rokct/agent/logs/{sdk_name}_install_error.log"
+        )
         sys.exit(1)
 
 
@@ -357,35 +406,49 @@ def collect_post_install_checklist(sdks_to_install):
         # Same flavor_block merge as install_sdk_files(): role-scoped
         # requires/integrations only count when the persona matches this
         # host's own role marker.
-        flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
+        flavor_block = (
+            (manifest.get("app_type") or {}).get(current_app_type, {})
+            if current_app_type
+            else {}
+        )
 
-        for req in list(manifest.get("requires", [])) + list(flavor_block.get("requires", [])):
+        for req in list(manifest.get("requires", [])) + list(
+            flavor_block.get("requires", [])
+        ):
             if not os.path.exists(os.path.join(PROJECT_ROOT, req)):
                 missing_requires.setdefault(req, set()).add(sdk_name)
 
-        for integration in list(manifest.get("integrations", [])) + list(flavor_block.get("integrations", [])):
+        for integration in list(manifest.get("integrations", [])) + list(
+            flavor_block.get("integrations", [])
+        ):
             target_rel = integration.get("target")
             placeholder = integration.get("placeholder")
             if not target_rel or not placeholder:
                 continue
             target_abs = os.path.join(PROJECT_ROOT, target_rel)
             if not os.path.exists(target_abs):
-                integration_issues.append(f"{sdk_name}: integration target missing: {target_rel}")
+                integration_issues.append(
+                    f"{sdk_name}: integration target missing: {target_rel}"
+                )
                 continue
             with open(target_abs, "r", encoding="utf-8") as f:
                 content = f.read()
             if placeholder not in content:
                 integration_issues.append(
-                    f"{sdk_name}: placeholder \"{placeholder}\" not found in {target_rel} "
+                    f'{sdk_name}: placeholder "{placeholder}" not found in {target_rel} '
                     f"— this SDK's entry was not wired in automatically"
                 )
 
     if not missing_requires and not integration_issues:
         return
 
-    print("\n[*] Post-install checklist — not fatal, but nothing below got wired up automatically:")
+    print(
+        "\n[*] Post-install checklist — not fatal, but nothing below got wired up automatically:"
+    )
     for req, sdks in sorted(missing_requires.items()):
-        print(f"  [!] Missing host prerequisite: {req} (needed by: {', '.join(sorted(sdks))})")
+        print(
+            f"  [!] Missing host prerequisite: {req} (needed by: {', '.join(sorted(sdks))})"
+        )
     for issue in integration_issues:
         print(f"  [!] {issue}")
 
@@ -415,7 +478,9 @@ def run_npm_install():
         # Hard-fail loudly (consistent with the clone-failure direction of
         # #167): a swallowed npm failure produced an app whose dependencies
         # were missing but whose compose exited 0.
-        print(f"[!] npm install failed (exit {result.returncode}). Aborting composition.")
+        print(
+            f"[!] npm install failed (exit {result.returncode}). Aborting composition."
+        )
         sys.exit(1)
 
 
@@ -427,7 +492,11 @@ def main():
         try:
             with open(composer_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
-            sdks_to_install = [s for s in config.get("sdks", []) if isinstance(s, dict) and s.get("enabled", True)]
+            sdks_to_install = [
+                s
+                for s in config.get("sdks", [])
+                if isinstance(s, dict) and s.get("enabled", True)
+            ]
             print(f"[*] Reading active SDK list from composer.json: {sdks_to_install}")
         except Exception as e:
             print(f"[!] Error reading composer.json: {e}.")
@@ -451,7 +520,9 @@ def main():
 
     if FAILED_SDKS:
         failed = ", ".join(sorted(set(FAILED_SDKS)))
-        print(f"\n[!] Compose FAILED: the following SDK(s) were not installed: {failed}")
+        print(
+            f"\n[!] Compose FAILED: the following SDK(s) were not installed: {failed}"
+        )
         sys.exit(1)
 
 

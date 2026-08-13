@@ -117,8 +117,11 @@ def _verify_module(module, payload, origin):
     expected = EXPECTED_SHA256[f"{ENGINE_PATH}/{module}"]
     digest = hashlib.sha256(payload).hexdigest()
     if digest != expected:
-        print(f"[Error] Integrity check failed for engine module {module} "
-              f"({origin}, ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(
+            f"[Error] Integrity check failed for engine module {module} "
+            f"({origin}, ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[Error]   expected sha256 {expected}", file=sys.stderr)
         print(f"[Error]   actual   sha256 {digest}", file=sys.stderr)
         print("[Error] Refusing to run unverified code.", file=sys.stderr)
@@ -142,12 +145,21 @@ def fetch_engine(verbose=True):
     `STARTUPOS_ALLOW_UNPINNED=1` and warns loudly.
     """
     if UNPINNED:
-        print(f"[Warning] STARTUPOS_PROTOCOL_REF={_RUNTIME_REF} overrides the pinned "
-              f"ref {PROTOCOL_REF}; integrity verification is BYPASSED for this run.",
-              file=sys.stderr)
-        if os.environ.get("STARTUPOS_ALLOW_UNPINNED", "").lower() not in ("1", "true", "yes"):
-            print("[Error] Refusing to run unpinned engine code without "
-                  "STARTUPOS_ALLOW_UNPINNED=1.", file=sys.stderr)
+        print(
+            f"[Warning] STARTUPOS_PROTOCOL_REF={_RUNTIME_REF} overrides the pinned "
+            f"ref {PROTOCOL_REF}; integrity verification is BYPASSED for this run.",
+            file=sys.stderr,
+        )
+        if os.environ.get("STARTUPOS_ALLOW_UNPINNED", "").lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
+            print(
+                "[Error] Refusing to run unpinned engine code without "
+                "STARTUPOS_ALLOW_UNPINNED=1.",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
     core_dir = _core_dir()
@@ -161,8 +173,10 @@ def fetch_engine(verbose=True):
 
         if OFFLINE:
             if not os.path.exists(destination):
-                print(f"[Error] STARTUPOS_OFFLINE is set but {module} is not cached.",
-                      file=sys.stderr)
+                print(
+                    f"[Error] STARTUPOS_OFFLINE is set but {module} is not cached.",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             with open(destination, "rb") as handle:
                 payload = handle.read()
@@ -177,11 +191,16 @@ def fetch_engine(verbose=True):
                 with open(destination, "rb") as handle:
                     payload = handle.read()
                 _verify_module(module, payload, "cache")
-                print(f"[Warning] Using verified cached {module} (fetch failed: {exc})",
-                      file=sys.stderr)
+                print(
+                    f"[Warning] Using verified cached {module} (fetch failed: {exc})",
+                    file=sys.stderr,
+                )
                 current[module] = hashlib.sha256(payload).hexdigest()
                 continue
-            print(f"[Error] Could not fetch engine module {module}: {exc}", file=sys.stderr)
+            print(
+                f"[Error] Could not fetch engine module {module}: {exc}",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         _verify_module(module, payload, "github")
@@ -226,11 +245,15 @@ def sync_templates(workspace_root, verbose=True):
             print(f"[StartupOS] Installed {count} templates from the skill directory")
         if count:
             return count
-        print("[Warning] Skill template directory is empty; trying the network.",
-              file=sys.stderr)
+        print(
+            "[Warning] Skill template directory is empty; trying the network.",
+            file=sys.stderr,
+        )
 
     if OFFLINE:
-        print("[Error] No local templates and STARTUPOS_OFFLINE is set.", file=sys.stderr)
+        print(
+            "[Error] No local templates and STARTUPOS_OFFLINE is set.", file=sys.stderr
+        )
         sys.exit(1)
 
     count = _sync_templates_from_github(destination, verbose)
@@ -252,12 +275,16 @@ def _copy_tree(source, destination):
     copied = 0
     for directory, _subdirs, filenames in os.walk(source):
         relative = os.path.relpath(directory, source)
-        target_dir = destination if relative == "." else os.path.join(destination, relative)
+        target_dir = (
+            destination if relative == "." else os.path.join(destination, relative)
+        )
         os.makedirs(target_dir, exist_ok=True)
         for filename in filenames:
             if not filename.endswith(".md"):
                 continue
-            shutil.copy2(os.path.join(directory, filename), os.path.join(target_dir, filename))
+            shutil.copy2(
+                os.path.join(directory, filename), os.path.join(target_dir, filename)
+            )
             copied += 1
     return copied
 
@@ -320,6 +347,7 @@ def prepare(root=None, sync=True, verbose=True):
 
     if sync:
         from core.paths import resolve_workspace_root
+
         workspace_root = resolve_workspace_root(root, verbose=verbose)
         os.makedirs(workspace_root, exist_ok=True)
         sync_templates(workspace_root, verbose=verbose)
