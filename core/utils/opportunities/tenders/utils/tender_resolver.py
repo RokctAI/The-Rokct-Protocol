@@ -10,6 +10,7 @@
 
 from pathlib import Path
 
+
 def resolve_card_path(tender_dir, tender_id):
     """Finds the tender card by checking first 03_tenders/{tender_id}/{tender_id}.md then 03_tenders/{tender_id}.md."""
     tender_dir = Path(tender_dir)
@@ -25,6 +26,7 @@ def resolve_card_path(tender_dir, tender_id):
         return flat_card
 
     return None
+
 
 def resolve_write_path(tender_dir, tender_id):
     """Determines where to write a new or updated tender card."""

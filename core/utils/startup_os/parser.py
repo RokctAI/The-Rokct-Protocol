@@ -82,9 +82,9 @@ class ParsedProfile:
     """Result of parsing a questions.md file."""
 
     def __init__(self):
-        self.answers = {}       # canonical key -> answered value
-        self.pending = {}       # canonical key -> placeholder text
-        self.labels = {}        # canonical key -> original human label
+        self.answers = {}  # canonical key -> answered value
+        self.pending = {}  # canonical key -> placeholder text
+        self.labels = {}  # canonical key -> original human label
         self.line_numbers = {}  # canonical key -> 1-based line of the answer
         self.milestones = []
         self.warnings = []

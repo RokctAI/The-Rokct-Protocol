@@ -14,6 +14,7 @@ from Crypto.Random import get_random_bytes
 
 # --- Encryption core (formerly crypto_utils.py) ---
 
+
 def encrypt_pii(plain_text, key_b64):
     """Encrypts PII using AES-256-GCM."""
     if not key_b64:
@@ -21,11 +22,12 @@ def encrypt_pii(plain_text, key_b64):
 
     key = base64.b64decode(key_b64)
     cipher = AES.new(key, AES.MODE_GCM)
-    ciphertext, tag = cipher.encrypt_and_digest(plain_text.encode('utf-8'))
+    ciphertext, tag = cipher.encrypt_and_digest(plain_text.encode("utf-8"))
 
     # We store as: nonce:tag:ciphertext
-    combined = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
+    combined = base64.b64encode(cipher.nonce + tag + ciphertext).decode("utf-8")
     return combined
+
 
 def decrypt_pii(encrypted_blob, key_b64):
     """Decrypts PII using AES-256-GCM."""
@@ -42,29 +44,37 @@ def decrypt_pii(encrypted_blob, key_b64):
 
     cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
     plain_text = cipher.decrypt_and_verify(ciphertext, tag)
-    return plain_text.decode('utf-8')
+    return plain_text.decode("utf-8")
+
 
 # --- Privacy process core (for job cards) ---
 
-JOB_DIR = Path('.rokct/agent/jobs/pending')
-EMAIL_REGEX = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+JOB_DIR = Path(".rokct/agent/jobs/pending")
+EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+
 
 def load_key():
     """Find and load encryption key from monorepo environment."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Check multiple directory depths to find env file in workspaces
     for parent_depth in range(2, 6):
-        parts = [script_dir] + ['..'] * parent_depth + ['.env', 'production.env']
+        parts = [script_dir] + [".."] * parent_depth + [".env", "production.env"]
         env_path = os.path.abspath(os.path.join(*parts))
         if os.path.exists(env_path):
             load_dotenv(env_path)
-            with open(env_path, 'r', encoding='utf-8') as f:
+            with open(env_path, "r", encoding="utf-8") as f:
                 for line in f:
                     if "EMAIL_ENCRYPTION_KEY=" in line:
-                        return line.replace("export ", "").strip().split("=", 1)[1].strip("'\" ")
+                        return (
+                            line.replace("export ", "")
+                            .strip()
+                            .split("=", 1)[1]
+                            .strip("'\" ")
+                        )
             break
 
-    return os.getenv('EMAIL_ENCRYPTION_KEY')
+    return os.getenv("EMAIL_ENCRYPTION_KEY")
+
 
 def process_privacy(check_only=False):
     """Enforces encryption-based privacy for job cards."""
@@ -79,16 +89,20 @@ def process_privacy(check_only=False):
     violations = []
     processed_count = 0
 
-    print(f"🔐 {'Checking' if check_only else 'Applying'} PII Encryption Privacy for job cards...")
+    print(
+        f"🔐 {'Checking' if check_only else 'Applying'} PII Encryption Privacy for job cards..."
+    )
 
-    for card_file in JOB_DIR.glob('*.md'):
+    for card_file in JOB_DIR.glob("*.md"):
         filename = card_file.name
-        with open(card_file, 'r', encoding='utf-8') as f:
+        with open(card_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # 1. Detection Logic
         found_emails = re.findall(EMAIL_REGEX, content)
-        has_plaintext_email = any(e for e in found_emails if e.lower() != "email@example.com")
+        has_plaintext_email = any(
+            e for e in found_emails if e.lower() != "email@example.com"
+        )
 
         if has_plaintext_email:
             if check_only:
@@ -97,11 +111,14 @@ def process_privacy(check_only=False):
 
             # 2. Encryption Logic
             for email in found_emails:
-                if email.lower() == "email@example.com": continue
+                if email.lower() == "email@example.com":
+                    continue
                 encrypted_blob = encrypt_pii(email, encryption_key)
-                content = content.replace(email, f"[REDACTED] (Encrypted: {encrypted_blob})")
+                content = content.replace(
+                    email, f"[REDACTED] (Encrypted: {encrypted_blob})"
+                )
 
-            with open(card_file, 'w', encoding='utf-8') as f:
+            with open(card_file, "w", encoding="utf-8") as f:
                 f.write(content)
 
             print(f"🔒 Encrypted PII in: {filename}")
@@ -118,9 +135,11 @@ def process_privacy(check_only=False):
     print(f"✅ Encryption sync complete. {processed_count} files secured.")
     return True
 
+
 # --- Privacy process for opportunities recipients ---
 
-REC_DIR = Path('.rokct/recipients')
+REC_DIR = Path(".rokct/recipients")
+
 
 def process_recipients(check_only=False):
     """Enforces encryption-based privacy & anonymization for recipient cards."""
@@ -135,18 +154,22 @@ def process_recipients(check_only=False):
     violations = []
     processed_count = 0
 
-    print(f"🔐 {'Checking' if check_only else 'Applying'} Recipient Encryption Privacy & Anonymization...")
+    print(
+        f"🔐 {'Checking' if check_only else 'Applying'} Recipient Encryption Privacy & Anonymization..."
+    )
 
-    for card_file in REC_DIR.glob('*.md'):
+    for card_file in REC_DIR.glob("*.md"):
         filename = card_file.name
-        with open(card_file, 'r', encoding='utf-8') as f:
+        with open(card_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # 1. Detection Logic
         has_raw_email_filename = bool(re.search(EMAIL_REGEX, filename))
         found_emails = re.findall(EMAIL_REGEX, content)
-        has_plaintext_email = any(e for e in found_emails if e.lower() != "email@example.com")
-        is_anonymous_filename = bool(re.match(r'^user_[a-f0-9]{12}\.md$', filename))
+        has_plaintext_email = any(
+            e for e in found_emails if e.lower() != "email@example.com"
+        )
+        is_anonymous_filename = bool(re.match(r"^user_[a-f0-9]{12}\.md$", filename))
 
         if has_raw_email_filename or has_plaintext_email or not is_anonymous_filename:
             if check_only:
@@ -154,23 +177,30 @@ def process_recipients(check_only=False):
                 continue
 
             # 2. Encryption Logic
-            email_match = re.search(r'-\s+\*\*Email\*\*:\s*(.+)$', content, re.MULTILINE)
-            name_match = re.search(r'-\s+\*\*Full Name\*\*:\s*(.+)$', content, re.MULTILINE)
+            email_match = re.search(
+                r"-\s+\*\*Email\*\*:\s*(.+)$", content, re.MULTILINE
+            )
+            name_match = re.search(
+                r"-\s+\*\*Full Name\*\*:\s*(.+)$", content, re.MULTILINE
+            )
 
             if not email_match or not name_match:
-                print(f"⚠️ Skipping {filename}: Missing mandatory Email or Full Name fields.")
+                print(
+                    f"⚠️ Skipping {filename}: Missing mandatory Email or Full Name fields."
+                )
                 continue
 
             email = email_match.group(1).strip()
             full_name = name_match.group(1).strip()
 
-            if email == "email@example.com": continue
+            if email == "email@example.com":
+                continue
 
             # Encrypt
             encrypted_blob = encrypt_pii(email, encryption_key)
 
             # Role Encryption Logic
-            role_match = re.search(r'-\s+\*\*Role\*\*:\s*(.+)$', content, re.MULTILINE)
+            role_match = re.search(r"-\s+\*\*Role\*\*:\s*(.+)$", content, re.MULTILINE)
             role_encrypted_blob = ""
             display_role = "user"
 
@@ -178,31 +208,43 @@ def process_recipients(check_only=False):
                 raw_role = role_match.group(1).strip()
                 if "." in raw_role and "@" in raw_role:
                     role_encrypted_blob = encrypt_pii(raw_role, encryption_key)
-                    display_role = raw_role.split(".")[-1] # e.g., admin
+                    display_role = raw_role.split(".")[-1]  # e.g., admin
                 else:
                     display_role = raw_role
 
             # Generate anonymous identifier for filename
-            display_hash = hashlib.sha256(email.lower().strip().encode()).hexdigest()[:12]
+            display_hash = hashlib.sha256(email.lower().strip().encode()).hexdigest()[
+                :12
+            ]
             sub_id = hashlib.sha256(f"{full_name}{email}".encode()).hexdigest()[:16]
 
             # Update Content
-            new_content = content.replace(f"Full Name**: {full_name}", f"Full Name**: [REDACTED]")
-            new_content = new_content.replace(f"Email**: {email}", f"Email**: [REDACTED]\n- **email_encrypted**: {encrypted_blob}")
+            new_content = content.replace(
+                f"Full Name**: {full_name}", f"Full Name**: [REDACTED]"
+            )
+            new_content = new_content.replace(
+                f"Email**: {email}",
+                f"Email**: [REDACTED]\n- **email_encrypted**: {encrypted_blob}",
+            )
 
             if role_match:
                 role_line = f"Role**: {display_role}"
                 if role_encrypted_blob:
                     role_line += f"\n- **role_encrypted**: {role_encrypted_blob}"
-                new_content = new_content.replace(f"Role**: {role_match.group(1).strip()}", role_line)
+                new_content = new_content.replace(
+                    f"Role**: {role_match.group(1).strip()}", role_line
+                )
 
-            new_content = new_content.replace(f"Subscription ID**: [Leave blank, will be hashed]", f"Subscription ID**: {sub_id}")
+            new_content = new_content.replace(
+                f"Subscription ID**: [Leave blank, will be hashed]",
+                f"Subscription ID**: {sub_id}",
+            )
 
             # Anonymize File
             new_filename = f"user_{display_hash}.md"
             new_path = REC_DIR / new_filename
 
-            with open(new_path, 'w', encoding='utf-8') as f:
+            with open(new_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
 
             if filename != new_filename:
@@ -222,16 +264,29 @@ def process_recipients(check_only=False):
     print(f"✅ Encryption sync complete. {processed_count} files secured.")
     return True
 
+
 # --- CLI entrypoint ---
+
 
 def main():
     parser = argparse.ArgumentParser(description="Privacy & Cryptography Manager.")
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
 
     # Sync command
-    sync_parser = subparsers.add_parser("sync", help="Sync/apply PII encryption to cards")
-    sync_parser.add_argument("--check", action="store_true", help="Only check for plaintext without modifying")
-    sync_parser.add_argument("--target", default="jobs", choices=["jobs", "recipients"], help="Target data type to sync")
+    sync_parser = subparsers.add_parser(
+        "sync", help="Sync/apply PII encryption to cards"
+    )
+    sync_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Only check for plaintext without modifying",
+    )
+    sync_parser.add_argument(
+        "--target",
+        default="jobs",
+        choices=["jobs", "recipients"],
+        help="Target data type to sync",
+    )
 
     # Encrypt command
     enc_parser = subparsers.add_parser("encrypt", help="Encrypt text")
@@ -240,7 +295,9 @@ def main():
 
     # Decrypt command
     dec_parser = subparsers.add_parser("decrypt", help="Decrypt text")
-    dec_parser.add_argument("--blob", required=True, help="Base64 encoded encrypted blob")
+    dec_parser.add_argument(
+        "--blob", required=True, help="Base64 encoded encrypted blob"
+    )
     dec_parser.add_argument("--key", help="Base64 encoded AES key")
 
     args = parser.parse_args()
@@ -275,6 +332,7 @@ def main():
         print(f"Decrypted: {decrypted}")
         assert test_data == decrypted
         print("✅ Privacy & Crypto Utils Test Passed")
+
 
 if __name__ == "__main__":
     main()

@@ -19,7 +19,11 @@ ALLOW_UNPINNED_ENV = "ROKCT_ALLOW_UNPINNED_SDKS"
 
 
 def _is_commit_sha(ref):
-    return bool(ref) and len(ref) == 40 and all(c in "0123456789abcdef" for c in ref.lower())
+    return (
+        bool(ref)
+        and len(ref) == 40
+        and all(c in "0123456789abcdef" for c in ref.lower())
+    )
 
 
 def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
@@ -37,13 +41,19 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
     installer = os.path.join(target_dir, "install.py")
     if expected:
         if not os.path.exists(installer):
-            print(f"[!] {sdk_name}: composer.json pins install.py to sha256 {expected}, "
-                  f"but the cloned SDK has no install.py. Refusing to continue.", file=sys.stderr)
+            print(
+                f"[!] {sdk_name}: composer.json pins install.py to sha256 {expected}, "
+                f"but the cloned SDK has no install.py. Refusing to continue.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         with open(installer, "rb") as f:
             actual = hashlib.sha256(f.read()).hexdigest()
         if actual != expected:
-            print(f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):", file=sys.stderr)
+            print(
+                f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):",
+                file=sys.stderr,
+            )
             print(f"[!]   expected sha256 {expected}", file=sys.stderr)
             print(f"[!]   actual   sha256 {actual}", file=sys.stderr)
             print("[!] Refusing to execute unverified SDK installer.", file=sys.stderr)
@@ -53,14 +63,26 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
     if _is_commit_sha(ref):
         return
     if os.environ.get(ALLOW_UNPINNED_ENV, "").lower() in ("1", "true", "yes"):
-        print(f"[!] WARNING: {sdk_name} was cloned from mutable ref '{ref}' without a sha256 pin; "
-              f"proceeding because {ALLOW_UNPINNED_ENV} is set. Its install.py runs UNVERIFIED.")
+        print(
+            f"[!] WARNING: {sdk_name} was cloned from mutable ref '{ref}' without a sha256 pin; "
+            f"proceeding because {ALLOW_UNPINNED_ENV} is set. Its install.py runs UNVERIFIED."
+        )
         return
-    print(f"[!] {sdk_name} was cloned from mutable ref '{ref}' and its install.py is unpinned.", file=sys.stderr)
-    print("[!] Pin it: set \"ref\" to a full commit SHA or add \"sha256\" (of install.py) to its "
-          "composer.json entry.", file=sys.stderr)
-    print(f"[!] To run unpinned anyway, set {ALLOW_UNPINNED_ENV}=1 explicitly.", file=sys.stderr)
+    print(
+        f"[!] {sdk_name} was cloned from mutable ref '{ref}' and its install.py is unpinned.",
+        file=sys.stderr,
+    )
+    print(
+        '[!] Pin it: set "ref" to a full commit SHA or add "sha256" (of install.py) to its '
+        "composer.json entry.",
+        file=sys.stderr,
+    )
+    print(
+        f"[!] To run unpinned anyway, set {ALLOW_UNPINNED_ENV}=1 explicitly.",
+        file=sys.stderr,
+    )
     sys.exit(1)
+
 
 # Durable composer/installer state. Lives INSIDE .rokct/cache/ deliberately:
 # cache/ is on end_protocol.py's keep-whitelist, so the state survives session
@@ -73,6 +95,7 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
 STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "install_state.json")
 LEGACY_STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
 
+
 def migrate_legacy_state():
     """One-time move of .rokct/install_state.json -> .rokct/cache/. Existing
     machines keep their recorded hash state instead of starting over."""
@@ -80,9 +103,12 @@ def migrate_legacy_state():
         try:
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
             shutil.move(LEGACY_STATE_FILE, STATE_FILE)
-            print("[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json")
+            print(
+                "[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json"
+            )
         except Exception as e:
             print(f"[!] Could not migrate legacy install_state.json: {e}")
+
 
 def load_install_state():
     migrate_legacy_state()
@@ -94,10 +120,12 @@ def load_install_state():
             pass
     return {"packages": {}}
 
+
 def save_install_state(state):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
+
 
 def clean_sdk_name(name):
     if name.endswith("_sdk"):
@@ -106,21 +134,24 @@ def clean_sdk_name(name):
         return name[:-5]
     return name
 
+
 def extract_repo_name(git_url):
     url_path = git_url.rstrip("/")
     if url_path.endswith(".git"):
         url_path = url_path[:-4]
     return os.path.basename(url_path)
 
+
 def get_subpath_in_repo(local_path, repo_name):
     normalized = local_path.replace("\\", "/").strip("/")
     parts = normalized.split("/")
     for idx, part in enumerate(parts):
         if part.lower() == repo_name.lower():
-            return "/".join(parts[idx+1:])
+            return "/".join(parts[idx + 1 :])
     if len(parts) >= 2:
         return "/".join(parts[-2:])
     return normalized
+
 
 def authenticated_git_url(git_url):
     """Inject MONOREPO_PAT for github.com HTTPS clones so private SDK repos
@@ -134,6 +165,7 @@ def authenticated_git_url(git_url):
         )
     return git_url
 
+
 def clone_ref(git_url, ref, dest_dir):
     """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
     shallow path used before (`git clone -b <ref> --depth 1`); when that
@@ -144,18 +176,26 @@ def clone_ref(git_url, ref, dest_dir):
     composer's clone_ref() (core/utils/frappe/compose_backend.py) - kept as a
     local copy since each composer is fetched and run standalone."""
     try:
-        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        subprocess.run(
+            ["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True
+        )
         return
     except subprocess.CalledProcessError:
-        print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
+        print(
+            f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs..."
+        )
     if os.path.exists(dest_dir):
+
         def remove_readonly(func, path, excinfo):
             import stat
+
             os.chmod(path, stat.S_IWRITE)
             func(path)
+
         shutil.rmtree(dest_dir, onerror=remove_readonly)
     subprocess.run(["git", "clone", git_url, dest_dir], check=True)
     subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
+
 
 def check_git_availability(git_url):
     try:
@@ -163,11 +203,12 @@ def check_git_availability(git_url):
             ["git", "ls-remote", "--exit-code", "-h", git_url, "HEAD"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=5
+            timeout=5,
         )
         return result.returncode == 0
     except Exception:
         return False
+
 
 def resolve_app_type():
     """This host app's own flavor marker ('driver', 'manager', ...), read from
@@ -180,6 +221,7 @@ def resolve_app_type():
             value = f.read().strip().lower()
             return value or None
     return None
+
 
 def strip_unused_role_folders(target_dir, sdk_name):
     """After vendoring an SDK's full source into .rokct/cache/, remove role
@@ -232,7 +274,10 @@ def strip_unused_role_folders(target_dir, sdk_name):
         persona_dir = os.path.join(lib_src, persona)
         if os.path.isdir(persona_dir):
             shutil.rmtree(persona_dir)
-            print(f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {current_role})")
+            print(
+                f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {current_role})"
+            )
+
 
 # --- Version-aware cache reconciliation -------------------------------------
 # Hosts are sold with .rokct/cache/ tracked, so a compose run must not blindly
@@ -251,7 +296,13 @@ def strip_unused_role_folders(target_dir, sdk_name):
 # Noise excluded from the cache content hash: toolchain outputs that differ
 # per machine/run without the SDK's actual content changing.
 HASH_EXCLUDED_DIRS = {".git", ".dart_tool", "build", "__pycache__", "node_modules"}
-HASH_EXCLUDED_FILES = {"pubspec.lock", ".DS_Store", ".flutter-plugins", ".flutter-plugins-dependencies"}
+HASH_EXCLUDED_FILES = {
+    "pubspec.lock",
+    ".DS_Store",
+    ".flutter-plugins",
+    ".flutter-plugins-dependencies",
+}
+
 
 def cache_dir_hash(d):
     if not os.path.isdir(d):
@@ -268,12 +319,14 @@ def cache_dir_hash(d):
                 h.update(fh.read())
     return h.hexdigest()[:16]
 
+
 def parse_version(v):
     """'1.2.3' -> (1, 2, 3); tolerant of junk (unparseable -> (0,))."""
     try:
         return tuple(int(part) for part in str(v).strip().split("."))
     except Exception:
         return (0,)
+
 
 def read_manifest_version(sdk_dir):
     manifest_path = os.path.join(sdk_dir, "manifest.json")
@@ -284,6 +337,7 @@ def read_manifest_version(sdk_dir):
             return json.load(f).get("version")
     except Exception:
         return None
+
 
 def should_extract(sdk_name, src_dir, target_dir, state, decisions):
     """Decide whether to (re-)extract this SDK into its cache dir.
@@ -299,15 +353,27 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
 
     incoming_version = read_manifest_version(src_dir)
     entry = state.get("sdk_cache", {}).get(clean_name)
-    cached_version = entry.get("version") if entry else read_manifest_version(target_dir)
+    cached_version = (
+        entry.get("version") if entry else read_manifest_version(target_dir)
+    )
 
-    if incoming_version and parse_version(incoming_version) > parse_version(cached_version):
-        print(f"[*] {sdk_name}: manifest version {incoming_version} is newer than cached {cached_version} - deleting old cache and re-extracting.")
+    if incoming_version and parse_version(incoming_version) > parse_version(
+        cached_version
+    ):
+        print(
+            f"[*] {sdk_name}: manifest version {incoming_version} is newer than cached {cached_version} - deleting old cache and re-extracting."
+        )
         decisions[clean_name] = "extracted"
         return True
 
-    if incoming_version and cached_version and parse_version(incoming_version) < parse_version(cached_version):
-        print(f"[*] {sdk_name}: cached copy ({cached_version}) is newer than incoming manifest ({incoming_version}) - leaving cached copy in place.")
+    if (
+        incoming_version
+        and cached_version
+        and parse_version(incoming_version) < parse_version(cached_version)
+    ):
+        print(
+            f"[*] {sdk_name}: cached copy ({cached_version}) is newer than incoming manifest ({incoming_version}) - leaving cached copy in place."
+        )
         decisions[clean_name] = "left-newer"
         return False
 
@@ -323,21 +389,30 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
             # treat it as corrupt and take the normal fresh-extract path
             # (the caller rmtree's the target before copying).
             if not os.path.isdir(os.path.join(target_dir, "lib")):
-                print(f"[!] {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has no lib/ (content hash mismatch, version {cached_version} unchanged) - treating as corrupt, deleting and re-extracting.")
+                print(
+                    f"[!] {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has no lib/ (content hash mismatch, version {cached_version} unchanged) - treating as corrupt, deleting and re-extracting."
+                )
                 decisions[clean_name] = "extracted"
                 return True
-            print(f"[!] WARNING: {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has LOCAL MODIFICATIONS (content hash mismatch, version {cached_version} unchanged) - leaving it in place, NOT refetching. Delete the folder to force a clean re-extract.")
+            print(
+                f"[!] WARNING: {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has LOCAL MODIFICATIONS (content hash mismatch, version {cached_version} unchanged) - leaving it in place, NOT refetching. Delete the folder to force a clean re-extract."
+            )
             decisions[clean_name] = "left-modified"
             return False
-        print(f"[*] {sdk_name}: cache is up to date (version {cached_version}, unmodified) - leaving cached copy in place.")
+        print(
+            f"[*] {sdk_name}: cache is up to date (version {cached_version}, unmodified) - leaving cached copy in place."
+        )
         decisions[clean_name] = "left-unmodified"
         return False
 
     # Cache exists but predates hash tracking: adopt it as the baseline
     # rather than clobbering it - it may carry manual modifications.
-    print(f"[*] {sdk_name}: existing cache has no recorded state - adopting current copy as baseline (no re-extract).")
+    print(
+        f"[*] {sdk_name}: existing cache has no recorded state - adopting current copy as baseline (no re-extract)."
+    )
     decisions[clean_name] = "adopted"
     return False
+
 
 def record_sdk_cache_state(decisions):
     """Persist each reconciled SDK's manifest version + content hash.
@@ -364,7 +439,10 @@ def record_sdk_cache_state(decisions):
         }
         updated += 1
     save_install_state(state)
-    print(f"[*] Recorded cache state for {updated} SDK(s) in {os.path.relpath(STATE_FILE, PROJECT_ROOT)}")
+    print(
+        f"[*] Recorded cache state for {updated} SDK(s) in {os.path.relpath(STATE_FILE, PROJECT_ROOT)}"
+    )
+
 
 # --- SDK compliance docs ------------------------------------------------------
 # SDK repos generate per-stack compliance docs INSIDE each stack directory:
@@ -386,8 +464,9 @@ DOC_STACKS = ("dart", "frappe", "nextjs")
 # install_state.json: cache/ is on end_protocol.py's keep-whitelist, so the
 # ownership record survives session cleanup and shares the cache's
 # git-tracking policy.
-DOCS_MANIFEST_NAME = "composed_docs.json"          # <shell_root>/.rokct/cache/
+DOCS_MANIFEST_NAME = "composed_docs.json"  # <shell_root>/.rokct/cache/
 LEGACY_DOCS_MANIFEST_NAME = ".composed_docs.json"  # old <shell_root>/docs/api/
+
 
 def stage_repo_docs(repo_source_dir, repo_name, cache_base):
     """Stage one SDK repo's compliance docs into
@@ -416,7 +495,9 @@ def stage_repo_docs(repo_source_dir, repo_name, cache_base):
         def collect(stack, name, path):
             rel = "%s/%s" % (stack, name)
             if rel in found:
-                print(f"[!] WARNING: {repo_name} provides {rel} from more than one layout - later layout wins.")
+                print(
+                    f"[!] WARNING: {repo_name} provides {rel} from more than one layout - later layout wins."
+                )
             found[rel] = path
 
         # 1. Current layout: <module>/<stack>/docs/api/*.md
@@ -451,7 +532,9 @@ def stage_repo_docs(repo_source_dir, repo_name, cache_base):
                     continue
                 stack = _stack_for_legacy_doc(name)
                 if not stack:
-                    print(f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out.")
+                    print(
+                        f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out."
+                    )
                     continue
                 collect(stack, name, path)
 
@@ -461,9 +544,14 @@ def stage_repo_docs(repo_source_dir, repo_name, cache_base):
             dest = os.path.join(stage_dir, *rel.split("/"))
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             shutil.copy2(src, dest)
-        print(f"[*] Staged {len(found)} compliance doc(s) from {repo_name} into {os.path.relpath(stage_dir, PROJECT_ROOT)}")
+        print(
+            f"[*] Staged {len(found)} compliance doc(s) from {repo_name} into {os.path.relpath(stage_dir, PROJECT_ROOT)}"
+        )
     except Exception as e:
-        print(f"[!] Could not stage compliance docs from {repo_name}: {e} (compose continues)")
+        print(
+            f"[!] Could not stage compliance docs from {repo_name}: {e} (compose continues)"
+        )
+
 
 def _stack_for_legacy_doc(filename):
     """Map a pre-restructure FLAT docs/api/*.md filename to its stack dir by
@@ -480,6 +568,7 @@ def _stack_for_legacy_doc(filename):
         return "nextjs"
     return None
 
+
 def _prune_empty_dirs_up_to(path, stop_dir):
     """Remove empty directories from `path` upward, stopping (exclusive) at
     stop_dir. Stops at the first non-empty directory."""
@@ -491,6 +580,7 @@ def _prune_empty_dirs_up_to(path, stop_dir):
         except OSError:
             break
         d = os.path.dirname(d)
+
 
 def _cleanup_legacy_composed_docs():
     """One-time migration of shells composed before the per-stack nesting:
@@ -518,7 +608,10 @@ def _cleanup_legacy_composed_docs():
     for stack in DOC_STACKS:
         _prune_empty_dirs_up_to(os.path.join(old_root, stack), PROJECT_ROOT)
     _prune_empty_dirs_up_to(old_root, PROJECT_ROOT)
-    print(f"[*] Migrated composed docs off old docs/api/ layout: removed {removed} old composed doc(s).")
+    print(
+        f"[*] Migrated composed docs off old docs/api/ layout: removed {removed} old composed doc(s)."
+    )
+
 
 def ensure_docs():
     """Merge every staged SDK repo's compliance docs (see stage_repo_docs)
@@ -565,7 +658,9 @@ def ensure_docs():
                             continue
                         rel = "%s/docs/api/%s" % (stack, name)
                         if rel in incoming:
-                            print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
+                            print(
+                                f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write)."
+                            )
                         incoming[rel] = os.path.join(stack_dir, name)
                 # Fallback for stale FLAT stage trees (pre-normalization),
                 # mapped to a stack by filename token.
@@ -575,11 +670,15 @@ def ensure_docs():
                         continue
                     stack = _stack_for_legacy_doc(name)
                     if not stack:
-                        print(f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out.")
+                        print(
+                            f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out."
+                        )
                         continue
                     rel = "%s/docs/api/%s" % (stack, name)
                     if rel in incoming:
-                        print(f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write).")
+                        print(
+                            f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write)."
+                        )
                     incoming[rel] = path
 
         # Owned set: the current manifest, plus (once) the interim
@@ -596,7 +695,9 @@ def ensure_docs():
                 pass
         if os.path.exists(interim_manifest_path):
             os.remove(interim_manifest_path)
-            print("[*] Migrated interim manifest .rokct/composed_docs.json -> .rokct/cache/composed_docs.json")
+            print(
+                "[*] Migrated interim manifest .rokct/composed_docs.json -> .rokct/cache/composed_docs.json"
+            )
 
         # Delete owned files no longer produced. Never touch unowned files.
         removed = 0
@@ -613,7 +714,9 @@ def ensure_docs():
             if owned:
                 if os.path.exists(manifest_path):
                     os.remove(manifest_path)
-                print(f"[*] composed docs: removed {removed} stale composed doc(s); no SDK docs staged.")
+                print(
+                    f"[*] composed docs: removed {removed} stale composed doc(s); no SDK docs staged."
+                )
             return
 
         written = 0
@@ -634,6 +737,7 @@ def ensure_docs():
     except Exception as e:
         print(f"[!] Could not compose SDK docs: {e} (compose continues)")
 
+
 def resolve_and_cache_sdks(sdks):
     cache_base = os.path.join(PROJECT_ROOT, ".rokct", "cache")
     os.makedirs(cache_base, exist_ok=True)
@@ -643,15 +747,14 @@ def resolve_and_cache_sdks(sdks):
 
     git_groups = {}
     local_sdks = []
-    
+
     for sdk in sdks:
         if not isinstance(sdk, dict):
-            local_sdks.append({
-                "name": sdk,
-                "path": f"../SDKs/{clean_sdk_name(sdk)}/dart"
-            })
+            local_sdks.append(
+                {"name": sdk, "path": f"../SDKs/{clean_sdk_name(sdk)}/dart"}
+            )
             continue
-            
+
         source = sdk.get("source", "local")
         if source == "git" and sdk.get("git"):
             git_url = sdk["git"]
@@ -660,29 +763,34 @@ def resolve_and_cache_sdks(sdks):
             git_groups[git_url].append(sdk)
         else:
             local_sdks.append(sdk)
-            
+
     # Process Git Groups
     for git_url, group_sdks in git_groups.items():
         repo_name = extract_repo_name(git_url)
         temp_repo_dir = os.path.join(cache_base, f"{repo_name}_sdk")
-        
+
         # Check if repo exists locally in the parent folder of PROJECT_ROOT
         workspace_parent = os.path.dirname(PROJECT_ROOT)
         local_repo_path = os.path.join(workspace_parent, repo_name)
-        
+
         is_local_available = os.path.exists(local_repo_path)
-        
+
         if is_local_available:
-            print(f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy.")
+            print(
+                f"[*] Found local repository for {repo_name} at {local_repo_path}. Using local copy."
+            )
             repo_source_dir = local_repo_path
         else:
             ref = group_sdks[0].get("ref", "main")
             print(f"[*] Fetching repository {git_url} into {temp_repo_dir}...")
             try:
+
                 def remove_readonly(func, path, excinfo):
                     import stat
+
                     os.chmod(path, stat.S_IWRITE)
                     func(path)
+
                 if os.path.exists(temp_repo_dir):
                     shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
                 clone_ref(authenticated_git_url(git_url), ref, temp_repo_dir)
@@ -701,11 +809,11 @@ def resolve_and_cache_sdks(sdks):
             sdk_name = sdk["name"]
             clean_name = clean_sdk_name(sdk_name)
             target_dir = os.path.join(cache_base, clean_name)
-            
+
             local_path = sdk.get("path", "")
             subpath = get_subpath_in_repo(local_path, repo_name)
             src_dir = os.path.join(repo_source_dir, *subpath.split("/"))
-            
+
             if os.path.exists(src_dir):
                 if not should_extract(sdk_name, src_dir, target_dir, state, decisions):
                     continue
@@ -717,53 +825,66 @@ def resolve_and_cache_sdks(sdks):
                 if not is_local_available:
                     # Content came from a network clone - enforce the pin
                     # before its install.py can ever be executed.
-                    enforce_sdk_pin(sdk_name, sdk, target_dir, group_sdks[0].get("ref", "main"))
+                    enforce_sdk_pin(
+                        sdk_name, sdk, target_dir, group_sdks[0].get("ref", "main")
+                    )
             else:
-                print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
+                print(
+                    f"[!] Error: Path {subpath} not found in repository {repo_source_dir}"
+                )
                 FAILED_SDKS.append(sdk_name)
 
         # Clean up temp repo folder if it was cloned
         if not is_local_available and os.path.exists(temp_repo_dir):
+
             def remove_readonly(func, path, excinfo):
                 import stat
+
                 os.chmod(path, stat.S_IWRITE)
                 func(path)
+
             shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
-            
+
     # Process Local SDKs
     for sdk in local_sdks:
         sdk_name = sdk["name"]
         clean_name = clean_sdk_name(sdk_name)
         target_dir = os.path.join(cache_base, clean_name)
-        
+
         local_path = sdk.get("path")
         if local_path:
             src_dir = os.path.abspath(os.path.join(PROJECT_ROOT, local_path))
             if os.path.exists(src_dir):
                 if not should_extract(sdk_name, src_dir, target_dir, state, decisions):
                     continue
-                print(f"[+] Copying local {sdk_name} from {local_path} to {target_dir}...")
+                print(
+                    f"[+] Copying local {sdk_name} from {local_path} to {target_dir}..."
+                )
                 if os.path.exists(target_dir):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
                 strip_unused_role_folders(target_dir, sdk_name)
             else:
-                print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
+                print(
+                    f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping."
+                )
                 FAILED_SDKS.append(sdk_name)
 
     return decisions
+
 
 def resolve_active_path(sdk_config):
     sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
     clean_name = clean_sdk_name(sdk_name)
     return os.path.abspath(os.path.join(PROJECT_ROOT, ".rokct", "cache", clean_name))
 
+
 def run_installer(sdk_config):
     sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
     sdk_path = resolve_active_path(sdk_config)
-    
+
     installer_script = os.path.join(sdk_path, "install.py")
-    
+
     if not os.path.exists(installer_script):
         print(f"[-] No install.py found for SDK: {sdk_name} at {sdk_path}. Skipping.")
         FAILED_SDKS.append(sdk_name)
@@ -776,7 +897,7 @@ def run_installer(sdk_config):
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         print(f"[+] Installer for {sdk_name} completed successfully.")
     except subprocess.CalledProcessError as e:
@@ -788,18 +909,21 @@ def run_installer(sdk_config):
             lf.write(f"Exit Code: {e.returncode}\n")
             lf.write(f"Stdout:\n{e.stdout}\n")
             lf.write(f"Stderr:\n{e.stderr}\n")
-        print(f"[!] Installer for {sdk_name} failed. Error log written to: .rokct/agent/logs/{sdk_name}_install_error.log")
+        print(
+            f"[!] Installer for {sdk_name} failed. Error log written to: .rokct/agent/logs/{sdk_name}_install_error.log"
+        )
         sys.exit(1)
+
 
 def update_pubspec_name(package_name):
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
     if not os.path.exists(pubspec_path):
         return
-    
+
     try:
         with open(pubspec_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        
+
         updated = False
         with open(pubspec_path, "w", encoding="utf-8") as f:
             for line in lines:
@@ -813,27 +937,28 @@ def update_pubspec_name(package_name):
     except Exception as e:
         print(f"[!] Error updating pubspec.yaml name: {e}")
 
+
 def update_pubspec_dependencies(sdks):
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
     if not os.path.exists(pubspec_path):
         return
-    
+
     try:
         with open(pubspec_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        
+
         dependencies_start = -1
         for i, line in enumerate(lines):
             if line.strip() == "dependencies:":
                 dependencies_start = i
                 break
-        
+
         if dependencies_start == -1:
             print("[!] Could not find 'dependencies:' section in pubspec.yaml")
             return
-        
-        new_lines = lines[:dependencies_start + 1]
-        
+
+        new_lines = lines[: dependencies_start + 1]
+
         i = dependencies_start + 1
         while i < len(lines):
             line = lines[i]
@@ -869,31 +994,36 @@ def update_pubspec_dependencies(sdks):
                 i = len(lines)
                 break
             i += 1
-        
+
         sdk_deps = []
         for sdk in sdks:
             sdk_name = sdk["name"] if isinstance(sdk, dict) else sdk
             resolved_path = resolve_active_path(sdk)
-            
+
             pubspec_path_val = resolved_path
             try:
-                pubspec_path_val = os.path.relpath(resolved_path, PROJECT_ROOT).replace("\\", "/")
+                pubspec_path_val = os.path.relpath(resolved_path, PROJECT_ROOT).replace(
+                    "\\", "/"
+                )
             except ValueError:
                 pass
-            
+
             if os.path.exists(os.path.join(resolved_path, "pubspec.yaml")):
                 sdk_deps.append(f"  {sdk_name}:\n    path: {pubspec_path_val}\n")
             else:
-                print(f"  [-] Skipping {sdk_name} as pubspec.yaml is missing at {resolved_path}.")
-        
+                print(
+                    f"  [-] Skipping {sdk_name} as pubspec.yaml is missing at {resolved_path}."
+                )
+
         if sdk_deps:
             new_lines.insert(dependencies_start + 1, "".join(sdk_deps))
-            
+
         with open(pubspec_path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
         print(f"[*] Updated SDK dependencies in pubspec.yaml")
     except Exception as e:
         print(f"[!] Error updating pubspec.yaml dependencies: {e}")
+
 
 # Dependency overrides every composed app needs, regardless of which SDKs it
 # installs. Asserted idempotently on every compose run (added if missing,
@@ -920,6 +1050,7 @@ REQUIRED_DEPENDENCY_OVERRIDES = {
 # untouched scaffold — never clobber a real test someone wrote at that path.
 STALE_WIDGET_TEST_SIGNATURE = "Counter increments smoke test"
 
+
 def remove_stale_widget_test():
     test_path = os.path.join(PROJECT_ROOT, "test", "widget_test.dart")
     if not os.path.exists(test_path):
@@ -932,6 +1063,7 @@ def remove_stale_widget_test():
             print(f"[*] Removed stale flutter-create scaffold test: {test_path}")
     except Exception as e:
         print(f"[!] Error checking/removing stale widget_test.dart: {e}")
+
 
 def ensure_lib_gitignore():
     """Ensure the app ignores its generated lib/ - all of it, main.dart included.
@@ -985,13 +1117,10 @@ def ensure_lib_gitignore():
             with open(path, "r", encoding="utf-8") as f:
                 lines = f.read().split(NL)
 
-        has_plain = any(
-            l.strip() in ("lib/", "lib", "/lib/", "/lib") for l in lines
-        )
+        has_plain = any(l.strip() in ("lib/", "lib", "/lib/", "/lib") for l in lines)
         has_star = any(l.strip() == "lib/*" for l in lines)
         has_pycache = any(
-            l.strip() in (".rokct/__pycache__/", ".rokct/__pycache__")
-            for l in lines
+            l.strip() in (".rokct/__pycache__/", ".rokct/__pycache__") for l in lines
         )
 
         # Leave a legacy lib/* + !lib/main.dart app alone - see docstring.
@@ -1030,6 +1159,7 @@ def ensure_lib_gitignore():
 README_RECOMPOSE_START = "<!-- @generated-recompose-start -->"
 README_RECOMPOSE_END = "<!-- @generated-recompose-end -->"
 
+
 def ensure_host_readme():
     """Maintain a marker-delimited 'Recomposing this app' section in the host
     README.md, so anyone opening the repo learns that lib/ is disposable and
@@ -1041,25 +1171,27 @@ def ensure_host_readme():
     own and is never touched. Creates README.md if the host has none.
     Idempotent - when the block already matches, the file is not rewritten.
     """
-    section = NL.join([
-        README_RECOMPOSE_START,
-        "## Recomposing this app",
-        "",
-        "`lib/` is fully installer-generated and disposable - it is safe to delete",
-        "and is gitignored. Anything app-specific lives in tracked manifests",
-        "(`app_routes`, or `host_routes` in `composer.json`), never in `lib/` itself.",
-        "",
-        "To regenerate it:",
-        "",
-        "```sh",
-        "python3 .rokct/initiate.py   # provisions the composer under .rokct/skills/",
-        "python3 .rokct/skills/.rok/flutter/scripts/compose.py",
-        "```",
-        "",
-        "Session cleanup (`python3 .rokct/end_protocol.py`) wipes the provisioned",
-        "tools again.",
-        README_RECOMPOSE_END,
-    ])
+    section = NL.join(
+        [
+            README_RECOMPOSE_START,
+            "## Recomposing this app",
+            "",
+            "`lib/` is fully installer-generated and disposable - it is safe to delete",
+            "and is gitignored. Anything app-specific lives in tracked manifests",
+            "(`app_routes`, or `host_routes` in `composer.json`), never in `lib/` itself.",
+            "",
+            "To regenerate it:",
+            "",
+            "```sh",
+            "python3 .rokct/initiate.py   # provisions the composer under .rokct/skills/",
+            "python3 .rokct/skills/.rok/flutter/scripts/compose.py",
+            "```",
+            "",
+            "Session cleanup (`python3 .rokct/end_protocol.py`) wipes the provisioned",
+            "tools again.",
+            README_RECOMPOSE_END,
+        ]
+    )
     path = os.path.join(PROJECT_ROOT, "README.md")
     try:
         if os.path.exists(path):
@@ -1102,13 +1234,19 @@ def ensure_pubspec_overrides():
         existing_keys = set()
         if overrides_start != -1:
             i = overrides_start + 1
-            while i < len(lines) and (lines[i].startswith(" ") or lines[i].strip() == ""):
+            while i < len(lines) and (
+                lines[i].startswith(" ") or lines[i].strip() == ""
+            ):
                 stripped = lines[i].strip()
                 if stripped and not stripped.startswith("#") and ":" in stripped:
                     existing_keys.add(stripped.split(":", 1)[0].strip())
                 i += 1
 
-        missing = {k: v for k, v in REQUIRED_DEPENDENCY_OVERRIDES.items() if k not in existing_keys}
+        missing = {
+            k: v
+            for k, v in REQUIRED_DEPENDENCY_OVERRIDES.items()
+            if k not in existing_keys
+        }
         if not missing:
             return
 
@@ -1121,27 +1259,36 @@ def ensure_pubspec_overrides():
             lines.append("dependency_overrides:\n")
             lines.extend(new_override_lines)
         else:
-            lines[overrides_start + 1:overrides_start + 1] = new_override_lines
+            lines[overrides_start + 1 : overrides_start + 1] = new_override_lines
 
         with open(pubspec_path, "w", encoding="utf-8") as f:
             f.writelines(lines)
-        print(f"[*] Ensured required dependency_overrides in pubspec.yaml: {list(missing.keys())}")
+        print(
+            f"[*] Ensured required dependency_overrides in pubspec.yaml: {list(missing.keys())}"
+        )
     except Exception as e:
         print(f"[!] Error ensuring pubspec.yaml dependency_overrides: {e}")
+
 
 def _run_build_runner(cwd, label):
     """build_runner in `cwd`, with the same --force-jit/fallback dance as the
     host run. Returns True on success."""
     build = subprocess.run(
         ["dart", "run", "build_runner", "build", "--force-jit"],
-        cwd=cwd, shell=(os.name == "nt"), capture_output=True, text=True,
+        cwd=cwd,
+        shell=(os.name == "nt"),
+        capture_output=True,
+        text=True,
     )
     if build.returncode != 0 and "Could not find an option named" in (
-            build.stdout + build.stderr):
+        build.stdout + build.stderr
+    ):
         build = subprocess.run(
-            ["dart", "run", "build_runner", "build",
-             "--delete-conflicting-outputs"],
-            cwd=cwd, shell=(os.name == "nt"), capture_output=True, text=True,
+            ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
+            cwd=cwd,
+            shell=(os.name == "nt"),
+            capture_output=True,
+            text=True,
         )
     if build.returncode == 0:
         print(f"[+] Regenerated code for {label}.")
@@ -1153,6 +1300,7 @@ def _run_build_runner(cwd, label):
 
 
 import re
+
 
 def _fix_cache_dependency_override_paths(sdk_dir, pubspec):
     """Rewrite dependency_overrides path: entries that still point at an
@@ -1178,7 +1326,9 @@ def _fix_cache_dependency_override_paths(sdk_dir, pubspec):
         return
     deps_part, _, overrides_part = content.partition("dependency_overrides:")
     changed = False
-    for pkg, dep_path in re.findall(r"^  (\w+):\n    path:\s*(\S+)\s*$", deps_part, re.MULTILINE):
+    for pkg, dep_path in re.findall(
+        r"^  (\w+):\n    path:\s*(\S+)\s*$", deps_part, re.MULTILINE
+    ):
         new_overrides_part, n = re.subn(
             rf"(^  {pkg}:\n    path:\s*)\S+\s*$",
             rf"\g<1>{dep_path}",
@@ -1192,7 +1342,9 @@ def _fix_cache_dependency_override_paths(sdk_dir, pubspec):
         try:
             with open(pubspec, "w", encoding="utf-8") as f:
                 f.write(deps_part + "dependency_overrides:" + overrides_part)
-            print(f"[*] Fixed dependency_overrides path(s) in {os.path.basename(sdk_dir)}/pubspec.yaml to match cache layout")
+            print(
+                f"[*] Fixed dependency_overrides path(s) in {os.path.basename(sdk_dir)}/pubspec.yaml to match cache layout"
+            )
         except Exception as e:
             print(f"[!] Could not fix dependency_overrides in {pubspec}: {e}")
 
@@ -1238,8 +1390,13 @@ def run_sdk_code_generation():
         # being (wrongly) treated as unable to.
         _fix_cache_dependency_override_paths(sdk_dir, pubspec)
         try:
-            pub = subprocess.run(["flutter", "pub", "get"], cwd=sdk_dir,
-                                 shell=(os.name == "nt"), capture_output=True, text=True)
+            pub = subprocess.run(
+                ["flutter", "pub", "get"],
+                cwd=sdk_dir,
+                shell=(os.name == "nt"),
+                capture_output=True,
+                text=True,
+            )
         except FileNotFoundError:
             # No Flutter toolchain on PATH (e.g. a CI job that composes
             # before installing Flutter). Codegen is a post-install phase:
@@ -1249,8 +1406,10 @@ def run_sdk_code_generation():
             print("[!] `flutter` not found on PATH; skipping SDK cache codegen.")
             return
         if pub.returncode != 0:
-            print(f"[*] {name}_sdk does not resolve standalone; skipping "
-                  f"its codegen (it ships generated sources).")
+            print(
+                f"[*] {name}_sdk does not resolve standalone; skipping "
+                f"its codegen (it ships generated sources)."
+            )
             continue
         _run_build_runner(sdk_dir, f"{name}_sdk")
 
@@ -1284,7 +1443,9 @@ def run_code_generation():
     """
     print("\n[*] Running flutter pub get...")
     try:
-        pub_get = subprocess.run(["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=(os.name == "nt"))
+        pub_get = subprocess.run(
+            ["flutter", "pub", "get"], cwd=PROJECT_ROOT, shell=(os.name == "nt")
+        )
     except FileNotFoundError:
         # Same warn-skip as run_sdk_code_generation: without Flutter on
         # PATH the crash would otherwise just move here and still sink an
@@ -1295,7 +1456,9 @@ def run_code_generation():
         print("[!] flutter pub get failed; skipping code generation.")
         return
 
-    print("[*] Running build_runner (--force-jit, required for packages with native-asset build hooks)...")
+    print(
+        "[*] Running build_runner (--force-jit, required for packages with native-asset build hooks)..."
+    )
     build = subprocess.run(
         ["dart", "run", "build_runner", "build", "--force-jit"],
         cwd=PROJECT_ROOT,
@@ -1303,8 +1466,12 @@ def run_code_generation():
         capture_output=True,
         text=True,
     )
-    if build.returncode != 0 and "Could not find an option named" in (build.stdout + build.stderr):
-        print("[*] This build_runner version doesn't support --force-jit; retrying with --delete-conflicting-outputs...")
+    if build.returncode != 0 and "Could not find an option named" in (
+        build.stdout + build.stderr
+    ):
+        print(
+            "[*] This build_runner version doesn't support --force-jit; retrying with --delete-conflicting-outputs..."
+        )
         build = subprocess.run(
             ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
             cwd=PROJECT_ROOT,
@@ -1318,18 +1485,25 @@ def run_code_generation():
     if build.returncode == 0:
         print("[+] Code generation completed successfully.")
     else:
-        print(f"[!] Code generation failed (exit {build.returncode}). Check output above for the specific error.")
+        print(
+            f"[!] Code generation failed (exit {build.returncode}). Check output above for the specific error."
+        )
+
 
 def main():
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
     package_name = None
     sdks_to_install = []
-    
+
     if os.path.exists(composer_path):
         try:
             with open(composer_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
-            sdks_to_install = [s for s in config.get("sdks", []) if isinstance(s, dict) and s.get("enabled", True)]
+            sdks_to_install = [
+                s
+                for s in config.get("sdks", [])
+                if isinstance(s, dict) and s.get("enabled", True)
+            ]
             package_name = config.get("package_name")
             print(f"[*] Reading active SDK list from composer.json: {sdks_to_install}")
         except Exception as e:
@@ -1351,7 +1525,7 @@ def main():
     else:
         requested_names = sys.argv[1:]
         sdks_to_install = [s for s in sdks_to_install if s["name"] in requested_names]
-        
+
     if "core_sdk" in [s["name"] if isinstance(s, dict) else s for s in sdks_to_install]:
         core_idx = -1
         for i, s in enumerate(sdks_to_install):
@@ -1361,11 +1535,11 @@ def main():
         if core_idx != -1:
             core_sdk = sdks_to_install.pop(core_idx)
             sdks_to_install.insert(0, core_sdk)
-            
+
     # Cache all SDKs in one consolidated fetch pass (version-aware: an SDK
     # whose cached copy is current is left in place, see should_extract).
     cache_decisions = resolve_and_cache_sdks(sdks_to_install)
-    
+
     # Run the installers. An SDK entry can set "skip_install": true in
     # composer.json to stay fully composed - cached (with role-stripping),
     # listed as a pubspec path dependency, and covered by per-SDK codegen -
@@ -1375,13 +1549,15 @@ def main():
     # (e.g. the host's own page already generates the same route name).
     for sdk in sdks_to_install:
         if isinstance(sdk, dict) and sdk.get("skip_install"):
-            print(f"\n[*] Skipping installer for {sdk['name']} (skip_install in composer.json); its cache, pubspec dependency and codegen still apply.")
+            print(
+                f"\n[*] Skipping installer for {sdk['name']} (skip_install in composer.json); its cache, pubspec dependency and codegen still apply."
+            )
             continue
         run_installer(sdk)
-        
+
     if package_name:
         update_pubspec_name(package_name)
-    
+
     if all_enabled_sdks:
         update_pubspec_dependencies(all_enabled_sdks)
 
@@ -1402,8 +1578,11 @@ def main():
 
     if FAILED_SDKS:
         failed = ", ".join(sorted(set(FAILED_SDKS)))
-        print(f"\n[!] Compose FAILED: the following SDK(s) were not installed: {failed}")
+        print(
+            f"\n[!] Compose FAILED: the following SDK(s) were not installed: {failed}"
+        )
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
