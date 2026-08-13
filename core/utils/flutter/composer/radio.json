@@ -1,0 +1,54 @@
+{
+  "name": "rokctapp_composer",
+  "version": "1.0.0",
+  "package_name": "radio",
+  "description": "Configuration list of active SDKs for a radio station app",
+  "sdks": [
+    {
+      "name": "radio_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/radio/dart",
+      "ref": "main",
+      "home_sdk": true,
+      "_comment": "A radio app's home IS the player, so this SDK provides the entry page. Declares StationsTable at schema version 17; one row for a single-station app, many for a multi-station one."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/dart",
+      "ref": "main",
+      "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates, AppStyle, the splash and no-connection pages, and the AppDatabase radio_sdk registers StationsTable into."
+    },
+    {
+      "name": "comms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/dart",
+      "ref": "main",
+      "_comment": "Push notifications. The lineage this app came from used OneSignal directly; comms_sdk replaces that."
+    },
+    {
+      "name": "telemetry_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/dart",
+      "ref": "main",
+      "_comment": "Listener counts: how many are tuned in via the app. Disabled until the dart side exists -- core/telemetry/dart is an empty placeholder today, while its frappe side already has src/telemetry and an api_error_log doctype."
+    },
+    {
+      "name": "promotions_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/promotions/dart",
+      "ref": "main",
+      "_comment": "Ad mediation. Disabled by default: the station this was built for runs with ads off (showADS false), so enable per app rather than per template."
+    }
+  ]
+}

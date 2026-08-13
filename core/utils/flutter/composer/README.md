@@ -2,7 +2,7 @@
 
 The `.json` files in this folder (`betassist.json`, `customer.json`, `driver.json`,
 `launch_deliver.json`, `launch_manager.json`, `launcher.json`, `manager.json`, `polaris.json`,
-`pos.json`, `supacharge.json`) are **templates**, not active configuration.
+`pos.json`, `radio.json`, `supacharge.json`) are **templates**, not active configuration.
 
 To build a given app variant:
 
