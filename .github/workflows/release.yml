@@ -40,7 +40,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Run Installation Tests
         run: |
           chmod +x tests/test_install.sh
@@ -49,7 +49,7 @@ jobs:
   release:
     needs: test
     permissions: write-all
-    uses: RokctAI/shared-workflows/.github/workflows/universal-pipeline.yml@main
+    uses: RokctAI/shared-workflows/.github/workflows/universal-pipeline.yml@16261ce39957d781ece0e1050f40c448b4e5d331 # shared-workflows main @ 2026-08-13
     with:
       backfill_ai_notes_cutoff_version: ${{ inputs.backfill_ai_notes_cutoff_version }}
       project_type: 'node' # Protocol is not a frappe app
@@ -71,6 +71,10 @@ jobs:
       postgres-version: ${{ inputs.postgres-version || '15' }}
       db-type: ${{ inputs.db-type || 'mariadb' }}
       version_format: ${{ inputs.version_format || '##.##.##' }}
-    secrets: inherit
+    secrets:
+      APP_ID: ${{ secrets.APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      MONOREPO_PAT: ${{ secrets.MONOREPO_PAT }}
+      GROQ_API: ${{ secrets.GROQ_API }}
 
 
