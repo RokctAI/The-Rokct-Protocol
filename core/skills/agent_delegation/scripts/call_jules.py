@@ -9,9 +9,9 @@ SHA-256, then executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+PROTOCOL_REF = "3c9e561e83ac563cdc11d8e0d30ce77eb9551020"
 DELEGATE_PATH = "core/utils/agent_delegation/delegate_to_agent.py"
-DELEGATE_SHA256 = "f59d08ad0aedef5eebfa7a063abc66073230c6e466e28b5933330b58ea00db5d"
+DELEGATE_SHA256 = "e313cebb582b71a4c23c78fd363086d6ff12c21df5003b5134c88a8963f64b1d"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
