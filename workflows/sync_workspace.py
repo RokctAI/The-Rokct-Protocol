@@ -144,14 +144,17 @@ def check_and_update_maintenance(parent_clone):
     return True
 
 def sync_to_parent(config):
+    """Sync working files to the parent repo. Returns True when the sync
+    completed (including the no-op cases), False on clone/push failure so
+    main() can keep the .sync_ready marker and exit non-zero."""
     parent_repo = config.get("parent_repo")
     working_files = config.get("working_files", [
         "memory.md", "decision_log.md", "project_map.md", "active_session.txt"
     ])
     if not parent_repo:
         print("[sync] No parent_repo in config")
-        return
-    
+        return True
+
     session = config.get("session_id", "unknown")
     child_repo = get_child_repo()
     
@@ -168,8 +171,8 @@ def sync_to_parent(config):
         result = subprocess.run(["git", "clone", "--branch", config.get("parent_branch", "main"), clone_url, parent_clone], capture_output=True, text=True)
         if result.returncode != 0:
             print(f"[sync] Clone failed: {result.stderr}")
-            return
-    
+            return False
+
     parent_rokct = os.path.join(parent_clone, ".rokct")
     os.makedirs(parent_rokct, exist_ok=True)
     
@@ -196,8 +199,8 @@ def sync_to_parent(config):
     
     if not any_changes:
         print("[sync] No changes to push")
-        return
-    
+        return True
+
     subprocess.run(["git", "-C", parent_clone, "config", "user.email", "rokct-bot@users.noreply.github.com"], capture_output=True)
     subprocess.run(["git", "-C", parent_clone, "config", "user.name", "rokct-bot"], capture_output=True)
     subprocess.run(["git", "-C", parent_clone, "add", ".rokct/"], capture_output=True)
@@ -206,16 +209,22 @@ def sync_to_parent(config):
     result = subprocess.run(["git", "-C", parent_clone, "push"], capture_output=True, text=True)
     if result.returncode == 0:
         print("[sync] Pushed to parent repo")
-    else:
-        print(f"[sync] Push failed: {result.stderr}")
+        return True
+    print(f"[sync] Push failed: {result.stderr}", file=sys.stderr)
+    return False
 
 def main():
     config = load_config()
     if not config:
         return
-    sync_to_parent(config)
-    
-    # Remove the sync marker after attempting sync
+    ok = sync_to_parent(config)
+    if not ok:
+        # Keep the .sync_ready marker so the next run retries the sync, and
+        # exit non-zero so CI surfaces the failure instead of swallowing it.
+        print("[sync] Sync failed - keeping .sync_ready marker for retry", file=sys.stderr)
+        sys.exit(1)
+
+    # Remove the sync marker only after a successful sync
     sync_marker = os.path.join(ROKCT_DIR, ".sync_ready")
     if os.path.exists(sync_marker):
         os.remove(sync_marker)
