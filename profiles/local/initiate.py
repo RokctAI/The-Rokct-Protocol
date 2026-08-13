@@ -118,7 +118,7 @@ def file_hash(path):
     if not os.path.exists(path):
         return None
     with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+        return hashlib.sha256(f.read()).hexdigest()
 
 def copy_versioned(src_rel, dst_abs):
     src = os.path.join(PROTOCOL_DIR, src_rel)
@@ -129,21 +129,13 @@ def copy_versioned(src_rel, dst_abs):
     if os.path.exists(src) and os.path.abspath(src) == os.path.abspath(dst_abs):
         print(f"[init] Skipping self-copy of {src_rel}")
         return
-    manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
-    if os.path.exists(manifest_path):
-        with open(manifest_path, "r", encoding="utf-8") as mf:
-            manifest = json.load(mf)
-    else:
-        try:
-            manifest = json.loads(fetch_url(f"{GITHUB_RAW_BASE}/core/templates/manifest.json").decode())
-        except Exception:
-            manifest = {}
-    entry = manifest.get("files", {}).get(src_rel.split("core/templates/")[-1] if "core/templates/" in src_rel else src_rel.split("profiles/local/")[-1])
-    if not entry or not os.path.exists(src):
+    if not os.path.exists(src):
         fetch_from_github(src_rel, dst_abs)
         return
-    current_hash = file_hash(dst_abs)
-    if current_hash and current_hash == entry.get("hash"):
+    # Dedup directly against the protocol source; integrity of fetched
+    # content is enforced by protocol.lock.json / EXPECTED_SHA256, not by
+    # the old advisory core/templates manifest.
+    if file_hash(src) == file_hash(dst_abs):
         return
     shutil.copy2(src, dst_abs)
 
@@ -165,6 +157,17 @@ def copy_dir(rel_src, dst):
             rel = os.path.relpath(s, PROTOCOL_DIR)
             ensure_file(rel, d)
 
+def safe_extract_path(dst, rel):
+    """Resolve an archive-controlled relative path under dst, refusing any
+    entry that escapes the destination (zip-slip). Same realpath+commonpath
+    containment check as the opportunities wrappers' _safe_path()."""
+    dest = os.path.realpath(os.path.join(dst, rel))
+    base = os.path.realpath(dst)
+    if os.path.commonpath([base, dest]) != base:
+        print(f"[init] Refusing to extract archive entry outside destination: {rel}", file=sys.stderr)
+        sys.exit(1)
+    return dest
+
 def fetch_dir_from_github(rel_src, dst):
     # Zip entries always use forward slashes; on Windows callers pass
     # os.sep-separated paths (e.g. from os.path.relpath), which would
@@ -183,7 +186,7 @@ def fetch_dir_from_github(rel_src, dst):
                     continue
                 data = z.read(name)
                 verify_pinned(f"{rel_src}/{rel}", data)
-                dest = os.path.join(dst, rel)
+                dest = safe_extract_path(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
                     f.write(data)
@@ -213,7 +216,7 @@ def main():
     # Pre-populate the scaffold delegate cache so a transient
     # raw.githubusercontent.com failure mid-workflow falls back to a copy
     # fetched at workflow start instead of killing the run.
-    copy_dir("core/utils/agent_deligation", os.path.join(ROKCT_DIR, "tmp", "delegate_cache"))
+    copy_dir("core/utils/agent_delegation", os.path.join(ROKCT_DIR, "tmp", "delegate_cache"))
     try:
         origin_url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
     except Exception:

@@ -97,34 +97,17 @@ def fetch_file_from_github(rel_path, dest_path):
         data = fetch_url(url)
     except Exception as e:
         print(f"[init] Failed to fetch {rel_path} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}", file=sys.stderr)
-        return
+        sys.exit(1)
     verify_pinned(rel_posix, data)
     with open(dest_path, "wb") as f:
         f.write(data)
     print(f"[init] Fetched {rel_path}")
 
-def load_local_manifest():
-    manifest_path = os.path.join(PROTOCOL_DIR, "profiles", "local", "manifest.json")
-    if os.path.exists(manifest_path):
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def load_core_manifest():
-    manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
-    if os.path.exists(manifest_path):
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    try:
-        return json.loads(fetch_url(f"{GITHUB_RAW_BASE}/core/templates/manifest.json").decode())
-    except Exception:
-        return {}
-
 def file_hash(path):
     if not os.path.exists(path):
         return None
     with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+        return hashlib.sha256(f.read()).hexdigest()
 
 def ensure_file(rel_path, dest_path):
     src = os.path.join(PROTOCOL_DIR, rel_path)
@@ -137,11 +120,10 @@ def ensure_file(rel_path, dest_path):
     else:
         fetch_file_from_github(rel_path, dest_path)
 
-def copy_versioned(src_rel, dst_abs, manifest):
+def copy_versioned(src_rel, dst_abs):
     dst_dir = os.path.dirname(dst_abs)
     os.makedirs(dst_dir, exist_ok=True)
 
-    entry = manifest.get("files", {}).get(src_rel)
     src = os.path.join(PROTOCOL_DIR, src_rel)
     # When running from a committed .rokct/ inside the project itself,
     # PROTOCOL_DIR resolves to PROJECT_ROOT, so src and dst can be the
@@ -150,20 +132,13 @@ def copy_versioned(src_rel, dst_abs, manifest):
     if os.path.exists(src) and os.path.abspath(src) == os.path.abspath(dst_abs):
         print(f"[init] Skipping self-copy of {src_rel}")
         return
-    if not entry:
-        if os.path.exists(src):
-            shutil.copy2(src, dst_abs)
-        else:
-            fetch_file_from_github(src_rel, dst_abs)
-        print(f"[init] Copied {src_rel} -> {dst_abs}")
-        return
-
-    current_hash = file_hash(dst_abs)
-    if current_hash == entry["hash"]:
-        print(f"[init] Skipping unchanged {dst_abs}")
-        return
-
     if os.path.exists(src):
+        # Dedup directly against the protocol source; integrity of fetched
+        # content is enforced by protocol.lock.json / EXPECTED_SHA256, not by
+        # the old advisory core/templates manifest.
+        if file_hash(src) == file_hash(dst_abs):
+            print(f"[init] Skipping unchanged {dst_abs}")
+            return
         shutil.copy2(src, dst_abs)
     else:
         fetch_file_from_github(src_rel, dst_abs)
@@ -185,8 +160,19 @@ def copy_dir(src, dst):
         if os.path.isdir(s):
             copy_dir(s, d)
         else:
-            copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d, manifest)
+            copy_versioned(os.path.relpath(s, PROTOCOL_DIR), d)
     print(f"[init] Synced directory {src} -> {dst}")
+
+def safe_extract_path(dst, rel):
+    """Resolve an archive-controlled relative path under dst, refusing any
+    entry that escapes the destination (zip-slip). Same realpath+commonpath
+    containment check as the opportunities wrappers' _safe_path()."""
+    dest = os.path.realpath(os.path.join(dst, rel))
+    base = os.path.realpath(dst)
+    if os.path.commonpath([base, dest]) != base:
+        print(f"[init] Refusing to extract archive entry outside destination: {rel}", file=sys.stderr)
+        sys.exit(1)
+    return dest
 
 def fetch_dir_from_github(rel_src, dst):
     # Zip entries always use forward slashes; on Windows callers pass
@@ -207,7 +193,7 @@ def fetch_dir_from_github(rel_src, dst):
                     continue
                 data = z.read(name)
                 verify_pinned(f"{rel_src}/{rel}", data)
-                dest = os.path.join(dst, rel)
+                dest = safe_extract_path(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
                     f.write(data)
@@ -227,22 +213,20 @@ def detect_repo_owner():
 
 def main():
     check_for_update()
-    global manifest
-    manifest = load_core_manifest()
     os.makedirs(ROKCT_DIR, exist_ok=True)
 
     core_templates_src = os.path.join(PROTOCOL_DIR, "core", "templates")
     for fname in ["memory.md", "decision_log.md", "project_map.md", "active_session.txt"]:
         dest_fname = os.path.join(ROKCT_DIR, fname)
         if not os.path.exists(dest_fname):
-            copy_versioned(os.path.join("core", "templates", fname), dest_fname, manifest)
+            copy_versioned(os.path.join("core", "templates", fname), dest_fname)
 
     # Markdownlint config for the agent-maintained .rokct/ docs. markdownlint-cli2
     # applies per-directory config to everything beneath .rokct/, keeping consumer
     # repos green under the org-standard rule set without touching their root config.
-    copy_versioned(os.path.join("core", "templates", ".markdownlint.json"), os.path.join(ROKCT_DIR, ".markdownlint.json"), manifest)
+    copy_versioned(os.path.join("core", "templates", ".markdownlint.json"), os.path.join(ROKCT_DIR, ".markdownlint.json"))
 
-    copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"), manifest)
+    copy_versioned(".cursorrules", os.path.join(PROJECT_ROOT, ".cursorrules"))
 
     repo_owner = detect_repo_owner()
     if repo_owner:
@@ -256,7 +240,7 @@ def main():
             if os.path.isdir(s) and item != ".rok":
                 copy_dir(s, os.path.join(dst, item))
 
-    copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"), manifest)
+    copy_versioned(os.path.join("profiles", "web", "rules.md"), os.path.join(ROKCT_DIR, "profiles.md"))
 
     copy_dir(os.path.join(PROTOCOL_DIR, "workflows"), os.path.join(ROKCT_DIR, "workflows"))
     
