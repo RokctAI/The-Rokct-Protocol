@@ -7,13 +7,13 @@ PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
+PROTOCOL_REF    = "15f0befa044853caa915597e6921d7f98d3a4fbb"
 COMPOSER_PATH   = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 EXPECTED_SHA256 = {
-    "core/utils/flutter/sdk_composer.py": "95e212ccdca24657c4dbeebacaa9436729fa3ba1c4fed5cc17c70b85a9a46c41",
-    "core/utils/flutter/sdk_installer_base.py": "65b49d2fe5a0d5681df83e0bda6855f3b53ec0e76c88da059dd3a96786c652de",
+    "core/utils/flutter/sdk_composer.py": "2a1624ae2fb311f95182e6eff62b3796808230a1d468b405ad63b7bcb5b52364",
+    "core/utils/flutter/sdk_installer_base.py": "bbb1165cfede07691b271f0c7ef5943c394617e73c29874c5118e91eb5320ff4",
 }
 
 

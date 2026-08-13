@@ -16,10 +16,10 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
+PROTOCOL_REF = "15f0befa044853caa915597e6921d7f98d3a4fbb"
 EXPECTED_SHA256 = {
-    "profiles/web/initiate.py": "b250ef008c42c97fcf90cf367af4bbed00937529159e1505189266004e46756c",
-    "workflows/maintenance.yml": "3826ea73fee8b939c0798ae65173fb0ff6dd188758e4564b51373019bc7a7716",
+    "profiles/web/initiate.py": "4886115ceb5ba8212521c421afda6590749cec9458ce32164886f196e09617b8",
+    "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_ZIP_BASE = f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) if "profiles" in os.path.abspath(__file__) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
