@@ -139,12 +139,18 @@ def clone_ref(git_url, ref, dest_dir):
     shallow path used before (`git clone -b <ref> --depth 1`); when that
     fails - most notably because ref is a commit SHA, which `git clone -b`
     does not accept - fall back to a full clone followed by
-    `git checkout <ref>`. Raises on failure (subprocess.CalledProcessError);
+    `git checkout <ref>`. Raises on failure (subprocess.CalledProcessError,
+    or subprocess.TimeoutExpired when a clone stalls on the network);
     the caller decides how to fail the build. Same helper as the frappe
     composer's clone_ref() (core/utils/frappe/compose_backend.py) - kept as a
-    local copy since each composer is fetched and run standalone."""
+    local copy since each composer is fetched and run standalone.
+
+    git has no network-stall timeout of its own, so a dead TCP connection
+    mid-clone hangs forever - in CI that squats a runner for hours (see the
+    universal lint/build "Compose SDK Modules" steps). The 10-minute cap
+    turns a stall into a loud, retryable failure."""
     try:
-        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True)
+        subprocess.run(["git", "clone", "-b", ref, "--depth", "1", git_url, dest_dir], check=True, timeout=600)
         return
     except subprocess.CalledProcessError:
         print(f"[*] `git clone -b {ref}` failed (ref is not a branch/tag?). Retrying as full clone + checkout, which also accepts commit SHAs...")
@@ -154,7 +160,7 @@ def clone_ref(git_url, ref, dest_dir):
             os.chmod(path, stat.S_IWRITE)
             func(path)
         shutil.rmtree(dest_dir, onerror=remove_readonly)
-    subprocess.run(["git", "clone", git_url, dest_dir], check=True)
+    subprocess.run(["git", "clone", git_url, dest_dir], check=True, timeout=600)
     subprocess.run(["git", "-C", dest_dir, "checkout", ref], check=True)
 
 def check_git_availability(git_url):
