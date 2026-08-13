@@ -49,7 +49,7 @@ Evaluators score 0, 1, 3, or 5. To get a 5:
 ---
 
 ## 4. Automation Utility: `extract_requirements.py`
-The repository includes a Python utility at `.rokct/scripts/tenders/extract_requirements.py` that uses `pdfplumber` to automatically extract:
+The repository includes a Python utility at `core/utils/opportunities/tenders/enrichment/extract_requirements.py` that uses `pdfplumber` to automatically extract:
 1.  **Gate 1 Checklist:** Mandatory SBD/MBD forms and certificates.
 2.  **Gate 2 Weights:** Scoring criteria and functionality thresholds.
 3.  **Pricing System:** (80/20 vs 90/10).
