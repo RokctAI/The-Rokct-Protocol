@@ -86,7 +86,7 @@ Outputs: `.rokct/config/classifications/<project>_themes.txt` and `_genres.txt`.
 
 ```text
 Project .rokct/                         The-Rokct-Protocol/
- └─ agent_delegation/                   └─ core/utils/agent_deligation/
+ └─ agent_delegation/                   └─ core/utils/agent_delegation/
      ├─ call_jules.py ──────────────────► delegate_to_agent.py (canonical)
      ├─ call_groq.py  ──────────────────►
      ├─ handle_groq_output.py

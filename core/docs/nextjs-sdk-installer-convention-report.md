@@ -52,7 +52,7 @@ here for the one cross-cutting case the lending fork will actually need: adding 
 shared sidebar.
 
 **Implementation language: Python**, matching every other installer domain in `core/utils/`
-(`flutter`, `frappe`, `agent_deligation`, `opportunities`, `startup_os`). The job is filesystem copy plus
+(`flutter`, `frappe`, `agent_delegation`, `opportunities`, `startup_os`). The job is filesystem copy plus
 JSON/text editing — nothing Node-specific — and keeping the compose step on one interpreter avoids
 requiring Node to be present and correctly versioned at *install* time on top of *runtime*.
 

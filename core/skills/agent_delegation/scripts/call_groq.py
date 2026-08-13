@@ -9,7 +9,7 @@ import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 PROTOCOL_REF    = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
-DELEGATE_PATH   = "core/utils/agent_deligation/delegate_to_agent.py"
+DELEGATE_PATH   = "core/utils/agent_delegation/delegate_to_agent.py"
 DELEGATE_SHA256 = "f59d08ad0aedef5eebfa7a063abc66073230c6e466e28b5933330b58ea00db5d"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 

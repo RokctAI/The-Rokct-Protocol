@@ -37,7 +37,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GITHUB_REPO = "RokctAI/The-Rokct-Protocol"
 LOCKFILE_NAME = "protocol.lock.json"
 
-_DELEGATES = "core/utils/agent_deligation"
+_DELEGATES = "core/utils/agent_delegation"
 _ENGINE = "core/utils/startup_os"
 _SCRIPTS = "core/skills/agent_delegation/scripts"
 _OPPORTUNITIES = "core/utils/opportunities"
@@ -89,6 +89,19 @@ OPPORTUNITIES_FILES = (
     "tenders/utils/tender_resolver.py",
 )
 
+# Template/data files the bootstrappers install into host repos. Previously
+# covered by an advisory core/templates/manifest.json with truncated hashes;
+# folded into the lockfile so protocol.lock.json is the single enforcing
+# integrity mechanism for everything the protocol distributes.
+TEMPLATE_FILES = (
+    "memory.md",
+    "active_session.txt",
+    "decision_log.md",
+    "project_map.md",
+    "session_summary.md",
+    ".markdownlint.json",
+)
+
 # Every repository path that is fetched at runtime and executed (or installed
 # as executable content, e.g. a GitHub workflow). Keys of protocol.lock.json.
 LOCK_TARGETS = (
@@ -106,7 +119,9 @@ LOCK_TARGETS = (
     "profiles/local/initiate.py",
     "profiles/web/initiate.py",
     "workflows/maintenance.yml",
-) + tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
+) + tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES) + tuple(
+    f"core/templates/{t}" for t in TEMPLATE_FILES
+)
 
 # The 12 scaffold wrappers that share a byte-identical resolve_delegate().
 _WRAPPER_TARGETS = {
