@@ -8,6 +8,60 @@ import hashlib
 PROJECT_ROOT = os.getcwd()
 NL = chr(10)
 
+# SDKs that could not be resolved, cached or installed this run. A composer
+# that silently omits an SDK and still exits 0 produces a quietly incomplete
+# app; main() exits non-zero when this is non-empty.
+FAILED_SDKS = []
+
+# Explicit, loud opt-out for running SDK installers cloned from a mutable ref
+# without a sha256 pin - mirrors the engine's STARTUPOS_ALLOW_UNPINNED gate.
+ALLOW_UNPINNED_ENV = "ROKCT_ALLOW_UNPINNED_SDKS"
+
+
+def _is_commit_sha(ref):
+    return bool(ref) and len(ref) == 40 and all(c in "0123456789abcdef" for c in ref.lower())
+
+
+def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
+    """A cloned SDK's install.py is later executed by run_installer(), so
+    content fetched over the network must be verifiable before it can run.
+    Accepts the SDK when any of these hold:
+      - the composer.json entry carries "sha256" (SHA-256 of the SDK's
+        install.py) and it matches the extracted file;
+      - the clone ref is a full 40-hex commit SHA (immutable content);
+      - ROKCT_ALLOW_UNPINNED_SDKS=1 explicitly (and loudly) opts out.
+    Anything else aborts the compose before any installer can execute."""
+    expected = ""
+    if isinstance(sdk_config, dict):
+        expected = (sdk_config.get("sha256") or "").lower()
+    installer = os.path.join(target_dir, "install.py")
+    if expected:
+        if not os.path.exists(installer):
+            print(f"[!] {sdk_name}: composer.json pins install.py to sha256 {expected}, "
+                  f"but the cloned SDK has no install.py. Refusing to continue.", file=sys.stderr)
+            sys.exit(1)
+        with open(installer, "rb") as f:
+            actual = hashlib.sha256(f.read()).hexdigest()
+        if actual != expected:
+            print(f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):", file=sys.stderr)
+            print(f"[!]   expected sha256 {expected}", file=sys.stderr)
+            print(f"[!]   actual   sha256 {actual}", file=sys.stderr)
+            print("[!] Refusing to execute unverified SDK installer.", file=sys.stderr)
+            sys.exit(1)
+        print(f"[+] Verified {sdk_name} install.py against pinned sha256.")
+        return
+    if _is_commit_sha(ref):
+        return
+    if os.environ.get(ALLOW_UNPINNED_ENV, "").lower() in ("1", "true", "yes"):
+        print(f"[!] WARNING: {sdk_name} was cloned from mutable ref '{ref}' without a sha256 pin; "
+              f"proceeding because {ALLOW_UNPINNED_ENV} is set. Its install.py runs UNVERIFIED.")
+        return
+    print(f"[!] {sdk_name} was cloned from mutable ref '{ref}' and its install.py is unpinned.", file=sys.stderr)
+    print("[!] Pin it: set \"ref\" to a full commit SHA or add \"sha256\" (of install.py) to its "
+          "composer.json entry.", file=sys.stderr)
+    print(f"[!] To run unpinned anyway, set {ALLOW_UNPINNED_ENV}=1 explicitly.", file=sys.stderr)
+    sys.exit(1)
+
 # Durable composer/installer state. Lives INSIDE .rokct/cache/ deliberately:
 # cache/ is on end_protocol.py's keep-whitelist, so the state survives session
 # cleanup, and the recorded versions/hashes describe the cached SDK content -
@@ -660,9 +714,14 @@ def resolve_and_cache_sdks(sdks):
                     shutil.rmtree(target_dir)
                 shutil.copytree(src_dir, target_dir)
                 strip_unused_role_folders(target_dir, sdk_name)
+                if not is_local_available:
+                    # Content came from a network clone - enforce the pin
+                    # before its install.py can ever be executed.
+                    enforce_sdk_pin(sdk_name, sdk, target_dir, group_sdks[0].get("ref", "main"))
             else:
                 print(f"[!] Error: Path {subpath} not found in repository {repo_source_dir}")
-                
+                FAILED_SDKS.append(sdk_name)
+
         # Clean up temp repo folder if it was cloned
         if not is_local_available and os.path.exists(temp_repo_dir):
             def remove_readonly(func, path, excinfo):
@@ -690,6 +749,7 @@ def resolve_and_cache_sdks(sdks):
                 strip_unused_role_folders(target_dir, sdk_name)
             else:
                 print(f"[-] Local path {local_path} for {sdk_name} does not exist. Skipping.")
+                FAILED_SDKS.append(sdk_name)
 
     return decisions
 
@@ -706,8 +766,9 @@ def run_installer(sdk_config):
     
     if not os.path.exists(installer_script):
         print(f"[-] No install.py found for SDK: {sdk_name} at {sdk_path}. Skipping.")
+        FAILED_SDKS.append(sdk_name)
         return
-        
+
     print(f"\n[*] Executing Installer for {sdk_name}...")
     try:
         result = subprocess.run(
@@ -1338,6 +1399,11 @@ def main():
         run_code_generation()
     finally:
         record_sdk_cache_state(cache_decisions)
+
+    if FAILED_SDKS:
+        failed = ", ".join(sorted(set(FAILED_SDKS)))
+        print(f"\n[!] Compose FAILED: the following SDK(s) were not installed: {failed}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
