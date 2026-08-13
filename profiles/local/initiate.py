@@ -254,6 +254,7 @@ def fetch_dir_from_github(rel_src, dst):
             f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}",
             file=sys.stderr,
         )
+        sys.exit(1)
 
 
 def main():
