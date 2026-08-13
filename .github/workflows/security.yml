@@ -7,7 +7,7 @@ on:
 jobs:
   scan:
     permissions: write-all
-    uses: RokctAI/shared-workflows/.github/workflows/universal-security.yml@16261ce39957d781ece0e1050f40c448b4e5d331 # shared-workflows main @ 2026-08-13
+    uses: RokctAI/shared-workflows/.github/workflows/universal-security.yml@fed18a76a3107bcd8293a24d3e949addfdd09e84 # shared-workflows main @ 2026-08-13
     secrets:
       COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
       APP_ID: ${{ secrets.APP_ID }}
