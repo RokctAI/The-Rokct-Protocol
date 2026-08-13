@@ -5,13 +5,17 @@ The-Rokct-Protocol scaffold: crypto_utils.py
 Wrapper that exposes encrypt_pii and decrypt_pii by importing from privacy.py,
 fetched pinned to PROTOCOL_REF and SHA-256 verified before it is executed.
 """
+
 import hashlib, os, sys, urllib.request, importlib.util
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
-DELEGATE_PATH   = "core/utils/agent_delegation/privacy.py"
+PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+DELEGATE_PATH = "core/utils/agent_delegation/privacy.py"
 DELEGATE_SHA256 = "02ce6b15f313c7963e67cfcc711b446c781f129ad5d8659193bfc8cce8ed9f20"
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
+
 
 def _fetch_verified():
     """Fetch DELEGATE_PATH pinned to PROTOCOL_REF; verify its SHA-256 against
@@ -20,7 +24,9 @@ def _fetch_verified():
     there is no unverified fallback."""
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"}
+        )
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status != 200:
                 return None
@@ -29,12 +35,16 @@ def _fetch_verified():
         return None
     digest = hashlib.sha256(data).hexdigest()
     if digest != DELEGATE_SHA256:
-        print(f"[scaffold] Integrity check failed for {DELEGATE_PATH} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(
+            f"[scaffold] Integrity check failed for {DELEGATE_PATH} (ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[scaffold]   expected sha256 {DELEGATE_SHA256}", file=sys.stderr)
         print(f"[scaffold]   actual   sha256 {digest}", file=sys.stderr)
         print("[scaffold] Refusing to execute unverified code.", file=sys.stderr)
         sys.exit(1)
     return data.decode("utf-8")
+
 
 def _load_module():
     code = _fetch_verified()
@@ -46,15 +56,19 @@ def _load_module():
     exec(code, module.__dict__)
     return module
 
+
 _mod = _load_module()
 if _mod:
     encrypt_pii = _mod.encrypt_pii
     decrypt_pii = _mod.decrypt_pii
 else:
+
     def encrypt_pii(*args, **kwargs):
         raise RuntimeError("Failed to load privacy.py from GitHub")
+
     def decrypt_pii(*args, **kwargs):
         raise RuntimeError("Failed to load privacy.py from GitHub")
+
 
 if __name__ == "__main__":
     if _mod and hasattr(_mod, "main"):

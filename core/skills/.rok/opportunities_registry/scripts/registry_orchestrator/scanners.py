@@ -16,12 +16,15 @@ All wrappers under core/skills/.rok/opportunities_registry/scripts/ are
 byte-identical copies of this file — only their location differs, which
 selects the backend script to execute.
 """
+
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
 BACKEND_PREFIX = "core/utils/opportunities/"
-GITHUB_ZIP_URL = f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
+GITHUB_ZIP_URL = (
+    f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
+)
 ZIP_PREFIX = f"The-Rokct-Protocol-{PROTOCOL_REF}/{BACKEND_PREFIX}"
 
 # Expected SHA-256 of every backend file at PROTOCOL_REF, keyed by
@@ -54,8 +57,10 @@ EXPECTED_SHA256 = {
 
 
 def _refuse(origin):
-    print(f"[wrapper] Refusing to execute unverified code ({origin}, ref {PROTOCOL_REF}).",
-          file=sys.stderr)
+    print(
+        f"[wrapper] Refusing to execute unverified code ({origin}, ref {PROTOCOL_REF}).",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 
@@ -64,13 +69,17 @@ def _verify(rel, payload, origin):
     repo_path = BACKEND_PREFIX + rel
     expected = EXPECTED_SHA256.get(repo_path)
     if expected is None:
-        print(f"[wrapper] Unpinned file in {origin}: {repo_path} has no embedded hash.",
-              file=sys.stderr)
+        print(
+            f"[wrapper] Unpinned file in {origin}: {repo_path} has no embedded hash.",
+            file=sys.stderr,
+        )
         _refuse(origin)
     digest = hashlib.sha256(payload).hexdigest()
     if digest != expected:
-        print(f"[wrapper] Integrity check failed for {repo_path} ({origin}, ref {PROTOCOL_REF}):",
-              file=sys.stderr)
+        print(
+            f"[wrapper] Integrity check failed for {repo_path} ({origin}, ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[wrapper]   expected sha256 {expected}", file=sys.stderr)
         print(f"[wrapper]   actual   sha256 {digest}", file=sys.stderr)
         _refuse(origin)
@@ -81,7 +90,10 @@ def _safe_path(base_dir, rel):
     target = os.path.realpath(os.path.join(base_dir, rel))
     base = os.path.realpath(base_dir)
     if os.path.commonpath([base, target]) != base:
-        print(f"[wrapper] Refusing path outside the cache directory: {rel}", file=sys.stderr)
+        print(
+            f"[wrapper] Refusing path outside the cache directory: {rel}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return target
 
@@ -96,7 +108,9 @@ def _fetch_verified():
     print(f"[wrapper] Fetching opportunities scripts pinned to {PROTOCOL_REF}...")
     try:
         req = urllib.request.Request(
-            GITHUB_ZIP_URL, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
+            GITHUB_ZIP_URL,
+            headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"},
+        )
         with urllib.request.urlopen(req, timeout=15) as resp:
             z = zipfile.ZipFile(io.BytesIO(resp.read()))
     except Exception as e:
@@ -105,14 +119,17 @@ def _fetch_verified():
     files = {}
     for name in z.namelist():
         if name.startswith(ZIP_PREFIX) and not name.endswith("/"):
-            rel = name[len(ZIP_PREFIX):]
+            rel = name[len(ZIP_PREFIX) :]
             data = z.read(name)
             _verify(rel, data, "github")
             files[rel] = data
     missing = sorted(set(EXPECTED_SHA256) - {BACKEND_PREFIX + rel for rel in files})
     if missing:
-        print(f"Error: archive at ref {PROTOCOL_REF} is missing pinned files: "
-              + ", ".join(missing), file=sys.stderr)
+        print(
+            f"Error: archive at ref {PROTOCOL_REF} is missing pinned files: "
+            + ", ".join(missing),
+            file=sys.stderr,
+        )
         sys.exit(1)
     return files
 
@@ -130,11 +147,14 @@ def _write_cache(cache_dir, files):
 def _verify_cache(cache_dir):
     """Re-verify every cached backend file against the embedded pins."""
     for repo_path in sorted(EXPECTED_SHA256):
-        rel = repo_path[len(BACKEND_PREFIX):]
+        rel = repo_path[len(BACKEND_PREFIX) :]
         path = _safe_path(cache_dir, rel)
         if not os.path.exists(path):
             print(f"Error: cached file missing: {path}", file=sys.stderr)
-            print("[wrapper] Delete the cache directory to force a re-fetch.", file=sys.stderr)
+            print(
+                "[wrapper] Delete the cache directory to force a re-fetch.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         with open(path, "rb") as f:
             _verify(rel, f.read(), "cache")
@@ -160,16 +180,21 @@ def main():
     else:
         _verify_cache(cache_dir)
 
-    skills_scripts_dir = os.path.join(repo_root, ".rokct", "skills", ".rok", "opportunities_registry", "scripts")
+    skills_scripts_dir = os.path.join(
+        repo_root, ".rokct", "skills", ".rok", "opportunities_registry", "scripts"
+    )
     rel_path = os.path.relpath(os.path.abspath(__file__), skills_scripts_dir)
     target_script = os.path.join(cache_dir, rel_path)
 
     if not os.path.exists(target_script):
-        print(f"Error: Target script not found in cache: {target_script}", file=sys.stderr)
+        print(
+            f"Error: Target script not found in cache: {target_script}", file=sys.stderr
+        )
         sys.exit(1)
 
     res = subprocess.run([sys.executable, target_script] + sys.argv[1:])
     sys.exit(res.returncode)
+
 
 if __name__ == "__main__":
     main()

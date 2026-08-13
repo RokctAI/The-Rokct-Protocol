@@ -2,6 +2,7 @@
 # Copyright 2024 RokctAI
 
 import os
+
 _trace_id_propagation = {"X-Trace-Id": "compliance"}
 import requests
 import json
@@ -57,10 +58,12 @@ def load_monorepo_env(custom_path=None):
     # --- 1. REMOTE CI MODE (GitHub API) ---
     pat = os.environ.get("MONOREPO_PAT")
     if pat:
-        url = "https://api.github.com/repos/RokctAI/monorepo/contents/.env/production.env"
+        url = (
+            "https://api.github.com/repos/RokctAI/monorepo/contents/.env/production.env"
+        )
         headers = {
             "Authorization": f"token {pat}",
-            "Accept": "application/vnd.github.v3.raw"
+            "Accept": "application/vnd.github.v3.raw",
         }
         if os.environ.get("GITHUB_ACTIONS"):
             print(f"[CI Debug] MONOREPO_PAT detected. Dialing home to: {url}")
@@ -77,7 +80,9 @@ def load_monorepo_env(custom_path=None):
 
     # --- 2. LOCAL FALLBACK MODE ---
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(script_dir))))
+    workspace_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
+    )
 
     env_paths = []
     if custom_path:
@@ -99,7 +104,6 @@ def load_monorepo_env(custom_path=None):
     return False
 
 
-
 USAGE_LOG = os.path.join(".rokct", "agent", "log", "api_usage.jsonl")
 
 
@@ -108,7 +112,9 @@ def log_api_usage(record):
     Best-effort and silent on stdout — callers capture stdout as the
     response payload, so this must never print."""
     try:
-        record["ts"] = __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        record["ts"] = (
+            __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
         os.makedirs(os.path.dirname(USAGE_LOG), exist_ok=True)
         with open(USAGE_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + chr(10))
@@ -127,24 +133,28 @@ class AgentCLI:
         self.api_key = api_key
         self.headers = {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": self.api_key
+            "X-Goog-Api-Key": self.api_key,
         }
 
-    def create_session(self, prompt, source_repo,
-                       automation_mode="AUTO_CREATE_PR",
-                       title=None, branch="main", require_approval=False):
+    def create_session(
+        self,
+        prompt,
+        source_repo,
+        automation_mode="AUTO_CREATE_PR",
+        title=None,
+        branch="main",
+        require_approval=False,
+    ):
         """Create a new agent session on the given source repo and branch."""
         url = f"{BASE_URL}/sessions"
         payload = {
             "prompt": prompt,
             "sourceContext": {
                 "source": source_repo,
-                "githubRepoContext": {
-                    "startingBranch": branch
-                }
+                "githubRepoContext": {"startingBranch": branch},
             },
             "automationMode": automation_mode,
-            "requirePlanApproval": require_approval
+            "requirePlanApproval": require_approval,
         }
         if title:
             payload["title"] = title
@@ -152,12 +162,15 @@ class AgentCLI:
         response = requests.post(url, json=payload, headers=self.headers, timeout=30)
         response.raise_for_status()
         result = response.json()
-        log_api_usage({
-            "api": "jules", "kind": "create_session",
-            "title": (title or "")[:80],
-            "session": str(result.get("name") or result.get("id") or "")[-24:],
-            "prompt_chars": len(prompt or ""),
-        })
+        log_api_usage(
+            {
+                "api": "jules",
+                "kind": "create_session",
+                "title": (title or "")[:80],
+                "session": str(result.get("name") or result.get("id") or "")[-24:],
+                "prompt_chars": len(prompt or ""),
+            }
+        )
         return result
 
     def get_session(self, session_id):
@@ -205,7 +218,7 @@ class AgentCLI:
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
         }
 
         messages = []
@@ -213,22 +226,22 @@ class AgentCLI:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0.2
-        }
+        payload = {"model": model, "messages": messages, "temperature": 0.2}
 
         response = requests.post(GROQ_URL, json=payload, headers=headers, timeout=60)
         response.raise_for_status()
         data = response.json()
         usage = data.get("usage", {})
-        log_api_usage({
-            "api": "groq", "kind": "chat", "model": model,
-            "prompt_tokens": usage.get("prompt_tokens"),
-            "completion_tokens": usage.get("completion_tokens"),
-            "total_tokens": usage.get("total_tokens"),
-        })
+        log_api_usage(
+            {
+                "api": "groq",
+                "kind": "chat",
+                "model": model,
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+                "total_tokens": usage.get("total_tokens"),
+            }
+        )
         return data.get("choices", [{}])[0].get("message", {}).get("content")
 
 
@@ -238,25 +251,45 @@ def main():
     parser = argparse.ArgumentParser(
         description="Delegate tasks to an AI Agent (Remote Vault priority)."
     )
-    parser.add_argument("--api-key", help="Explicit API key (overrides AGENT_API_KEY / JULES_API_KEY)")
+    parser.add_argument(
+        "--api-key", help="Explicit API key (overrides AGENT_API_KEY / JULES_API_KEY)"
+    )
     parser.add_argument("--env-file", help="Local env file (final fallback)")
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
     # --- Create Session ---
     create_parser = subparsers.add_parser("create", help="Create a new Agent session")
-    create_parser.add_argument("--prompt", required=True, help="User prompt/task for the Agent")
-    create_parser.add_argument("--repo", required=True, help="Full source name (e.g., 'sources/github/RokctAI/factory')")
-    create_parser.add_argument("--branch", default="main", help="Starting branch (default: main)")
+    create_parser.add_argument(
+        "--prompt", required=True, help="User prompt/task for the Agent"
+    )
+    create_parser.add_argument(
+        "--repo",
+        required=True,
+        help="Full source name (e.g., 'sources/github/RokctAI/factory')",
+    )
+    create_parser.add_argument(
+        "--branch", default="main", help="Starting branch (default: main)"
+    )
     create_parser.add_argument("--title", help="Session title")
-    create_parser.add_argument("--require-approval", action="store_true", help="Require plan approval before execution (default: False)")
-    create_parser.add_argument("--automation-mode", default="AUTO_CREATE_PR", help="Automation mode (default: AUTO_CREATE_PR)")
+    create_parser.add_argument(
+        "--require-approval",
+        action="store_true",
+        help="Require plan approval before execution (default: False)",
+    )
+    create_parser.add_argument(
+        "--automation-mode",
+        default="AUTO_CREATE_PR",
+        help="Automation mode (default: AUTO_CREATE_PR)",
+    )
 
     # --- Get Session ---
     status_parser = subparsers.add_parser("status", help="Get session status")
     status_parser.add_argument("--id", required=True, help="Session ID")
 
     # --- Send Message ---
-    msg_parser = subparsers.add_parser("query", help="Send a message to an active session")
+    msg_parser = subparsers.add_parser(
+        "query", help="Send a message to an active session"
+    )
     msg_parser.add_argument("--id", required=True, help="Session ID")
     msg_parser.add_argument("--message", required=True, help="Message content")
 
@@ -275,7 +308,9 @@ def main():
     groq_parser = subparsers.add_parser("groq", help="Call Groq chat completion")
     groq_parser.add_argument("--prompt", required=True, help="User prompt")
     groq_parser.add_argument("--system", help="System prompt")
-    groq_parser.add_argument("--model", default="llama-3.3-70b-versatile", help="Groq model")
+    groq_parser.add_argument(
+        "--model", default="llama-3.3-70b-versatile", help="Groq model"
+    )
 
     args = parser.parse_args()
 
@@ -296,10 +331,16 @@ def main():
         load_monorepo_env(args.env_file)
 
     # Resolve key
-    api_key = args.api_key or os.environ.get("JULES_API_KEY") or os.environ.get("AGENT_API_KEY")
+    api_key = (
+        args.api_key
+        or os.environ.get("JULES_API_KEY")
+        or os.environ.get("AGENT_API_KEY")
+    )
 
     if args.command != "groq" and not api_key:
-        print("Error: Agent API Key is missing. Provide via --api-key, AGENT_API_KEY, or JULES_API_KEY env var.")
+        print(
+            "Error: Agent API Key is missing. Provide via --api-key, AGENT_API_KEY, or JULES_API_KEY env var."
+        )
         return 1
 
     cli = AgentCLI(api_key)
@@ -310,10 +351,12 @@ def main():
             if not repo.startswith("sources/"):
                 repo = f"sources/github/{repo}"
             result = cli.create_session(
-                args.prompt, repo,
-                title=args.title, branch=args.branch,
+                args.prompt,
+                repo,
+                title=args.title,
+                branch=args.branch,
                 require_approval=args.require_approval,
-                automation_mode=args.automation_mode
+                automation_mode=args.automation_mode,
             )
             print(json.dumps(result, indent=2))
         elif args.command == "status":
@@ -341,7 +384,7 @@ def main():
             parser.print_help()
     except Exception as e:
         print(f"Error: {e}")
-        if hasattr(e, 'response') and e.response is not None:
+        if hasattr(e, "response") and e.response is not None:
             try:
                 print(f"Details: {json.dumps(e.response.json(), indent=2)}")
             except:

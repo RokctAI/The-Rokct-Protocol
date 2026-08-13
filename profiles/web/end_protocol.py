@@ -10,7 +10,10 @@ ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # Manifest fetches are data-only, but pinning keeps them immutable too.
 PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
+
 
 def dir_hash(d):
     if not os.path.isdir(d):
@@ -25,13 +28,16 @@ def dir_hash(d):
                 h.update(fh.read())
     return h.hexdigest()[:16]
 
+
 def file_hash(path):
     if not os.path.exists(path):
         return None
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
 
+
 _PINNED_HASH_CACHE = {}
+
 
 def pinned_file_hash(rel):
     """Full SHA-256 of the protocol's pinned copy of rel: the local checkout
@@ -49,7 +55,9 @@ def pinned_file_hash(rel):
     else:
         url = f"{GITHUB_RAW_BASE}/{rel}"
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"})
+            req = urllib.request.Request(
+                url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-http"}
+            )
             with urllib.request.urlopen(req, timeout=10) as r:
                 digest = hashlib.sha256(r.read()).hexdigest()
         except Exception:
@@ -57,9 +65,11 @@ def pinned_file_hash(rel):
     _PINNED_HASH_CACHE[rel] = digest
     return digest
 
+
 def touch(path):
     with open(path, "w", encoding="utf-8") as f:
         f.write("")
+
 
 def main():
     if not os.path.isdir(ROKCT_DIR):
@@ -100,7 +110,16 @@ def main():
         if item == ".sync_ready":
             continue
         if os.path.isdir(item_path):
-            if item in ("workflows", "agent", "evidence", "images", "templates", "types", "config", "cache"):
+            if item in (
+                "workflows",
+                "agent",
+                "evidence",
+                "images",
+                "templates",
+                "types",
+                "config",
+                "cache",
+            ):
                 continue
             shutil.rmtree(item_path)
             print(f"[end] Deleted directory: {item}")
@@ -110,16 +129,21 @@ def main():
         if item == "profiles.md":
             profile_rel = "profiles/web/rules.md"
         item_digest = file_hash(item_path)
-        if item_digest is not None and item_digest in (pinned_file_hash(core_key), pinned_file_hash(profile_rel)):
+        if item_digest is not None and item_digest in (
+            pinned_file_hash(core_key),
+            pinned_file_hash(profile_rel),
+        ):
             os.remove(item_path)
             print(f"[end] Deleted pristine {item}")
         else:
             print(f"[end] Kept modified {item}")
 
     touch(os.path.join(ROKCT_DIR, ".sync_ready"))
-    print("[end] Created .sync_ready marker — CI will pick this up when active session ends")
+    print(
+        "[end] Created .sync_ready marker — CI will pick this up when active session ends"
+    )
     print("[end] End protocol cleanup complete.")
+
 
 if __name__ == "__main__":
     main()
-

@@ -105,22 +105,26 @@ TEMPLATE_FILES = (
 # Every repository path that is fetched at runtime and executed (or installed
 # as executable content, e.g. a GitHub workflow). Keys of protocol.lock.json.
 LOCK_TARGETS = (
-    f"{_DELEGATES}/privacy.py",
-    f"{_DELEGATES}/job_manager.py",
-    f"{_DELEGATES}/reporter.py",
-    f"{_DELEGATES}/delegate_to_agent.py",
-    f"{_DELEGATES}/handle_groq_output.py",
-    f"{_DELEGATES}/update_structure.py",
-    f"{_DELEGATES}/manage_sessions.py",
-    "core/utils/frappe/compose_backend.py",
-    "core/utils/flutter/sdk_composer.py",
-    "core/utils/flutter/sdk_installer_base.py",
-) + tuple(f"{_ENGINE}/{m}" for m in ENGINE_MODULES) + (
-    "profiles/local/initiate.py",
-    "profiles/web/initiate.py",
-    "workflows/maintenance.yml",
-) + tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES) + tuple(
-    f"core/templates/{t}" for t in TEMPLATE_FILES
+    (
+        f"{_DELEGATES}/privacy.py",
+        f"{_DELEGATES}/job_manager.py",
+        f"{_DELEGATES}/reporter.py",
+        f"{_DELEGATES}/delegate_to_agent.py",
+        f"{_DELEGATES}/handle_groq_output.py",
+        f"{_DELEGATES}/update_structure.py",
+        f"{_DELEGATES}/manage_sessions.py",
+        "core/utils/frappe/compose_backend.py",
+        "core/utils/flutter/sdk_composer.py",
+        "core/utils/flutter/sdk_installer_base.py",
+    )
+    + tuple(f"{_ENGINE}/{m}" for m in ENGINE_MODULES)
+    + (
+        "profiles/local/initiate.py",
+        "profiles/web/initiate.py",
+        "workflows/maintenance.yml",
+    )
+    + tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
+    + tuple(f"core/templates/{t}" for t in TEMPLATE_FILES)
 )
 
 # The 12 scaffold wrappers that share a byte-identical resolve_delegate().
@@ -149,42 +153,74 @@ _INITIATE_WEB_EXPECTED = ("profiles/web/initiate.py", "workflows/maintenance.yml
 CONSUMERS = {}
 for _name, _target in _WRAPPER_TARGETS.items():
     CONSUMERS[f"{_SCRIPTS}/{_name}"] = [("ref",), ("sha", "DELEGATE_SHA256", _target)]
-CONSUMERS.update({
-    f"{_SCRIPTS}/crypto_utils.py": [
-        ("ref",), ("sha", "DELEGATE_SHA256", f"{_DELEGATES}/privacy.py")],
-    f"{_SCRIPTS}/update_classifications.py": [
-        ("ref",), ("sha", "DELEGATE_SHA256", f"{_DELEGATES}/job_manager.py")],
-    "core/skills/.rok/frappe/scripts/compose.py": [
-        ("ref",), ("sha", "COMPOSER_SHA256", "core/utils/frappe/compose_backend.py")],
-    "core/skills/.rok/flutter/scripts/compose.py": [
-        ("ref",), ("dict", "EXPECTED_SHA256",
-                   ("core/utils/flutter/sdk_composer.py",
-                    "core/utils/flutter/sdk_installer_base.py"))],
-    "core/skills/.rok/startup_os/scripts/_bootstrap.py": [
-        ("ref",), ("dict", "EXPECTED_SHA256",
-                   tuple(f"{_ENGINE}/{m}" for m in ENGINE_MODULES))],
-    "profiles/local/initiate.py": [
-        ("ref",), ("dict", "EXPECTED_SHA256", _INITIATE_LOCAL_EXPECTED)],
-    "profiles/web/initiate.py": [
-        ("ref",), ("dict", "EXPECTED_SHA256", _INITIATE_WEB_EXPECTED)],
-    ".rokct/initiate.py": [
-        ("ref",), ("dict", "EXPECTED_SHA256", _INITIATE_LOCAL_EXPECTED)],
-    "profiles/local/end_protocol.py": [("ref",)],
-    "profiles/web/end_protocol.py": [("ref",)],
-    ".rokct/end_protocol.py": [("ref",)],
-    "workflows/sync_workspace.py": [
-        ("ref",), ("sha", "MAINTENANCE_SHA256", "workflows/maintenance.yml")],
-    ".rokct/sync_workspace.py": [
-        ("ref",), ("sha", "MAINTENANCE_SHA256", "workflows/maintenance.yml")],
-    "install.sh": [
-        ("ref",),
-        ("sha", "INITIATE_SHA256_LOCAL", "profiles/local/initiate.py"),
-        ("sha", "INITIATE_SHA256_WEB", "profiles/web/initiate.py")],
-    "install.ps1": [
-        ("ref",),
-        ("sha", "$InitiateSha256Local", "profiles/local/initiate.py"),
-        ("sha", "$InitiateSha256Web", "profiles/web/initiate.py")],
-})
+CONSUMERS.update(
+    {
+        f"{_SCRIPTS}/crypto_utils.py": [
+            ("ref",),
+            ("sha", "DELEGATE_SHA256", f"{_DELEGATES}/privacy.py"),
+        ],
+        f"{_SCRIPTS}/update_classifications.py": [
+            ("ref",),
+            ("sha", "DELEGATE_SHA256", f"{_DELEGATES}/job_manager.py"),
+        ],
+        "core/skills/.rok/frappe/scripts/compose.py": [
+            ("ref",),
+            ("sha", "COMPOSER_SHA256", "core/utils/frappe/compose_backend.py"),
+        ],
+        "core/skills/.rok/flutter/scripts/compose.py": [
+            ("ref",),
+            (
+                "dict",
+                "EXPECTED_SHA256",
+                (
+                    "core/utils/flutter/sdk_composer.py",
+                    "core/utils/flutter/sdk_installer_base.py",
+                ),
+            ),
+        ],
+        "core/skills/.rok/startup_os/scripts/_bootstrap.py": [
+            ("ref",),
+            (
+                "dict",
+                "EXPECTED_SHA256",
+                tuple(f"{_ENGINE}/{m}" for m in ENGINE_MODULES),
+            ),
+        ],
+        "profiles/local/initiate.py": [
+            ("ref",),
+            ("dict", "EXPECTED_SHA256", _INITIATE_LOCAL_EXPECTED),
+        ],
+        "profiles/web/initiate.py": [
+            ("ref",),
+            ("dict", "EXPECTED_SHA256", _INITIATE_WEB_EXPECTED),
+        ],
+        ".rokct/initiate.py": [
+            ("ref",),
+            ("dict", "EXPECTED_SHA256", _INITIATE_LOCAL_EXPECTED),
+        ],
+        "profiles/local/end_protocol.py": [("ref",)],
+        "profiles/web/end_protocol.py": [("ref",)],
+        ".rokct/end_protocol.py": [("ref",)],
+        "workflows/sync_workspace.py": [
+            ("ref",),
+            ("sha", "MAINTENANCE_SHA256", "workflows/maintenance.yml"),
+        ],
+        ".rokct/sync_workspace.py": [
+            ("ref",),
+            ("sha", "MAINTENANCE_SHA256", "workflows/maintenance.yml"),
+        ],
+        "install.sh": [
+            ("ref",),
+            ("sha", "INITIATE_SHA256_LOCAL", "profiles/local/initiate.py"),
+            ("sha", "INITIATE_SHA256_WEB", "profiles/web/initiate.py"),
+        ],
+        "install.ps1": [
+            ("ref",),
+            ("sha", "$InitiateSha256Local", "profiles/local/initiate.py"),
+            ("sha", "$InitiateSha256Web", "profiles/web/initiate.py"),
+        ],
+    }
+)
 
 # The 22 opportunities_registry wrappers: byte-identical copies of one file,
 # each mirroring a backend script's path and carrying the full EXPECTED_SHA256
@@ -194,7 +230,9 @@ for _p in OPPORTUNITIES_FILES:
     if _p == "tenders/scrapers/test_musina_dates.py":
         continue  # extracted and pinned with the rest, but has no wrapper
     CONSUMERS[f"{_OPP_SCRIPTS}/{_p}"] = [
-        ("ref",), ("dict", "EXPECTED_SHA256", _OPP_TARGETS)]
+        ("ref",),
+        ("dict", "EXPECTED_SHA256", _OPP_TARGETS),
+    ]
 
 
 def ref_pattern(path):
@@ -213,24 +251,28 @@ def sha_pattern(var):
 
 def dict_pattern(var):
     """Regex matching a `VAR = { ... }` block whose closing brace starts a line."""
-    return re.compile(r'^%s = \{\n(.*?)^\}' % re.escape(var), re.M | re.S)
+    return re.compile(r"^%s = \{\n(.*?)^\}" % re.escape(var), re.M | re.S)
 
 
 def format_dict(var, targets, hashes):
-    lines = [f'{var} = {{']
+    lines = [f"{var} = {{"]
     for target in targets:
         lines.append(f'    "{target}": "{hashes[target]}",')
-    lines.append('}')
+    lines.append("}")
     return "\n".join(lines)
 
 
 def resolve_ref(ref):
     out = subprocess.run(
         ["git", "-C", REPO_ROOT, "rev-parse", ref],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
     if not re.fullmatch(r"[0-9a-f]{40}", out):
-        raise SystemExit(f"[gen] '{ref}' did not resolve to a full commit SHA (got {out!r})")
+        raise SystemExit(
+            f"[gen] '{ref}' did not resolve to a full commit SHA (got {out!r})"
+        )
     return out
 
 
@@ -238,7 +280,8 @@ def hash_at_ref(ref, path):
     """SHA-256 of the git blob at <ref>:<path> — never the working tree."""
     result = subprocess.run(
         ["git", "-C", REPO_ROOT, "show", f"{ref}:{path}"],
-        capture_output=True, check=False,
+        capture_output=True,
+        check=False,
     )
     if result.returncode != 0:
         raise SystemExit(
@@ -284,18 +327,30 @@ def rewrite_consumers(ref, hashes):
         for op in ops:
             if op[0] == "ref":
                 text = _sub_exactly_one(
-                    ref_pattern(rel_path), r'\g<1>"%s"' % ref, text,
-                    rel_path, "PROTOCOL_REF constant")
+                    ref_pattern(rel_path),
+                    r'\g<1>"%s"' % ref,
+                    text,
+                    rel_path,
+                    "PROTOCOL_REF constant",
+                )
             elif op[0] == "sha":
                 _, var, target = op
                 text = _sub_exactly_one(
-                    sha_pattern(var), r'\g<1>"%s"' % hashes[target], text,
-                    rel_path, f"{var} constant")
+                    sha_pattern(var),
+                    r'\g<1>"%s"' % hashes[target],
+                    text,
+                    rel_path,
+                    f"{var} constant",
+                )
             elif op[0] == "dict":
                 _, var, targets = op
                 text = _sub_exactly_one(
-                    dict_pattern(var), format_dict(var, targets, hashes), text,
-                    rel_path, f"{var} block")
+                    dict_pattern(var),
+                    format_dict(var, targets, hashes),
+                    text,
+                    rel_path,
+                    f"{var} block",
+                )
         if text != original:
             with open(abs_path, "w", encoding="utf-8") as handle:
                 handle.write(text)
@@ -306,8 +361,10 @@ def rewrite_consumers(ref, hashes):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--ref", default="origin/main",
-        help="Commit (or ref resolving to one) to pin; default origin/main.")
+        "--ref",
+        default="origin/main",
+        help="Commit (or ref resolving to one) to pin; default origin/main.",
+    )
     args = parser.parse_args(argv)
 
     ref = resolve_ref(args.ref)
@@ -316,13 +373,17 @@ def main(argv=None):
     changed = rewrite_consumers(ref, hashes)
 
     print(f"[gen] Pinned ref {ref}")
-    print(f"[gen] Wrote {os.path.relpath(lock_path, REPO_ROOT)} ({len(hashes)} targets)")
+    print(
+        f"[gen] Wrote {os.path.relpath(lock_path, REPO_ROOT)} ({len(hashes)} targets)"
+    )
     if changed:
         print(f"[gen] Updated embedded constants in {len(changed)} file(s):")
         for rel_path in changed:
             print(f"[gen]   {rel_path}")
     else:
-        print(f"[gen] Embedded constants already up to date in {len(CONSUMERS)} consumer file(s)")
+        print(
+            f"[gen] Embedded constants already up to date in {len(CONSUMERS)} consumer file(s)"
+        )
     return 0
 
 

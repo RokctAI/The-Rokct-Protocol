@@ -37,7 +37,10 @@ class FileLock:
             self._break_if_stale()
             try:
                 self._fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.write(self._fd, f"{os.getpid()} {datetime.now(timezone.utc).isoformat()}".encode())
+                os.write(
+                    self._fd,
+                    f"{os.getpid()} {datetime.now(timezone.utc).isoformat()}".encode(),
+                )
                 return self
             except FileExistsError:
                 if time.monotonic() >= deadline:

@@ -5,13 +5,16 @@ The-Rokct-Protocol scaffold: update_structure.py
 Fetches update_structure.py from GitHub pinned to PROTOCOL_REF, verifies its
 SHA-256, then executes it.
 """
+
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
-DELEGATE_PATH   = "core/utils/agent_delegation/update_structure.py"
+PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+DELEGATE_PATH = "core/utils/agent_delegation/update_structure.py"
 DELEGATE_SHA256 = "4a7520753a5faffaf8a2ea0341239ea327f3defe257e440eaf38661147dfe8c6"
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
 
 
 def resolve_delegate():
@@ -26,7 +29,10 @@ def resolve_delegate():
     def verified(data, origin):
         digest = hashlib.sha256(data).hexdigest()
         if digest != DELEGATE_SHA256:
-            print(f"[scaffold] Integrity check failed for {DELEGATE_PATH} ({origin}, ref {PROTOCOL_REF}):", file=sys.stderr)
+            print(
+                f"[scaffold] Integrity check failed for {DELEGATE_PATH} ({origin}, ref {PROTOCOL_REF}):",
+                file=sys.stderr,
+            )
             print(f"[scaffold]   expected sha256 {DELEGATE_SHA256}", file=sys.stderr)
             print(f"[scaffold]   actual   sha256 {digest}", file=sys.stderr)
             print("[scaffold] Refusing to execute unverified code.", file=sys.stderr)
@@ -34,10 +40,15 @@ def resolve_delegate():
         return data.decode("utf-8")
 
     url = f"{GITHUB_RAW_BASE}/{DELEGATE_PATH}"
-    cache = os.path.join(".rokct", "tmp", "delegate_cache", os.path.basename(DELEGATE_PATH))
+    cache = os.path.join(
+        ".rokct", "tmp", "delegate_cache", os.path.basename(DELEGATE_PATH)
+    )
     for attempt in range(3):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"})
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "agent-bootstrap"},
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 if resp.status == 200:
                     data = resp.read()
@@ -52,12 +63,15 @@ def resolve_delegate():
         except Exception:
             pass
         if attempt < 2:
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
     if os.path.exists(cache):
         with open(cache, "rb") as f:
             data = f.read()
         code = verified(data, "cache")
-        print(f"[scaffold] GitHub fetch failed after 3 attempts; using verified cached {os.path.basename(cache)}", file=sys.stderr)
+        print(
+            f"[scaffold] GitHub fetch failed after 3 attempts; using verified cached {os.path.basename(cache)}",
+            file=sys.stderr,
+        )
         return code, "cache"
     return None, None
 

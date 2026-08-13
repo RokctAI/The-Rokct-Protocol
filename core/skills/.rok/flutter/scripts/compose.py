@@ -4,13 +4,16 @@ The-Rokct-Protocol: compose.py wrapper for Flutter
 Fetches sdk_composer.py and sdk_installer_base.py from GitHub pinned to
 PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 """
+
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
-COMPOSER_PATH   = "core/utils/flutter/sdk_composer.py"
+PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+COMPOSER_PATH = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
-GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+GITHUB_RAW_BASE = (
+    f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
+)
 EXPECTED_SHA256 = {
     "core/utils/flutter/sdk_composer.py": "5765c7b86db67131ec1b649e77b57a4a451019de24065938da40fc3d8516ea0f",
     "core/utils/flutter/sdk_installer_base.py": "bbb1165cfede07691b271f0c7ef5943c394617e73c29874c5118e91eb5320ff4",
@@ -20,7 +23,10 @@ EXPECTED_SHA256 = {
 def fetch_script(path):
     url = f"{GITHUB_RAW_BASE}/{path}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"})
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"},
+        )
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status != 200:
                 return None
@@ -29,7 +35,10 @@ def fetch_script(path):
         return None
     digest = hashlib.sha256(data).hexdigest()
     if digest != EXPECTED_SHA256[path]:
-        print(f"[compose] Integrity check failed for {path} (ref {PROTOCOL_REF}):", file=sys.stderr)
+        print(
+            f"[compose] Integrity check failed for {path} (ref {PROTOCOL_REF}):",
+            file=sys.stderr,
+        )
         print(f"[compose]   expected sha256 {EXPECTED_SHA256[path]}", file=sys.stderr)
         print(f"[compose]   actual   sha256 {digest}", file=sys.stderr)
         print("[compose] Refusing to execute unverified code.", file=sys.stderr)
@@ -64,7 +73,9 @@ def main():
         f.write(installer_base_code)
 
     try:
-        result = subprocess.run([sys.executable, tmp_composer] + sys.argv[1:], check=False)
+        result = subprocess.run(
+            [sys.executable, tmp_composer] + sys.argv[1:], check=False
+        )
         sys.exit(result.returncode)
     finally:
         if os.path.exists(tmp_composer):

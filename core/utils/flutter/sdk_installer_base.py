@@ -13,24 +13,61 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "install_state.json")
 LEGACY_STATE_FILE = os.path.join(PROJECT_ROOT, ".rokct", "install_state.json")
 
+
 def migrate_legacy_state():
     if os.path.exists(LEGACY_STATE_FILE) and not os.path.exists(STATE_FILE):
         try:
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
             shutil.move(LEGACY_STATE_FILE, STATE_FILE)
-            print("[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json")
+            print(
+                "[*] Migrated .rokct/install_state.json -> .rokct/cache/install_state.json"
+            )
         except Exception as e:
             print(f"[!] Could not migrate legacy install_state.json: {e}")
-ROUTER_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "app_router.dart")
+
+
+ROUTER_FILE = os.path.join(
+    PROJECT_ROOT, "lib", "presentation", "routes", "app_router.dart"
+)
 MAIN_FILE = os.path.join(PROJECT_ROOT, "lib", "main.dart")
-DB_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "app_database.dart")
-TRKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "tr_keys.dart")
-ASSETKEYS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "app_assets.dart")
-CONSTANTS_FILE = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "constants", "app_constants.dart")
-INJECTED_DB_DIR = os.path.join(PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected")
-ONBOARDING_ROUTES_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "onboarding_route_pages.dart")
-REGISTRATION_STEPS_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "registration_step_pages.dart")
-SESSION_POLICY_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes", "auth_session_policy.dart")
+DB_FILE = os.path.join(
+    PROJECT_ROOT,
+    ".rokct",
+    "cache",
+    "base",
+    "lib",
+    "src",
+    "database",
+    "app_database.dart",
+)
+TRKEYS_FILE = os.path.join(
+    PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "tr_keys.dart"
+)
+ASSETKEYS_FILE = os.path.join(
+    PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "services", "app_assets.dart"
+)
+CONSTANTS_FILE = os.path.join(
+    PROJECT_ROOT,
+    ".rokct",
+    "cache",
+    "base",
+    "lib",
+    "src",
+    "constants",
+    "app_constants.dart",
+)
+INJECTED_DB_DIR = os.path.join(
+    PROJECT_ROOT, ".rokct", "cache", "base", "lib", "src", "database", "injected"
+)
+ONBOARDING_ROUTES_FILE = os.path.join(
+    PROJECT_ROOT, "lib", "presentation", "routes", "onboarding_route_pages.dart"
+)
+REGISTRATION_STEPS_FILE = os.path.join(
+    PROJECT_ROOT, "lib", "presentation", "routes", "registration_step_pages.dart"
+)
+SESSION_POLICY_FILE = os.path.join(
+    PROJECT_ROOT, "lib", "presentation", "routes", "auth_session_policy.dart"
+)
 
 # File extensions treated as text during template installs: the installer
 # reads these, substitutes the literal `${package}` token with the host's
@@ -43,9 +80,18 @@ SESSION_POLICY_FILE = os.path.join(PROJECT_ROOT, "lib", "presentation", "routes"
 # untouched, and an org-wide scan of every SDK's templates found no
 # .rc/.cpp/.h file containing any other `${...}` sequence.
 TEXT_SUBSTITUTION_EXTENSIONS = (
-    ".dart", ".yaml", ".json", ".txt", ".md", ".gradle", ".properties",
-    ".rc", ".cpp", ".h",
+    ".dart",
+    ".yaml",
+    ".json",
+    ".txt",
+    ".md",
+    ".gradle",
+    ".properties",
+    ".rc",
+    ".cpp",
+    ".h",
 )
+
 
 def file_hash(path):
     if not os.path.exists(path):
@@ -55,6 +101,7 @@ def file_hash(path):
         while chunk := f.read(8192):
             hasher.update(chunk)
     return hasher.hexdigest()
+
 
 def resolve_app_type():
     """Reads this host app's own flavor marker (e.g. 'customer', 'driver',
@@ -75,6 +122,7 @@ def resolve_app_type():
             return value or None
     return None
 
+
 def resolve_home_sdk():
     sdk_root = os.path.join(PROJECT_ROOT, "sdk")
     if os.path.isdir(sdk_root):
@@ -89,6 +137,7 @@ def resolve_home_sdk():
                 except Exception:
                     pass
     return "core_sdk"
+
 
 # Set when this run scaffolded the app itself via `flutter create`. Those files
 # are OURS, not the host's, even though the installer has no recorded hash for
@@ -110,8 +159,10 @@ def initialize_flutter_project():
     # metacharacters (the command is run with shell=True below so `flutter` on
     # Windows resolves the flutter.bat shim).
     if not re.match(r"^[a-z][a-z0-9_]*$", package_name):
-        print(f"[-] Critical Error: invalid package name '{package_name}'. "
-              f"Expected a lowercase snake_case Dart package name; refusing to run 'flutter create'.")
+        print(
+            f"[-] Critical Error: invalid package name '{package_name}'. "
+            f"Expected a lowercase snake_case Dart package name; refusing to run 'flutter create'."
+        )
         return
     try:
         # Run flutter create in the current directory. Pass the command as a
@@ -121,26 +172,31 @@ def initialize_flutter_project():
         # scaffolding nothing while reporting success. A string command runs
         # correctly on POSIX and Windows alike.
         # --project-name ensures the internal package name is correct
-        subprocess.run(f"flutter create --project-name {package_name} .", check=True, shell=True)
+        subprocess.run(
+            f"flutter create --project-name {package_name} .", check=True, shell=True
+        )
         global FRESH_SCAFFOLD
         FRESH_SCAFFOLD = True
     except subprocess.CalledProcessError as e:
         print(f"[-] Critical Error: 'flutter create' failed: {e}")
     except FileNotFoundError:
-        print("[-] Critical Error: 'flutter' command not found. Please ensure Flutter is installed and in your PATH.")
+        print(
+            "[-] Critical Error: 'flutter' command not found. Please ensure Flutter is installed and in your PATH."
+        )
+
 
 def bootstrap_home_sdk_if_missing(state):
     # We bootstrap if the project was just created (default files) or is completely empty
     # We check for a specific marker or just always run it if we are in bootstrap mode.
     # To avoid infinite loops, we'll check if we've already bootstrapped this version.
-    
+
     home_sdk_name = resolve_home_sdk()
     home_sdk_path = os.path.join(PROJECT_ROOT, "sdk", home_sdk_name)
     manifest_path = os.path.join(home_sdk_path, "manifest.json")
-    
+
     if not os.path.exists(manifest_path):
         return
-    
+
     # We use a flag or check if the default flutter create main.dart is still there
     # For simplicity, we'll run bootstrap if we are missing our specialized files.
     # A better way is to check if we've recorded a successful bootstrap in state.
@@ -170,10 +226,11 @@ def bootstrap_home_sdk_if_missing(state):
                         fd.write(content)
                 else:
                     shutil.copy2(src_path, dest_path)
-    
+
     # Mark as bootstrapped
     state["bootstrapped_home_sdk"] = home_sdk_name
     save_state(state)
+
 
 def load_state():
     # 1. Initialize basic flutter structure if missing
@@ -188,15 +245,17 @@ def load_state():
                 state = json.load(f)
         except Exception:
             pass
-    
+
     bootstrap_home_sdk_if_missing(state)
-    
+
     return state
+
 
 def save_state(state):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
+
 
 def get_host_routes():
     """Host-composition routes (ADR-005): pages that live in the host's own
@@ -225,6 +284,7 @@ def get_host_routes():
     except Exception:
         return []
 
+
 def get_project_package_name():
     # 1. Try to get package name from the root composer.json
     composer_json_path = os.path.join(PROJECT_ROOT, "composer.json")
@@ -249,9 +309,12 @@ def get_project_package_name():
             pass
     return "rokctapp"
 
+
 def resolve_sdk_path(sdk_name):
     # 1. Try resolving via .dart_tool/package_config.json (for pub-fetched SDKs)
-    package_config_path = os.path.join(PROJECT_ROOT, ".dart_tool", "package_config.json")
+    package_config_path = os.path.join(
+        PROJECT_ROOT, ".dart_tool", "package_config.json"
+    )
     if os.path.exists(package_config_path):
         try:
             with open(package_config_path, "r", encoding="utf-8-sig") as f:
@@ -259,14 +322,16 @@ def resolve_sdk_path(sdk_name):
             # In package_config.json v2, "packages" is a list of packages
             packages = config.get("packages", [])
             for pkg in packages:
-                    if pkg.get("name") == sdk_name:
-                        root_uri = pkg.get("rootUri")
-                        if root_uri:
-                            if root_uri.startswith("file:///"):
-                                return root_uri.replace("file:///", "").replace("/", os.sep)
-                            elif root_uri.startswith(".."):
-                                return os.path.abspath(os.path.join(PROJECT_ROOT, ".dart_tool", root_uri))
-                            return root_uri
+                if pkg.get("name") == sdk_name:
+                    root_uri = pkg.get("rootUri")
+                    if root_uri:
+                        if root_uri.startswith("file:///"):
+                            return root_uri.replace("file:///", "").replace("/", os.sep)
+                        elif root_uri.startswith(".."):
+                            return os.path.abspath(
+                                os.path.join(PROJECT_ROOT, ".dart_tool", root_uri)
+                            )
+                        return root_uri
         except Exception as e:
             print(f"  [!] Error reading package_config.json: {e}")
 
@@ -290,6 +355,7 @@ def resolve_sdk_path(sdk_name):
 
     return None
 
+
 def install_sdk_files_and_routes(sdk_name):
     sdk_path = resolve_sdk_path(sdk_name)
     if not sdk_path:
@@ -297,11 +363,11 @@ def install_sdk_files_and_routes(sdk_name):
         return False
 
     manifest_path = os.path.join(sdk_path, "manifest.json")
-    
+
     if not os.path.exists(manifest_path):
         print(f"[-] No manifest found for {sdk_name}")
         return False
-        
+
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         manifest = json.load(f)
 
@@ -314,20 +380,32 @@ def install_sdk_files_and_routes(sdk_name):
     # tenant/control split on the Frappe composer side, applied here via
     # manifest content instead of separate on-disk folders.
     current_app_type = resolve_app_type()
-    flavor_block = (manifest.get("app_type") or {}).get(current_app_type, {}) if current_app_type else {}
+    flavor_block = (
+        (manifest.get("app_type") or {}).get(current_app_type, {})
+        if current_app_type
+        else {}
+    )
 
     version = manifest.get("version", "1.0.0")
     installs = manifest.get("installs", []) + flavor_block.get("installs", [])
     routes = manifest.get("routes", []) + flavor_block.get("routes", [])
     app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
-    onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get("onboarding_slides", [])
-    registration_steps = manifest.get("registration_steps", []) + flavor_block.get("registration_steps", [])
-    embedded_widgets = manifest.get("embedded_widgets", []) + flavor_block.get("embedded_widgets", [])
+    onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get(
+        "onboarding_slides", []
+    )
+    registration_steps = manifest.get("registration_steps", []) + flavor_block.get(
+        "registration_steps", []
+    )
+    embedded_widgets = manifest.get("embedded_widgets", []) + flavor_block.get(
+        "embedded_widgets", []
+    )
     di_hooks = manifest.get("di_hooks", []) + flavor_block.get("di_hooks", [])
     boot_hooks = manifest.get("boot_hooks", []) + flavor_block.get("boot_hooks", [])
 
     state = load_state()
-    package_state = state["packages"].get(sdk_name, {"version": "0.0.0", "files": {}, "routes": []})
+    package_state = state["packages"].get(
+        sdk_name, {"version": "0.0.0", "files": {}, "routes": []}
+    )
     package_state["version"] = version
     package_state["routes"] = routes
     package_state["app_routes"] = app_routes
@@ -356,28 +434,30 @@ def install_sdk_files_and_routes(sdk_name):
     # e.g. merchants_sdk scopes the seller gate to manager builds - and
     # update_session_policy() hard-errors if two do, exactly like
     # brand_hook. The flavor block wins over the manifest top level.
-    session_policy = flavor_block.get("session_policy") or manifest.get("session_policy")
+    session_policy = flavor_block.get("session_policy") or manifest.get(
+        "session_policy"
+    )
     if session_policy:
         package_state["session_policy"] = session_policy
     else:
         package_state.pop("session_policy", None)
-    
+
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
-    
+
     # 1. Sync Files
     for entry in installs:
         from_rel = entry.get("from")
         to_rel = entry.get("to")
         if not from_rel or not to_rel:
             continue
-            
+
         src_path = os.path.join(sdk_path, from_rel)
         dest_path = os.path.join(PROJECT_ROOT, to_rel)
-        
+
         if not os.path.exists(src_path):
             print(f"  [-] Template source not found: {from_rel}")
             continue
-            
+
         files_to_sync = []
         if os.path.isdir(src_path):
             for root, _, filenames in os.walk(src_path):
@@ -385,15 +465,17 @@ def install_sdk_files_and_routes(sdk_name):
                     abs_src = os.path.join(root, filename)
                     rel_to_src = os.path.relpath(abs_src, src_path)
                     abs_dest = os.path.join(dest_path, rel_to_src)
-                    rel_dest = os.path.relpath(abs_dest, PROJECT_ROOT).replace("\\", "/")
+                    rel_dest = os.path.relpath(abs_dest, PROJECT_ROOT).replace(
+                        "\\", "/"
+                    )
                     files_to_sync.append((abs_src, abs_dest, rel_dest))
         else:
             rel_dest = to_rel.replace("\\", "/")
             files_to_sync.append((src_path, dest_path, rel_dest))
-            
+
         for file_src, file_dest, rel_dest in files_to_sync:
             upstream_hash = file_hash(file_src)
-            
+
             # Check if file already exists in host and check for modifications
             if os.path.exists(file_dest):
                 current_dest_hash = file_hash(file_dest)
@@ -423,18 +505,22 @@ def install_sdk_files_and_routes(sdk_name):
                     # a compose that reports success while wiring up nothing.
                     # A host file still has no hash AND no fresh scaffold, so
                     # the paas_driver protection is untouched.
-                    print(f"  [!] WARNING: {rel_dest} already exists and was not installed by this SDK. Skipping to avoid overwriting the app's own file - merge manually if you want the template's version.")
+                    print(
+                        f"  [!] WARNING: {rel_dest} already exists and was not installed by this SDK. Skipping to avoid overwriting the app's own file - merge manually if you want the template's version."
+                    )
                     continue
                 if current_dest_hash != last_known_hash:
                     # User modified the template file, skip and warn
-                    print(f"  [!] WARNING: {rel_dest} has been modified by a developer. Skipping overwrite to prevent data loss. Please merge changes manually.")
+                    print(
+                        f"  [!] WARNING: {rel_dest} has been modified by a developer. Skipping overwrite to prevent data loss. Please merge changes manually."
+                    )
                     continue
 
             os.makedirs(os.path.dirname(file_dest), exist_ok=True)
-            
+
             # Copy binary files directly, text files with banner prepended
             is_text = file_dest.endswith(TEXT_SUBSTITUTION_EXTENSIONS)
-            
+
             if is_text:
                 with open(file_src, "r", encoding="utf-8", errors="ignore") as fs:
                     content = fs.read()
@@ -455,7 +541,13 @@ def install_sdk_files_and_routes(sdk_name):
                     insert_idx = 0
                     for idx, line in enumerate(lines):
                         trimmed = line.strip()
-                        if trimmed.startswith("import ") or trimmed.startswith("export ") or trimmed.startswith("part ") or trimmed.startswith("part '") or trimmed.startswith("part \""):
+                        if (
+                            trimmed.startswith("import ")
+                            or trimmed.startswith("export ")
+                            or trimmed.startswith("part ")
+                            or trimmed.startswith("part '")
+                            or trimmed.startswith('part "')
+                        ):
                             insert_idx = idx
                             break
                     lines.insert(insert_idx, banner)
@@ -469,7 +561,7 @@ def install_sdk_files_and_routes(sdk_name):
             # Store the resulting file's hash in state
             package_state["files"][rel_dest] = file_hash(file_dest)
             print(f"  [+] COPY: {rel_dest}")
-            
+
     # Extract and store database definitions if present (tables from both
     # common and the matching flavor block; flavor's migration step wins if
     # both declare one, since a manifest normally only needs one)
@@ -478,7 +570,9 @@ def install_sdk_files_and_routes(sdk_name):
     if db_config or flavor_db:
         merged_db = dict(db_config or {})
         if flavor_db:
-            merged_db["tables"] = (db_config or {}).get("tables", []) + flavor_db.get("tables", [])
+            merged_db["tables"] = (db_config or {}).get("tables", []) + flavor_db.get(
+                "tables", []
+            )
             if flavor_db.get("migration"):
                 merged_db["migration"] = flavor_db["migration"]
         package_state["database"] = merged_db
@@ -519,13 +613,19 @@ def install_sdk_files_and_routes(sdk_name):
     if constants_config or flavor_constants:
         merged_constants = dict(constants_config or {})
         if flavor_constants:
-            merged_constants["import"] = flavor_constants.get("import", merged_constants.get("import"))
-            merged_constants["overrides"] = dict((constants_config or {}).get("overrides", {}))
+            merged_constants["import"] = flavor_constants.get(
+                "import", merged_constants.get("import")
+            )
+            merged_constants["overrides"] = dict(
+                (constants_config or {}).get("overrides", {})
+            )
             merged_constants["overrides"].update(flavor_constants.get("overrides", {}))
         package_state["constants"] = merged_constants
 
     # Extract and store layout integrations if present
-    integrations_config = manifest.get("integrations", []) + flavor_block.get("integrations", [])
+    integrations_config = manifest.get("integrations", []) + flavor_block.get(
+        "integrations", []
+    )
     if integrations_config:
         package_state["integrations"] = integrations_config
 
@@ -552,16 +652,17 @@ def install_sdk_files_and_routes(sdk_name):
     update_wiring_imports()
     return True
 
+
 def update_router_table():
     if not os.path.exists(ROUTER_FILE):
         print(f"[-] router file not found: {ROUTER_FILE}")
         return
-        
+
     state = load_state()
-    
+
     all_imports = set()
     all_routes = []
-    
+
     for pkg_name, pkg_data in state.get("packages", {}).items():
         pkg_routes = pkg_data.get("routes", [])
         for r in pkg_routes:
@@ -569,11 +670,11 @@ def update_router_table():
             page = r.get("page")
             rtype = r.get("type", "MaterialRoute")
             imp = r.get("import")
-            
+
             if imp:
                 imp = imp.replace("${package}", get_project_package_name())
                 all_imports.add(f"import '{imp}';")
-                
+
             all_routes.append(f"    {rtype}(path: '{path}', page: {page}),")
 
     # Host-composition routes (see get_host_routes(), sourced from the
@@ -592,41 +693,46 @@ def update_router_table():
 
     with open(ROUTER_FILE, "r", encoding="utf-8") as f:
         content = f.read()
-        
+
     # Inject imports
     import_block = "\n".join(sorted(list(all_imports)))
-    import_replacement = f"// @generated-imports-start\n{import_block}\n// @generated-imports-end"
+    import_replacement = (
+        f"// @generated-imports-start\n{import_block}\n// @generated-imports-end"
+    )
     content = re.sub(
         r"// @generated-imports-start.*?// @generated-imports-end",
         import_replacement,
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
-    
+
     # Inject routes
     routes_block = "\n".join(all_routes)
-    routes_replacement = f"// @generated-routes-start\n{routes_block}\n// @generated-routes-end"
+    routes_replacement = (
+        f"// @generated-routes-start\n{routes_block}\n// @generated-routes-end"
+    )
     content = re.sub(
         r"// @generated-routes-start.*?// @generated-routes-end",
         routes_replacement,
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
-    
+
     with open(ROUTER_FILE, "w", encoding="utf-8") as f:
         f.write(content)
     print("[*] Successfully updated app_router.dart with generated routes and imports.")
+
 
 def update_main_dependencies():
     if not os.path.exists(MAIN_FILE):
         print(f"[-] main.dart file not found: {MAIN_FILE}")
         return
-        
+
     state = load_state()
-    
+
     sdk_imports = []
     sdk_registrations = []
-    
+
     # Generate imports and register statements for all active packages.
     # base_sdk must register first - base_di.dart documents this precondition
     # ("BEFORE any feature SDK's *SdkDependencies.register") because other
@@ -644,11 +750,13 @@ def update_main_dependencies():
         sdk_imports.append(f"import 'package:{pkg_name}/{pkg_name}.dart';")
         # Format className as CamelCase (e.g. auth_sdk -> AuthSdkDependencies)
         class_prefix = "".join(part.capitalize() for part in pkg_name.split("_"))
-        sdk_registrations.append(f"  {class_prefix}Dependencies.register(GetIt.instance);")
-        
+        sdk_registrations.append(
+            f"  {class_prefix}Dependencies.register(GetIt.instance);"
+        )
+
     with open(MAIN_FILE, "r", encoding="utf-8") as f:
         content = f.read()
-        
+
     # Inject imports
     imports_block = "\n".join(sdk_imports)
     imports_replacement = f"// @generated-sdk-imports-start\n{imports_block}\n// @generated-sdk-imports-end"
@@ -656,9 +764,9 @@ def update_main_dependencies():
         r"// @generated-sdk-imports-start.*?// @generated-sdk-imports-end",
         imports_replacement,
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
-    
+
     # Inject DI registrations
     di_block = "\n".join(sdk_registrations)
     di_replacement = f"// @generated-sdk-di-start\n{di_block}\n// @generated-sdk-di-end"
@@ -666,12 +774,15 @@ def update_main_dependencies():
         r"// @generated-sdk-di-start.*?// @generated-sdk-di-end",
         di_replacement,
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
-    
+
     with open(MAIN_FILE, "w", encoding="utf-8") as f:
         f.write(content)
-    print("[*] Successfully updated main.dart with generated SDK imports and DI registrations.")
+    print(
+        "[*] Successfully updated main.dart with generated SDK imports and DI registrations."
+    )
+
 
 def _clean_pkg_name(pkg):
     if pkg.endswith("_sdks"):
@@ -679,6 +790,7 @@ def _clean_pkg_name(pkg):
     if pkg.endswith("_sdk"):
         return pkg[:-4]
     return pkg
+
 
 def update_database_registration():
     if not os.path.exists(DB_FILE):
@@ -722,9 +834,11 @@ def update_database_registration():
             t_imp = tbl.get("import")
             if t_imp and t_imp not in copied:
                 uri = t_imp
-                pkg, _, rel = uri[len("package:"):].partition("/")
+                pkg, _, rel = uri[len("package:") :].partition("/")
                 clean = _clean_pkg_name(pkg)
-                src = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean, "lib", *rel.split("/"))
+                src = os.path.join(
+                    PROJECT_ROOT, ".rokct", "cache", clean, "lib", *rel.split("/")
+                )
                 if not os.path.exists(src):
                     print(
                         f"  [!] {pkg_name}: table source missing ({uri}) - its cache has no lib/ "
@@ -742,7 +856,8 @@ def update_database_registration():
                     df.write(
                         f"// Copied at compose time from {uri} by "
                         f"sdk_installer_base.py's update_database_registration() -\n"
-                        f"// drift only understands table classes inside its own package.\n" + content
+                        f"// drift only understands table classes inside its own package.\n"
+                        + content
                     )
                 copied[uri] = f"injected/{dest_name}"
             if t_class:
@@ -771,12 +886,14 @@ def update_database_registration():
 
     # 1. Inject imports
     imports_block = "\n".join(sorted(rel_imports))
-    imports_replacement = f"// @sdk-database-imports-start\n{imports_block}\n// @sdk-database-imports-end"
+    imports_replacement = (
+        f"// @sdk-database-imports-start\n{imports_block}\n// @sdk-database-imports-end"
+    )
     content = re.sub(
         r"// @sdk-database-imports-start.*?// @sdk-database-imports-end",
         imports_replacement.replace("\\", "\\\\"),
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     # 2. Inject tables
@@ -786,14 +903,14 @@ def update_database_registration():
         r"    // @sdk-database-tables-start.*?    // @sdk-database-tables-end",
         tables_replacement.replace("\\", "\\\\"),
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     # 3. Inject schemaVersion dynamically
     content = re.sub(
         r"int get schemaVersion => \d+;",
         f"int get schemaVersion => {max_version};",
-        content
+        content,
     )
 
     # 4. Inject migrations
@@ -803,12 +920,15 @@ def update_database_registration():
         r"        // @sdk-database-migrations-start.*?        // @sdk-database-migrations-end",
         migrations_replacement.replace("\\", "\\\\"),
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     with open(DB_FILE, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"[*] Successfully updated app_database.dart. Set schemaVersion to {max_version}.")
+    print(
+        f"[*] Successfully updated app_database.dart. Set schemaVersion to {max_version}."
+    )
+
 
 def update_tr_keys_registration():
     if not os.path.exists(TRKEYS_FILE):
@@ -825,10 +945,9 @@ def update_tr_keys_registration():
     # are excluded from the scan so keys injected by a previous run don't
     # mask themselves on re-compose.
     body_without_block = re.sub(
-        r"// @sdk-tr-keys-start.*?  // @sdk-tr-keys-end",
-        "", content, flags=re.DOTALL)
-    base_owned = set(
-        re.findall(r"static const String (\w+)\s*=", body_without_block))
+        r"// @sdk-tr-keys-start.*?  // @sdk-tr-keys-end", "", content, flags=re.DOTALL
+    )
+    base_owned = set(re.findall(r"static const String (\w+)\s*=", body_without_block))
 
     state = load_state()
     key_lines = []
@@ -839,10 +958,14 @@ def update_tr_keys_registration():
             continue
         for field, value in tr_keys.items():
             if field in base_owned:
-                print(f"  [!] tr_keys collision: '{field}' declared by '{pkg_name}' already exists in base tr_keys.dart - keeping base's declaration")
+                print(
+                    f"  [!] tr_keys collision: '{field}' declared by '{pkg_name}' already exists in base tr_keys.dart - keeping base's declaration"
+                )
                 continue
             if field in seen and seen[field] != pkg_name:
-                print(f"  [!] tr_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first")
+                print(
+                    f"  [!] tr_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first"
+                )
                 continue
             seen[field] = pkg_name
             escaped = value.replace("\\", "\\\\").replace("'", "\\'")
@@ -854,12 +977,15 @@ def update_tr_keys_registration():
         r"// @sdk-tr-keys-start.*?  // @sdk-tr-keys-end",
         replacement.replace("\\", "\\\\"),
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     with open(TRKEYS_FILE, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"[*] Successfully updated tr_keys.dart with {len(key_lines)} SDK-owned key(s).")
+    print(
+        f"[*] Successfully updated tr_keys.dart with {len(key_lines)} SDK-owned key(s)."
+    )
+
 
 def update_asset_keys_registration():
     """Inject SDK-declared AppAssets constants into base's app_assets.dart
@@ -880,9 +1006,11 @@ def update_asset_keys_registration():
     # scan as update_tr_keys_registration).
     body_without_block = re.sub(
         r"// @sdk-asset-keys-start.*?  // @sdk-asset-keys-end",
-        "", content, flags=re.DOTALL)
-    base_owned = set(
-        re.findall(r"static const String (\w+)\s*=", body_without_block))
+        "",
+        content,
+        flags=re.DOTALL,
+    )
+    base_owned = set(re.findall(r"static const String (\w+)\s*=", body_without_block))
 
     state = load_state()
     key_lines = []
@@ -893,10 +1021,14 @@ def update_asset_keys_registration():
             continue
         for field, value in asset_keys.items():
             if field in base_owned:
-                print(f"  [!] asset_keys collision: '{field}' declared by '{pkg_name}' already exists in base app_assets.dart - keeping base's declaration")
+                print(
+                    f"  [!] asset_keys collision: '{field}' declared by '{pkg_name}' already exists in base app_assets.dart - keeping base's declaration"
+                )
                 continue
             if field in seen and seen[field] != pkg_name:
-                print(f"  [!] asset_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first")
+                print(
+                    f"  [!] asset_keys collision: '{field}' declared by both '{seen[field]}' and '{pkg_name}' - keeping first"
+                )
                 continue
             seen[field] = pkg_name
             escaped = value.replace("\\", "\\\\").replace("'", "\\'")
@@ -908,15 +1040,19 @@ def update_asset_keys_registration():
         r"// @sdk-asset-keys-start.*?  // @sdk-asset-keys-end",
         replacement.replace("\\", "\\\\"),
         content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     with open(ASSETKEYS_FILE, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"[*] Successfully updated app_assets.dart with {len(key_lines)} SDK-owned asset key(s).")
+    print(
+        f"[*] Successfully updated app_assets.dart with {len(key_lines)} SDK-owned asset key(s)."
+    )
 
 
-APP_ASSETS_BEGIN = "    # BEGIN sdk-app-assets (generated by SDK installer - do not edit by hand)"
+APP_ASSETS_BEGIN = (
+    "    # BEGIN sdk-app-assets (generated by SDK installer - do not edit by hand)"
+)
 APP_ASSETS_END = "    # END sdk-app-assets"
 
 
@@ -975,21 +1111,25 @@ def update_app_assets_registration():
                 assets_idx = i
                 break
         if assets_idx < 0:
-            print("  [!] app pubspec.yaml has no `assets:` line - add one under "
-                  "`flutter:` so SDK-declared assets can be injected.")
+            print(
+                "  [!] app pubspec.yaml has no `assets:` line - add one under "
+                "`flutter:` so SDK-declared assets can be injected."
+            )
             return
         new_lines = (
             lines[: assets_idx + 1]
             + [APP_ASSETS_BEGIN]
             + generated
             + [APP_ASSETS_END]
-            + lines[assets_idx + 1:]
+            + lines[assets_idx + 1 :]
         )
 
     new_content = "\n".join(new_lines) + "\n"
     with open(pubspec_path, "w", encoding="utf-8") as f:
         f.write(new_content)
-    print(f"[*] Successfully updated app pubspec.yaml with {len(entries)} SDK-declared asset entr(y/ies).")
+    print(
+        f"[*] Successfully updated app pubspec.yaml with {len(entries)} SDK-declared asset entr(y/ies)."
+    )
 
 
 def update_constants_overrides():
@@ -1025,18 +1165,24 @@ def update_constants_overrides():
 
     applied = 0
     for field, expr in overrides.items():
-        pattern = r"(static\s+(?:const\s+)?\w+(?:<[^>]*>)?\s+%s\s*=\s*).*?;" % re.escape(field)
+        pattern = (
+            r"(static\s+(?:const\s+)?\w+(?:<[^>]*>)?\s+%s\s*=\s*).*?;"
+            % re.escape(field)
+        )
         new_content, n = re.subn(pattern, r"\1%s;" % expr, content, count=1)
         if n:
             content = new_content
             applied += 1
         else:
-            print(f"  [!] constants override: field '{field}' not found in AppConstants, skipping")
+            print(
+                f"  [!] constants override: field '{field}' not found in AppConstants, skipping"
+            )
 
     if applied:
         with open(CONSTANTS_FILE, "w", encoding="utf-8") as f:
             f.write(content)
         print(f"[*] overrode {applied} AppConstants field(s) from home SDK manifest")
+
 
 def update_layout_integrations():
     state = load_state()
@@ -1049,24 +1195,24 @@ def update_layout_integrations():
             target_rel = integration.get("target")
             placeholder = integration.get("placeholder")
             replacement = integration.get("replacement")
-            
+
             if not target_rel or not placeholder or not replacement:
                 continue
-            
+
             target_abs = os.path.join(PROJECT_ROOT, target_rel)
             if not os.path.exists(target_abs):
                 continue
-                
+
             # Read current file text (either original or accumulated in loop)
             content = file_changes.get(target_abs)
             if content is None:
                 with open(target_abs, "r", encoding="utf-8") as f:
                     content = f.read()
-            
+
             # Prevent double injection: Check if replacement is already in file
             if replacement in content:
                 continue
-                
+
             # Replace placeholder while preserving it for future updates
             replacement_block = f"{placeholder}\n{replacement}"
             content = content.replace(placeholder, replacement_block)
@@ -1078,6 +1224,7 @@ def update_layout_integrations():
             f.write(content)
         rel_path = os.path.relpath(path, PROJECT_ROOT).replace("\\", "/")
         print(f"[*] Applied widget layout integration in: {rel_path}")
+
 
 def update_app_routes():
     """Injects AppRoutes.I method implementations into main.dart's
@@ -1111,7 +1258,9 @@ def update_app_routes():
             if not method or not body:
                 continue
             if method in seen_methods:
-                print(f"  [!] app_routes: {method} already provided by another SDK, skipping {pkg_name}'s")
+                print(
+                    f"  [!] app_routes: {method} already provided by another SDK, skipping {pkg_name}'s"
+                )
                 continue
             seen_methods.add(method)
             all_methods.append(
@@ -1134,6 +1283,7 @@ def update_app_routes():
         with open(MAIN_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
         print(f"[*] Injected {len(all_methods)} AppRoutes method(s) into main.dart")
+
 
 def update_onboarding_slides():
     """Injects OnboardingSlide entries into the onboarding shell's slide list
@@ -1174,7 +1324,9 @@ def update_onboarding_slides():
             if not slide_id or not body:
                 continue
             if slide_id in seen_ids:
-                print(f"  [!] onboarding_slides: '{slide_id}' already provided by {seen_ids[slide_id]}, skipping {pkg_name}'s")
+                print(
+                    f"  [!] onboarding_slides: '{slide_id}' already provided by {seen_ids[slide_id]}, skipping {pkg_name}'s"
+                )
                 continue
             seen_ids[slide_id] = pkg_name
             try:
@@ -1194,7 +1346,9 @@ def update_onboarding_slides():
     for order, entries in sorted(orders_seen.items()):
         if len(entries) > 1:
             listing = ", ".join(f"'{sid}' ({pkg})" for sid, pkg in sorted(entries))
-            print(f"  [!] onboarding_slides: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+            print(
+                f"  [!] onboarding_slides: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence"
+            )
 
     slides.sort(key=lambda t: (t[0], t[1]))
 
@@ -1229,7 +1383,10 @@ def update_onboarding_slides():
     if new_content != content:
         with open(ONBOARDING_ROUTES_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"[*] Injected {len(slides)} onboarding slide(s) into onboarding_route_pages.dart")
+        print(
+            f"[*] Injected {len(slides)} onboarding slide(s) into onboarding_route_pages.dart"
+        )
+
 
 def update_registration_steps():
     """Injects RegistrationStep entries into auth_sdk's registration-steps
@@ -1275,7 +1432,9 @@ def update_registration_steps():
             if not step_id or not body:
                 continue
             if step_id in seen_ids:
-                print(f"  [!] registration_steps: '{step_id}' already provided by {seen_ids[step_id]}, skipping {pkg_name}'s")
+                print(
+                    f"  [!] registration_steps: '{step_id}' already provided by {seen_ids[step_id]}, skipping {pkg_name}'s"
+                )
                 continue
             seen_ids[step_id] = pkg_name
             try:
@@ -1295,7 +1454,9 @@ def update_registration_steps():
     for order, entries in sorted(orders_seen.items()):
         if len(entries) > 1:
             listing = ", ".join(f"'{sid}' ({pkg})" for sid, pkg in sorted(entries))
-            print(f"  [!] registration_steps: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+            print(
+                f"  [!] registration_steps: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence"
+            )
 
     steps.sort(key=lambda t: (t[0], t[1]))
 
@@ -1330,7 +1491,10 @@ def update_registration_steps():
     if new_content != content:
         with open(REGISTRATION_STEPS_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"[*] Injected {len(steps)} registration step(s) into registration_step_pages.dart")
+        print(
+            f"[*] Injected {len(steps)} registration step(s) into registration_step_pages.dart"
+        )
+
 
 def update_session_policy():
     """Injects the app's declared session policy into auth_sdk's installed
@@ -1422,7 +1586,9 @@ def update_session_policy():
             role = entry.get("role")
             landing = entry.get("landing_route")
             if not role or not landing:
-                print(f"  [!] session_policy: skipping allowed_roles entry without role/landing_route in {pkg_name}")
+                print(
+                    f"  [!] session_policy: skipping allowed_roles entry without role/landing_route in {pkg_name}"
+                )
                 continue
             if role in seen_roles:
                 raise RuntimeError(
@@ -1431,7 +1597,9 @@ def update_session_policy():
                     f"the last landing. Keep exactly one entry per role (including the '*' fallback)."
                 )
             seen_roles.add(role)
-            landings.append(f"      {_lit(role, 'role')}: {_lit(landing, 'landing_route')},")
+            landings.append(
+                f"      {_lit(role, 'role')}: {_lit(landing, 'landing_route')},"
+            )
         if landings:
             body_lines.append(f"  // declared by {pkg_name}")
             body_lines.append("  AuthSessionPolicy.I = DeclaredSessionPolicy(")
@@ -1440,10 +1608,14 @@ def update_session_policy():
             body_lines.append("    },")
             msg = policy.get("rejection_message_tr_key")
             if msg:
-                body_lines.append(f"    rejectionMessageTrKey: {_lit(msg, 'rejection_message_tr_key')},")
+                body_lines.append(
+                    f"    rejectionMessageTrKey: {_lit(msg, 'rejection_message_tr_key')},"
+                )
             route = policy.get("rejection_route")
             if route:
-                body_lines.append(f"    rejectionRoute: {_lit(route, 'rejection_route')},")
+                body_lines.append(
+                    f"    rejectionRoute: {_lit(route, 'rejection_route')},"
+                )
             body_lines.append("  );")
     policy_block = "\n".join(body_lines)
 
@@ -1461,7 +1633,12 @@ def update_session_policy():
     if new_content != content:
         with open(SESSION_POLICY_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print("[*] Injected session policy into auth_session_policy.dart" if policy_block else "[*] Cleared session policy in auth_session_policy.dart")
+        print(
+            "[*] Injected session policy into auth_session_policy.dart"
+            if policy_block
+            else "[*] Cleared session policy in auth_session_policy.dart"
+        )
+
 
 def update_embedded_widgets():
     """Injects EmbeddedWidgets.I method implementations into main.dart's
@@ -1502,7 +1679,9 @@ def update_embedded_widgets():
             if not method or not body:
                 continue
             if method in seen_methods:
-                print(f"  [!] WARNING: embedded_widgets conflict: '{method}' is declared by both '{seen_methods[method]}' and '{pkg_name}' - keeping '{seen_methods[method]}'s implementation and skipping '{pkg_name}'s. Remove one manifest declaration to resolve this.")
+                print(
+                    f"  [!] WARNING: embedded_widgets conflict: '{method}' is declared by both '{seen_methods[method]}' and '{pkg_name}' - keeping '{seen_methods[method]}'s implementation and skipping '{pkg_name}'s. Remove one manifest declaration to resolve this."
+                )
                 continue
             seen_methods[method] = pkg_name
             body_lines = "\n".join(
@@ -1516,7 +1695,9 @@ def update_embedded_widgets():
         content = f.read()
 
     if "// @generated-embeddedwidgets-start" not in content:
-        print("  [i] main.dart has no @generated-embeddedwidgets markers (older host template) - skipping embedded-widget injection")
+        print(
+            "  [i] main.dart has no @generated-embeddedwidgets markers (older host template) - skipping embedded-widget injection"
+        )
         return
 
     methods_block = "\n".join(all_methods)
@@ -1531,7 +1712,10 @@ def update_embedded_widgets():
     if new_content != content:
         with open(MAIN_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"[*] Injected {len(all_methods)} EmbeddedWidgets method(s) into main.dart")
+        print(
+            f"[*] Injected {len(all_methods)} EmbeddedWidgets method(s) into main.dart"
+        )
+
 
 def update_brand_hook():
     """Injects the ONE brand-hook call into main() (the base_sdk template's
@@ -1564,9 +1748,9 @@ def update_brand_hook():
         names = ", ".join(f"'{n}'" for n in sorted(declared))
         raise RuntimeError(
             f"brand_hook conflict: {len(declared)} installed SDKs ({names}) each declare "
-            "a \"brand_hook\" in their manifest, but at most ONE may own the app's brand "
+            'a "brand_hook" in their manifest, but at most ONE may own the app\'s brand '
             "- the hook runs exactly once before the first frame. Remove the "
-            "\"brand_hook\" key from every manifest except the one true brand owner "
+            '"brand_hook" key from every manifest except the one true brand owner '
             "(normally the home SDK) and recompose."
         )
 
@@ -1579,11 +1763,15 @@ def update_brand_hook():
         content = f.read()
 
     if "// @generated-brandhook-start" not in content:
-        print("  [i] main.dart has no @generated-brandhook markers (older host template) - skipping brand-hook injection")
+        print(
+            "  [i] main.dart has no @generated-brandhook markers (older host template) - skipping brand-hook injection"
+        )
         return
 
     hook_block = "\n".join(body_lines)
-    replacement = f"  // @generated-brandhook-start\n{hook_block}\n  // @generated-brandhook-end"
+    replacement = (
+        f"  // @generated-brandhook-start\n{hook_block}\n  // @generated-brandhook-end"
+    )
     new_content = re.sub(
         r"  // @generated-brandhook-start.*?// @generated-brandhook-end",
         lambda _: replacement,
@@ -1594,7 +1782,10 @@ def update_brand_hook():
     if new_content != content:
         with open(MAIN_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"[*] Injected brand hook from {', '.join(sorted(declared)) or 'no SDK'} into main.dart")
+        print(
+            f"[*] Injected brand hook from {', '.join(sorted(declared)) or 'no SDK'} into main.dart"
+        )
+
 
 def _update_main_hooks(state_key, marker, label):
     """Shared engine for update_di_hooks()/update_boot_hooks(): regenerates
@@ -1640,7 +1831,9 @@ def _update_main_hooks(state_key, marker, label):
             if not hook_id or not body:
                 continue
             if hook_id in seen_ids:
-                print(f"  [!] {state_key}: '{hook_id}' already provided by {seen_ids[hook_id]}, skipping {pkg_name}'s")
+                print(
+                    f"  [!] {state_key}: '{hook_id}' already provided by {seen_ids[hook_id]}, skipping {pkg_name}'s"
+                )
                 continue
             seen_ids[hook_id] = pkg_name
             try:
@@ -1657,7 +1850,9 @@ def _update_main_hooks(state_key, marker, label):
     for order, entries in sorted(orders_seen.items()):
         if len(entries) > 1:
             listing = ", ".join(f"'{hid}' ({pkg})" for hid, pkg in sorted(entries))
-            print(f"  [!] {state_key}: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence")
+            print(
+                f"  [!] {state_key}: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence"
+            )
 
     hooks.sort(key=lambda t: (t[0], t[1]))
 
@@ -1673,7 +1868,9 @@ def _update_main_hooks(state_key, marker, label):
         content = f.read()
 
     if f"// {marker}-start" not in content:
-        print(f"  [i] main.dart has no @{marker.lstrip('@')} markers (older host template) - skipping {label} injection")
+        print(
+            f"  [i] main.dart has no @{marker.lstrip('@')} markers (older host template) - skipping {label} injection"
+        )
         return
 
     replacement = f"  // {marker}-start\n{hooks_block}\n  // {marker}-end"
@@ -1689,6 +1886,7 @@ def _update_main_hooks(state_key, marker, label):
             f.write(new_content)
         print(f"[*] Injected {len(hooks)} {label}(s) into main.dart")
 
+
 def update_di_hooks():
     """Injects SDK-declared DI statements into main.dart's
     @generated-di-hooks block (directly AFTER the @generated-sdk-di block,
@@ -1702,6 +1900,7 @@ def update_di_hooks():
     schema and conflict semantics."""
     _update_main_hooks("di_hooks", "@generated-di-hooks", "DI hook")
 
+
 def update_boot_hooks():
     """Injects SDK-declared boot statements into main.dart's
     @generated-boot-hooks block (at the TOP of main(), right after
@@ -1713,6 +1912,7 @@ def update_boot_hooks():
     is async. See _update_main_hooks for the entry schema and conflict
     semantics."""
     _update_main_hooks("boot_hooks", "@generated-boot-hooks", "boot hook")
+
 
 def update_wiring_imports():
     """Regenerates main.dart's @generated-wiring-imports block (directly
@@ -1751,7 +1951,9 @@ def update_wiring_imports():
         content = f.read()
 
     if "// @generated-wiring-imports-start" not in content:
-        print("  [i] main.dart has no @generated-wiring-imports markers (older host template) - skipping wiring-import injection")
+        print(
+            "  [i] main.dart has no @generated-wiring-imports markers (older host template) - skipping wiring-import injection"
+        )
         return
 
     imports_block = "\n".join(sorted(all_imports))
@@ -1767,6 +1969,7 @@ def update_wiring_imports():
         with open(MAIN_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
         print(f"[*] Injected {len(all_imports)} wiring import(s) into main.dart")
+
 
 if __name__ == "__main__":
     update_router_table()
