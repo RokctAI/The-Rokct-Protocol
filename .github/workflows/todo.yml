@@ -5,6 +5,8 @@ on:
 
 jobs:
   todo:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-todo.yml@main
+    uses: RokctAI/shared-workflows/.github/workflows/universal-todo.yml@16261ce39957d781ece0e1050f40c448b4e5d331 # shared-workflows main @ 2026-08-13
     permissions: write-all
-    secrets: inherit
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
