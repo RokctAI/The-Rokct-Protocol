@@ -67,6 +67,18 @@ if [[ "$ACTUAL_SHA256" != "$INITIATE_SHA256" ]]; then
 fi
 # END fetch-and-verify
 
+# BEGIN requirements-install (tests/test_install.sh replaces this block with a local copy)
+echo "[install] Installing Python dependencies (ref $PROTOCOL_REF)..."
+if ! curl -fsSL "$PROTOCOL_RAW/requirements.txt" -o .rokct/requirements.txt; then
+  echo "[install] ERROR: failed to fetch requirements.txt (ref $PROTOCOL_REF)." >&2
+  exit 1
+fi
+if ! $PYTHON_CMD -m pip install -r .rokct/requirements.txt; then
+  echo "[install] ERROR: failed to install Python dependencies from requirements.txt." >&2
+  exit 1
+fi
+# END requirements-install
+
 echo "[install] Running init..."
 $PYTHON_CMD .rokct/initiate.py
 

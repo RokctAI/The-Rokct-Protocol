@@ -23,6 +23,7 @@ setup_temp_env() {
   cleanup
   mkdir -p "$TEST_ROOT"
   cp "$REPO_ROOT/install.sh" "$TEST_ROOT/"
+  cp "$REPO_ROOT/requirements.txt" "$TEST_ROOT/"
   cp -r "$REPO_ROOT/profiles" "$TEST_ROOT/"
   chmod +x "$TEST_ROOT/install.sh"
 }
@@ -33,6 +34,10 @@ patch_installer() {
   # exercises the working-tree profiles, whose hashes intentionally differ
   # from the ones pinned at PROTOCOL_REF until the next lock bump.
   sed -i '/# BEGIN fetch-and-verify/,/# END fetch-and-verify/c\cp "$INIT_FILE" .rokct/initiate.py' "$TEST_ROOT/install.sh"
+  # Replace the pinned requirements fetch + pip install with a local copy:
+  # the test exercises the installer flow, not dependency resolution, and
+  # the working-tree requirements.txt is not yet published at PROTOCOL_REF.
+  sed -i '/# BEGIN requirements-install/,/# END requirements-install/c\cp requirements.txt .rokct/requirements.txt' "$TEST_ROOT/install.sh"
 }
 
 test_human() {
