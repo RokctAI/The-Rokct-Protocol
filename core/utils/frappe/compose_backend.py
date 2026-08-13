@@ -138,6 +138,23 @@ def resolve_module_sources(modules):
             repo_source_dir = local_repo_path
         else:
             ref = group[0].get("ref", "main")
+            # No install.py is executed here (frappe modules are copy-based),
+            # but a mutable ref still means the composed app's content cannot
+            # be reproduced or verified. Require a full commit SHA, with the
+            # same explicit ROKCT_ALLOW_UNPINNED_SDKS escape hatch as the
+            # flutter/nextjs composers.
+            if not re.fullmatch(r"[0-9a-f]{40}", (ref or "").lower()):
+                if os.environ.get("ROKCT_ALLOW_UNPINNED_SDKS", "").lower() in ("1", "true", "yes"):
+                    print(f"[!] WARNING: cloning {git_url} at mutable ref '{ref}'; proceeding "
+                          "because ROKCT_ALLOW_UNPINNED_SDKS is set. Content is UNVERIFIED.")
+                else:
+                    module_names = ", ".join(str(m.get("name")) for m in group)
+                    print(f"[!] Module(s) {module_names} use mutable ref '{ref}' for {git_url}.", file=sys.stderr)
+                    print("[!] Pin \"ref\" to a full commit SHA, or set ROKCT_ALLOW_UNPINNED_SDKS=1 "
+                          "to run unpinned anyway.", file=sys.stderr)
+                    raise ValueError(
+                        f"CRITICAL ERROR: refusing to clone {git_url} at mutable ref '{ref}' "
+                        f"for module(s) '{module_names}' without a pin. Failing build.")
             temp_repo_dir = os.path.join(cache_base, f"{repo_name}_frappe")
             print(f"[*] Fetching repository {git_url} (ref {ref}) into {temp_repo_dir}...")
             try:

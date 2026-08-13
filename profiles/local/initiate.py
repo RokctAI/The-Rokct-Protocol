@@ -17,10 +17,10 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
+PROTOCOL_REF = "15f0befa044853caa915597e6921d7f98d3a4fbb"
 EXPECTED_SHA256 = {
-    "profiles/local/initiate.py": "de86f15f1ed7e11870f47a7f6164ff6b034818eb97690ba5252d9b08e2b55aa7",
-    "workflows/maintenance.yml": "3826ea73fee8b939c0798ae65173fb0ff6dd188758e4564b51373019bc7a7716",
+    "profiles/local/initiate.py": "1559fcdb3af8c62d6dfc289079261129d374e75361884ebe7f870763da675a2b",
+    "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 GITHUB_ZIP_BASE = f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -118,7 +118,7 @@ def file_hash(path):
     if not os.path.exists(path):
         return None
     with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+        return hashlib.sha256(f.read()).hexdigest()
 
 def copy_versioned(src_rel, dst_abs):
     src = os.path.join(PROTOCOL_DIR, src_rel)
@@ -129,21 +129,13 @@ def copy_versioned(src_rel, dst_abs):
     if os.path.exists(src) and os.path.abspath(src) == os.path.abspath(dst_abs):
         print(f"[init] Skipping self-copy of {src_rel}")
         return
-    manifest_path = os.path.join(PROTOCOL_DIR, "core", "templates", "manifest.json")
-    if os.path.exists(manifest_path):
-        with open(manifest_path, "r", encoding="utf-8") as mf:
-            manifest = json.load(mf)
-    else:
-        try:
-            manifest = json.loads(fetch_url(f"{GITHUB_RAW_BASE}/core/templates/manifest.json").decode())
-        except Exception:
-            manifest = {}
-    entry = manifest.get("files", {}).get(src_rel.split("core/templates/")[-1] if "core/templates/" in src_rel else src_rel.split("profiles/local/")[-1])
-    if not entry or not os.path.exists(src):
+    if not os.path.exists(src):
         fetch_from_github(src_rel, dst_abs)
         return
-    current_hash = file_hash(dst_abs)
-    if current_hash and current_hash == entry.get("hash"):
+    # Dedup directly against the protocol source; integrity of fetched
+    # content is enforced by protocol.lock.json / EXPECTED_SHA256, not by
+    # the old advisory core/templates manifest.
+    if file_hash(src) == file_hash(dst_abs):
         return
     shutil.copy2(src, dst_abs)
 
@@ -165,6 +157,17 @@ def copy_dir(rel_src, dst):
             rel = os.path.relpath(s, PROTOCOL_DIR)
             ensure_file(rel, d)
 
+def safe_extract_path(dst, rel):
+    """Resolve an archive-controlled relative path under dst, refusing any
+    entry that escapes the destination (zip-slip). Same realpath+commonpath
+    containment check as the opportunities wrappers' _safe_path()."""
+    dest = os.path.realpath(os.path.join(dst, rel))
+    base = os.path.realpath(dst)
+    if os.path.commonpath([base, dest]) != base:
+        print(f"[init] Refusing to extract archive entry outside destination: {rel}", file=sys.stderr)
+        sys.exit(1)
+    return dest
+
 def fetch_dir_from_github(rel_src, dst):
     # Zip entries always use forward slashes; on Windows callers pass
     # os.sep-separated paths (e.g. from os.path.relpath), which would
@@ -183,7 +186,7 @@ def fetch_dir_from_github(rel_src, dst):
                     continue
                 data = z.read(name)
                 verify_pinned(f"{rel_src}/{rel}", data)
-                dest = os.path.join(dst, rel)
+                dest = safe_extract_path(dst, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 with open(dest, "wb") as f:
                     f.write(data)
@@ -213,7 +216,7 @@ def main():
     # Pre-populate the scaffold delegate cache so a transient
     # raw.githubusercontent.com failure mid-workflow falls back to a copy
     # fetched at workflow start instead of killing the run.
-    copy_dir("core/utils/agent_deligation", os.path.join(ROKCT_DIR, "tmp", "delegate_cache"))
+    copy_dir("core/utils/agent_delegation", os.path.join(ROKCT_DIR, "tmp", "delegate_cache"))
     try:
         origin_url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"], text=True, stderr=subprocess.DEVNULL).strip()
     except Exception:

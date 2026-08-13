@@ -8,8 +8,8 @@ SHA-256, then executes it with the sync subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
-DELEGATE_PATH   = "core/utils/agent_deligation/privacy.py"
+PROTOCOL_REF    = "15f0befa044853caa915597e6921d7f98d3a4fbb"
+DELEGATE_PATH   = "core/utils/agent_delegation/privacy.py"
 DELEGATE_SHA256 = "02ce6b15f313c7963e67cfcc711b446c781f129ad5d8659193bfc8cce8ed9f20"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 

@@ -6,10 +6,10 @@ This repository is the **Single Source of Truth (SSO)** for AI agent behavior, c
 
 Process these rules in priority order:
 
-1.  **[Core Rules](./core/README.md)**: Absolute mandates on authority, obedience, and communication.
-2.  **[Coding Standards](./coding/standards.md)**: Technical constraints, stack preferences, and "no placeholder" policies.
-3.  **[Design System](./coding/design_system.md)**: Aesthetic guidelines for "Premium" output.
-4.  **[Templates](./templates/project_map.md)**: Templates for Memory, Context Map, and Active Session Pointer.
+1.  **Core Rules ([Authority](./core/01_authority.md), [Communication](./core/02_communication.md))**: Absolute mandates on authority, obedience, and communication.
+2.  **[Coding Standards](./core/coding/standards.md)**: Technical constraints, stack preferences, and "no placeholder" policies.
+3.  **[Design System](./core/coding/design_system.md)**: Aesthetic guidelines for "Premium" output.
+4.  **[Templates](./core/templates/project_map.md)**: Templates for Memory, Context Map, and Active Session Pointer.
 5.  **[Workflows](./workflows/README.md)**: SOPs, including Initialization and Session Logging.
 
 ---

@@ -8,9 +8,9 @@ set -e
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # The initiate.py fetch is pinned to this commit and its SHA-256 is verified
 # before it is executed; a mismatch aborts the install.
-PROTOCOL_REF="ab78bedfc5ca981d0170310dc88c3a328134eb58"
-INITIATE_SHA256_LOCAL="de86f15f1ed7e11870f47a7f6164ff6b034818eb97690ba5252d9b08e2b55aa7"
-INITIATE_SHA256_WEB="b250ef008c42c97fcf90cf367af4bbed00937529159e1505189266004e46756c"
+PROTOCOL_REF="15f0befa044853caa915597e6921d7f98d3a4fbb"
+INITIATE_SHA256_LOCAL="1559fcdb3af8c62d6dfc289079261129d374e75361884ebe7f870763da675a2b"
+INITIATE_SHA256_WEB="4886115ceb5ba8212521c421afda6590749cec9458ce32164886f196e09617b8"
 
 PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/$PROTOCOL_REF"
 
@@ -66,6 +66,18 @@ if [[ "$ACTUAL_SHA256" != "$INITIATE_SHA256" ]]; then
   exit 1
 fi
 # END fetch-and-verify
+
+# BEGIN requirements-install (tests/test_install.sh replaces this block with a local copy)
+echo "[install] Installing Python dependencies (ref $PROTOCOL_REF)..."
+if ! curl -fsSL "$PROTOCOL_RAW/requirements.txt" -o .rokct/requirements.txt; then
+  echo "[install] ERROR: failed to fetch requirements.txt (ref $PROTOCOL_REF)." >&2
+  exit 1
+fi
+if ! $PYTHON_CMD -m pip install -r .rokct/requirements.txt; then
+  echo "[install] ERROR: failed to install Python dependencies from requirements.txt." >&2
+  exit 1
+fi
+# END requirements-install
 
 echo "[install] Running init..."
 $PYTHON_CMD .rokct/initiate.py

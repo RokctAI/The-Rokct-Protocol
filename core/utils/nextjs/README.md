@@ -184,7 +184,7 @@ the pre-role behavior.
 
 ## Implementation language
 
-Python, matching every other installer domain (`flutter`, `frappe`, `agent_deligation`, `opportunities`,
+Python, matching every other installer domain (`flutter`, `frappe`, `agent_delegation`, `opportunities`,
 `startup_os`) — not Node/TypeScript. The installer's job is filesystem copy plus JSON/text editing, none
 of which needs the Node runtime; using Python keeps one interpreter dependency for the whole
 `sdk_composer.py`-driven compose step across every SDK kind, rather than requiring Node to be present and

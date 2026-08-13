@@ -20,7 +20,7 @@ The Dart SDK installer convention (`The-Rokct-Protocol/core/utils/flutter/sdk_in
   example) — `{name, enabled, source, git, path, ref}` per SDK.
 
 `sdk_installer_base.py` also has 5 sibling installer domains under `core/utils/`:
-`agent_deligation`, `flutter`, `frappe`, `opportunities`, `startup_os` — confirmed via investigation, none
+`agent_delegation`, `flutter`, `frappe`, `opportunities`, `startup_os` — confirmed via investigation, none
 of them is `nextjs`/`react`/`web`. This convention needs to be built from scratch, following the *shape*
 of the Flutter one where it makes sense, not copying it mechanically (Next.js's install model is
 fundamentally different — see below).

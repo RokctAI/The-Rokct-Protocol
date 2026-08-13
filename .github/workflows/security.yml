@@ -7,6 +7,11 @@ on:
 jobs:
   scan:
     permissions: write-all
-    uses: RokctAI/shared-workflows/.github/workflows/universal-security.yml@main
-    secrets: inherit
+    uses: RokctAI/shared-workflows/.github/workflows/universal-security.yml@fed18a76a3107bcd8293a24d3e949addfdd09e84 # shared-workflows main @ 2026-08-13
+    secrets:
+      COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
+      APP_ID: ${{ secrets.APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      MONOREPO_PAT: ${{ secrets.MONOREPO_PAT }}
+      GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 

@@ -8,8 +8,8 @@ SHA-256, then executes it with the kits subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
-DELEGATE_PATH   = "core/utils/agent_deligation/job_manager.py"
+PROTOCOL_REF    = "15f0befa044853caa915597e6921d7f98d3a4fbb"
+DELEGATE_PATH   = "core/utils/agent_delegation/job_manager.py"
 DELEGATE_SHA256 = "405ac27e9f8cf26a31b4e6977f28c63732ff9712f42f771553d3d4d8d3971deb"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 

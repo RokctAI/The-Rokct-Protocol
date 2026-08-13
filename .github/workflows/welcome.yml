@@ -7,6 +7,7 @@ on:
 
 jobs:
   welcome:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-welcome.yml@main
+    uses: RokctAI/shared-workflows/.github/workflows/universal-welcome.yml@fed18a76a3107bcd8293a24d3e949addfdd09e84 # shared-workflows main @ 2026-08-13
     permissions: write-all
-    secrets: inherit
+    secrets:
+      COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}

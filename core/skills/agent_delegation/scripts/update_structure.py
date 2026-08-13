@@ -8,8 +8,8 @@ SHA-256, then executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF    = "ab78bedfc5ca981d0170310dc88c3a328134eb58"
-DELEGATE_PATH   = "core/utils/agent_deligation/update_structure.py"
+PROTOCOL_REF    = "15f0befa044853caa915597e6921d7f98d3a4fbb"
+DELEGATE_PATH   = "core/utils/agent_delegation/update_structure.py"
 DELEGATE_SHA256 = "4a7520753a5faffaf8a2ea0341239ea327f3defe257e440eaf38661147dfe8c6"
 GITHUB_RAW_BASE = f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 
