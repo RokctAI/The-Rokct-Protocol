@@ -9,7 +9,7 @@ PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # Manifest fetches are data-only, but pinning keeps them immutable too.
-PROTOCOL_REF = "a08d0b3a4c1643ff9c6a1c9ffdcfe8a59c539dba"
+PROTOCOL_REF = "3a5affcd4e33cd25b362798a2c9ab5628a4a721d"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
