@@ -8,9 +8,9 @@ set -e
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # The initiate.py fetch is pinned to this commit and its SHA-256 is verified
 # before it is executed; a mismatch aborts the install.
-PROTOCOL_REF="42c7e71a78aa6eb6350ada15987ed53cc001ca1f"
-INITIATE_SHA256_LOCAL="8752a39b1d34dad7c22343f877427d543fe846f67df810380d29d88ae4c92f50"
-INITIATE_SHA256_WEB="e56c8ed9e4ed3abba9e25f234235623cf5eb6b089bf349b7a9af19b0c3580aac"
+PROTOCOL_REF="2fc26360b5e7609a9ce6a99974cd85455ed84ad9"
+INITIATE_SHA256_LOCAL="dc2e24001a0105c1f89d35c2fa261456ef7e19991ccefb06406a2b6a54c0b279"
+INITIATE_SHA256_WEB="24c9758f0d37d846b36335a9b0f8217601f873b0e40ea970ca84d44f489da3ab"
 
 PROTOCOL_RAW="https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/$PROTOCOL_REF"
 
