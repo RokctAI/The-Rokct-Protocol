@@ -9,7 +9,7 @@ SHA-256, then executes it with the lock subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "42c7e71a78aa6eb6350ada15987ed53cc001ca1f"
+PROTOCOL_REF = "9e9c36aa4147cc25dd94a58f1c504588d09ffbee"
 DELEGATE_PATH = "core/utils/agent_delegation/job_manager.py"
 DELEGATE_SHA256 = "868defca630cce47d15b7597539ea2aeeeff035533683973eb9871c16307d1fd"
 GITHUB_RAW_BASE = (
