@@ -65,18 +65,34 @@ def load_monorepo_env(custom_path=None):
             "Authorization": f"token {pat}",
             "Accept": "application/vnd.github.v3.raw",
         }
+        # Callers capture stdout (and often stderr) as the response payload
+        # and can commit it into job cards, so never print URLs, tokens,
+        # headers, or payload content here — non-sensitive metadata only,
+        # and only to stderr.
         if os.environ.get("GITHUB_ACTIONS"):
-            print(f"[CI Debug] MONOREPO_PAT detected. Dialing home to: {url}")
+            print(
+                "[CI Debug] MONOREPO_PAT detected; resolving env via remote vault.",
+                file=sys.stderr,
+            )
 
         try:
             # We fetch as RAW plain text
             resp = requests.get(url, headers=headers, timeout=30)
             if resp.status_code == 200:
                 if parse_env_content(resp.text):
+                    if os.environ.get("GITHUB_ACTIONS"):
+                        print(
+                            "[CI Debug] Env resolution via remote vault: ok",
+                            file=sys.stderr,
+                        )
                     return True
         except Exception as e:
+            # Exception text can embed the request URL — log the class only.
             if os.environ.get("GITHUB_ACTIONS"):
-                print(f"[CI Debug] Remote Vault resolution failed: {e}")
+                print(
+                    f"[CI Debug] Remote vault resolution failed: {type(e).__name__}",
+                    file=sys.stderr,
+                )
 
     # --- 2. LOCAL FALLBACK MODE ---
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -90,9 +106,12 @@ def load_monorepo_env(custom_path=None):
     env_paths.append(os.path.join(workspace_root, "Monorepo", ".env", "production.env"))
     env_paths.append(os.path.join(workspace_root, ".env", "production.env"))
 
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(
+            "[CI Debug] Falling back to local env resolution.",
+            file=sys.stderr,
+        )
     for path in env_paths:
-        if os.environ.get("GITHUB_ACTIONS"):
-            print(f"[CI Debug] Checking local env path: {path}")
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -100,7 +119,10 @@ def load_monorepo_env(custom_path=None):
                         return True
             except OSError as e:
                 if os.environ.get("GITHUB_ACTIONS"):
-                    print(f"[CI Debug] Local env resolution failed ({path}): {e}")
+                    print(
+                        f"[CI Debug] Local env resolution failed: {type(e).__name__}",
+                        file=sys.stderr,
+                    )
     return False
 
 
