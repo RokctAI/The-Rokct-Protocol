@@ -4,6 +4,40 @@ import shutil
 import hashlib
 import re
 import subprocess
+import sys
+
+# Strict compose mode: every compose_warning() below (a wiring step that could
+# not fully apply — missing target file, absent @marker, malformed manifest
+# entry, unreadable state) escalates from a printed warning to a hard
+# RuntimeError, so CI can refuse a compose whose wiring is silently missing.
+# Same env-flag convention as sdk_composer.py's ROKCT_ALLOW_UNPINNED_SDKS.
+# Default (unset) keeps the historical warn-and-continue behavior so
+# currently-green composes stay green.
+COMPOSE_STRICT_ENV = "ROKCT_COMPOSE_STRICT"
+
+
+def _compose_strict():
+    return os.environ.get(COMPOSE_STRICT_ENV, "").lower() in ("1", "true", "yes")
+
+
+def compose_warning(message):
+    """Loudly surface a compose/wiring step that did not fully apply.
+
+    Prints to BOTH stdout (the installer's existing logging stream, so the
+    warning lands in the same transcript as every other "[*]"/"[!]" line) and
+    stderr (so wrappers that only surface stderr still show it). With
+    ROKCT_COMPOSE_STRICT=1/true/yes the warning is escalated to a hard error
+    instead, failing the compose with a non-zero exit.
+    """
+    line = f"  [!] WARNING: {message}"
+    print(line)
+    if sys.stderr is not sys.stdout:
+        print(line, file=sys.stderr)
+    if _compose_strict():
+        raise RuntimeError(
+            f"{COMPOSE_STRICT_ENV} is set: escalating compose warning to error: {message}"
+        )
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # install_state.json lives inside .rokct/cache/ (an end_protocol.py
@@ -134,8 +168,11 @@ def resolve_home_sdk():
                         manifest = json.load(f)
                         if manifest.get("home_sdk") is True:
                             return sdk_name
-                except Exception:
-                    pass
+                except Exception as e:
+                    compose_warning(
+                        f"unreadable manifest {manifest_path} for SDK {sdk_name} "
+                        f"({e}); it cannot be considered as the home SDK"
+                    )
     return "core_sdk"
 
 
@@ -209,8 +246,20 @@ def bootstrap_home_sdk_if_missing(state):
     for entry in manifest.get("installs", []):
         from_rel = entry.get("from")
         to_rel = entry.get("to")
+        if not from_rel or not to_rel:
+            compose_warning(
+                f"compose skipped: malformed installs entry in {home_sdk_name}'s "
+                f"manifest (from={from_rel!r}, to={to_rel!r}); bootstrap file NOT installed"
+            )
+            continue
         src_path = os.path.join(home_sdk_path, from_rel)
         dest_path = os.path.join(PROJECT_ROOT, to_rel)
+        if not os.path.exists(src_path):
+            compose_warning(
+                f"compose skipped: bootstrap template source {from_rel} missing "
+                f"for SDK {home_sdk_name}; {to_rel} NOT installed"
+            )
+            continue
         if os.path.exists(src_path):
             if os.path.isdir(src_path):
                 if os.path.exists(dest_path):
@@ -243,8 +292,12 @@ def load_state():
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
                 state = json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            compose_warning(
+                f"unreadable install state {STATE_FILE} ({e}); compose is "
+                f"proceeding from an EMPTY state - previously recorded SDK "
+                f"wiring and file hashes are being ignored"
+            )
 
     bootstrap_home_sdk_if_missing(state)
 
@@ -281,7 +334,11 @@ def get_host_routes():
         with open(composer_json_path, "r", encoding="utf-8-sig") as f:
             config = json.load(f)
         return config.get("host_routes", [])
-    except Exception:
+    except Exception as e:
+        compose_warning(
+            f"unreadable composer.json {composer_json_path} ({e}); "
+            f"host_routes NOT applied"
+        )
         return []
 
 
@@ -294,8 +351,11 @@ def get_project_package_name():
                 composer_data = json.load(f)
             if "package_name" in composer_data:
                 return composer_data["package_name"]
-        except Exception:
-            pass
+        except Exception as e:
+            print(
+                f"  [!] unreadable composer.json {composer_json_path} ({e}); "
+                f"falling back to pubspec.yaml for the package name"
+            )
 
     # 2. Fallback to pubspec.yaml
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
@@ -305,8 +365,11 @@ def get_project_package_name():
                 for line in f:
                     if line.startswith("name:"):
                         return line.split(":", 1)[1].strip()
-        except Exception:
-            pass
+        except Exception as e:
+            print(
+                f"  [!] unreadable pubspec.yaml {pubspec_path} ({e}); "
+                f"falling back to the default package name"
+            )
     return "rokctapp"
 
 
@@ -359,13 +422,19 @@ def resolve_sdk_path(sdk_name):
 def install_sdk_files_and_routes(sdk_name):
     sdk_path = resolve_sdk_path(sdk_name)
     if not sdk_path:
-        print(f"[-] Could not resolve path for SDK: {sdk_name}")
+        compose_warning(
+            f"compose skipped: could not resolve path for SDK {sdk_name}; "
+            f"NOTHING from this SDK was installed"
+        )
         return False
 
     manifest_path = os.path.join(sdk_path, "manifest.json")
 
     if not os.path.exists(manifest_path):
-        print(f"[-] No manifest found for {sdk_name}")
+        compose_warning(
+            f"compose skipped: manifest.json missing at {manifest_path} for SDK "
+            f"{sdk_name}; NOTHING from this SDK was installed"
+        )
         return False
 
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
@@ -449,13 +518,20 @@ def install_sdk_files_and_routes(sdk_name):
         from_rel = entry.get("from")
         to_rel = entry.get("to")
         if not from_rel or not to_rel:
+            compose_warning(
+                f"compose skipped: malformed installs entry in SDK {sdk_name}'s "
+                f"manifest (from={from_rel!r}, to={to_rel!r}); file NOT installed"
+            )
             continue
 
         src_path = os.path.join(sdk_path, from_rel)
         dest_path = os.path.join(PROJECT_ROOT, to_rel)
 
         if not os.path.exists(src_path):
-            print(f"  [-] Template source not found: {from_rel}")
+            compose_warning(
+                f"compose skipped: template source {from_rel} missing for SDK "
+                f"{sdk_name}; {to_rel} NOT installed"
+            )
             continue
 
         files_to_sync = []
@@ -655,7 +731,10 @@ def install_sdk_files_and_routes(sdk_name):
 
 def update_router_table():
     if not os.path.exists(ROUTER_FILE):
-        print(f"[-] router file not found: {ROUTER_FILE}")
+        compose_warning(
+            f"compose skipped: router file {ROUTER_FILE} missing; "
+            f"generated routes/imports NOT applied"
+        )
         return
 
     state = load_state()
@@ -694,6 +773,14 @@ def update_router_table():
     with open(ROUTER_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
+    for marker in ("// @generated-imports-start", "// @generated-routes-start"):
+        if marker not in content:
+            compose_warning(
+                f"marker {marker} not found in {ROUTER_FILE}; "
+                f"generated routes/imports NOT applied"
+            )
+            return
+
     # Inject imports
     import_block = "\n".join(sorted(list(all_imports)))
     import_replacement = (
@@ -725,7 +812,10 @@ def update_router_table():
 
 def update_main_dependencies():
     if not os.path.exists(MAIN_FILE):
-        print(f"[-] main.dart file not found: {MAIN_FILE}")
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"SDK imports/DI registrations NOT applied"
+        )
         return
 
     state = load_state()
@@ -756,6 +846,14 @@ def update_main_dependencies():
 
     with open(MAIN_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    for marker in ("// @generated-sdk-imports-start", "// @generated-sdk-di-start"):
+        if marker not in content:
+            compose_warning(
+                f"marker {marker} not found in {MAIN_FILE}; "
+                f"SDK imports/DI registrations NOT applied"
+            )
+            return
 
     # Inject imports
     imports_block = "\n".join(sdk_imports)
@@ -794,7 +892,10 @@ def _clean_pkg_name(pkg):
 
 def update_database_registration():
     if not os.path.exists(DB_FILE):
-        print(f"[-] app_database.dart file not found: {DB_FILE}")
+        compose_warning(
+            f"compose skipped: app_database.dart file {DB_FILE} missing; "
+            f"SDK database registrations NOT applied"
+        )
         return
 
     state = load_state()
@@ -840,8 +941,8 @@ def update_database_registration():
                     PROJECT_ROOT, ".rokct", "cache", clean, "lib", *rel.split("/")
                 )
                 if not os.path.exists(src):
-                    print(
-                        f"  [!] {pkg_name}: table source missing ({uri}) - its cache has no lib/ "
+                    compose_warning(
+                        f"{pkg_name}: table source missing ({uri}) - its cache has no lib/ "
                         f"(stripped or pinned?); DROPPING ALL of {pkg_name}'s database registration "
                         f"so the composed AppDatabase still compiles. "
                         f"Delete .rokct/cache/{clean} to force a clean re-extract."
@@ -879,10 +980,34 @@ def update_database_registration():
                     max_version = ver_int
                 migration_steps.append(f"        {step}")
             except Exception:
-                pass
+                compose_warning(
+                    f"{pkg_name}: database migration version {version!r} is not an "
+                    f"integer; its migration step was NOT applied"
+                )
+        elif version or step:
+            compose_warning(
+                f"{pkg_name}: database migration declares only "
+                f"{'version' if version else 'step'} (needs both 'version' and "
+                f"'step'); its migration step was NOT applied"
+            )
 
     with open(DB_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    db_markers = (
+        "// @sdk-database-imports-start",
+        "// @sdk-database-tables-start",
+        "// @sdk-database-migrations-start",
+    )
+    missing_markers = [m for m in db_markers if m not in content]
+    if not re.search(r"int get schemaVersion => \d+;", content):
+        missing_markers.append("int get schemaVersion => <n>;")
+    if missing_markers:
+        compose_warning(
+            f"marker(s) {', '.join(missing_markers)} not found in {DB_FILE}; "
+            f"SDK database registrations NOT applied"
+        )
+        return
 
     # 1. Inject imports
     imports_block = "\n".join(sorted(rel_imports))
@@ -932,11 +1057,21 @@ def update_database_registration():
 
 def update_tr_keys_registration():
     if not os.path.exists(TRKEYS_FILE):
-        print(f"[-] tr_keys.dart file not found: {TRKEYS_FILE}")
+        compose_warning(
+            f"compose skipped: tr_keys.dart file {TRKEYS_FILE} missing; "
+            f"SDK translation keys NOT applied"
+        )
         return
 
     with open(TRKEYS_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    if "// @sdk-tr-keys-start" not in content:
+        compose_warning(
+            f"marker // @sdk-tr-keys-start not found in {TRKEYS_FILE}; "
+            f"SDK translation keys NOT applied"
+        )
+        return
 
     # Constants base itself declares OUTSIDE the @sdk-tr-keys block. An SDK
     # key injected under one of these names would make the composed class
@@ -994,11 +1129,21 @@ def update_asset_keys_registration():
     string; the block between // @sdk-asset-keys-start/end is regenerated
     from all installed SDKs, first declaration wins on collisions."""
     if not os.path.exists(ASSETKEYS_FILE):
-        print(f"[-] app_assets.dart file not found: {ASSETKEYS_FILE}")
+        compose_warning(
+            f"compose skipped: app_assets.dart file {ASSETKEYS_FILE} missing; "
+            f"SDK asset keys NOT applied"
+        )
         return
 
     with open(ASSETKEYS_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    if "// @sdk-asset-keys-start" not in content:
+        compose_warning(
+            f"marker // @sdk-asset-keys-start not found in {ASSETKEYS_FILE}; "
+            f"SDK asset keys NOT applied"
+        )
+        return
 
     # Constants base itself declares OUTSIDE the @sdk-asset-keys block - an
     # SDK key under one of these names would be declared twice in the
@@ -1072,7 +1217,10 @@ def update_app_assets_registration():
     """
     pubspec_path = os.path.join(PROJECT_ROOT, "pubspec.yaml")
     if not os.path.exists(pubspec_path):
-        print(f"[-] app pubspec.yaml not found: {pubspec_path}")
+        compose_warning(
+            f"compose skipped: app pubspec.yaml {pubspec_path} missing; "
+            f"SDK-declared asset entries NOT applied"
+        )
         return
 
     state = load_state()
@@ -1111,9 +1259,10 @@ def update_app_assets_registration():
                 assets_idx = i
                 break
         if assets_idx < 0:
-            print(
-                "  [!] app pubspec.yaml has no `assets:` line - add one under "
-                "`flutter:` so SDK-declared assets can be injected."
+            compose_warning(
+                "app pubspec.yaml has no `assets:` line - add one under "
+                "`flutter:` so SDK-declared assets can be injected; "
+                "SDK-declared asset entries NOT applied"
             )
             return
         new_lines = (
@@ -1133,10 +1282,6 @@ def update_app_assets_registration():
 
 
 def update_constants_overrides():
-    if not os.path.exists(CONSTANTS_FILE):
-        print(f"[-] app_constants.dart file not found: {CONSTANTS_FILE}")
-        return
-
     state = load_state()
     imports = set()
     overrides = {}
@@ -1152,14 +1297,28 @@ def update_constants_overrides():
     if not overrides:
         return
 
+    if not os.path.exists(CONSTANTS_FILE):
+        compose_warning(
+            f"compose skipped: app_constants.dart file {CONSTANTS_FILE} missing; "
+            f"AppConstants overrides NOT applied"
+        )
+        return
+
     with open(CONSTANTS_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
+    import_anchor = "import 'package:base_sdk/src/services/enums.dart';"
     for imp in sorted(imports):
         if imp not in content:
+            if import_anchor not in content:
+                compose_warning(
+                    f"import anchor {import_anchor} not found in {CONSTANTS_FILE}; "
+                    f"constants import {imp} NOT applied"
+                )
+                continue
             content = content.replace(
-                "import 'package:base_sdk/src/services/enums.dart';",
-                f"import 'package:base_sdk/src/services/enums.dart';\n{imp}",
+                import_anchor,
+                f"{import_anchor}\n{imp}",
                 1,
             )
 
@@ -1174,8 +1333,9 @@ def update_constants_overrides():
             content = new_content
             applied += 1
         else:
-            print(
-                f"  [!] constants override: field '{field}' not found in AppConstants, skipping"
+            compose_warning(
+                f"constants override: field '{field}' not found in AppConstants; "
+                f"override NOT applied"
             )
 
     if applied:
@@ -1197,10 +1357,19 @@ def update_layout_integrations():
             replacement = integration.get("replacement")
 
             if not target_rel or not placeholder or not replacement:
+                compose_warning(
+                    f"compose skipped: malformed integrations entry for SDK {pkg_name} "
+                    f"(target={target_rel!r}, placeholder={placeholder!r}) - it needs "
+                    f"non-empty 'target', 'placeholder' and 'replacement'; wiring NOT applied"
+                )
                 continue
 
             target_abs = os.path.join(PROJECT_ROOT, target_rel)
             if not os.path.exists(target_abs):
+                compose_warning(
+                    f"compose skipped: target file {target_rel} missing for SDK "
+                    f"{pkg_name} (placeholder {placeholder}); wiring NOT applied"
+                )
                 continue
 
             # Read current file text (either original or accumulated in loop)
@@ -1211,6 +1380,13 @@ def update_layout_integrations():
 
             # Prevent double injection: Check if replacement is already in file
             if replacement in content:
+                continue
+
+            if placeholder not in content:
+                compose_warning(
+                    f"marker {placeholder} not found in {target_rel} for SDK "
+                    f"{pkg_name}; wiring NOT applied"
+                )
                 continue
 
             # Replace placeholder while preserving it for future updates
@@ -1245,6 +1421,10 @@ def update_app_routes():
     exactly as before.
     """
     if not os.path.exists(MAIN_FILE):
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"AppRoutes methods NOT applied"
+        )
         return
 
     state = load_state()
@@ -1269,6 +1449,14 @@ def update_app_routes():
 
     with open(MAIN_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    if "// @generated-approutes-start" not in content:
+        if all_methods:
+            compose_warning(
+                f"marker // @generated-approutes-start not found in {MAIN_FILE}; "
+                f"{len(all_methods)} AppRoutes method(s) NOT applied"
+            )
+        return
 
     methods_block = "\n".join(all_methods)
     replacement = f"  // @generated-approutes-start\n{methods_block}\n  // @generated-approutes-end"
@@ -1310,9 +1498,6 @@ def update_onboarding_slides():
     that hand-edit the installed shell keep their edits (the file sync skips
     drifted files); this only rewrites the marker blocks.
     """
-    if not os.path.exists(ONBOARDING_ROUTES_FILE):
-        return
-
     state = load_state()
     slides = []
     all_imports = set()
@@ -1350,6 +1535,18 @@ def update_onboarding_slides():
                 f"  [!] onboarding_slides: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence"
             )
 
+    if not os.path.exists(ONBOARDING_ROUTES_FILE):
+        # No onboarding shell installed is normal for apps without
+        # onboarding_sdk - but if some SDK DID declare slides, they are
+        # being dropped, and that must not be silent.
+        if slides:
+            compose_warning(
+                f"compose skipped: onboarding shell {ONBOARDING_ROUTES_FILE} missing "
+                f"while SDK(s) {', '.join(sorted(set(s[2] for s in slides)))} declare "
+                f"onboarding_slides; wiring NOT applied"
+            )
+        return
+
     slides.sort(key=lambda t: (t[0], t[1]))
 
     slide_blocks = []
@@ -1362,6 +1559,14 @@ def update_onboarding_slides():
 
     with open(ONBOARDING_ROUTES_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    if "// @generated-onboarding-slides-start" not in content:
+        if slides:
+            compose_warning(
+                f"marker // @generated-onboarding-slides-start not found in "
+                f"{ONBOARDING_ROUTES_FILE}; {len(slides)} onboarding slide(s) NOT applied"
+            )
+        return
 
     imports_block = "\n".join(sorted(all_imports))
     imports_replacement = f"// @generated-onboarding-imports-start\n{imports_block}\n// @generated-onboarding-imports-end"
@@ -1418,9 +1623,6 @@ def update_registration_steps():
     hand-edit the installed shell keep their edits (the file sync skips
     drifted files); this only rewrites the marker blocks.
     """
-    if not os.path.exists(REGISTRATION_STEPS_FILE):
-        return
-
     state = load_state()
     steps = []
     all_imports = set()
@@ -1458,6 +1660,18 @@ def update_registration_steps():
                 f"  [!] registration_steps: order {order} declared by {listing} - keeping all, tie-broken by id; declare distinct orders to control the sequence"
             )
 
+    if not os.path.exists(REGISTRATION_STEPS_FILE):
+        # No auth shell installed is normal for apps without auth_sdk - but
+        # if some SDK DID declare registration steps, they are being
+        # dropped, and that must not be silent.
+        if steps:
+            compose_warning(
+                f"compose skipped: registration shell {REGISTRATION_STEPS_FILE} missing "
+                f"while SDK(s) {', '.join(sorted(set(s[2] for s in steps)))} declare "
+                f"registration_steps; wiring NOT applied"
+            )
+        return
+
     steps.sort(key=lambda t: (t[0], t[1]))
 
     step_blocks = []
@@ -1470,6 +1684,14 @@ def update_registration_steps():
 
     with open(REGISTRATION_STEPS_FILE, "r", encoding="utf-8") as f:
         content = f.read()
+
+    if "// @generated-registration-steps-start" not in content:
+        if steps:
+            compose_warning(
+                f"marker // @generated-registration-steps-start not found in "
+                f"{REGISTRATION_STEPS_FILE}; {len(steps)} registration step(s) NOT applied"
+            )
+        return
 
     imports_block = "\n".join(sorted(all_imports))
     imports_replacement = f"// @generated-registration-imports-start\n{imports_block}\n// @generated-registration-imports-end"
@@ -1550,15 +1772,24 @@ def update_session_policy():
     policy stays in force, and login behaves exactly as before the seam
     existed (supacharge/minilauncher unchanged).
     """
-    if not os.path.exists(SESSION_POLICY_FILE):
-        return
-
     state = load_state()
     declared = {}
     for pkg_name, pkg_data in state.get("packages", {}).items():
         policy = pkg_data.get("session_policy")
         if policy and policy.get("allowed_roles"):
             declared[pkg_name] = policy
+
+    if not os.path.exists(SESSION_POLICY_FILE):
+        # No auth shell installed is normal for apps without auth_sdk - but
+        # if some SDK DID declare a session policy, it is being dropped, and
+        # that must not be silent.
+        if declared:
+            compose_warning(
+                f"compose skipped: session-policy shell {SESSION_POLICY_FILE} missing "
+                f"while SDK(s) {', '.join(sorted(declared))} declare a session_policy; "
+                f"wiring NOT applied"
+            )
+        return
 
     if len(declared) > 1:
         names = ", ".join(f"'{n}'" for n in sorted(declared))
@@ -1622,6 +1853,15 @@ def update_session_policy():
     with open(SESSION_POLICY_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
+    if "// @generated-session-policy-start" not in content:
+        if declared:
+            compose_warning(
+                f"marker // @generated-session-policy-start not found in "
+                f"{SESSION_POLICY_FILE}; session policy from "
+                f"{', '.join(sorted(declared))} NOT applied"
+            )
+        return
+
     replacement = f"  // @generated-session-policy-start\n{policy_block}\n  // @generated-session-policy-end"
     new_content = re.sub(
         r"  // @generated-session-policy-start.*?// @generated-session-policy-end",
@@ -1666,6 +1906,10 @@ def update_embedded_widgets():
     rewrites the marker block.
     """
     if not os.path.exists(MAIN_FILE):
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"EmbeddedWidgets methods NOT applied"
+        )
         return
 
     state = load_state()
@@ -1695,9 +1939,15 @@ def update_embedded_widgets():
         content = f.read()
 
     if "// @generated-embeddedwidgets-start" not in content:
-        print(
-            "  [i] main.dart has no @generated-embeddedwidgets markers (older host template) - skipping embedded-widget injection"
-        )
+        if all_methods:
+            compose_warning(
+                f"marker // @generated-embeddedwidgets-start not found in {MAIN_FILE} "
+                f"(older host template); {len(all_methods)} EmbeddedWidgets method(s) NOT applied"
+            )
+        else:
+            print(
+                "  [i] main.dart has no @generated-embeddedwidgets markers (older host template) - skipping embedded-widget injection"
+            )
         return
 
     methods_block = "\n".join(all_methods)
@@ -1735,6 +1985,10 @@ def update_brand_hook():
     no changes; this only rewrites the marker block.
     """
     if not os.path.exists(MAIN_FILE):
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"brand hook NOT applied"
+        )
         return
 
     state = load_state()
@@ -1763,9 +2017,16 @@ def update_brand_hook():
         content = f.read()
 
     if "// @generated-brandhook-start" not in content:
-        print(
-            "  [i] main.dart has no @generated-brandhook markers (older host template) - skipping brand-hook injection"
-        )
+        if declared:
+            compose_warning(
+                f"marker // @generated-brandhook-start not found in {MAIN_FILE} "
+                f"(older host template); brand hook from "
+                f"{', '.join(sorted(declared))} NOT applied"
+            )
+        else:
+            print(
+                "  [i] main.dart has no @generated-brandhook markers (older host template) - skipping brand-hook injection"
+            )
         return
 
     hook_block = "\n".join(body_lines)
@@ -1819,6 +2080,10 @@ def _update_main_hooks(state_key, marker, label):
     marker block.
     """
     if not os.path.exists(MAIN_FILE):
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"{label}s NOT applied"
+        )
         return
 
     state = load_state()
@@ -1868,9 +2133,15 @@ def _update_main_hooks(state_key, marker, label):
         content = f.read()
 
     if f"// {marker}-start" not in content:
-        print(
-            f"  [i] main.dart has no @{marker.lstrip('@')} markers (older host template) - skipping {label} injection"
-        )
+        if hooks:
+            compose_warning(
+                f"marker // {marker}-start not found in {MAIN_FILE} "
+                f"(older host template); {len(hooks)} {label}(s) NOT applied"
+            )
+        else:
+            print(
+                f"  [i] main.dart has no @{marker.lstrip('@')} markers (older host template) - skipping {label} injection"
+            )
         return
 
     replacement = f"  // {marker}-start\n{hooks_block}\n  // {marker}-end"
@@ -1929,6 +2200,10 @@ def update_wiring_imports():
     no changes; this only rewrites the marker block.
     """
     if not os.path.exists(MAIN_FILE):
+        compose_warning(
+            f"compose skipped: main.dart file {MAIN_FILE} missing; "
+            f"wiring imports NOT applied"
+        )
         return
 
     state = load_state()
@@ -1951,9 +2226,15 @@ def update_wiring_imports():
         content = f.read()
 
     if "// @generated-wiring-imports-start" not in content:
-        print(
-            "  [i] main.dart has no @generated-wiring-imports markers (older host template) - skipping wiring-import injection"
-        )
+        if all_imports:
+            compose_warning(
+                f"marker // @generated-wiring-imports-start not found in {MAIN_FILE} "
+                f"(older host template); {len(all_imports)} wiring import(s) NOT applied"
+            )
+        else:
+            print(
+                "  [i] main.dart has no @generated-wiring-imports markers (older host template) - skipping wiring-import injection"
+            )
         return
 
     imports_block = "\n".join(sorted(all_imports))
