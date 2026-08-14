@@ -17,9 +17,14 @@ Usage:
   python tools/wave_merge.py --merge   # one y/N confirmation, then merge
 
 Skipped automatically (always listed with the reason):
-  - draft PRs
-  - PRs authored by bots (any login ending in "[bot]": dependabot[bot],
-    rokctbot[bot], claude[bot], google-labs-jules[bot], ...)
+  - draft PRs — always, no flag to include them
+  - PRs from machinery authors: dependabot[bot], rokctbot[bot], and the
+    jules / google-labs-jules variants; add more with --skip-author LOGIN
+    (repeatable)
+
+claude[bot] is deliberately NOT skipped: an open ready-for-review PR from the
+Claude fleet (flipped from draft when done) is exactly the instruction this
+tool exists to act on.
 
 Exit codes: 0 = clean (dry-run, or every merge succeeded); 1 = at least one
 merge failed (conflict, protection, ...); 2 = usage/auth error.
@@ -34,8 +39,11 @@ import urllib.request
 
 API = "https://api.github.com"
 DEFAULT_ORG = "RokctAI"
-# Extra author logins to skip even without a "[bot]" suffix.
-KNOWN_BOT_AUTHORS = {"dependabot", "google-labs-jules", "jules"}
+# Author logins skipped by default, compared case-insensitively with any
+# "[bot]" suffix stripped, so "dependabot" also covers "dependabot[bot]".
+# claude[bot] is deliberately absent: its ready-for-review PRs are the ones
+# these waves process.
+DEFAULT_SKIP_AUTHORS = {"dependabot", "rokctbot", "jules", "google-labs-jules"}
 
 
 def token():
@@ -91,11 +99,13 @@ def org_repos(org, tok, only=None):
             if not r.get("archived")]
 
 
-def is_bot(login):
-    return login.endswith("[bot]") or login.lower() in KNOWN_BOT_AUTHORS
+def author_key(login):
+    """Normalize a login for skip matching: lowercase, '[bot]' suffix stripped."""
+    login = login.lower()
+    return login[: -len("[bot]")] if login.endswith("[bot]") else login
 
 
-def collect(org, repos, tok):
+def collect(org, repos, tok, skip_authors):
     """Split every open PR into (candidates, skipped-with-reason)."""
     candidates, skipped = [], []
     for repo in repos:
@@ -105,8 +115,8 @@ def collect(org, repos, tok):
                    "title": pr["title"], "author": author}
             if pr.get("draft"):
                 skipped.append({**row, "reason": "draft"})
-            elif is_bot(author):
-                skipped.append({**row, "reason": f"bot author ({author})"})
+            elif author_key(author) in skip_authors:
+                skipped.append({**row, "reason": f"skipped author ({author})"})
             else:
                 # mergeable_state needs the single-PR endpoint.
                 _, detail = request(
@@ -133,12 +143,16 @@ def main():
     ap.add_argument("--org", default=DEFAULT_ORG)
     ap.add_argument("--repos",
                     help="comma-separated repo names to scan instead of the whole org")
+    ap.add_argument("--skip-author", action="append", default=[], metavar="LOGIN",
+                    help="extra author login to skip (repeatable; case-insensitive, "
+                         "'[bot]' suffix optional)")
     args = ap.parse_args()
     tok = token()
+    skip_authors = DEFAULT_SKIP_AUTHORS | {author_key(a) for a in args.skip_author}
 
     repos = org_repos(args.org, tok, args.repos)
     print(f"Scanning {len(repos)} repos in {args.org} ...\n")
-    candidates, skipped = collect(args.org, repos, tok)
+    candidates, skipped = collect(args.org, repos, tok, skip_authors)
 
     if candidates:
         print(f"WOULD MERGE ({len(candidates)}):")
