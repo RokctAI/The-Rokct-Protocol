@@ -96,6 +96,19 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 
+def authenticated_git_url(git_url):
+    """Inject MONOREPO_PAT for github.com HTTPS clones so private SDK repos
+    (all SDKs are now private) resolve without ambient git credentials —
+    same token/URL shape universal-frappe-ci.yml already uses for its
+    own private-repo clone path."""
+    token = os.environ.get("MONOREPO_PAT")
+    if token and git_url.startswith("https://github.com/"):
+        return git_url.replace(
+            "https://github.com/", f"https://x-access-token:{token}@github.com/"
+        )
+    return git_url
+
+
 def clone_ref(git_url, ref, dest_dir):
     """Clone git_url at ref into dest_dir. Branch and tag refs take the exact
     shallow path used before (`git clone -b <ref> --depth 1`); when that
@@ -197,7 +210,7 @@ def resolve_module_sources(modules):
                 os.makedirs(cache_base, exist_ok=True)
                 if os.path.exists(temp_repo_dir):
                     shutil.rmtree(temp_repo_dir, onerror=remove_readonly)
-                clone_ref(git_url, ref, temp_repo_dir)
+                clone_ref(authenticated_git_url(git_url), ref, temp_repo_dir)
                 repo_source_dir = temp_repo_dir
             except Exception as e:
                 # A failed clone must fail the compose loudly. The old
