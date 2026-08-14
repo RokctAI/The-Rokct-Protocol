@@ -1,5 +1,5 @@
 {
-  "ref": "1483b6eac02b5ee85b85579285cceeb069d7e979",
+  "ref": "d2d6e2e7cb6b14c1d5901f2d9591c1eebfcdaf74",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -53,8 +53,8 @@
     "core/utils/startup_os/safe_io.py": "4c9386424374e7bfe4bc7d8461ed11370dbb3c352674227ed8b614163d69435d",
     "core/utils/startup_os/schemas.py": "a29e64cde6ba5cbcb985a1f5148a8c8e634b459b7e916129d57d5ac13287b59d",
     "core/utils/startup_os/template_engine.py": "1237417a8ccdaf27c810c077dd4d7d6c3a6261c2c0b1a88f9204599b9c5fd94d",
-    "profiles/local/initiate.py": "1b79f47dddab4bce19f0bd6d4b96f7e7cc59ad8b7ff1383f6d6cfef3b6ac4dd2",
-    "profiles/web/initiate.py": "3663c5a875b18a23479fa261f29b188b9f8cfb7f4b860d60abd0d1b6c249953e",
+    "profiles/local/initiate.py": "be9e38e7ab92201e3ba7d43c58b5b153f87fd006addc1b288d646ca6b8e88817",
+    "profiles/web/initiate.py": "48741569b1e3adc02f7a9e50167b22bd5228b40fd77ac9d5f174e08bc2f181f3",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
