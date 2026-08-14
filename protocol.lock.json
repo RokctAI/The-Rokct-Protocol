@@ -1,5 +1,5 @@
 {
-  "ref": "2de7a601f97fe2ef39ef9adba5e4f4839108624a",
+  "ref": "1d907bc67a636189e0256321e0d77b709b362a1b",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -13,7 +13,7 @@
     "core/utils/agent_delegation/job_manager.py": "868defca630cce47d15b7597539ea2aeeeff035533683973eb9871c16307d1fd",
     "core/utils/agent_delegation/manage_sessions.py": "047b0026c530247d62fc8d8f0206307a2d16560e41ecc7b3723ea620ac936226",
     "core/utils/agent_delegation/privacy.py": "0cb353f487d07d95da9b46061e2d4fb55a0177b17c99eacb3ed1a5de9e109dd3",
-    "core/utils/agent_delegation/reporter.py": "14924ee3dfcc4bd53c9d44eb5d4eaba41b2fe053f144835bd9c4b3ba75f9b9aa",
+    "core/utils/agent_delegation/reporter.py": "eda3f3c956a2a7443e1e798936e667055f895ede9d6c57cad2df829c2182f736",
     "core/utils/agent_delegation/update_structure.py": "cdbf9ece16fc9a73800917b85e05fdf63ef2bbcba4df71be453537b69170dc9a",
     "core/utils/flutter/sdk_composer.py": "d325ae108a22cc6165f71245cae8fb22d189ec0493f9958db0f06c78508f9d4e",
     "core/utils/flutter/sdk_installer_base.py": "4b69de16d482460ab3556bf105e735ea82b52a23346da90e6eb43e9b48bd64bf",
@@ -53,8 +53,8 @@
     "core/utils/startup_os/safe_io.py": "4c9386424374e7bfe4bc7d8461ed11370dbb3c352674227ed8b614163d69435d",
     "core/utils/startup_os/schemas.py": "a29e64cde6ba5cbcb985a1f5148a8c8e634b459b7e916129d57d5ac13287b59d",
     "core/utils/startup_os/template_engine.py": "1237417a8ccdaf27c810c077dd4d7d6c3a6261c2c0b1a88f9204599b9c5fd94d",
-    "profiles/local/initiate.py": "995f1a65cb1bf4524f0e968ee36bdc4f877e229d6867240f37b645826d30cacc",
-    "profiles/web/initiate.py": "1f998788fb07d5be9e346d43175ed642d28ac152103692aa092ca661f146c96d",
+    "profiles/local/initiate.py": "a20d1ee6125188e0b8587f6a1a23c07d24af0cef430ea6e71dc531f14a916b32",
+    "profiles/web/initiate.py": "b7d849045f43e977dcb18c4d21f5329246b93d0edc25cd73fa0df1c46800dac3",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }

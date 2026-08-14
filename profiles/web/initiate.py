@@ -16,9 +16,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "2de7a601f97fe2ef39ef9adba5e4f4839108624a"
+PROTOCOL_REF = "1d907bc67a636189e0256321e0d77b709b362a1b"
 EXPECTED_SHA256 = {
-    "profiles/web/initiate.py": "1f998788fb07d5be9e346d43175ed642d28ac152103692aa092ca661f146c96d",
+    "profiles/web/initiate.py": "b7d849045f43e977dcb18c4d21f5329246b93d0edc25cd73fa0df1c46800dac3",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_ZIP_BASE = (
