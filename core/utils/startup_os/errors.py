@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Exception hierarchy for StartupOS.
 
 Every failure mode gets a named type so callers (CLI, Hermes bridge, CI) can

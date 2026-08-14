@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Workspace resolution and safe path construction.
 
 Two jobs, both security-relevant:

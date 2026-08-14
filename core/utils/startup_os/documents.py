@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Document assembly: version control blocks, provenance footers, link maps.
 
 The previous implementation injected its version block by replacing the first

@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Jurisdiction registry — what compliance regime applies, and where.
 
 The previous engine inferred "is this South African?" from, among other things,

@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """StartupOS command line interface.
 
 Runs from the canonical engine directory as well as from the fetched skill

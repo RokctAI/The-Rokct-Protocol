@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """A small, dependency-free template renderer for StartupOS documents.
 
 Why not `str.replace` in a loop, as before? Because that loop was
