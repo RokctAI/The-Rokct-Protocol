@@ -1,0 +1,230 @@
+"""Regression tests for sdk_installer_base.py's compose/wiring loudness.
+
+Background: update_layout_integrations() used to skip silently when an
+integration's target file was missing and to no-op silently when the
+@marker placeholder was absent from the target — composes reported success
+while wiring was silently missing. These tests pin the fix:
+
+  * missing target file  -> loud warning naming SDK/file/placeholder
+  * absent placeholder   -> loud warning naming SDK/file/marker
+  * ROKCT_COMPOSE_STRICT=1 escalates either warning to a hard RuntimeError
+  * the happy path (placeholder present) still wires and stays warning-free,
+    with or without the strict flag
+
+Run:  python -m pytest core/utils/flutter/tests -q
+  or: python core/utils/flutter/tests/test_sdk_installer_base.py
+"""
+
+import importlib.util
+import io
+import json
+import os
+import shutil
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+
+_INSTALLER_SRC = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "sdk_installer_base.py",
+)
+
+_module_counter = 0
+
+
+class LayoutIntegrationTestBase(unittest.TestCase):
+    """Builds a throwaway host-project sandbox per test.
+
+    sdk_installer_base.py derives PROJECT_ROOT from its own file location
+    (parent of the .rokct/ directory it is fetched into at compose time), so
+    each test copies the module into <sandbox>/.rokct/ and imports that copy
+    under a unique module name.
+    """
+
+    SDK_NAME = "demo_sdk"
+    TARGET_REL = "lib/presentation/layout/home_layout.dart"
+    PLACEHOLDER = "// @sdk-widget-slot"
+    REPLACEMENT = "const DemoSdkCard(),"
+
+    def setUp(self):
+        self.project_root = tempfile.mkdtemp(prefix="sdk_installer_test_")
+        self.addCleanup(shutil.rmtree, self.project_root, ignore_errors=True)
+        rokct_dir = os.path.join(self.project_root, ".rokct")
+        os.makedirs(os.path.join(rokct_dir, "cache"))
+        # A pubspec.yaml must exist or load_state() would try `flutter create`.
+        with open(
+            os.path.join(self.project_root, "pubspec.yaml"), "w", encoding="utf-8"
+        ) as f:
+            f.write("name: testapp\nflutter:\n  assets:\n")
+        module_path = os.path.join(rokct_dir, "sdk_installer_base.py")
+        shutil.copy2(_INSTALLER_SRC, module_path)
+
+        global _module_counter
+        _module_counter += 1
+        spec = importlib.util.spec_from_file_location(
+            f"sdk_installer_base_under_test_{_module_counter}", module_path
+        )
+        self.installer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.installer)
+
+        self._saved_strict = os.environ.pop("ROKCT_COMPOSE_STRICT", None)
+        self.addCleanup(self._restore_strict)
+
+    def _restore_strict(self):
+        os.environ.pop("ROKCT_COMPOSE_STRICT", None)
+        if self._saved_strict is not None:
+            os.environ["ROKCT_COMPOSE_STRICT"] = self._saved_strict
+
+    def write_state(self, integrations):
+        state = {
+            "packages": {
+                self.SDK_NAME: {
+                    "version": "1.0.0",
+                    "files": {},
+                    "routes": [],
+                    "integrations": integrations,
+                }
+            }
+        }
+        state_file = os.path.join(
+            self.project_root, ".rokct", "cache", "install_state.json"
+        )
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+
+    def default_integration(self):
+        return {
+            "target": self.TARGET_REL,
+            "placeholder": self.PLACEHOLDER,
+            "replacement": self.REPLACEMENT,
+        }
+
+    def write_target(self, content):
+        target_abs = os.path.join(self.project_root, self.TARGET_REL)
+        os.makedirs(os.path.dirname(target_abs), exist_ok=True)
+        with open(target_abs, "w", encoding="utf-8") as f:
+            f.write(content)
+        return target_abs
+
+    def read_target(self):
+        target_abs = os.path.join(self.project_root, self.TARGET_REL)
+        with open(target_abs, "r", encoding="utf-8") as f:
+            return f.read()
+
+    def run_update(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_layout_integrations()
+        return out.getvalue(), err.getvalue()
+
+
+class TestMissingTargetFile(LayoutIntegrationTestBase):
+    def test_warning_names_sdk_file_and_placeholder(self):
+        """Missing target used to `continue` silently; now it must warn."""
+        self.write_state([self.default_integration()])
+        out, err = self.run_update()
+        combined = out + err
+        self.assertIn("WARNING", combined)
+        self.assertIn("compose skipped", combined)
+        self.assertIn(self.TARGET_REL, combined)
+        self.assertIn(self.SDK_NAME, combined)
+        self.assertIn(self.PLACEHOLDER, combined)
+        self.assertIn("wiring NOT applied", combined)
+        # The warning must reach stderr too, not only the stdout transcript.
+        self.assertIn("WARNING", err)
+
+    def test_strict_flag_escalates_to_error(self):
+        self.write_state([self.default_integration()])
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        with self.assertRaises(RuntimeError) as ctx:
+            self.run_update()
+        self.assertIn("ROKCT_COMPOSE_STRICT", str(ctx.exception))
+        self.assertIn(self.TARGET_REL, str(ctx.exception))
+
+
+class TestAbsentPlaceholder(LayoutIntegrationTestBase):
+    def test_warning_names_sdk_file_and_marker(self):
+        """Absent placeholder used to make str.replace a silent no-op."""
+        self.write_state([self.default_integration()])
+        original = "class HomeLayout {}\n// some other content\n"
+        self.write_target(original)
+        out, err = self.run_update()
+        combined = out + err
+        self.assertIn("WARNING", combined)
+        self.assertIn(f"marker {self.PLACEHOLDER} not found", combined)
+        self.assertIn(self.TARGET_REL, combined)
+        self.assertIn(self.SDK_NAME, combined)
+        self.assertIn("wiring NOT applied", combined)
+        self.assertEqual(self.read_target(), original)
+
+    def test_strict_flag_escalates_to_error(self):
+        self.write_state([self.default_integration()])
+        self.write_target("class HomeLayout {}\n")
+        os.environ["ROKCT_COMPOSE_STRICT"] = "true"
+        with self.assertRaises(RuntimeError) as ctx:
+            self.run_update()
+        self.assertIn(self.PLACEHOLDER, str(ctx.exception))
+
+
+class TestMalformedIntegrationEntry(LayoutIntegrationTestBase):
+    def test_entry_without_replacement_warns(self):
+        entry = self.default_integration()
+        del entry["replacement"]
+        self.write_state([entry])
+        out, err = self.run_update()
+        combined = out + err
+        self.assertIn("WARNING", combined)
+        self.assertIn("malformed integrations entry", combined)
+        self.assertIn(self.SDK_NAME, combined)
+
+    def test_entry_without_replacement_strict_raises(self):
+        entry = self.default_integration()
+        del entry["replacement"]
+        self.write_state([entry])
+        os.environ["ROKCT_COMPOSE_STRICT"] = "yes"
+        with self.assertRaises(RuntimeError):
+            self.run_update()
+
+
+class TestHappyPathUnchanged(LayoutIntegrationTestBase):
+    def test_injection_applies_and_emits_no_warning(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"class HomeLayout {{}}\n{self.PLACEHOLDER}\n")
+        out, err = self.run_update()
+        combined = out + err
+        self.assertNotIn("WARNING", combined)
+        content = self.read_target()
+        # Placeholder preserved for future recomposes, replacement injected.
+        self.assertIn(f"{self.PLACEHOLDER}\n{self.REPLACEMENT}", content)
+
+    def test_happy_path_unaffected_by_strict_flag(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"class HomeLayout {{}}\n{self.PLACEHOLDER}\n")
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        out, err = self.run_update()
+        self.assertNotIn("WARNING", out + err)
+        self.assertIn(self.REPLACEMENT, self.read_target())
+
+    def test_already_injected_is_still_silent_noop(self):
+        self.write_state([self.default_integration()])
+        already = f"class HomeLayout {{}}\n{self.PLACEHOLDER}\n{self.REPLACEMENT}\n"
+        self.write_target(already)
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        out, err = self.run_update()
+        self.assertNotIn("WARNING", out + err)
+        self.assertEqual(self.read_target(), already)
+
+    def test_strict_flag_off_by_default(self):
+        """Unset/other values must keep the warn-and-continue default."""
+        self.write_state([self.default_integration()])
+        # No target file at all -> warning path, but never an exception.
+        out, err = self.run_update()
+        self.assertIn("WARNING", out + err)
+        os.environ["ROKCT_COMPOSE_STRICT"] = "0"
+        out, err = self.run_update()
+        self.assertIn("WARNING", out + err)
+
+
+if __name__ == "__main__":
+    unittest.main()

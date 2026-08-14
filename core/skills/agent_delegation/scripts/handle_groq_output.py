@@ -9,7 +9,7 @@ SHA-256, then executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "50c18471b3b120dcd9d3eb01708154816c16da3a"
+PROTOCOL_REF = "2de7a601f97fe2ef39ef9adba5e4f4839108624a"
 DELEGATE_PATH = "core/utils/agent_delegation/handle_groq_output.py"
 DELEGATE_SHA256 = "e943988834eecef055a9c96ef52e267db16ed5e8e0b6f32c463b564358c2506d"
 GITHUB_RAW_BASE = (
