@@ -81,7 +81,31 @@ The agent runs `.rokct/end_protocol.py`, which:
 - Keeps any modified working files (`memory.md`, `decision_log.md`, etc.).
 - Leaves `.sync_ready` for CI to pick up.
 
-### 6. Features You Get
+### 6. Wave Merge (One-Command PR Merging)
+
+Merges every OPEN non-draft PR across the RokctAI org in one command —
+the org convention is that an open non-draft PR means "merge me", and CI red
+(license-check / checklist-check, Actions-minutes deaths) is expected, so
+merging never waits for green checks.
+
+```bash
+export MONOREPO_PAT=ghp_...              # or GITHUB_TOKEN
+
+python tools/wave_merge.py               # dry-run: lists what WOULD merge
+python tools/wave_merge.py --merge       # one y/N confirmation, then merges
+```
+
+Skipped automatically (and listed with the reason): draft PRs (always — no
+flag to include them), and PRs from machinery authors (`dependabot[bot]`,
+`rokctbot[bot]`, and the `jules` / `google-labs-jules` variants). Skip more
+logins with a repeatable `--skip-author LOGIN`. `claude[bot]` is deliberately
+NOT skipped: Claude-fleet PRs flipped from draft to ready are exactly the
+ones these waves are for. Defaults to merge commits (the house habit);
+override with `--method squash|rebase`. Scan a subset with
+`--repos repo1,repo2`. Exits non-zero if any merge fails (conflict,
+branch protection), reporting each failure and continuing with the rest.
+
+### 7. Features You Get
 
 *   **Infinite Memory**: Long sessions roll over automatically.
 *   **Workspace Sync**: Multi-repo support — one central log for all your projects.
