@@ -57,12 +57,17 @@ def token():
 def request(method, url, tok, body=None):
     """One API call. Returns (status, parsed-json); never raises on HTTP errors."""
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": f"Bearer {tok}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "rokct-wave-merge",
-    })
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method=method,
+        headers={
+            "Authorization": f"Bearer {tok}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "rokct-wave-merge",
+        },
+    )
     try:
         with urllib.request.urlopen(req) as resp:
             return resp.status, json.load(resp)
@@ -81,8 +86,10 @@ def paginate(url, tok):
         sep = "&" if "?" in url else "?"
         status, items = request("GET", f"{url}{sep}per_page=100&page={page}", tok)
         if status != 200:
-            sys.exit(f"error: GET {url} page {page} -> HTTP {status}: "
-                     f"{items.get('message', items)}")
+            sys.exit(
+                f"error: GET {url} page {page} -> HTTP {status}: "
+                f"{items.get('message', items)}"
+            )
         if not items:
             return
         yield from items
@@ -95,8 +102,11 @@ def org_repos(org, tok, only=None):
     """Repo names to scan: the whole org, or an explicit --repos subset."""
     if only:
         return [r.strip() for r in only.split(",") if r.strip()]
-    return [r["name"] for r in paginate(f"{API}/orgs/{org}/repos?type=all", tok)
-            if not r.get("archived")]
+    return [
+        r["name"]
+        for r in paginate(f"{API}/orgs/{org}/repos?type=all", tok)
+        if not r.get("archived")
+    ]
 
 
 def author_key(login):
@@ -111,8 +121,12 @@ def collect(org, repos, tok, skip_authors):
     for repo in repos:
         for pr in paginate(f"{API}/repos/{org}/{repo}/pulls?state=open", tok):
             author = (pr.get("user") or {}).get("login", "?")
-            row = {"repo": repo, "number": pr["number"],
-                   "title": pr["title"], "author": author}
+            row = {
+                "repo": repo,
+                "number": pr["number"],
+                "title": pr["title"],
+                "author": author,
+            }
             if pr.get("draft"):
                 skipped.append({**row, "reason": "draft"})
             elif author_key(author) in skip_authors:
@@ -120,32 +134,44 @@ def collect(org, repos, tok, skip_authors):
             else:
                 # mergeable_state needs the single-PR endpoint.
                 _, detail = request(
-                    "GET", f"{API}/repos/{org}/{repo}/pulls/{pr['number']}", tok)
+                    "GET", f"{API}/repos/{org}/{repo}/pulls/{pr['number']}", tok
+                )
                 row["mergeable_state"] = detail.get("mergeable_state", "unknown")
                 candidates.append(row)
     return candidates, skipped
 
 
 def print_table(rows, columns):
-    widths = [max(len(str(r[c])) for r in rows + [dict.fromkeys(columns, c)])
-              for c in columns]
+    widths = [
+        max(len(str(r[c])) for r in rows + [dict.fromkeys(columns, c)]) for c in columns
+    ]
     for r in [dict(zip(columns, columns))] + rows:
         print("  ".join(str(r[c]).ljust(w) for c, w in zip(columns, widths)))
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--merge", action="store_true",
-                    help="actually merge (default is dry-run)")
-    ap.add_argument("--method", choices=["merge", "squash", "rebase"],
-                    default="merge",
-                    help="merge method (default: merge, the house habit)")
+    ap.add_argument(
+        "--merge", action="store_true", help="actually merge (default is dry-run)"
+    )
+    ap.add_argument(
+        "--method",
+        choices=["merge", "squash", "rebase"],
+        default="merge",
+        help="merge method (default: merge, the house habit)",
+    )
     ap.add_argument("--org", default=DEFAULT_ORG)
-    ap.add_argument("--repos",
-                    help="comma-separated repo names to scan instead of the whole org")
-    ap.add_argument("--skip-author", action="append", default=[], metavar="LOGIN",
-                    help="extra author login to skip (repeatable; case-insensitive, "
-                         "'[bot]' suffix optional)")
+    ap.add_argument(
+        "--repos", help="comma-separated repo names to scan instead of the whole org"
+    )
+    ap.add_argument(
+        "--skip-author",
+        action="append",
+        default=[],
+        metavar="LOGIN",
+        help="extra author login to skip (repeatable; case-insensitive, "
+        "'[bot]' suffix optional)",
+    )
     args = ap.parse_args()
     tok = token()
     skip_authors = DEFAULT_SKIP_AUTHORS | {author_key(a) for a in args.skip_author}
@@ -156,8 +182,9 @@ def main():
 
     if candidates:
         print(f"WOULD MERGE ({len(candidates)}):")
-        print_table(candidates,
-                    ["repo", "number", "author", "mergeable_state", "title"])
+        print_table(
+            candidates, ["repo", "number", "author", "mergeable_state", "title"]
+        )
     else:
         print("WOULD MERGE (0): nothing to do")
     if skipped:
@@ -178,8 +205,11 @@ def main():
     merged, failed = [], []
     for pr in candidates:
         status, resp = request(
-            "PUT", f"{API}/repos/{args.org}/{pr['repo']}/pulls/{pr['number']}/merge",
-            tok, {"merge_method": args.method})
+            "PUT",
+            f"{API}/repos/{args.org}/{pr['repo']}/pulls/{pr['number']}/merge",
+            tok,
+            {"merge_method": args.method},
+        )
         if status == 200 and resp.get("merged"):
             merged.append(pr)
             print(f"  merged  {pr['repo']}#{pr['number']}")
