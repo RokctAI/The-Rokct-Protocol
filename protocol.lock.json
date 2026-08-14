@@ -1,5 +1,5 @@
 {
-  "ref": "1483b6eac02b5ee85b85579285cceeb069d7e979",
+  "ref": "cb30096acc20d4c6ea1f5399c68dab7e99fc65e4",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -8,8 +8,8 @@
     "core/templates/memory.md": "b3f9c00b1aa2eacf0f4c2e00c7830aa29532286f1177f2a601a0dbd2f32ae191",
     "core/templates/project_map.md": "4630c8f4245f860f1b539da1ee4037eca31d38514c7946f24f24d7a3bbdaf897",
     "core/templates/session_summary.md": "2e9d38200a6f15dc7d232c01d0472b539da25c9bce8e482103875e616e33678f",
-    "core/utils/agent_delegation/delegate_to_agent.py": "e313cebb582b71a4c23c78fd363086d6ff12c21df5003b5134c88a8963f64b1d",
-    "core/utils/agent_delegation/handle_groq_output.py": "e943988834eecef055a9c96ef52e267db16ed5e8e0b6f32c463b564358c2506d",
+    "core/utils/agent_delegation/delegate_to_agent.py": "c22287362f1eedd0f5f0a08eecbe375358b8ddd285e488025de9b71b7dc3fc04",
+    "core/utils/agent_delegation/handle_groq_output.py": "809ac7728bc2b213e1c8bc5326f73064ad4b7f39b643aeffaedc031cd8007436",
     "core/utils/agent_delegation/job_manager.py": "868defca630cce47d15b7597539ea2aeeeff035533683973eb9871c16307d1fd",
     "core/utils/agent_delegation/manage_sessions.py": "047b0026c530247d62fc8d8f0206307a2d16560e41ecc7b3723ea620ac936226",
     "core/utils/agent_delegation/privacy.py": "0cb353f487d07d95da9b46061e2d4fb55a0177b17c99eacb3ed1a5de9e109dd3",
@@ -53,8 +53,8 @@
     "core/utils/startup_os/safe_io.py": "4c9386424374e7bfe4bc7d8461ed11370dbb3c352674227ed8b614163d69435d",
     "core/utils/startup_os/schemas.py": "a29e64cde6ba5cbcb985a1f5148a8c8e634b459b7e916129d57d5ac13287b59d",
     "core/utils/startup_os/template_engine.py": "1237417a8ccdaf27c810c077dd4d7d6c3a6261c2c0b1a88f9204599b9c5fd94d",
-    "profiles/local/initiate.py": "1b79f47dddab4bce19f0bd6d4b96f7e7cc59ad8b7ff1383f6d6cfef3b6ac4dd2",
-    "profiles/web/initiate.py": "3663c5a875b18a23479fa261f29b188b9f8cfb7f4b860d60abd0d1b6c249953e",
+    "profiles/local/initiate.py": "177e0ae9e336651607a01ba9267c7e651fb907761a4cbbf5df3054d63f66864b",
+    "profiles/web/initiate.py": "cc3c959cb69c8ebb7cbf8bab4f71b69fabe34e11c165c1a6ca7654640b8d4ccb",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
