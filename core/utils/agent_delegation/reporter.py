@@ -132,7 +132,12 @@ def update_readme_stats():
     """Calculates book stats and updates the main README.md and generates data for dashboard."""
     print("📊 Updating Job Dashboard & Data...")
 
-    project_root = Path(__file__).parent.parent.parent.parent.parent
+    # Use the working directory as the project root. This script is often
+    # pin-fetched and executed from a tempfile by consumer repos, so deriving
+    # the root from __file__ would resolve outside the checkout; workflows
+    # always run it from the repository root, matching the cwd-relative paths
+    # used elsewhere in this module.
+    project_root = Path.cwd()
     readme_path = project_root / "README.md"
     docs_dir = project_root / "docs"
     docs_dir.mkdir(exist_ok=True)
