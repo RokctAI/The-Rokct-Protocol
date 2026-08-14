@@ -683,6 +683,30 @@ def install_sdk_files_and_routes(sdk_name):
     else:
         package_state.pop("app_assets", None)
 
+    # Extract and store platform permission needs: Android <uses-permission>
+    # names plus iOS Info.plist usage-string keys that this SDK's plugins
+    # require in the HOST app's own platform config (e.g. delivery_sdk's
+    # driver flavor needs ACCESS_BACKGROUND_LOCATION for its WorkManager
+    # courier tracking; comms_sdk needs POST_NOTIFICATIONS for push). Same
+    # ownership model as tr_keys: the SDK declares, the installer injects
+    # into marker-owned blocks (see update_platform_permissions), a removed
+    # SDK's entries disappear on the next regeneration, and anything the host
+    # already declares outside the block is never duplicated (host wins).
+    pp_config = dict(manifest.get("platform_permissions") or {})
+    flavor_pp = flavor_block.get("platform_permissions") or {}
+    android_perms = list(pp_config.get("android") or []) + list(
+        flavor_pp.get("android") or []
+    )
+    ios_usage_keys = dict(pp_config.get("ios") or {})
+    ios_usage_keys.update(flavor_pp.get("ios") or {})
+    if android_perms or ios_usage_keys:
+        package_state["platform_permissions"] = {
+            "android": android_perms,
+            "ios": ios_usage_keys,
+        }
+    else:
+        package_state.pop("platform_permissions", None)
+
     # Extract and store AppConstants field overrides (home_sdk only, normally)
     constants_config = manifest.get("constants")
     flavor_constants = flavor_block.get("constants")
@@ -716,6 +740,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_constants_overrides()
     update_asset_keys_registration()
     update_app_assets_registration()
+    update_platform_permissions()
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
@@ -1278,6 +1303,214 @@ def update_app_assets_registration():
         f.write(new_content)
     print(
         f"[*] Successfully updated app pubspec.yaml with {len(entries)} SDK-declared asset entr(y/ies)."
+    )
+
+
+ANDROID_MANIFEST_FILE = os.path.join(
+    PROJECT_ROOT, "android", "app", "src", "main", "AndroidManifest.xml"
+)
+IOS_PLIST_FILE = os.path.join(PROJECT_ROOT, "ios", "Runner", "Info.plist")
+ANDROID_PERMS_START = "<!-- @sdk-android-permissions-start -->"
+ANDROID_PERMS_END = "<!-- @sdk-android-permissions-end -->"
+IOS_USAGE_START = "<!-- @sdk-ios-usage-keys-start -->"
+IOS_USAGE_END = "<!-- @sdk-ios-usage-keys-end -->"
+
+
+def _xml_escape(value):
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _replace_or_insert_marker_block(content, start, end, replacement, insert_at):
+    """Swap the start..end marker block for `replacement`; when the file has
+    no markers yet, insert `replacement` at character offset `insert_at`
+    (host platform files predate the markers, and unlike main.dart their
+    insertion anchor is structurally unambiguous — same self-seeding idiom
+    as update_app_assets_registration's pubspec block)."""
+    if start in content and end in content:
+        return re.sub(
+            re.escape(start) + r".*?" + re.escape(end),
+            lambda _: replacement,
+            content,
+            flags=re.DOTALL,
+        )
+    return content[:insert_at] + replacement + content[insert_at:]
+
+
+def update_platform_permissions():
+    """Inject SDK-declared platform permission needs into the HOST app's
+    android/app/src/main/AndroidManifest.xml and ios/Runner/Info.plist
+    (same ownership model as update_tr_keys_registration): each installed
+    SDK's manifest may carry a `platform_permissions` block —
+
+        "platform_permissions": {
+          "android": ["android.permission.POST_NOTIFICATIONS", ...],
+          "ios": {"NSCalendarsUsageDescription": "<usage string>", ...}
+        }
+
+    — top-level and/or inside an app_type flavor block (flavor entries merge
+    in only for the matching host, e.g. delivery_sdk's driver-only
+    ACCESS_BACKGROUND_LOCATION). The marker-owned blocks are regenerated
+    from full state on every run, so a removed SDK's entries vanish; a
+    permission or plist key the host already declares OUTSIDE the block is
+    skipped (host wins, never duplicated). Hosts whose platform files lack
+    the markers get them seeded at a fixed structural anchor: right after
+    the opening <manifest> tag, and right before the plist's closing
+    </dict>. Declaring a permission an app does not yet request at runtime
+    is harmless — Android runtime permissions are inert until requested —
+    so SDKs may declare needs ahead of the feature shipping."""
+    _update_android_permissions()
+    _update_ios_usage_keys()
+
+
+def _update_android_permissions():
+    state = load_state()
+    wanted = {}
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
+        for perm in (pkg_data.get("platform_permissions") or {}).get("android", []):
+            perm = str(perm).strip()
+            if perm and perm not in wanted:
+                wanted[perm] = pkg_name
+
+    if not os.path.exists(ANDROID_MANIFEST_FILE):
+        if wanted:
+            compose_warning(
+                f"compose skipped: {ANDROID_MANIFEST_FILE} missing; "
+                f"{len(wanted)} SDK-declared Android permission(s) NOT applied"
+            )
+        return
+
+    with open(ANDROID_MANIFEST_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Permissions the host declares outside the marker block own their name:
+    # injecting them again would duplicate the <uses-permission> element.
+    body_without_block = re.sub(
+        re.escape(ANDROID_PERMS_START) + r".*?" + re.escape(ANDROID_PERMS_END),
+        "",
+        content,
+        flags=re.DOTALL,
+    )
+    host_owned = set(
+        re.findall(
+            r'<uses-permission[^>]*android:name="([^"]+)"', body_without_block
+        )
+    )
+
+    lines = [
+        f'    <uses-permission android:name="{_xml_escape(perm)}"/>'
+        for perm in sorted(wanted)
+        if perm not in host_owned
+    ]
+    inner = ("\n" + "\n".join(lines) + "\n    ") if lines else "\n    "
+    replacement = f"{ANDROID_PERMS_START}{inner}{ANDROID_PERMS_END}"
+
+    if ANDROID_PERMS_START not in content:
+        opening = re.search(r"<manifest\b[^>]*>", content, flags=re.DOTALL)
+        if not opening:
+            compose_warning(
+                f"no <manifest> tag found in {ANDROID_MANIFEST_FILE}; "
+                f"SDK-declared Android permissions NOT applied"
+            )
+            return
+        new_content = _replace_or_insert_marker_block(
+            content,
+            ANDROID_PERMS_START,
+            ANDROID_PERMS_END,
+            "\n    " + replacement,
+            opening.end(),
+        )
+    else:
+        new_content = _replace_or_insert_marker_block(
+            content, ANDROID_PERMS_START, ANDROID_PERMS_END, replacement, 0
+        )
+
+    if new_content != content:
+        with open(ANDROID_MANIFEST_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    print(
+        f"[*] Successfully updated AndroidManifest.xml with {len(lines)} SDK-declared permission(s)."
+    )
+
+
+def _update_ios_usage_keys():
+    state = load_state()
+    entries = {}
+    seen = {}
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
+        ios_keys = (pkg_data.get("platform_permissions") or {}).get("ios") or {}
+        for key, value in ios_keys.items():
+            key = str(key).strip()
+            if not key:
+                continue
+            if key in seen and entries.get(key) != value:
+                print(
+                    f"  [!] ios usage-key collision: '{key}' declared by both '{seen[key]}' and '{pkg_name}' - keeping first"
+                )
+                continue
+            seen.setdefault(key, pkg_name)
+            entries[key] = value
+
+    if not os.path.exists(IOS_PLIST_FILE):
+        if entries:
+            compose_warning(
+                f"compose skipped: {IOS_PLIST_FILE} missing; "
+                f"{len(entries)} SDK-declared iOS usage key(s) NOT applied"
+            )
+        return
+
+    with open(IOS_PLIST_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Keys the host declares outside the marker block own their name — a
+    # plist with the same <key> twice is undefined behavior in practice.
+    body_without_block = re.sub(
+        re.escape(IOS_USAGE_START) + r".*?" + re.escape(IOS_USAGE_END),
+        "",
+        content,
+        flags=re.DOTALL,
+    )
+    host_owned = set(re.findall(r"<key>([^<]+)</key>", body_without_block))
+
+    lines = []
+    for key in sorted(entries):
+        if key in host_owned:
+            continue
+        lines.append(f"\t<key>{_xml_escape(key)}</key>")
+        lines.append(f"\t<string>{_xml_escape(entries[key])}</string>")
+    inner = ("\n" + "\n".join(lines) + "\n\t") if lines else "\n\t"
+    replacement = f"{IOS_USAGE_START}{inner}{IOS_USAGE_END}"
+
+    if IOS_USAGE_START not in content:
+        closing = re.search(r"[ \t]*</dict>\s*</plist>", content)
+        if not closing:
+            compose_warning(
+                f"no closing </dict></plist> found in {IOS_PLIST_FILE}; "
+                f"SDK-declared iOS usage keys NOT applied"
+            )
+            return
+        new_content = _replace_or_insert_marker_block(
+            content,
+            IOS_USAGE_START,
+            IOS_USAGE_END,
+            "\t" + replacement + "\n",
+            closing.start(),
+        )
+    else:
+        new_content = _replace_or_insert_marker_block(
+            content, IOS_USAGE_START, IOS_USAGE_END, replacement, 0
+        )
+
+    if new_content != content:
+        with open(IOS_PLIST_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    print(
+        f"[*] Successfully updated Info.plist with {len(lines) // 2} SDK-declared usage key(s)."
     )
 
 
@@ -2255,6 +2488,7 @@ if __name__ == "__main__":
     update_router_table()
     update_main_dependencies()
     update_database_registration()
+    update_platform_permissions()
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()

@@ -226,5 +226,175 @@ class TestHappyPathUnchanged(LayoutIntegrationTestBase):
         self.assertIn("WARNING", out + err)
 
 
+MANIFEST_WITH_MARKERS = """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- @sdk-android-permissions-start -->
+    <!-- @sdk-android-permissions-end -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:label="app"/>
+</manifest>
+"""
+
+MANIFEST_WITHOUT_MARKERS = """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:label="app"/>
+</manifest>
+"""
+
+PLIST_WITHOUT_MARKERS = """<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+\t<key>CFBundleName</key>
+\t<string>app</string>
+</dict>
+</plist>
+"""
+
+
+class PlatformPermissionsTestBase(LayoutIntegrationTestBase):
+    """Reuses the sandbox; state carries platform_permissions instead."""
+
+    ANDROID_REL = "android/app/src/main/AndroidManifest.xml"
+    IOS_REL = "ios/Runner/Info.plist"
+
+    def write_permission_state(self, packages):
+        state = {"packages": packages}
+        state_file = os.path.join(
+            self.project_root, ".rokct", "cache", "install_state.json"
+        )
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+
+    def write_file(self, rel, content):
+        path = os.path.join(self.project_root, *rel.split("/"))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return path
+
+    def read_file(self, rel):
+        path = os.path.join(self.project_root, *rel.split("/"))
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    def run_permissions_update(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_platform_permissions()
+        return out.getvalue(), err.getvalue()
+
+    def demo_state(self, android=None, ios=None):
+        return {
+            "demo_sdk": {
+                "version": "1.0.0",
+                "files": {},
+                "routes": [],
+                "platform_permissions": {
+                    "android": android or [],
+                    "ios": ios or {},
+                },
+            }
+        }
+
+
+class TestAndroidPermissionInjection(PlatformPermissionsTestBase):
+    def test_injects_into_marker_block(self):
+        self.write_permission_state(
+            self.demo_state(android=["android.permission.POST_NOTIFICATIONS"])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_MARKERS)
+        out, err = self.run_permissions_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.ANDROID_REL)
+        self.assertIn(
+            '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>',
+            content,
+        )
+
+    def test_seeds_markers_when_absent(self):
+        self.write_permission_state(
+            self.demo_state(android=["android.permission.POST_NOTIFICATIONS"])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITHOUT_MARKERS)
+        self.run_permissions_update()
+        content = self.read_file(self.ANDROID_REL)
+        self.assertIn("@sdk-android-permissions-start", content)
+        self.assertIn("android.permission.POST_NOTIFICATIONS", content)
+        # Seeded block lands after the opening tag, before existing elements.
+        self.assertLess(
+            content.index("@sdk-android-permissions-start"),
+            content.index("android.permission.INTERNET"),
+        )
+
+    def test_host_declared_permission_is_never_duplicated(self):
+        self.write_permission_state(
+            self.demo_state(android=["android.permission.INTERNET"])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_MARKERS)
+        self.run_permissions_update()
+        content = self.read_file(self.ANDROID_REL)
+        self.assertEqual(content.count("android.permission.INTERNET"), 1)
+
+    def test_removed_sdk_entries_vanish_and_reruns_are_idempotent(self):
+        self.write_permission_state(
+            self.demo_state(android=["android.permission.POST_NOTIFICATIONS"])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_MARKERS)
+        self.run_permissions_update()
+        first = self.read_file(self.ANDROID_REL)
+        self.run_permissions_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), first)
+        self.write_permission_state({})
+        self.run_permissions_update()
+        self.assertNotIn(
+            "android.permission.POST_NOTIFICATIONS", self.read_file(self.ANDROID_REL)
+        )
+
+    def test_missing_manifest_with_entries_warns(self):
+        self.write_permission_state(
+            self.demo_state(android=["android.permission.POST_NOTIFICATIONS"])
+        )
+        out, err = self.run_permissions_update()
+        self.assertIn("WARNING", out + err)
+        self.assertIn("NOT applied", out + err)
+
+
+class TestIosUsageKeyInjection(PlatformPermissionsTestBase):
+    def test_seeds_markers_and_injects_before_closing_dict(self):
+        self.write_permission_state(
+            self.demo_state(
+                ios={"NSCalendarsUsageDescription": "Sync your class schedule."}
+            )
+        )
+        self.write_file(self.IOS_REL, PLIST_WITHOUT_MARKERS)
+        out, err = self.run_permissions_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.IOS_REL)
+        self.assertIn("<key>NSCalendarsUsageDescription</key>", content)
+        self.assertIn("<string>Sync your class schedule.</string>", content)
+        self.assertLess(
+            content.index("NSCalendarsUsageDescription"), content.index("</dict>")
+        )
+
+    def test_host_declared_key_wins(self):
+        self.write_permission_state(
+            self.demo_state(ios={"CFBundleName": "should never appear"})
+        )
+        self.write_file(self.IOS_REL, PLIST_WITHOUT_MARKERS)
+        self.run_permissions_update()
+        content = self.read_file(self.IOS_REL)
+        self.assertEqual(content.count("CFBundleName"), 1)
+        self.assertNotIn("should never appear", content)
+
+    def test_reruns_are_idempotent(self):
+        self.write_permission_state(
+            self.demo_state(ios={"NSCalendarsUsageDescription": "Sync."})
+        )
+        self.write_file(self.IOS_REL, PLIST_WITHOUT_MARKERS)
+        self.run_permissions_update()
+        first = self.read_file(self.IOS_REL)
+        self.run_permissions_update()
+        self.assertEqual(self.read_file(self.IOS_REL), first)
+
+
 if __name__ == "__main__":
     unittest.main()
