@@ -35,6 +35,30 @@ def is_duplicate_theme(new_theme, existing_themes_path, threshold=0.8):
     return False, ""
 
 
+def sanitize_filename_component(value, fallback="theme"):
+    """Make a model-controlled string safe for use as a filename component.
+
+    Themes and types come straight out of the LLM response, so they must not
+    be able to smuggle path separators or dot-dot sequences into the job-card
+    filename. Allowlist to [A-Za-z0-9._-], then strip leading dots so '..'
+    and hidden-file prefixes cannot survive.
+    """
+    value = value.replace(" ", "_").lower()
+    value = re.sub(r"[^A-Za-z0-9._-]", "_", value)
+    value = re.sub(r"\.\.+", "_", value)
+    value = value.lstrip(".").strip("_")
+    return value or fallback
+
+
+def record_theme(theme, themes_path):
+    """Append an accepted theme to the store is_duplicate_theme() reads, so
+    future runs (and later lines in the same batch) dedupe against it."""
+    themes_path = Path(themes_path)
+    themes_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(themes_path, "a", encoding="utf-8") as f:
+        f.write(theme + "\n")
+
+
 def set_field(content, field, value):
     """Set a single-line frontmatter field, adding it if missing."""
     if re.search(rf"^{field}:", content, re.MULTILINE):
@@ -111,8 +135,12 @@ def handle_groq_output(level, content, card_file=None):
             if len(parts) < 2:
                 continue
 
-            theme = parts[0]
+            # Strip leading list numbering ("1. ", "2) ") the model sometimes
+            # emits, so it never leaks into theme names or filenames.
+            theme = re.sub(r"^\d+[.)]\s*", "", parts[0]).strip()
             book_type = parts[1].lower()
+            if not theme:
+                continue
 
             # Deduplication Check
             is_dup, matched = is_duplicate_theme(theme, str(themes_path))
@@ -124,7 +152,9 @@ def handle_groq_output(level, content, card_file=None):
             hash_str = hashlib.sha256(
                 f"{theme}{book_type}{datetime.now()}".encode()
             ).hexdigest()[:6]
-            filename = f"{theme.replace(' ', '_').lower()}_{book_type}_{hash_str}.md"
+            safe_theme = sanitize_filename_component(theme, fallback="theme")
+            safe_type = sanitize_filename_component(book_type, fallback="book")
+            filename = f"{safe_theme}_{safe_type}_{hash_str}.md"
 
             card_content = f"""<!-- CARD RULES
      This card is the source of truth for this job.
@@ -159,6 +189,7 @@ max_iterations: 10
 """
             with open(job_dir / filename, "w") as f:
                 f.write(card_content)
+            record_theme(theme, themes_path)
             print(f"✅ Created job card: {filename}")
             count += 1
         return count > 0

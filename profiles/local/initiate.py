@@ -17,9 +17,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+PROTOCOL_REF = "0750e58817fc193fa336609e7568599b10061eae"
 EXPECTED_SHA256 = {
-    "profiles/local/initiate.py": "2c0a9a98387755299825ee8ed2bce9b824c41d04e01812cc7a3de6a596522f4c",
+    "profiles/local/initiate.py": "5dda44d8f4bc06b08b5d543b42f02ba8f7cd1ef3eaf7f846df3d0a70432d947e",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_RAW_BASE = (
@@ -254,6 +254,7 @@ def fetch_dir_from_github(rel_src, dst):
             f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}",
             file=sys.stderr,
         )
+        sys.exit(1)
 
 
 def main():

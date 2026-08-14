@@ -9,9 +9,9 @@ SHA-256, then executes it with the audit subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "bd7e56f6397ac0beccaa9e5bdcea3b563800bc43"
+PROTOCOL_REF = "0750e58817fc193fa336609e7568599b10061eae"
 DELEGATE_PATH = "core/utils/agent_delegation/reporter.py"
-DELEGATE_SHA256 = "314be7ab960fef708a533497463437ebc6643b477b762bf5e1d621956d396080"
+DELEGATE_SHA256 = "eda3f3c956a2a7443e1e798936e667055f895ede9d6c57cad2df829c2182f736"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )

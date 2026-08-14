@@ -17,6 +17,14 @@ FAILED_SDKS = []
 # without a sha256 pin - mirrors the engine's STARTUPOS_ALLOW_UNPINNED gate.
 ALLOW_UNPINNED_ENV = "ROKCT_ALLOW_UNPINNED_SDKS"
 
+# build_runner has no watchdog of its own and inherits this script's stdin, so
+# a wedged or prompting build blocks forever - in CI that squats a runner until
+# the job's own multi-hour limit (same failure class as clone_ref's network
+# stall, capped there at 600s). 30 minutes covers the largest SDK graphs seen
+# so far; raise via env for legitimately slower builds.
+BUILD_RUNNER_TIMEOUT_ENV = "ROKCT_BUILD_RUNNER_TIMEOUT"
+BUILD_RUNNER_TIMEOUT = int(os.environ.get(BUILD_RUNNER_TIMEOUT_ENV, "1800"))
+
 
 def _is_commit_sha(ref):
     return (
@@ -1278,23 +1286,47 @@ def ensure_pubspec_overrides():
         print(f"[!] Error ensuring pubspec.yaml dependency_overrides: {e}")
 
 
+def _build_runner_subprocess(args, cwd, label, **kwargs):
+    """subprocess.run for a build_runner invocation: stdin closed (an inherited
+    tty lets a prompting build block forever) and a hard timeout. On expiry
+    subprocess.run kills the process before raising TimeoutExpired; fail the
+    compose loudly instead of squatting the runner."""
+    try:
+        return subprocess.run(
+            args,
+            cwd=cwd,
+            shell=(os.name == "nt"),
+            stdin=subprocess.DEVNULL,
+            timeout=BUILD_RUNNER_TIMEOUT,
+            **kwargs,
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            f"[!] build_runner for {label} exceeded {BUILD_RUNNER_TIMEOUT}s and "
+            f"was killed. If this build legitimately needs longer, raise "
+            f"{BUILD_RUNNER_TIMEOUT_ENV}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def _run_build_runner(cwd, label):
     """build_runner in `cwd`, with the same --force-jit/fallback dance as the
     host run. Returns True on success."""
-    build = subprocess.run(
+    build = _build_runner_subprocess(
         ["dart", "run", "build_runner", "build", "--force-jit"],
-        cwd=cwd,
-        shell=(os.name == "nt"),
+        cwd,
+        label,
         capture_output=True,
         text=True,
     )
     if build.returncode != 0 and "Could not find an option named" in (
         build.stdout + build.stderr
     ):
-        build = subprocess.run(
+        build = _build_runner_subprocess(
             ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
-            cwd=cwd,
-            shell=(os.name == "nt"),
+            cwd,
+            label,
             capture_output=True,
             text=True,
         )
@@ -1467,10 +1499,10 @@ def run_code_generation():
     print(
         "[*] Running build_runner (--force-jit, required for packages with native-asset build hooks)..."
     )
-    build = subprocess.run(
+    build = _build_runner_subprocess(
         ["dart", "run", "build_runner", "build", "--force-jit"],
-        cwd=PROJECT_ROOT,
-        shell=(os.name == "nt"),
+        PROJECT_ROOT,
+        "host",
         capture_output=True,
         text=True,
     )
@@ -1480,10 +1512,10 @@ def run_code_generation():
         print(
             "[*] This build_runner version doesn't support --force-jit; retrying with --delete-conflicting-outputs..."
         )
-        build = subprocess.run(
+        build = _build_runner_subprocess(
             ["dart", "run", "build_runner", "build", "--delete-conflicting-outputs"],
-            cwd=PROJECT_ROOT,
-            shell=(os.name == "nt"),
+            PROJECT_ROOT,
+            "host",
         )
     else:
         # Either it succeeded or failed for a real reason - show the output either way.
