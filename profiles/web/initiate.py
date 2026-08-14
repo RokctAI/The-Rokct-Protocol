@@ -16,9 +16,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "cb30096acc20d4c6ea1f5399c68dab7e99fc65e4"
+PROTOCOL_REF = "d2d6e2e7cb6b14c1d5901f2d9591c1eebfcdaf74"
 EXPECTED_SHA256 = {
-    "profiles/web/initiate.py": "cc3c959cb69c8ebb7cbf8bab4f71b69fabe34e11c165c1a6ca7654640b8d4ccb",
+    "profiles/web/initiate.py": "48741569b1e3adc02f7a9e50167b22bd5228b40fd77ac9d5f174e08bc2f181f3",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_ZIP_BASE = (
@@ -261,6 +261,7 @@ def fetch_dir_from_github(rel_src, dst):
             f"[init] Failed to fetch directory {rel_src} after {getattr(e, 'fetch_attempts', 1)} attempt(s): {e}",
             file=sys.stderr,
         )
+        sys.exit(1)
 
 
 def detect_repo_owner():
