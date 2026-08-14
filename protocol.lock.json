@@ -1,5 +1,5 @@
 {
-  "ref": "9e9c36aa4147cc25dd94a58f1c504588d09ffbee",
+  "ref": "2fc26360b5e7609a9ce6a99974cd85455ed84ad9",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
