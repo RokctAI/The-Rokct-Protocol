@@ -2081,8 +2081,7 @@ def _update_main_hooks(state_key, marker, label):
     """
     if not os.path.exists(MAIN_FILE):
         compose_warning(
-            f"compose skipped: main.dart file {MAIN_FILE} missing; "
-            f"{label}s NOT applied"
+            f"compose skipped: main.dart file {MAIN_FILE} missing; {label}s NOT applied"
         )
         return
 
