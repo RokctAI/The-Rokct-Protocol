@@ -5,6 +5,6 @@ on:
 
 jobs:
   semantic:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-semantic.yml@fed18a76a3107bcd8293a24d3e949addfdd09e84 # shared-workflows main @ 2026-08-13
+    uses: RokctAI/shared-workflows/.github/workflows/universal-semantic.yml@e6e29abcfeb0282f0be44ab21fb16d4f92957e6e # shared-workflows main @ 2026-08-15
     secrets:
       COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
