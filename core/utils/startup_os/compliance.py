@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Compliance document sourcing — fail-closed, jurisdiction-gated, provenanced.
 
 Design rule, and the reason this module exists separately:

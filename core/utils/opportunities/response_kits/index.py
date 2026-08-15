@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 # Licensed under the MIT License.
 # compliance-ignore-file: structural-special-dirs
 # These scripts live under .rokct/ ONLY at runtime: initiate.py fetches

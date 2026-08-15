@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Atomic writes, advisory locking and history for the SSOT.
 
 `questions.md` is the single source of truth, and Hermes mutates it from

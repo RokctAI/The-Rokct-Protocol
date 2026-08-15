@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 # compliance-ignore-file: structural-special-dirs
 # These scripts live under .rokct/ ONLY at runtime: initiate.py fetches
 # this canonical copy from The-Rokct-Protocol into .rokct/skills/ at the

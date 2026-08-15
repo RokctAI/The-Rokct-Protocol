@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Structure-preserving parser for `questions.md`, the StartupOS SSOT.
 
 The old parser silently lost data in five ways: it only matched `*` bullets,

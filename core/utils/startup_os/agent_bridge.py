@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Hermes agent bridge — programmatic read/write/provision APIs.
 
 Everything here is reachable from a conversational handler, which means every

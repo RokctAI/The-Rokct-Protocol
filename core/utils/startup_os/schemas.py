@@ -1,3 +1,7 @@
+# Copyright (c) 2026, Rokct Intelligence (pty) Ltd.
+# For license information, please see license.txt
+
+
 """Question schemas — the contract between provisioning and the templates.
 
 The previous provisioner asked for `core_value_proposition`, `customer_segments`
