@@ -150,15 +150,9 @@ under **both** keys in the composed `hooks.py`:
 - `override_whitelisted_methods` — the key that makes the aliases actually
   resolve at dispatch time.
 
-**Canonical-prefix duplicates.** Shipped client SDKs hardcode dotted paths
-under the canonical wire prefix `paas` (e.g. `/api/method/paas.api.auth.refresh`),
-but the same manifests can compose into an app with a different name (e.g.
-`rcore`). When the composed app name differs from the canonical prefix, every
-`{app_name}.<rest>` alias key is additionally registered as
-`<canonical_prefix>.<rest>` under `override_whitelisted_methods`, so existing
-client call strings work unchanged against any composed backend. The prefix
-defaults to `paas` and can be overridden with an optional
-`"canonical_api_prefix"` field in the shell's `composer.json`.
+Keys and values are emitted exactly as declared in the manifest (after
+`{app_name}` placeholder substitution), so each composed shell exposes only
+its own `{app_name}.*` alias names — no cross-shell prefixes are synthesized.
 
 ### Semantics of the git-clone fallback
 
