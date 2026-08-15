@@ -9,6 +9,13 @@ PROJECT_ROOT = os.getcwd()
 
 COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name
 
+# Canonical wire prefix hardcoded in shipped client SDKs' dotted method paths
+# (e.g. "paas.api.auth.refresh"). A composed app with a different name (e.g.
+# "rcore") also registers its method aliases under this prefix so those
+# clients keep working unchanged. Overridable via an optional
+# "canonical_api_prefix" field in composer.json.
+CANONICAL_API_PREFIX = "paas"
+
 # Manifest hook values are interpolated into generated Python source
 # (hooks.py). Before any value is written it is validated against a tight
 # regex so a malicious or malformed manifest cannot inject arbitrary code
@@ -477,7 +484,14 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
     return manifest
 
 
-def merge_hooks(target_app_path, app_name, compiled_manifests):
+def merge_hooks(
+    target_app_path, app_name, compiled_manifests, canonical_prefix=CANONICAL_API_PREFIX
+):
+    # The prefix is spliced into generated dict keys, so it gets the same
+    # injection guard as manifest hook values.
+    _validate_hook_value(
+        canonical_prefix, "dotted", "composer.json", "canonical_api_prefix"
+    )
     hooks_file = os.path.join(target_app_path, "hooks.py")
     if not os.path.exists(hooks_file):
         print(f"[-] No hooks.py found in {target_app_path}. Creating a default one.")
@@ -539,11 +553,24 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 f"override_doctype_class[{doc_type!r}] = {class_path!r}"
             )
 
-        # 3. Merge whitelisted methods
+        # 3. Merge whitelisted methods. The alias map is written under two
+        #    hook keys: "whitelisted_methods" (the historical key, kept for
+        #    back-compat with anything reading the composed hooks.py) and
+        #    "override_whitelisted_methods" — the only key frappe's request
+        #    dispatcher actually consults (frappe.override_whitelisted_method()
+        #    in handler.execute_cmd), so aliases resolve at dispatch time.
+        #    When the composed app is not named after the canonical wire
+        #    prefix, every "{app_name}.<rest>" alias key additionally gets a
+        #    "<canonical_prefix>.<rest>" duplicate: shipped clients hardcode
+        #    canonical dotted paths (e.g. "paas.api.*", "paas.tenant.api.*")
+        #    and must keep working against e.g. an "rcore"-named backend.
         whitelisted = hooks.get("whitelisted_methods", {})
         if whitelisted:
             append_blocks.append(
                 f"whitelisted_methods = globals().get('whitelisted_methods', {{}})"
+            )
+            append_blocks.append(
+                f"override_whitelisted_methods = globals().get('override_whitelisted_methods', {{}})"
             )
             for api_key, api_val in whitelisted.items():
                 _validate_hook_value(
@@ -553,6 +580,15 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                     api_val, "dotted", module_name, "whitelisted_methods"
                 )
                 append_blocks.append(f"whitelisted_methods[{api_key!r}] = {api_val!r}")
+                alias_keys = [api_key]
+                if canonical_prefix != app_name and api_key.startswith(
+                    f"{app_name}."
+                ):
+                    alias_keys.append(canonical_prefix + api_key[len(app_name) :])
+                for alias_key in alias_keys:
+                    append_blocks.append(
+                        f"override_whitelisted_methods[{alias_key!r}] = {api_val!r}"
+                    )
 
         # 4. Merge doc events. Accumulate handlers into a LIST per (doctype,
         #    event): frappe natively supports a list of handlers for a single
@@ -868,7 +904,8 @@ def main():
                     )
 
     if compiled_manifests:
-        merge_hooks(target_app_path, app_name, compiled_manifests)
+        canonical_prefix = config.get("canonical_api_prefix") or CANONICAL_API_PREFIX
+        merge_hooks(target_app_path, app_name, compiled_manifests, canonical_prefix)
         merge_commands(target_app_path, app_name, compiled_manifests)
         merge_dependencies(PROJECT_ROOT, compiled_manifests)
 

@@ -135,6 +135,31 @@ The composer pipeline (`compose_backend.py`) is responsible for compiling SDK pa
 5. **Merge Hooks**: Aggregates all `whitelisted_methods`, `fixtures`, `doc_events`, and `auth_hooks` from all active manifests and appends them dynamically to the end of `hooks.py`.
 6. **Inject Dependencies**: Appends missing Python dependencies to the root `requirements.txt` and `pyproject.toml`.
 
+### Endpoint alias registration (`override_whitelisted_methods`)
+
+A manifest's `whitelisted_methods` map declares short client-facing dotted
+paths (`{app_name}.api.<x>`, `{app_name}.tenant.api.<x>`) aliased to the real
+composed module paths. Frappe's request dispatcher only rewrites incoming
+`cmd` strings via the standard `override_whitelisted_methods` hook
+(`frappe.override_whitelisted_method()` in `handler.execute_cmd`); it never
+reads a `whitelisted_methods` hook. The composer therefore writes every alias
+under **both** keys in the composed `hooks.py`:
+
+- `whitelisted_methods` — the historical key, kept for back-compat with
+  tooling that reads the composed hooks file.
+- `override_whitelisted_methods` — the key that makes the aliases actually
+  resolve at dispatch time.
+
+**Canonical-prefix duplicates.** Shipped client SDKs hardcode dotted paths
+under the canonical wire prefix `paas` (e.g. `/api/method/paas.api.auth.refresh`),
+but the same manifests can compose into an app with a different name (e.g.
+`rcore`). When the composed app name differs from the canonical prefix, every
+`{app_name}.<rest>` alias key is additionally registered as
+`<canonical_prefix>.<rest>` under `override_whitelisted_methods`, so existing
+client call strings work unchanged against any composed backend. The prefix
+defaults to `paas` and can be overridden with an optional
+`"canonical_api_prefix"` field in the shell's `composer.json`.
+
 ### Semantics of the git-clone fallback
 
 Two behaviors of `resolve_module_sources()`'s clone path (used only when no
