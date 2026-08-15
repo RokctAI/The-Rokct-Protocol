@@ -135,6 +135,25 @@ The composer pipeline (`compose_backend.py`) is responsible for compiling SDK pa
 5. **Merge Hooks**: Aggregates all `whitelisted_methods`, `fixtures`, `doc_events`, and `auth_hooks` from all active manifests and appends them dynamically to the end of `hooks.py`.
 6. **Inject Dependencies**: Appends missing Python dependencies to the root `requirements.txt` and `pyproject.toml`.
 
+### Endpoint alias registration (`override_whitelisted_methods`)
+
+A manifest's `whitelisted_methods` map declares short client-facing dotted
+paths (`{app_name}.api.<x>`, `{app_name}.tenant.api.<x>`) aliased to the real
+composed module paths. Frappe's request dispatcher only rewrites incoming
+`cmd` strings via the standard `override_whitelisted_methods` hook
+(`frappe.override_whitelisted_method()` in `handler.execute_cmd`); it never
+reads a `whitelisted_methods` hook. The composer therefore writes every alias
+under **both** keys in the composed `hooks.py`:
+
+- `whitelisted_methods` — the historical key, kept for back-compat with
+  tooling that reads the composed hooks file.
+- `override_whitelisted_methods` — the key that makes the aliases actually
+  resolve at dispatch time.
+
+Keys and values are emitted exactly as declared in the manifest (after
+`{app_name}` placeholder substitution), so each composed shell exposes only
+its own `{app_name}.*` alias names — no cross-shell prefixes are synthesized.
+
 ### Semantics of the git-clone fallback
 
 Two behaviors of `resolve_module_sources()`'s clone path (used only when no

@@ -539,11 +539,22 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 f"override_doctype_class[{doc_type!r}] = {class_path!r}"
             )
 
-        # 3. Merge whitelisted methods
+        # 3. Merge whitelisted methods. The alias map is written under two
+        #    hook keys: "whitelisted_methods" (the historical key, kept for
+        #    back-compat with anything reading the composed hooks.py) and
+        #    "override_whitelisted_methods" — the only key frappe's request
+        #    dispatcher actually consults (frappe.override_whitelisted_method()
+        #    in handler.execute_cmd), so aliases resolve at dispatch time.
+        #    Keys are emitted exactly as declared (after the {app_name}
+        #    placeholder substitution above): each shell exposes only its
+        #    own "{app_name}.*" names.
         whitelisted = hooks.get("whitelisted_methods", {})
         if whitelisted:
             append_blocks.append(
                 f"whitelisted_methods = globals().get('whitelisted_methods', {{}})"
+            )
+            append_blocks.append(
+                f"override_whitelisted_methods = globals().get('override_whitelisted_methods', {{}})"
             )
             for api_key, api_val in whitelisted.items():
                 _validate_hook_value(
@@ -553,6 +564,9 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                     api_val, "dotted", module_name, "whitelisted_methods"
                 )
                 append_blocks.append(f"whitelisted_methods[{api_key!r}] = {api_val!r}")
+                append_blocks.append(
+                    f"override_whitelisted_methods[{api_key!r}] = {api_val!r}"
+                )
 
         # 4. Merge doc events. Accumulate handlers into a LIST per (doctype,
         #    event): frappe natively supports a list of handlers for a single
