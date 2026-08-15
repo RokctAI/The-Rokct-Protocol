@@ -56,16 +56,36 @@ def enforce_sdk_pin(sdk_name, sdk_config, target_dir, ref):
             )
             sys.exit(1)
         with open(installer, "rb") as f:
-            actual = hashlib.sha256(f.read()).hexdigest()
+            data = f.read()
+        actual = hashlib.sha256(data).hexdigest()
         if actual != expected:
+            # composer.json pins are computed from the committed (LF) blob.
+            # Git on windows-latest ships core.autocrlf=true, so the clone
+            # materializes install.py with CRLF endings - byte-identical
+            # content, different on-disk sha256. Re-hash with CRLF->LF
+            # normalization before rejecting, so the same pin verifies on
+            # every OS; genuinely different content still fails both hashes.
+            normalized = hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+            if normalized != expected:
+                print(
+                    f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):",
+                    file=sys.stderr,
+                )
+                print(f"[!]   expected sha256 {expected}", file=sys.stderr)
+                print(f"[!]   actual   sha256 {actual}", file=sys.stderr)
+                print(
+                    f"[!]   actual   sha256 {normalized} (after CRLF->LF normalization)",
+                    file=sys.stderr,
+                )
+                print(
+                    "[!] Refusing to execute unverified SDK installer.", file=sys.stderr
+                )
+                sys.exit(1)
             print(
-                f"[!] Integrity check failed for {sdk_name} install.py (ref {ref}):",
-                file=sys.stderr,
+                f"[+] Verified {sdk_name} install.py against pinned sha256 "
+                "(after CRLF->LF normalization of a CRLF checkout)."
             )
-            print(f"[!]   expected sha256 {expected}", file=sys.stderr)
-            print(f"[!]   actual   sha256 {actual}", file=sys.stderr)
-            print("[!] Refusing to execute unverified SDK installer.", file=sys.stderr)
-            sys.exit(1)
+            return
         print(f"[+] Verified {sdk_name} install.py against pinned sha256.")
         return
     if _is_commit_sha(ref):
