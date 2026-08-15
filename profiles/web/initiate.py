@@ -370,6 +370,27 @@ def main():
                 f.write("\n".join(missing) + "\n")
             print(f"[init] Updated {gitignore_path} (added: {', '.join(missing)})")
 
+    # Fleet standard, mirroring the .gitignore ensure above: force LF for
+    # Python files so composer.json sha256 pins (computed from the committed
+    # LF blobs) verify on Windows runners, where autocrlf checkouts otherwise
+    # materialize *.py with CRLF endings and change the on-disk hash.
+    # newline="\n" keeps the file itself LF even when this runs on Windows.
+    attributes_path = os.path.join(PROJECT_ROOT, ".gitattributes")
+    required_attributes = ("*.py text eol=lf",)
+    if not os.path.exists(attributes_path):
+        with open(attributes_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(required_attributes) + "\n")
+        print(f"[init] Created {attributes_path}")
+    else:
+        txt = open(attributes_path, "r", encoding="utf-8").read()
+        missing = [entry for entry in required_attributes if entry not in txt]
+        if missing:
+            with open(attributes_path, "a", encoding="utf-8", newline="\n") as f:
+                if txt and not txt.endswith("\n"):
+                    f.write("\n")
+                f.write("\n".join(missing) + "\n")
+            print(f"[init] Updated {attributes_path} (added: {', '.join(missing)})")
+
     try:
         email = subprocess.check_output(
             ["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL
