@@ -32,6 +32,7 @@ Requires: python-docx  (pip install python-docx)
 import os
 import re
 import sys
+import zipfile
 
 from docx import Document
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
@@ -700,11 +701,35 @@ def build():
 
 
 # ─── WRITE ───────────────────────────────────────────────────────────────────
+def _rezip_deterministic(path):
+    """Rewrite the docx zip deterministically so unchanged content produces
+    byte-identical output.
+
+    A .docx is a zip archive; python-docx stamps each entry with the current
+    local time, so every run changes bytes even when content is identical —
+    which makes CI's "commit only if changed" guard commit churn on every run.
+    Re-writing the archive with sorted entries, a fixed DOS timestamp
+    (1980-01-01, the zip epoch) and fixed compression makes the output a pure
+    function of its content.
+    """
+    with zipfile.ZipFile(path) as zin:
+        entries = [(name, zin.read(name)) for name in sorted(zin.namelist())]
+    tmp = path + '.tmp'
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zout:
+        for name, data in entries:
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o600 << 16  # fixed -rw------- perms
+            zout.writestr(info, data)
+    os.replace(tmp, path)
+
+
 def main():
     try:
         build()
         os.makedirs(os.path.dirname(OUT), exist_ok=True)
         doc.save(OUT)
+        _rezip_deterministic(OUT)
     except Exception as err:  # noqa: BLE001
         sys.stderr.write('Build error: %s\n' % err)
         sys.exit(1)
