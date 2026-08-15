@@ -368,6 +368,27 @@ def main():
                 f.write("\n".join(missing) + "\n")
             print(f"[init] Updated .gitignore (added: {', '.join(missing)})")
 
+    # Fleet standard, mirroring the .gitignore ensure above: force LF for
+    # Python files so composer.json sha256 pins (computed from the committed
+    # LF blobs) verify on Windows runners, where autocrlf checkouts otherwise
+    # materialize *.py with CRLF endings and change the on-disk hash.
+    # newline="\n" keeps the file itself LF even when this runs on Windows.
+    attributes = os.path.join(PROJECT_ROOT, ".gitattributes")
+    required_attributes = ("*.py text eol=lf",)
+    if not os.path.exists(attributes):
+        with open(attributes, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(required_attributes) + "\n")
+        print("[init] Created .gitattributes")
+    else:
+        txt = open(attributes, "r", encoding="utf-8").read()
+        missing = [entry for entry in required_attributes if entry not in txt]
+        if missing:
+            with open(attributes, "a", encoding="utf-8", newline="\n") as f:
+                if txt and not txt.endswith("\n"):
+                    f.write("\n")
+                f.write("\n".join(missing) + "\n")
+            print(f"[init] Updated .gitattributes (added: {', '.join(missing)})")
+
     ensure_file(
         "workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py")
     )
