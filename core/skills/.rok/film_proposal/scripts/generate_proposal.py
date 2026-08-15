@@ -142,7 +142,9 @@ def char_data(slug):
 
 
 def scene_block(n):
-    m = re.search(r'# Scene %d[^\n]*\n([\s\S]*?)(?=\n# Scene |$)' % n, SCENES)
+    # Accept zero-padded headings ("# Scene 01") as well as "# Scene 1";
+    # (?!\d) stops "Scene 1" from also matching "Scene 10".
+    m = re.search(r'# Scene 0*%d(?!\d)[^\n]*\n([\s\S]*?)(?=\n# Scene |$)' % n, SCENES)
     if not m:
         return None
     blk = m.group(0)
