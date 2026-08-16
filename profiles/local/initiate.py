@@ -464,6 +464,13 @@ def main():
         if "RokctAI/" in url:
             parent = "RokctAI/occultation"
             print(f"[init] Auto-detected RokctAI repo, routing to {parent}")
+        elif os.environ.get("CI") or not (sys.stdin and sys.stdin.isatty()):
+            # Nobody is there to answer the prompt (CI, or stdin is not a
+            # terminal). Take the same branch as pressing Enter - standalone -
+            # unless ROKCT_PARENT_REPO names the parent explicitly.
+            parent = os.environ.get("ROKCT_PARENT_REPO", "").strip()
+            if not parent:
+                print("[init] Non-interactive, no parent given - standalone")
         else:
             parent = input(
                 "[init] Enter parent workspace repo (owner/repo) or press Enter for standalone: "
