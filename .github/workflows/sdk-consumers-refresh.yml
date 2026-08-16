@@ -2,11 +2,11 @@
 
 # Weekly refresh of the SDK consumers reverse index (sdk_consumers.json +
 # SDK_CONSUMERS.md) and of the "Existing SDKs" census block in
-# SDK_ECOSYSTEM.md. Discovers the org's repos dynamically: app shells are
-# every active RokctAI repo whose root composer.json declares a non-empty
-# sdks[] list (paas_pos is never indexed, owner rule); SDK monorepos are
-# every remaining repo with a top-level <sdk>/dart/manifest.json or
-# <sdk>/frappe/manifest.json. Both sets are shallow-cloned as siblings
+# SDK_ECOSYSTEM.md. Discovers repos dynamically across every owner in
+# DISCOVERY_OWNERS: app shells are every active repo whose root
+# composer.json declares a non-empty sdks[] list (paas_pos is never
+# indexed, owner rule); SDK monorepos are every remaining repo with a
+# top-level <sdk>/dart/manifest.json or <sdk>/frappe/manifest.json. Both sets are shallow-cloned as siblings
 # into a throwaway workspace, tools/gen_sdk_consumers.py reruns against
 # it, and the changed files are committed back to the default branch only
 # when their content actually changed. Repo listing and per-repo fetches
@@ -35,7 +35,10 @@ jobs:
       # MONOREPO_PAT sees private shells; the workflow token is the
       # fallback and still covers every public shell.
       GH_TOKEN: ${{ secrets.MONOREPO_PAT || secrets.GITHUB_TOKEN }}
-      ORG: RokctAI
+      # GitHub orgs/users whose repos are scanned (space- or comma-
+      # separated). Additional owners are added here; MONOREPO_PAT must
+      # have read access to every owner listed.
+      DISCOVERY_OWNERS: "RokctAI"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -51,36 +54,51 @@ jobs:
           JSON_ACCEPT="Accept: application/vnd.github+json"
           RAW_ACCEPT="Accept: application/vnd.github.raw"
 
-          # --- 1. List org repos (name + default branch), paginated -----------
-          REPOS_FILE="$WORK/org-repos.tsv"
+          # --- 1. List each owner's repos (owner + name + default branch),
+          # paginated. Orgs are listed via /orgs/<owner>/repos; that returns
+          # 404 for user accounts, which fall back to /users/<owner>/repos. --
+          REPOS_FILE="$WORK/owner-repos.tsv"
           : > "$REPOS_FILE"
-          PAGE=1
-          LIST_OK=true
-          while :; do
-            RESP="$(curl -sS -H "$AUTH_HEADER" -H "$JSON_ACCEPT" \
-              "https://api.github.com/orgs/$ORG/repos?per_page=100&page=$PAGE" || true)"
-            COUNT="$(echo "$RESP" | jq 'if type == "array" then length else -1 end' 2>/dev/null || echo -1)"
-            if [ "$COUNT" -lt 0 ] 2>/dev/null; then
-              LIST_OK=false
-              break
+          ALL_OWNERS_OK=true
+          for OWNER in $(echo "$DISCOVERY_OWNERS" | tr ',' ' '); do
+            LIST_URL="https://api.github.com/orgs/$OWNER/repos"
+            CODE="$(curl -sS -o /dev/null -w '%{http_code}' -H "$AUTH_HEADER" -H "$JSON_ACCEPT" \
+              "$LIST_URL?per_page=1" || echo 000)"
+            if [ "$CODE" = "404" ]; then
+              LIST_URL="https://api.github.com/users/$OWNER/repos"
             fi
-            [ "$COUNT" -eq 0 ] && break
-            echo "$RESP" | jq -r '.[] | select(.archived | not) | [.name, (.default_branch // "main")] | @tsv' >> "$REPOS_FILE"
-            [ "$COUNT" -lt 100 ] && break
-            PAGE=$((PAGE + 1))
+            PAGE=1
+            LIST_OK=true
+            while :; do
+              RESP="$(curl -sS -H "$AUTH_HEADER" -H "$JSON_ACCEPT" \
+                "$LIST_URL?per_page=100&page=$PAGE" || true)"
+              COUNT="$(echo "$RESP" | jq 'if type == "array" then length else -1 end' 2>/dev/null || echo -1)"
+              if [ "$COUNT" -lt 0 ] 2>/dev/null; then
+                LIST_OK=false
+                break
+              fi
+              [ "$COUNT" -eq 0 ] && break
+              echo "$RESP" | jq -r --arg owner "$OWNER" '.[] | select(.archived | not) | [$owner, .name, (.default_branch // "main")] | @tsv' >> "$REPOS_FILE"
+              [ "$COUNT" -lt 100 ] && break
+              PAGE=$((PAGE + 1))
+            done
+            if [ "$LIST_OK" != "true" ]; then
+              ALL_OWNERS_OK=false
+              echo "::warning::Failed to list $OWNER repositories (transient API error? missing token access?); its repos will be missing from this refresh."
+            fi
           done
 
-          if [ "$LIST_OK" != "true" ] || [ ! -s "$REPOS_FILE" ]; then
-            echo "::warning::Failed to list $ORG repositories (transient API error?); skipping this refresh."
+          if [ "$ALL_OWNERS_OK" != "true" ] || [ ! -s "$REPOS_FILE" ]; then
+            echo "::warning::Could not list every owner in DISCOVERY_OWNERS ($DISCOVERY_OWNERS); skipping this refresh."
             {
               echo "## SDK Consumers Refresh"
               echo ""
-              echo "Could not list \`$ORG\` repositories; this refresh was skipped."
+              echo "Could not list every owner in \`DISCOVERY_OWNERS\` (\`$DISCOVERY_OWNERS\`); this refresh was skipped."
             } >> "$GITHUB_STEP_SUMMARY"
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "Discovered $(wc -l < "$REPOS_FILE") active repos in $ORG."
+          echo "Discovered $(wc -l < "$REPOS_FILE") active repos across: $DISCOVERY_OWNERS."
 
           # --- 2. Classify repos: shells (root composer.json with a non-empty
           # sdks[]) and SDK monorepos (top-level <sdk>/dart|frappe/manifest.json,
@@ -88,13 +106,17 @@ jobs:
           SELF_REPO="${GITHUB_REPOSITORY##*/}"
           SHELLS=""
           SOURCES=""
-          while IFS=$'\t' read -r REPO_NAME DEFAULT_BRANCH; do
+          while IFS=$'\t' read -r OWNER REPO_NAME DEFAULT_BRANCH; do
             [ "$REPO_NAME" = "paas_pos" ] && continue   # never indexed (owner rule)
             [ "$REPO_NAME" = "$SELF_REPO" ] && continue # this protocol repo is neither
+            if [ -e "$WORKSPACE/$REPO_NAME" ]; then
+              echo "::warning::Repo name $REPO_NAME appears under more than one owner; keeping the first clone and skipping $OWNER/$REPO_NAME."
+              continue
+            fi
             KIND=""
-            COMPOSER="$WORK/composer-$REPO_NAME.json"
+            COMPOSER="$WORK/composer-$OWNER-$REPO_NAME.json"
             CODE="$(curl -sS -o "$COMPOSER" -w '%{http_code}' -H "$AUTH_HEADER" -H "$RAW_ACCEPT" \
-              "https://api.github.com/repos/$ORG/$REPO_NAME/contents/composer.json" || echo 000)"
+              "https://api.github.com/repos/$OWNER/$REPO_NAME/contents/composer.json" || echo 000)"
             if [ "$CODE" = "200" ]; then
               if ! jq empty "$COMPOSER" 2>/dev/null; then
                 echo "::warning::$REPO_NAME has a root composer.json that is not valid JSON; skipping it."
@@ -105,9 +127,9 @@ jobs:
               fi
             fi
             if [ -z "$KIND" ]; then
-              TREE="$WORK/tree-$REPO_NAME.json"
+              TREE="$WORK/tree-$OWNER-$REPO_NAME.json"
               CODE="$(curl -sS -o "$TREE" -w '%{http_code}' -H "$AUTH_HEADER" -H "$JSON_ACCEPT" \
-                "https://api.github.com/repos/$ORG/$REPO_NAME/git/trees/$DEFAULT_BRANCH?recursive=1" || echo 000)"
+                "https://api.github.com/repos/$OWNER/$REPO_NAME/git/trees/$DEFAULT_BRANCH?recursive=1" || echo 000)"
               [ "$CODE" = "200" ] || continue
               # A truncated tree cannot prove the absence of SDK dirs, so clone
               # it anyway and let the generator decide from the filesystem.
@@ -119,15 +141,15 @@ jobs:
             fi
             # --- 3. Shallow-clone the repo into the sibling workspace ---------
             if git clone --quiet --depth 1 --branch "$DEFAULT_BRANCH" \
-              "https://x-access-token:${GH_TOKEN}@github.com/$ORG/$REPO_NAME.git" \
+              "https://x-access-token:${GH_TOKEN}@github.com/$OWNER/$REPO_NAME.git" \
               "$WORKSPACE/$REPO_NAME"; then
               if [ "$KIND" = "shell" ]; then
-                SHELLS="$SHELLS $REPO_NAME"
+                SHELLS="$SHELLS $OWNER/$REPO_NAME"
               else
-                SOURCES="$SOURCES $REPO_NAME"
+                SOURCES="$SOURCES $OWNER/$REPO_NAME"
               fi
             else
-              echo "::warning::Failed to clone $ORG/$REPO_NAME@$DEFAULT_BRANCH; it will be missing from this refresh."
+              echo "::warning::Failed to clone $OWNER/$REPO_NAME@$DEFAULT_BRANCH; it will be missing from this refresh."
             fi
           done < "$REPOS_FILE"
 
@@ -136,7 +158,7 @@ jobs:
             {
               echo "## SDK Consumers Refresh"
               echo ""
-              echo "No shells with \`sdks[]\` could be cloned from \`$ORG\`; this refresh was skipped."
+              echo "No shells with \`sdks[]\` could be cloned from \`$DISCOVERY_OWNERS\`; this refresh was skipped."
             } >> "$GITHUB_STEP_SUMMARY"
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
