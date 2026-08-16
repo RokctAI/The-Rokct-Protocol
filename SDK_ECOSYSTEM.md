@@ -111,6 +111,10 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `forex_sdk` | `forex` | yes | yes | — |
 | `design_studio` | `designer` | — | yes | — |
 
+The reverse index — which app shells compose each SDK — lives in
+[SDK_CONSUMERS.md](SDK_CONSUMERS.md) (+ machine-readable
+`sdk_consumers.json`); regenerate with `python3 tools/gen_sdk_consumers.py`.
+
 ## Dart SDK manifest keys (`<sdk>/dart/manifest.json`)
 
 One line each; the authoritative semantics are the matching `update_*()`
