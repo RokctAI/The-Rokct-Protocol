@@ -1,0 +1,211 @@
+{
+  "generated_by": "tools/gen_sdk_consumers.py",
+  "sdks": {
+    "agent_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "auth_sdk": {
+      "repo": "RokctAI/Users",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "base_sdk": {
+      "repo": "RokctAI/core",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "calc_sdk": {
+      "repo": "RokctAI/productivity",
+      "consumers": [
+        "paas_driver",
+        "paas_manager"
+      ]
+    },
+    "comms_sdk": {
+      "repo": "RokctAI/core",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "corporate_sdk": {
+      "repo": "RokctAI/corporate",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "delivery_sdk": {
+      "repo": "RokctAI/zones",
+      "consumers": [
+        "paas_driver"
+      ]
+    },
+    "desktop_sdk": {
+      "repo": "RokctAI/hardware",
+      "consumers": [
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "fav_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "hardware_sdk": {
+      "repo": "RokctAI/hardware",
+      "consumers": [
+        "paas_manager"
+      ]
+    },
+    "kitchen_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_manager"
+      ]
+    },
+    "launch_sdk": {
+      "repo": "RokctAI/core",
+      "consumers": [
+        "minilauncher"
+      ]
+    },
+    "lms_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "map_sdk": {
+      "repo": "RokctAI/zones",
+      "consumers": [
+        "paas_driver",
+        "paas_manager"
+      ]
+    },
+    "merchants_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "onboarding_sdk": {
+      "repo": "RokctAI/Users",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "orders_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_driver",
+        "paas_manager"
+      ]
+    },
+    "payments_sdk": {
+      "repo": "RokctAI/pay",
+      "consumers": [
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "processing_sdk": {
+      "repo": "RokctAI/productivity",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "productivity_sdk": {
+      "repo": "RokctAI/productivity",
+      "consumers": [
+        "minilauncher",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "products_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "promotions_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_manager"
+      ]
+    },
+    "replay_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "revenue_sdk": {
+      "repo": "RokctAI/corporate",
+      "consumers": [
+        "paas_driver",
+        "paas_manager"
+      ]
+    },
+    "subscriptions_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "users_sdk": {
+      "repo": "RokctAI/Users",
+      "consumers": [
+        "minilauncher",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    "wallet_sdk": {
+      "repo": "RokctAI/pay",
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    "weather_sdk": {
+      "repo": "RokctAI/zones",
+      "consumers": [
+        "paas_manager"
+      ]
+    },
+    "zones_sdk": {
+      "repo": "RokctAI/zones",
+      "consumers": [
+        "paas_driver",
+        "paas_manager"
+      ]
+    }
+  }
+}
