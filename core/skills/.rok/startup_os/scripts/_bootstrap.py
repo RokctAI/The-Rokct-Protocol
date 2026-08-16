@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1d213cd99c3af547735a1742da4cba846619f162"
+PROTOCOL_REF = "26345551e9a8431b5572e7af151161e2180a195b"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -81,18 +81,18 @@ ENGINE_MODULES = (
 # Expected SHA-256 of every engine module at PROTOCOL_REF, keyed by
 # repo-relative path. Pinned by tools/gen_protocol_lock.py.
 EXPECTED_SHA256 = {
-    "core/utils/startup_os/__init__.py": "eacdae45be5b18a599c4f84cf456158f01b654213b6a7579ac78eeff18dfdfb3",
-    "core/utils/startup_os/errors.py": "5c7c935c73207f90cfb3312737030ad9bc0334af395691691f5c03fbc50029a9",
-    "core/utils/startup_os/paths.py": "aca9b98fba636d172e9ee0ae192d0ae2946bdcba5b16c049c89845bcbd51cacd",
-    "core/utils/startup_os/parser.py": "8df98fb9a1da1315fb03433692f253be00d866979b848298c29dde4c4f7cccf8",
-    "core/utils/startup_os/jurisdictions.py": "d45daa8f2160d25f2329f2b4be3ceb12e35301b0fde5a8cca32b24c6b0ca97d0",
-    "core/utils/startup_os/compliance.py": "840dfd58c6320eaecffb3fae7d9f1010786fbc1a1b3c5d74ef426be0d218e53d",
-    "core/utils/startup_os/template_engine.py": "1237417a8ccdaf27c810c077dd4d7d6c3a6261c2c0b1a88f9204599b9c5fd94d",
-    "core/utils/startup_os/documents.py": "3641941d499fe8be0e7059e911ba5f5dabc0e562562d6e7687736e75a94cb2c8",
-    "core/utils/startup_os/safe_io.py": "4c9386424374e7bfe4bc7d8461ed11370dbb3c352674227ed8b614163d69435d",
-    "core/utils/startup_os/schemas.py": "a29e64cde6ba5cbcb985a1f5148a8c8e634b459b7e916129d57d5ac13287b59d",
-    "core/utils/startup_os/compiler.py": "33537b99d5a220ca0da78e31483a89958de2e1e85e67e5e05dbb906ae8dbbd58",
-    "core/utils/startup_os/agent_bridge.py": "c1ad9f9dd8f8a16aa147603bb9ac3a3d4774cbac8aa0f23856e228654249679d",
+    "core/utils/startup_os/__init__.py": "8a6c7a78284e4be34abef93804fd62842f01b4e36bf585370bd40b166f259da4",
+    "core/utils/startup_os/errors.py": "d900b381168bf55fe2bc1d50c8577b03e9638a132708c2d55ba2cd25a3a2fe75",
+    "core/utils/startup_os/paths.py": "f11f635bfa673545b6546d0d9f82cbc8287a10b80dc1fbffbe33a6d889923d03",
+    "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
+    "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
+    "core/utils/startup_os/compliance.py": "0cbbdcf1a5365ee93869039a67f34343ad17184956f93491c83bdd6c5c16b346",
+    "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
+    "core/utils/startup_os/documents.py": "d0a37dc6c1eff6b772fd3fcd0ded41b0f4ffe77cd2a1d4ea2812115f3eed05f4",
+    "core/utils/startup_os/safe_io.py": "935542b134324f709586e6746b3568717ff1b4f813b1e1f6396089ab2c2c4230",
+    "core/utils/startup_os/schemas.py": "8ba28628a2c4285e8d5529bfc407dcc64101a0d9d8c574a113a57dc8248d2d2f",
+    "core/utils/startup_os/compiler.py": "e5687b22204f69e41081ce66bb835a6b974b2896f3ce462e9a6a2e1cfca05075",
+    "core/utils/startup_os/agent_bridge.py": "5147f6f2c5872b32d6e34f0826e4719405c01b9acb1d6be9d90eb061b13e2f36",
 }
 
 LOCKFILE_NAME = "engine.lock.json"
