@@ -57,6 +57,60 @@ platform subdirectories:
   SDK paths.
 - Per-SDK `CHANGELOG.md` files track the manifest version.
 
+## Existing SDKs
+
+Censused from the SDK monorepos' default branches (2026-08-16). A half is
+marked present when it has real content: `dart` = `dart/manifest.json` exists,
+`frappe` = `frappe/manifest.json` exists, `nextjs` = files beyond a
+`.gitignore` placeholder. Repos scanned with no SDK directories are omitted
+(`engram`, `opportunities`, `betassist`, `gravity`, `orbit`; `minilauncher` is
+an app shell). Note the `betassist` SDK lives in `commerce`, not in the
+`betassist` repo.
+
+| SDK | Repo | dart | frappe | nextjs |
+|---|---|---|---|---|
+| `base` | `core` | yes | yes | yes |
+| `comms` | `core` | yes | yes | — |
+| `launch` | `core` | yes | — | — |
+| `telemetry` | `core` | — | yes | — |
+| `auth` | `Users` | yes | yes | — |
+| `onboarding` | `Users` | yes | — | — |
+| `users` | `Users` | yes | yes | — |
+| `agent` | `agent` | yes | yes | yes |
+| `fav` | `agent` | yes | yes | yes |
+| `lms` | `agent` | yes | yes | yes |
+| `radio` | `agent` | yes | yes | — |
+| `replay` | `agent` | yes | yes | yes |
+| `subscriptions` | `agent` | yes | yes | yes |
+| `betassist` | `commerce` | yes | yes | — |
+| `booking` | `commerce` | yes | yes | — |
+| `kitchen` | `commerce` | yes | yes | — |
+| `loyalty` | `commerce` | yes | yes | — |
+| `marketplace` | `commerce` | yes | — | — |
+| `merchants` | `commerce` | yes | yes | — |
+| `orders` | `commerce` | yes | yes | — |
+| `products` | `commerce` | yes | yes | — |
+| `promotions` | `commerce` | yes | yes | — |
+| `payments` | `pay` | yes | yes | — |
+| `wallet` | `pay` | yes | yes | — |
+| `delivery` | `zones` | yes | yes | — |
+| `map` | `zones` | yes | yes | — |
+| `weather` | `zones` | yes | yes | — |
+| `zones` | `zones` | yes | yes | — |
+| `calc` | `productivity` | yes | — | — |
+| `crm` | `productivity` | yes | yes | yes |
+| `processing` | `productivity` | yes | — | — |
+| `productivity` | `productivity` | yes | yes | — |
+| `desktop` | `hardware` | yes | — | — |
+| `hardware` | `hardware` | yes | yes | — |
+| `telephony` | `hardware` | yes | — | — |
+| `corporate` | `corporate` | yes | — | — |
+| `dev` | `corporate` | — | yes | — |
+| `polaris` | `corporate` | yes | yes | yes |
+| `revenue` | `corporate` | yes | — | — |
+| `forex_sdk` | `forex` | yes | yes | — |
+| `design_studio` | `designer` | — | yes | — |
+
 ## Dart SDK manifest keys (`<sdk>/dart/manifest.json`)
 
 One line each; the authoritative semantics are the matching `update_*()`
@@ -174,11 +228,15 @@ This repo's runtime-fetched-and-executed files are pinned. See
   (`universal-flutter-build.yml` runs it if present and only fetches
   `profiles/web/initiate.py` fresh as a fallback). Do not change callers to
   fetch-fresh as the primary path.
-- Compliance scanning is a CI check, not a local command:
-  `universal-pipeline.yml`'s "Run Observability AST Scanner" step executes
-  `python3 .shared-workflows/scripts/compliance_scanner.py` from the consumer
-  checkout. The scanner takes no CLI arguments — it is env-driven and requires
-  the `GROQ_API` env var.
+- Compliance scanning: for SDKs, run
+  `python3 scripts/sdk_validator.py --root <workspace-dir> --compliance` from a
+  `shared-workflows` checkout — `--compliance` chains the compliance scanner
+  per SDK (`run_compliance_scanner()` in `sdk_validator.py`). The scanner
+  itself (`scripts/compliance_scanner.py`) is an AST scan
+  (`scripts/compliance/`); it also runs in CI via `universal-pipeline.yml`'s
+  "Run Observability AST Scanner" step. `GROQ_API` is used for the Layer 20
+  documentation generation that follows a passing scan — without it the
+  scanner still scans, skipping AI doc generation and using cached docs.
 - Build failures are filed as issues in `RokctAI/platformstack`
   (`universal-flutter-build.yml`, `CENTRAL_REPO`): one live issue per
   app+platform, closed by the next green build.
@@ -213,6 +271,11 @@ This repo's runtime-fetched-and-executed files are pinned. See
 5. **One `brand_hook` declarer per app** — installer raises a RuntimeError on
    conflict.
 6. **Apps track zero `lib/` files** — compose regenerates all of `lib/`.
+7. **Backward compatibility across consumers**: an SDK update must never break
+   an app that composes it. If a change is breaking, the same change-set fixes
+   every consuming app (or ships a compatibility path — aliases, default
+   params). Shells compose SDKs at `ref: "main"`, so a breaking merge silently
+   breaks every consumer at its next compose.
 
 ## Introducing a new SDK — checklist
 
