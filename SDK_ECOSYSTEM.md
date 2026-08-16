@@ -174,6 +174,11 @@ This repo's runtime-fetched-and-executed files are pinned. See
   (`universal-flutter-build.yml` runs it if present and only fetches
   `profiles/web/initiate.py` fresh as a fallback). Do not change callers to
   fetch-fresh as the primary path.
+- Compliance scanning is a CI check, not a local command:
+  `universal-pipeline.yml`'s "Run Observability AST Scanner" step executes
+  `python3 .shared-workflows/scripts/compliance_scanner.py` from the consumer
+  checkout. The scanner takes no CLI arguments — it is env-driven and requires
+  the `GROQ_API` env var.
 - Build failures are filed as issues in `RokctAI/platformstack`
   (`universal-flutter-build.yml`, `CENTRAL_REPO`): one live issue per
   app+platform, closed by the next green build.
@@ -189,7 +194,14 @@ This repo's runtime-fetched-and-executed files are pinned. See
    `$GITHUB_WORKSPACE` in CI) or a full multi-repo workspace; it is not
    currently invoked by any shared workflow (`universal-pipeline.yml` runs
    only `compliance_scanner.py`, which `sdk_validator.py --compliance` can
-   chain into).
+   chain into). To run it manually, from a checkout of `shared-workflows`:
+
+   ```bash
+   python3 scripts/sdk_validator.py --root <workspace-dir> [--compliance]
+   ```
+
+   (`--root` defaults to `$GITHUB_WORKSPACE` in CI, else the multi-repo
+   workspace parent.)
 2. **PlatformStack never references SDKs or SDK repos.** It consumes compiled
    app shells (Docker images) only; it is also the destination for CI
    build-failure issues. Do not add composer/SDK knowledge to it.
