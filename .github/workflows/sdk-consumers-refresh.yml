@@ -1,13 +1,16 @@
 # Copyright 2026 RokctAI
 
 # Weekly refresh of the SDK consumers reverse index (sdk_consumers.json +
-# SDK_CONSUMERS.md). Discovers the org's app shells dynamically — every
-# active RokctAI repo whose root composer.json declares a non-empty sdks[]
-# list (paas_pos is never indexed, owner rule) — shallow-clones them as
-# siblings into a throwaway workspace, reruns tools/gen_sdk_consumers.py
-# against it, and commits the two index files back to the default branch
-# only when their content actually changed. Repo listing and per-shell
-# fetches follow the same curl + MONOREPO_PAT idiom as shared-workflows'
+# SDK_CONSUMERS.md) and of the "Existing SDKs" census block in
+# SDK_ECOSYSTEM.md. Discovers the org's repos dynamically: app shells are
+# every active RokctAI repo whose root composer.json declares a non-empty
+# sdks[] list (paas_pos is never indexed, owner rule); SDK monorepos are
+# every remaining repo with a top-level <sdk>/dart/manifest.json or
+# <sdk>/frappe/manifest.json. Both sets are shallow-cloned as siblings
+# into a throwaway workspace, tools/gen_sdk_consumers.py reruns against
+# it, and the changed files are committed back to the default branch only
+# when their content actually changed. Repo listing and per-repo fetches
+# follow the same curl + MONOREPO_PAT idiom as shared-workflows'
 # sdk-bump-poller.yml; transient API failures warn and exit green so a
 # flaky week never shows as a red run — the next weekly run catches up.
 
@@ -38,7 +41,7 @@ jobs:
         with:
           token: ${{ secrets.MONOREPO_PAT || secrets.GITHUB_TOKEN }}
 
-      - name: Discover and clone consuming shells
+      - name: Discover and clone shells and SDK monorepos
         id: discover
         run: |
           WORK="$RUNNER_TEMP/sdk-consumers"
@@ -79,28 +82,50 @@ jobs:
           fi
           echo "Discovered $(wc -l < "$REPOS_FILE") active repos in $ORG."
 
-          # --- 2. Keep shells (root composer.json with a non-empty sdks[]) ----
+          # --- 2. Classify repos: shells (root composer.json with a non-empty
+          # sdks[]) and SDK monorepos (top-level <sdk>/dart|frappe/manifest.json,
+          # spotted via one recursive git-trees call per repo) -----------------
           SELF_REPO="${GITHUB_REPOSITORY##*/}"
           SHELLS=""
+          SOURCES=""
           while IFS=$'\t' read -r REPO_NAME DEFAULT_BRANCH; do
             [ "$REPO_NAME" = "paas_pos" ] && continue   # never indexed (owner rule)
-            [ "$REPO_NAME" = "$SELF_REPO" ] && continue # this protocol repo is not a shell
+            [ "$REPO_NAME" = "$SELF_REPO" ] && continue # this protocol repo is neither
+            KIND=""
             COMPOSER="$WORK/composer-$REPO_NAME.json"
             CODE="$(curl -sS -o "$COMPOSER" -w '%{http_code}' -H "$AUTH_HEADER" -H "$RAW_ACCEPT" \
               "https://api.github.com/repos/$ORG/$REPO_NAME/contents/composer.json" || echo 000)"
-            [ "$CODE" = "200" ] || continue
-            if ! jq empty "$COMPOSER" 2>/dev/null; then
-              echo "::warning::$REPO_NAME has a root composer.json that is not valid JSON; skipping it."
-              continue
+            if [ "$CODE" = "200" ]; then
+              if ! jq empty "$COMPOSER" 2>/dev/null; then
+                echo "::warning::$REPO_NAME has a root composer.json that is not valid JSON; skipping it."
+                continue
+              fi
+              if jq -e '(.sdks // empty) | type == "array" and length > 0' "$COMPOSER" >/dev/null 2>&1; then
+                KIND="shell"
+              fi
             fi
-            if ! jq -e '(.sdks // empty) | type == "array" and length > 0' "$COMPOSER" >/dev/null 2>&1; then
-              continue
+            if [ -z "$KIND" ]; then
+              TREE="$WORK/tree-$REPO_NAME.json"
+              CODE="$(curl -sS -o "$TREE" -w '%{http_code}' -H "$AUTH_HEADER" -H "$JSON_ACCEPT" \
+                "https://api.github.com/repos/$ORG/$REPO_NAME/git/trees/$DEFAULT_BRANCH?recursive=1" || echo 000)"
+              [ "$CODE" = "200" ] || continue
+              # A truncated tree cannot prove the absence of SDK dirs, so clone
+              # it anyway and let the generator decide from the filesystem.
+              if jq -e '(.truncated == true) or ([.tree[]?.path // empty | select(test("^[^/]+/(dart|frappe)/manifest\\.json$"))] | length > 0)' "$TREE" >/dev/null 2>&1; then
+                KIND="source"
+              else
+                continue
+              fi
             fi
-            # --- 3. Shallow-clone the shell into the sibling workspace --------
+            # --- 3. Shallow-clone the repo into the sibling workspace ---------
             if git clone --quiet --depth 1 --branch "$DEFAULT_BRANCH" \
               "https://x-access-token:${GH_TOKEN}@github.com/$ORG/$REPO_NAME.git" \
               "$WORKSPACE/$REPO_NAME"; then
-              SHELLS="$SHELLS $REPO_NAME"
+              if [ "$KIND" = "shell" ]; then
+                SHELLS="$SHELLS $REPO_NAME"
+              else
+                SOURCES="$SOURCES $REPO_NAME"
+              fi
             else
               echo "::warning::Failed to clone $ORG/$REPO_NAME@$DEFAULT_BRANCH; it will be missing from this refresh."
             fi
@@ -118,6 +143,10 @@ jobs:
           fi
 
           echo "Shells:$SHELLS"
+          echo "SDK monorepos:$SOURCES"
+          if [ -z "$SOURCES" ]; then
+            echo "::warning::No SDK monorepos could be cloned; the SDK_ECOSYSTEM.md census block will be left untouched."
+          fi
           echo "run=true" >> "$GITHUB_OUTPUT"
           echo "workspace=$WORKSPACE" >> "$GITHUB_OUTPUT"
 
@@ -129,22 +158,22 @@ jobs:
       - name: Commit the index to the default branch when it changed
         if: steps.discover.outputs.run == 'true'
         run: |
-          if git diff --quiet -- sdk_consumers.json SDK_CONSUMERS.md; then
-            echo "Index unchanged; nothing to commit."
+          if git diff --quiet -- sdk_consumers.json SDK_CONSUMERS.md SDK_ECOSYSTEM.md; then
+            echo "Index and census unchanged; nothing to commit."
             {
               echo "## SDK Consumers Refresh"
               echo ""
-              echo "Index regenerated — no changes; nothing was committed."
+              echo "Index and census regenerated — no changes; nothing was committed."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           git config user.name "RokctBOT[bot]"
           git config user.email "2956274+RokctBOT[bot]@users.noreply.github.com"
-          git add sdk_consumers.json SDK_CONSUMERS.md
+          git add sdk_consumers.json SDK_CONSUMERS.md SDK_ECOSYSTEM.md
           git commit -m "chore: weekly refresh of SDK consumers index [skip ci]"
           git push origin HEAD
           {
             echo "## SDK Consumers Refresh"
             echo ""
-            echo "Index changed — committed \`sdk_consumers.json\` + \`SDK_CONSUMERS.md\` to \`${GITHUB_REF_NAME}\`."
+            echo "Committed the changed files among \`sdk_consumers.json\`, \`SDK_CONSUMERS.md\`, \`SDK_ECOSYSTEM.md\` (census block) to \`${GITHUB_REF_NAME}\`."
           } >> "$GITHUB_STEP_SUMMARY"

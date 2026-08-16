@@ -39,6 +39,15 @@ changing an SDK can see every shell that composes it:
    readable, consumed by shared-workflows/scripts/sdk_validator.py) and
    SDK_CONSUMERS.md (the human-readable table).
 
+It also refreshes the "Existing SDKs" census table in SDK_ECOSYSTEM.md:
+every sibling repo that is not a shell but has top-level directories with
+dart/manifest.json or frappe/manifest.json is an SDK monorepo, and each
+such directory is one SDK row (dart/frappe half = its manifest.json
+exists; nextjs half = nextjs/ has content beyond a .gitignore
+placeholder). Only the block between the
+`<!-- @generated-sdk-census-start -->` / `-end` markers is rewritten;
+everything outside the markers is untouched.
+
 Output is deterministic: sorted keys, LF line endings, trailing newline, no
 timestamps — regenerating against an unchanged workspace produces zero diff.
 Entries with `"enabled": false` are not composed into the shell and are
@@ -54,9 +63,31 @@ import sys
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JSON_NAME = "sdk_consumers.json"
 MARKDOWN_NAME = "SDK_CONSUMERS.md"
+ECOSYSTEM_NAME = "SDK_ECOSYSTEM.md"
 
 # Shell repos deliberately left out of the index. One-line note only.
 EXCLUDED_SHELLS = {"paas_pos"}  # not indexed (owner rule)
+
+# "Existing SDKs" census block markers in SDK_ECOSYSTEM.md. Only the text
+# between them is generated; the surrounding prose is hand-maintained.
+CENSUS_START = "<!-- @generated-sdk-census-start -->"
+CENSUS_END = "<!-- @generated-sdk-census-end -->"
+
+# Doc order of the census table's repos (matches SDK_ECOSYSTEM.md's "SDK
+# repo layout" narrative); repos not listed here sort after, by name.
+CENSUS_REPO_ORDER = [
+    "core",
+    "Users",
+    "agent",
+    "commerce",
+    "pay",
+    "zones",
+    "productivity",
+    "hardware",
+    "corporate",
+    "forex",
+    "designer",
+]
 
 MARKDOWN_HEADER = """# SDK consumers
 
@@ -165,6 +196,98 @@ def scan_workspace(workspace):
     return index, shells
 
 
+def sdk_halves(sdk_dir):
+    """(dart, frappe, nextjs) presence for one SDK directory.
+
+    dart/frappe are present when their manifest.json exists; nextjs is
+    present when nextjs/ holds real content — any file beyond a
+    `.gitignore` placeholder.
+    """
+    dart = os.path.isfile(os.path.join(sdk_dir, "dart", "manifest.json"))
+    frappe = os.path.isfile(os.path.join(sdk_dir, "frappe", "manifest.json"))
+    nextjs = False
+    nextjs_dir = os.path.join(sdk_dir, "nextjs")
+    if os.path.isdir(nextjs_dir):
+        for _root, _dirs, files in os.walk(nextjs_dir):
+            if any(name != ".gitignore" for name in files):
+                nextjs = True
+                break
+    return dart, frappe, nextjs
+
+
+def scan_census(workspace):
+    """Map repo -> [(sdk, dart, frappe, nextjs), ...] for SDK monorepos.
+
+    An SDK monorepo is any sibling repo that is not an app shell (no root
+    composer.json `sdks` list) but has at least one top-level directory
+    with dart/manifest.json or frappe/manifest.json. Shells, `paas_pos`,
+    and this protocol checkout are never censused.
+    """
+    census = {}
+    for name in sorted(os.listdir(workspace)):
+        repo_dir = os.path.join(workspace, name)
+        if name.startswith(".") or not os.path.isdir(repo_dir):
+            continue
+        if os.path.realpath(repo_dir) == os.path.realpath(REPO_ROOT):
+            continue  # this protocol checkout is not an SDK monorepo
+        if load_shell_sdks(repo_dir) is not None:
+            continue  # app shells are consumers, not SDK sources
+        repo = shell_repo_name(repo_dir)
+        if repo in EXCLUDED_SHELLS or repo in census:
+            continue
+        rows = []
+        for sdk in sorted(os.listdir(repo_dir)):
+            sdk_dir = os.path.join(repo_dir, sdk)
+            if sdk.startswith(".") or not os.path.isdir(sdk_dir):
+                continue
+            dart, frappe, nextjs = sdk_halves(sdk_dir)
+            if dart or frappe:
+                rows.append((sdk, dart, frappe, nextjs))
+        if rows:
+            census[repo] = rows
+    return census
+
+
+def census_repo_key(repo):
+    """Sort key keeping the doc's repo order, new repos after, by name."""
+    if repo in CENSUS_REPO_ORDER:
+        return (0, CENSUS_REPO_ORDER.index(repo), repo)
+    return (1, 0, repo.lower())
+
+
+def render_census(census):
+    """The census markdown table (header + one row per SDK)."""
+    lines = [
+        "| SDK | Repo | dart | frappe | nextjs |\n",
+        "|---|---|---|---|---|\n",
+    ]
+    for repo in sorted(census, key=census_repo_key):
+        for sdk, dart, frappe, nextjs in census[repo]:
+            halves = " | ".join("yes" if half else "—" for half in (dart, frappe, nextjs))
+            lines.append(f"| `{sdk}` | `{repo}` | {halves} |\n")
+    return "".join(lines)
+
+
+def write_census(census):
+    """Rewrite only the marked census block of SDK_ECOSYSTEM.md."""
+    path = os.path.join(REPO_ROOT, ECOSYSTEM_NAME)
+    with open(path, "r", encoding="utf-8") as handle:
+        content = handle.read()
+    start = content.find(CENSUS_START)
+    end = content.find(CENSUS_END)
+    if start < 0 or end < 0 or end < start:
+        raise SystemExit(
+            f"[gen] {ECOSYSTEM_NAME}: census markers not found "
+            f"({CENSUS_START} ... {CENSUS_END})"
+        )
+    block = f"{CENSUS_START}\n{render_census(census)}{CENSUS_END}"
+    new_content = content[:start] + block + content[end + len(CENSUS_END):]
+    if new_content != content:
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(new_content)
+    return path
+
+
 def write_json(index):
     payload = {
         "generated_by": "tools/gen_sdk_consumers.py",
@@ -217,6 +340,20 @@ def main(argv=None):
     print(f"[gen] Found {len(shells)} app shell(s): {', '.join(sorted(shells))}")
     print(f"[gen] Wrote {os.path.relpath(json_path, REPO_ROOT)} ({len(index)} SDKs)")
     print(f"[gen] Wrote {os.path.relpath(md_path, REPO_ROOT)}")
+
+    census = scan_census(workspace)
+    if census:
+        census_path = write_census(census)
+        total = sum(len(rows) for rows in census.values())
+        print(
+            f"[gen] Wrote census block in {os.path.relpath(census_path, REPO_ROOT)} "
+            f"({total} SDKs across {len(census)} repos)"
+        )
+    else:
+        print(
+            f"[gen] WARNING: no SDK monorepos found under {workspace}; "
+            f"left the {ECOSYSTEM_NAME} census block untouched"
+        )
     return 0
 
 
