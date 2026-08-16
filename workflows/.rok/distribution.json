@@ -1,0 +1,8 @@
+{
+  "agent.yml": {
+    "trimmed_variant": "agent.trimmed.yml",
+    "full_trigger_repos": ["factory", "opportunities", "the-rokct-protocol"]
+  },
+  "branch-cleanup.yml": {},
+  "play-deploy.yml": {}
+}
