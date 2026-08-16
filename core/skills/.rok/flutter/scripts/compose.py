@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 RokctAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 The-Rokct-Protocol: compose.py wrapper for Flutter
 Fetches sdk_composer.py and sdk_installer_base.py from GitHub pinned to
@@ -8,15 +28,15 @@ PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1d213cd99c3af547735a1742da4cba846619f162"
+PROTOCOL_REF = "26345551e9a8431b5572e7af151161e2180a195b"
 COMPOSER_PATH = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
 EXPECTED_SHA256 = {
-    "core/utils/flutter/sdk_composer.py": "729a3c97d56c7d5f517408e85413074335bf7c4a77c28cf872192599f3dc2da5",
-    "core/utils/flutter/sdk_installer_base.py": "7aec4298cc6b3405d829d7a8f052bff52971be8956473658b064caaa004c3015",
+    "core/utils/flutter/sdk_composer.py": "222b3853b1df0787c80fe55defba7288f30035e205204276579247f9633a01a3",
+    "core/utils/flutter/sdk_installer_base.py": "3a16e624caa8b6d70f56ba55a178ec4b1f9658062f95e7835a62eafcfb838656",
 }
 
 

@@ -1,5 +1,25 @@
 # compliance-ignore-file: structural-special-dirs
 #!/usr/bin/env python3
+# Copyright (c) 2026 RokctAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 The-Rokct-Protocol scaffold: manage_sessions.py
 Fetches manage_sessions.py from GitHub pinned to PROTOCOL_REF, verifies its
@@ -9,9 +29,9 @@ SHA-256, then executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1d213cd99c3af547735a1742da4cba846619f162"
+PROTOCOL_REF = "26345551e9a8431b5572e7af151161e2180a195b"
 DELEGATE_PATH = "core/utils/agent_delegation/manage_sessions.py"
-DELEGATE_SHA256 = "047b0026c530247d62fc8d8f0206307a2d16560e41ecc7b3723ea620ac936226"
+DELEGATE_SHA256 = "adbbdd2c4c970f0ffec2dcd2bb9575009248a759174da48b3eea7aec505062e3"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )

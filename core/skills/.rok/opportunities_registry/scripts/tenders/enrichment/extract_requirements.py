@@ -1,3 +1,23 @@
+# Copyright (c) 2026 RokctAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # Licensed under the MIT License.
 # Copyright 2024 RokctAI
 # compliance-silent
@@ -20,7 +40,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1d213cd99c3af547735a1742da4cba846619f162"
+PROTOCOL_REF = "26345551e9a8431b5572e7af151161e2180a195b"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -30,29 +50,29 @@ ZIP_PREFIX = f"The-Rokct-Protocol-{PROTOCOL_REF}/{BACKEND_PREFIX}"
 # Expected SHA-256 of every backend file at PROTOCOL_REF, keyed by
 # repo-relative path. Pinned by tools/gen_protocol_lock.py.
 EXPECTED_SHA256 = {
-    "core/utils/opportunities/check_links.py": "265a29d5d653bb6c991f68c9df8ea14fc0ba9837cc06339f5c9c62fad4777fd8",
-    "core/utils/opportunities/ci/check_links.py": "265a29d5d653bb6c991f68c9df8ea14fc0ba9837cc06339f5c9c62fad4777fd8",
-    "core/utils/opportunities/eeip/discover_eeip.py": "257510d7f242810ea6487f1cbe0cb6026ad029c1d12451d3682d466a9648cf3d",
-    "core/utils/opportunities/equity/discover_sources.py": "06e3dc0fa82cd6461b1e23cfc4f357e936d7f4b60f5c853560456f09b3ea0c74",
-    "core/utils/opportunities/equity/equity_sync.py": "e11bf436eaba948f59c3666f07741df223b692aac673bba9e1f73e192fc45ee2",
-    "core/utils/opportunities/equity/funder_finder.py": "fac31472a7db641a2f662bf9f4a273e75d0198979b4cf61924cd698c314d09d8",
-    "core/utils/opportunities/equity/funder_manager.py": "20d351388c4ec6c67633b09c36e843831af5534a79b8cb79472f15485da35042",
-    "core/utils/opportunities/equity/verify_sources.py": "a58a2de1a6d0f67b1e59f8c7c67248195ad3220603d21d54417966ccda4bf244",
-    "core/utils/opportunities/grants/scrapers/f4c.py": "59ffbc89c8f8c8e6c41b9f8d76ecdd99442ae367f33354f3cf2669b0485f999d",
-    "core/utils/opportunities/maintenance/index.py": "d6a081351033fa117fe9a5d20d70c53653e837be125e6a9cde69956620c6e178",
-    "core/utils/opportunities/registry_orchestrator/healers.py": "465144de367c25d464201e974845b01db7161d115e0af359beb4e49f35b2a54e",
-    "core/utils/opportunities/registry_orchestrator/index.py": "4ff734732f73861e9d2ae1705565ba4e2337134b7883281ceb25ef4c91de6899",
-    "core/utils/opportunities/registry_orchestrator/scanners.py": "3d080264c1cc134bdaab55270f3ff980a3a9d6862036f35893e1dd2a08cd9b6e",
-    "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "581004b639c5e74e24137bf65d283cb7483152708a35c4c07a31aee21a0f175b",
-    "core/utils/opportunities/registry_orchestrator/updaters.py": "016ee7421dcc14800e29725c7f7f5a8804e2b6f0e5e7cd598b598ce0bcbd4c5e",
-    "core/utils/opportunities/response_kits/index.py": "1c355d5bd03bf33adbc0cdb08307817b6b1c9b5ff7d469b0f74309995eb2ae74",
-    "core/utils/opportunities/tenders/api/ocds.py": "d313ecdaf113b0ba0afffe783a411ac31f96e7824f675e45872c21a0b21ef6ed",
-    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "bdc4aba8fb54af77bd265c31dd89de6a0cd68ae004a44da0a81a052eb720f092",
-    "core/utils/opportunities/tenders/enrichment/pdf_to_md.py": "f68edc030d828119b3286164e3a815dbd6cdaeb965cc78f8b44229318bdcff4a",
-    "core/utils/opportunities/tenders/index.py": "78a53084c85e7240cf83cf2eabc1ffe78b573adbf7b763ed35f4ea7f3bfadeec",
-    "core/utils/opportunities/tenders/scrapers/musina.py": "08445566ddb1a403430a1600056614e285450cc3abdb1d6f94a5a1b455915795",
-    "core/utils/opportunities/tenders/scrapers/test_musina_dates.py": "8623d7fb67d90235675eddb4cddc56ec3ae16fa9b43c44cd9a33621d9d9ca663",
-    "core/utils/opportunities/tenders/utils/tender_resolver.py": "693f22e34607966e28f26e1551b2afa0e3d59cc7d696f3e04546c991f5bf6709",
+    "core/utils/opportunities/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
+    "core/utils/opportunities/ci/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
+    "core/utils/opportunities/eeip/discover_eeip.py": "cef800250a8ac174694948d7b4765879973b9cd7f7b84bd9a93232d7487b85b3",
+    "core/utils/opportunities/equity/discover_sources.py": "be3dec053301d61298e8d6feabd8dc341aff4e6bb5b198b4580a7395937c37b4",
+    "core/utils/opportunities/equity/equity_sync.py": "44966c6e07de6efe766adb3d4a287aeccdd48eee89f1563afb33d71a8e6336d7",
+    "core/utils/opportunities/equity/funder_finder.py": "5e928b2c2add015b753fc62751ec992ec4c92b9e24299ba6e9fb317487d1706f",
+    "core/utils/opportunities/equity/funder_manager.py": "336f21234602524c56bf110f229744db124a97abff20d1b8f955899bebf8a826",
+    "core/utils/opportunities/equity/verify_sources.py": "b6602aedc5d33f55fde27d68bb10fd6c4cbd486a98e9b83085dda7383fa7bcce",
+    "core/utils/opportunities/grants/scrapers/f4c.py": "9c3a233571166e66fdbc2a0ffa6f5b15f8c4f179f7a0f4c0012d3b0626905f1b",
+    "core/utils/opportunities/maintenance/index.py": "110517d30cb4e7ccbda16df09b16c428f7d0354ff4d10587a62c8000a1f8cdaf",
+    "core/utils/opportunities/registry_orchestrator/healers.py": "9b627944c459d4f5917481891053748c2425e76d7feae6b1ee11bb59b7f9da44",
+    "core/utils/opportunities/registry_orchestrator/index.py": "ad6fce694c814faf8d8a9ac05bf44fb6547ba4e2b833f0da75bdf02d9e66c7df",
+    "core/utils/opportunities/registry_orchestrator/scanners.py": "6eb3f8b4a5c68543905824e05b6889892f35cd507577a05f7637a656a6beaaee",
+    "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "ec1e8b5c2a0ea23ad817e9ab933e1e870b42443e0cd53ffb752c5a1c30be1f72",
+    "core/utils/opportunities/registry_orchestrator/updaters.py": "5c7901d45036035c3f31532ad648c45aa16d9ec45519400a4142a7b1a16aee2f",
+    "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
+    "core/utils/opportunities/tenders/api/ocds.py": "b5c2cfe9a2208e224629f729ebff6fd8d5475ab4292337b736b07e86497eade7",
+    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "6140d9448022a2d2225b49fbf05d1ecf1fcbe690e24c296faf3c08e41c64f500",
+    "core/utils/opportunities/tenders/enrichment/pdf_to_md.py": "c5c18683c0939fa8d5b31456e043fda8eb39479f1cb0e516485c6fc506702029",
+    "core/utils/opportunities/tenders/index.py": "0d7e4a80ed63cd962b85588216814c28b191a82dbe84e7ac89968f7eda7abff1",
+    "core/utils/opportunities/tenders/scrapers/musina.py": "ed745650c14aea177212c9fc04b8efa35c37546e8533adfb25255e1dac4c83e9",
+    "core/utils/opportunities/tenders/scrapers/test_musina_dates.py": "9abd791589e3fa47dffc66fec80c591c8cacda4e97f19f18068d97d8e3b19775",
+    "core/utils/opportunities/tenders/utils/tender_resolver.py": "4ec8d661ca08d2def7749a8399c665238796790d511fab61d366c35fe973a827",
 }
 
 

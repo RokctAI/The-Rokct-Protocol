@@ -1,5 +1,25 @@
 # compliance-ignore-file: structural-special-dirs
 #!/usr/bin/env python3
+# Copyright (c) 2026 RokctAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 The-Rokct-Protocol scaffold: update_status.py
 Fetches job_manager.py from GitHub pinned to PROTOCOL_REF, verifies its
@@ -9,9 +29,9 @@ SHA-256, then executes it with the status subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1d213cd99c3af547735a1742da4cba846619f162"
+PROTOCOL_REF = "26345551e9a8431b5572e7af151161e2180a195b"
 DELEGATE_PATH = "core/utils/agent_delegation/job_manager.py"
-DELEGATE_SHA256 = "868defca630cce47d15b7597539ea2aeeeff035533683973eb9871c16307d1fd"
+DELEGATE_SHA256 = "633f9ae1d93fbfe537c77ec8c3cc1eecb9764ab27b39dd9237eee0b1fd5444ab"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
