@@ -15,7 +15,8 @@ python3 tools/gen_sdk_consumers.py
 ```
 
 Disabled entries (`"enabled": false`) are not composed and not indexed.
-`paas_pos` is not indexed.
+`paas_pos` is not indexed. This index auto-refreshes weekly via the
+`sdk-consumers-refresh.yml` workflow (Mondays 03:00 UTC).
 
 | SDK | Source repo | Consuming shells |
 |---|---|---|

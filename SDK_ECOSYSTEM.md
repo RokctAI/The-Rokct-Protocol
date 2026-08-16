@@ -114,6 +114,9 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 The reverse index — which app shells compose each SDK — lives in
 [SDK_CONSUMERS.md](SDK_CONSUMERS.md) (+ machine-readable
 `sdk_consumers.json`); regenerate with `python3 tools/gen_sdk_consumers.py`.
+It is also refreshed automatically every Monday by the
+`sdk-consumers-refresh.yml` workflow, which rediscovers the org's shells
+and commits the regenerated index when it changed.
 
 ## Dart SDK manifest keys (`<sdk>/dart/manifest.json`)
 
