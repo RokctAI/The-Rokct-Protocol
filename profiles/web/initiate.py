@@ -16,9 +16,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "2fc26360b5e7609a9ce6a99974cd85455ed84ad9"
+PROTOCOL_REF = "e14e2da6c8a3cf8eec34993d81644061d7b82e55"
 EXPECTED_SHA256 = {
-    "profiles/web/initiate.py": "24c9758f0d37d846b36335a9b0f8217601f873b0e40ea970ca84d44f489da3ab",
+    "profiles/web/initiate.py": "0c2eecac028c3519e93069518c39426b6e68776bbf7126daf702007d01c23664",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_ZIP_BASE = (
@@ -264,6 +264,47 @@ def fetch_dir_from_github(rel_src, dst):
         sys.exit(1)
 
 
+def load_rok_distribution(src_dir):
+    """workflows/.rok/distribution.json maps each canonical workflow to an
+    optional {"trimmed_variant": file, "full_trigger_repos": [repo names]}.
+    A missing manifest means every file distributes verbatim."""
+    manifest_path = os.path.join(src_dir, "distribution.json")
+    if not os.path.exists(manifest_path):
+        return {}
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def select_rok_workflows(src_dir, repo_name):
+    """Pick which workflows/.rok file each repo gets, as (source file,
+    install-as name) pairs. A workflow with a trimmed_variant installs the
+    canonical file only for the repos in full_trigger_repos; every other repo
+    (unknown included) gets the trimmed variant under the canonical name, so
+    repos the shared suite hard-gates away from never carry schedule/push
+    triggers that can only no-op. Unlisted files distribute verbatim."""
+    manifest = load_rok_distribution(src_dir)
+    variants = {
+        cfg["trimmed_variant"]
+        for cfg in manifest.values()
+        if cfg.get("trimmed_variant")
+    }
+    repo = (repo_name or "").lower()
+    pairs = []
+    for item in sorted(os.listdir(src_dir)):
+        if item == "distribution.json" or item in variants:
+            continue
+        if not os.path.isfile(os.path.join(src_dir, item)):
+            continue
+        cfg = manifest.get(item, {})
+        trimmed = cfg.get("trimmed_variant")
+        full_repos = [r.lower() for r in cfg.get("full_trigger_repos", [])]
+        if trimmed and repo not in full_repos:
+            pairs.append((trimmed, item))
+        else:
+            pairs.append((item, item))
+    return pairs
+
+
 def detect_repo_owner():
     try:
         url = subprocess.check_output(
@@ -344,11 +385,13 @@ def main():
         if os.path.isdir(src_dir):
             dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
             os.makedirs(dst_workflows, exist_ok=True)
-            for item in os.listdir(src_dir):
-                src_file = os.path.join(src_dir, item)
-                if os.path.isfile(src_file):
-                    shutil.copy2(src_file, os.path.join(dst_workflows, item))
-                    print(f"[init] Deployed Protocol workflow: {item}")
+            for src_name, dst_name in select_rok_workflows(src_dir, repo_owner):
+                shutil.copy2(
+                    os.path.join(src_dir, src_name),
+                    os.path.join(dst_workflows, dst_name),
+                )
+                suffix = f" (from {src_name})" if src_name != dst_name else ""
+                print(f"[init] Deployed Protocol workflow: {dst_name}{suffix}")
             if src_dir == temp_rok_workflows and os.path.isdir(temp_rok_workflows):
                 shutil.rmtree(temp_rok_workflows)
                 print("[init] Cleaned up temporary workflows/.rok directory")
