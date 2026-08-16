@@ -71,7 +71,9 @@ class TestVariantSelection(unittest.TestCase):
         for profile, module in _MODULES:
             for repo in _FULL_TRIGGER_REPOS:
                 with self.subTest(profile=profile, repo=repo):
-                    self.assertEqual(self._selected(module, repo)["agent.yml"], "agent.yml")
+                    self.assertEqual(
+                        self._selected(module, repo)["agent.yml"], "agent.yml"
+                    )
 
     def test_gated_repo_match_is_case_insensitive(self):
         for profile, module in _MODULES:
@@ -91,7 +93,9 @@ class TestVariantSelection(unittest.TestCase):
             for repo in _FULL_TRIGGER_REPOS + _TRIMMED_REPOS:
                 with self.subTest(profile=profile, repo=repo):
                     selected = self._selected(module, repo)
-                    self.assertEqual(selected["branch-cleanup.yml"], "branch-cleanup.yml")
+                    self.assertEqual(
+                        selected["branch-cleanup.yml"], "branch-cleanup.yml"
+                    )
                     self.assertEqual(selected["play-deploy.yml"], "play-deploy.yml")
 
     def test_manifest_and_variant_files_are_never_installed(self):
@@ -190,9 +194,7 @@ class TestTrimmedAgentVariant(unittest.TestCase):
         )
 
     def test_trimmed_triggers_are_dispatch_and_call_only(self):
-        self.assertEqual(
-            set(self.trimmed_on), {"workflow_dispatch", "workflow_call"}
-        )
+        self.assertEqual(set(self.trimmed_on), {"workflow_dispatch", "workflow_call"})
 
     def test_kept_triggers_match_canonical_definitions(self):
         for trigger in ("workflow_dispatch", "workflow_call"):
