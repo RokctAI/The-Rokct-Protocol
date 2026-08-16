@@ -1,3 +1,5 @@
+# Licensed under the MIT License.
+# Copyright 2026 RokctAI
 """Regression tests for repo-aware workflows/.rok distribution.
 
 workflows/.rok/distribution.json drives which variant of each Protocol-only
