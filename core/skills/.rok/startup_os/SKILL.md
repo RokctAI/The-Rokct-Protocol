@@ -271,3 +271,29 @@ python core/utils/startup_os/tests/test_startup_os.py
 Every test corresponds to a defect confirmed by execution, including the
 schema-versus-template agreement checks that prevent a template asking for a
 field the questionnaire never collects.
+
+## Packaging (pip install)
+
+The engine directory doubles as a pip-installable distribution via
+`core/utils/startup_os/pyproject.toml`:
+
+```bash
+pip install path/to/The-Rokct-Protocol/core/utils/startup_os
+```
+
+That installs the same modules as the *startupos* import package plus a
+`startupos` console script mapped to the CLI (`startupos compile`,
+`startupos list`, ...). The wheel is stdlib-only — it declares no runtime
+dependencies — and reads its version from the engine's `__version__`.
+
+Both identities serve the same code:
+
+- *Runtime mount* (this skill, the tests, the agent repo's plan builder):
+  the directory is registered as the `core` package and consumers keep doing
+  `from core.parser import parse_questions_md`. Nothing changed here.
+- *Installed package* (the design_studio / RokctAI/designer integration):
+  `import startupos; from startupos.parser import parse_questions_md` — a
+  clean seam with no runtime GitHub fetch.
+
+Engine modules import their siblings relatively (`from .errors import ...`),
+which is what lets the one directory answer to either package name.

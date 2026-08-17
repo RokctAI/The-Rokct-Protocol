@@ -61,9 +61,9 @@ import re
 import urllib.request
 from collections import Counter
 
-from core import safe_io
-from core import paths as path_utils
-from core.errors import StartupOSError
+from . import safe_io
+from . import paths as path_utils
+from .errors import StartupOSError
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 API_KEY_ENV_VAR = "GROQ_API_KEY"
@@ -900,8 +900,8 @@ def draft_instance(
     A slot whose response fails any check falls back to the compiled
     founder text/coaching; the report says which and why.
     """
-    from core import schemas
-    from core.parser import parse_questions_md
+    from . import schemas
+    from .parser import parse_questions_md
 
     instance_type = path_utils.validate_instance_type(instance_type)
     instance_name = path_utils.sanitize_instance_name(instance_name)

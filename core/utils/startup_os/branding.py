@@ -55,8 +55,8 @@ import os
 import re
 import struct
 
-from core import safe_io
-from core.errors import BrandingError
+from . import safe_io
+from .errors import BrandingError
 
 BRAND_DIRNAME = "brand"
 SYSTEM_BASENAMES = ("system.yaml", "system.yml", "system.json")
@@ -603,7 +603,7 @@ def build_briefs(data):
     `(filename, payload_dict)` and `coaching` names every answer that
     blocked or would improve a brief.
     """
-    from core import template_engine
+    from . import template_engine
 
     ctx = template_engine.RenderContext(
         values=data.values,

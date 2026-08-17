@@ -20,20 +20,24 @@
 
 """StartupOS command line interface.
 
-Runs from the canonical engine directory as well as from the fetched skill
-layout. The previous `main.py` did `from core.compiler import compile_instance`
-while sitting beside `compiler.py` as a flat file, with no `core` package
-anywhere — it raised `ModuleNotFoundError` on every invocation and could never
-have run from this directory.
+Runs three ways:
+
+1. As a script (`python main.py ...`) from the canonical engine directory or
+   the fetched skill layout — the bootstrap below registers the directory as
+   the `core` package so the relative imports resolve.
+2. As `core.main` when the engine directory is runtime-mounted as `core`.
+3. As `startupos.main` when the engine is pip-installed; the `startupos`
+   console script points at `main()` here.
 """
 
 import argparse
+import importlib
 import os
 import sys
 
 
 def _bootstrap_package():
-    """Make `core.*` importable whichever layout we are running from.
+    """Make the engine package importable when this file runs as a script.
 
     In the skill's fetched layout the modules live in a real `core/` package.
     In the protocol repo they are flat files in this directory, so we register
@@ -58,23 +62,28 @@ def _bootstrap_package():
     spec.loader.exec_module(module)
 
 
-_bootstrap_package()
+if not __package__:
+    # Script mode: no parent package yet. Register the engine directory as
+    # `core` and point the relative imports below at it. When imported as
+    # `core.main` or `startupos.main` the parent package already exists and
+    # nothing extra is registered.
+    _bootstrap_package()
+    __package__ = "core"
 
-import core  # noqa: E402
+_engine = importlib.import_module(__package__)
+_engine.enable_utf8_console()
 
-core.enable_utf8_console()
-
-from core import jurisdictions  # noqa: E402
-from core import paths as path_utils  # noqa: E402
-from core import schemas  # noqa: E402
-from core import template_engine  # noqa: E402
-from core.agent_bridge import (  # noqa: E402
+from . import jurisdictions  # noqa: E402
+from . import paths as path_utils  # noqa: E402
+from . import schemas  # noqa: E402
+from . import template_engine  # noqa: E402
+from .agent_bridge import (  # noqa: E402
     auto_provision_profile,
     log_ambient_milestone,
     update_profile_answer,
 )
-from core.compiler import compile_instance  # noqa: E402
-from core.errors import StartupOSError  # noqa: E402
+from .compiler import compile_instance  # noqa: E402
+from .errors import StartupOSError  # noqa: E402
 
 
 def _add_common(parser):
@@ -292,7 +301,7 @@ def cmd_compile(args):
 def cmd_render(args):
     # Imported lazily for the same reason as `polish`: a skill install with a
     # cached pre-renderer engine can still run every other command.
-    from core import compiler as compiler_mod
+    from . import compiler as compiler_mod
 
     if args.type != "business":
         print(
@@ -322,8 +331,8 @@ def cmd_render(args):
 def cmd_briefs(args):
     # Imported lazily for the same reason as `render`: a skill install with a
     # cached pre-briefs engine can still run every other command.
-    from core import branding as branding_mod
-    from core import compiler as compiler_mod
+    from . import branding as branding_mod
+    from . import compiler as compiler_mod
 
     if args.type != "business":
         print(
@@ -585,7 +594,7 @@ def cmd_lint(args):
 
 
 def cmd_migrate(args):
-    from core.agent_bridge import ensure_question
+    from .agent_bridge import ensure_question
 
     code = args.jurisdiction.strip().upper()
     entry = jurisdictions.get(code)
@@ -630,7 +639,7 @@ def cmd_migrate(args):
     changed = 0
     conflicts = []
 
-    from core.parser import parse_questions_md
+    from .parser import parse_questions_md
 
     for instance_type, name, path in targets:
         # Warn when the profile's own Primary Base points somewhere else.
@@ -681,7 +690,7 @@ def cmd_migrate(args):
 
 
 def cmd_expand(args):
-    from core.agent_bridge import expand_profile
+    from .agent_bridge import expand_profile
 
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
     target = path_utils.questions_path(root, args.type, args.name)
@@ -703,7 +712,7 @@ def cmd_expand(args):
 def cmd_polish(args):
     # Imported lazily: a skill install with a cached pre-polish engine can
     # still run every other command; only `polish` needs the new module.
-    from core import polish as polish_mod
+    from . import polish as polish_mod
 
     call_model = polish_mod.build_call_model_from_env()
     if call_model is None:
@@ -729,7 +738,7 @@ def cmd_polish(args):
 
 def cmd_draft(args):
     # Imported lazily for the same reason as `polish`.
-    from core import polish as polish_mod
+    from . import polish as polish_mod
 
     call_model = polish_mod.build_draft_call_model_from_env()
     if call_model is None:
