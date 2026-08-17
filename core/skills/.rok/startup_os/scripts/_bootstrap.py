@@ -77,6 +77,8 @@ ENGINE_MODULES = (
     "compiler.py",
     "agent_bridge.py",
     "polish.py",
+    "render_pptx.py",
+    "render_xlsx.py",
 )
 
 # Expected SHA-256 of every engine module at PROTOCOL_REF, keyed by

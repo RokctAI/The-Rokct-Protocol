@@ -90,8 +90,9 @@ python scripts/seed_cv_ledger.py --type life --name Amara --pdf ./cv.pdf
 
 `seed_cv_ledger.py` prints what it extracted and writes nothing until `--apply`.
 
-The engine also has a standalone CLI with `compile`, `provision`, `milestone`,
-`answer`, `check`, `polish`, `lint`, `list` and `jurisdictions` subcommands:
+The engine also has a standalone CLI with `compile`, `render`, `provision`,
+`milestone`, `answer`, `check`, `polish`, `lint`, `list` and `jurisdictions`
+subcommands:
 
 ```bash
 python core/utils/startup_os/main.py check --type business --name AcmeClinic
@@ -110,6 +111,22 @@ needing a field nothing collects, or a question nothing uses.
 ```bash
 python core/utils/startup_os/main.py polish --type business --name AcmeClinic
 ```
+
+```bash
+python core/utils/startup_os/main.py render --type business --name AcmeClinic
+```
+
+`render` derives two binary artifacts from the same parsed answers and computed
+figures that fill the markdown: `output/investor_pitch_deck.pptx` (a 12-slide
+16:9 deck mirroring the pitch-deck annexure, coaching lines included where
+answers are missing) and `output/financial_model.xlsx` (Assumptions,
+Projections and Unit Economics sheets with *live formulas* over the parsed
+inputs, each carrying the compiler-computed value as its cached result).
+Both are generated stdlib-only, deterministically — same `questions.md` in,
+byte-identical files out. The markdown stays canonical:
+`compile --render` regenerates them alongside the documents, and a plain
+`compile` prunes them as stale rather than leaving binaries that no longer
+match the suite.
 
 `polish` is opt-in AI rephrasing of compiled prose via the Groq API (requires
 `GROQ_API_KEY`; without it the command is a no-op). Every numeric token is

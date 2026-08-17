@@ -557,15 +557,50 @@ def resolve_compliance_dir(
     return local  # canonical location; caller reports it as missing
 
 
-def compile_instance(
+class InstanceData:
+    """Everything one parse of the SSOT yields, ready for any renderer.
+
+    The markdown compiler consumed all of this inline, so the binary
+    renderers had no way to reach the same parsed answers and computed
+    values without re-running a full compile. This object is that seam:
+    `load_instance_data` builds it once, and markdown, .pptx and .xlsx
+    rendering all read from it.
+    """
+
+    def __init__(
+        self,
+        instance_type,
+        instance_name,
+        root,
+        out_dir,
+        profile,
+        jurisdiction,
+        record,
+        trading_name,
+        values,
+        warnings,
+    ):
+        self.instance_type = instance_type
+        self.instance_name = instance_name
+        self.root = root
+        self.out_dir = out_dir
+        self.profile = profile
+        self.jurisdiction = jurisdiction
+        self.record = record
+        self.trading_name = trading_name
+        self.values = values
+        self.warnings = warnings
+
+
+def load_instance_data(
     instance_type,
     instance_name,
-    monorepo_root=None,
     workspace_root=None,
     compliance_root=None,
-    quiet=False,
+    monorepo_root=None,
+    quiet=True,
 ):
-    """Compile the template suite for one instance.
+    """Parse the SSOT and build the full renderer namespace, writing nothing.
 
     `monorepo_root` is accepted for backwards compatibility and treated as
     `compliance_root`'s parent.
@@ -576,19 +611,12 @@ def compile_instance(
     root = path_utils.resolve_workspace_root(workspace_root, verbose=not quiet)
     questions_file = path_utils.questions_path(root, instance_type, instance_name)
     out_dir = path_utils.output_dir(root, instance_type, instance_name)
-    template_root = path_utils.templates_dir(root, instance_type)
 
     if not os.path.exists(questions_file):
         raise ProfileNotFoundError(
             f"Missing strategic source of truth: {questions_file}\n"
             f"Provision it first:  python provision.py --type {instance_type} "
             f"--name {instance_name}"
-        )
-    if not os.path.isdir(template_root):
-        raise TemplateError(
-            f"Missing template folder: {template_root}\n"
-            "Templates ship with the skill; run the compile wrapper so they sync, "
-            "or copy them from core/skills/.rok/startup_os/templates/."
         )
 
     if not compliance_root and monorepo_root:
@@ -598,9 +626,6 @@ def compile_instance(
     warnings = list(profile.warnings)
 
     jurisdiction = jurisdictions.resolve(profile.answers, warnings)
-    result = CompileResult(instance_type, instance_name, out_dir, jurisdiction)
-    result.completeness = profile.completeness
-
     trading_name = profile.get("trading_name") or _humanise(instance_name)
 
     record = None
@@ -623,8 +648,92 @@ def compile_instance(
         warnings,
     )
 
+    return InstanceData(
+        instance_type=instance_type,
+        instance_name=instance_name,
+        root=root,
+        out_dir=out_dir,
+        profile=profile,
+        jurisdiction=jurisdiction,
+        record=record,
+        trading_name=trading_name,
+        values=values,
+        warnings=warnings,
+    )
+
+
+def render_binary_artifacts(data, quiet=False):
+    """Render the derived .pptx and .xlsx artifacts for a business instance.
+
+    The markdown stays canonical: both files are regenerated from the same
+    `InstanceData` that fills the templates, and a plain recompile without
+    `--render` prunes them rather than leaving stale binaries that look
+    current. Returns the output-relative filenames written.
+    """
+    # Imported lazily: a skill install with a cached pre-renderer engine can
+    # still compile markdown; only rendering needs the new modules.
+    from core import render_pptx, render_xlsx
+
+    written = []
+    for module, filename in (
+        (render_pptx, render_pptx.PITCH_DECK_FILENAME),
+        (render_xlsx, render_xlsx.FINANCIAL_MODEL_FILENAME),
+    ):
+        destination = os.path.join(data.out_dir, filename)
+        path_utils.assert_contained(data.out_dir, destination)
+        module.render(data, destination)
+        written.append(filename)
+        if not quiet:
+            print(f"  Rendered : {filename}")
+    return written
+
+
+def compile_instance(
+    instance_type,
+    instance_name,
+    monorepo_root=None,
+    workspace_root=None,
+    compliance_root=None,
+    quiet=False,
+    render=False,
+):
+    """Compile the template suite for one instance.
+
+    `monorepo_root` is accepted for backwards compatibility and treated as
+    `compliance_root`'s parent. With `render=True` the derived binary
+    artifacts (investor deck .pptx, financial model .xlsx) are regenerated
+    alongside the markdown for business instances.
+    """
+    data = load_instance_data(
+        instance_type=instance_type,
+        instance_name=instance_name,
+        workspace_root=workspace_root,
+        compliance_root=compliance_root,
+        monorepo_root=monorepo_root,
+        quiet=quiet,
+    )
+    instance_type = data.instance_type
+    instance_name = data.instance_name
+    out_dir = data.out_dir
+    template_root = path_utils.templates_dir(data.root, instance_type)
+
+    if not os.path.isdir(template_root):
+        raise TemplateError(
+            f"Missing template folder: {template_root}\n"
+            "Templates ship with the skill; run the compile wrapper so they sync, "
+            "or copy them from core/skills/.rok/startup_os/templates/."
+        )
+
+    profile = data.profile
+    jurisdiction = data.jurisdiction
+    record = data.record
+    warnings = data.warnings
+
+    result = CompileResult(instance_type, instance_name, out_dir, jurisdiction)
+    result.completeness = profile.completeness
+
     context = template_engine.RenderContext(
-        values=values, jurisdiction=jurisdiction, features=jurisdiction.features
+        values=data.values, jurisdiction=jurisdiction, features=jurisdiction.features
     )
 
     template_files = list(_iter_templates(template_root))
@@ -671,6 +780,17 @@ def compile_instance(
         result.written.append("compliance_log.md")
         status, _messages = compliance_mod.compliance_exit_status(record, generated_on)
         result.compliance_status = status
+
+    if render:
+        if instance_type == "business":
+            for name in render_binary_artifacts(data, quiet=quiet):
+                written_names.add(name)
+                result.written.append(name)
+        else:
+            warnings.append(
+                "--render produces business artifacts (investor deck, "
+                "financial model); nothing to render for a life profile."
+            )
 
     # Prune only after everything this run produces is known, or the compliance
     # log would be deleted moments after being written.
@@ -983,15 +1103,17 @@ def _coach(label):
     return f"Pending — answer **{label}** in questions.md"
 
 
-def _add_computed_financials(values, profile, jurisdiction):
-    """Derive the projection table, unit economics and consistency checks.
+def extract_financial_inputs(profile):
+    """Parse every numeric financial answer once, in one place.
 
-    Replaces the static "_to be supplied_" unit-economics table: every figure
-    below is either computed from named answers or an explicit prompt to
-    answer the question that would unlock it.
+    The markdown compiler and the binary renderers (`render_pptx`,
+    `render_xlsx`) must agree on every figure, so the parsing lives here and
+    both consume the result. A renderer that re-parsed the answers itself
+    would eventually drift from the documents it claims to be derived from.
+
+    Every value is a float or None — None meaning the answer is absent or
+    narrative, never zero. Callers render None as coaching, not as a number.
     """
-    symbol = jurisdiction.currency_symbol or ""
-
     revenue = [
         parse_money(profile.get(f"projected_year_{year}")) for year in (1, 2, 3)
     ]
@@ -1019,11 +1141,119 @@ def _add_computed_financials(values, profile, jurisdiction):
         elif churn_period == "monthly":
             churn_monthly_rate = churn_pct / 100.0
 
-    # -- Three-year projection table -------------------------------------
+    return {
+        "revenue": revenue,
+        "margin_pct": margin_pct,
+        "arpc": arpc,
+        "arpc_period": arpc_period,
+        "arpc_monthly": arpc_monthly,
+        "cac": cac,
+        "burn": burn,
+        "cash": cash,
+        "churn_pct": churn_pct,
+        "churn_period": churn_period,
+        "churn_monthly_rate": churn_monthly_rate,
+        "customers_y1": customers_y1,
+        "tam": parse_money(profile.get("market_size_tam")),
+        "sam": parse_money(profile.get("market_size_sam")),
+        "som": parse_money(profile.get("market_size_som")),
+    }
+
+
+def derive_financial_metrics(fin):
+    """Every derived financial figure, from the parsed inputs, in one place.
+
+    The formulas here are the single source of the arithmetic: the markdown
+    unit-economics table prints these values, and the .xlsx renderer writes
+    the same formulas into live cells with these values cached — so a reader
+    pressing F9 in Excel and a reader of the markdown see the same numbers.
+
+    A metric that cannot be derived is None, and `*_basis` says which formula
+    variant produced a value that *was* derived.
+    """
+    revenue = fin["revenue"]
+    margin_pct = fin["margin_pct"]
+    arpc_monthly = fin["arpc_monthly"]
+    cac = fin["cac"]
+
     growth = [None, None, None]
     for year in (1, 2):
         if revenue[year] is not None and revenue[year - 1]:
             growth[year] = revenue[year] / revenue[year - 1] - 1.0
+
+    gross_profit = [
+        amount * margin_pct / 100.0
+        if (amount is not None and margin_pct is not None)
+        else None
+        for amount in revenue
+    ]
+
+    cac_payback_months = None
+    cac_payback_basis = None
+    if cac is not None and arpc_monthly:
+        if margin_pct is not None:
+            cac_payback_months = cac / (arpc_monthly * margin_pct / 100.0)
+            cac_payback_basis = "margin"
+        else:
+            cac_payback_months = cac / arpc_monthly
+            cac_payback_basis = "revenue"
+
+    ltv = None
+    if arpc_monthly and margin_pct is not None and fin["churn_monthly_rate"]:
+        ltv = arpc_monthly * (margin_pct / 100.0) / fin["churn_monthly_rate"]
+
+    ltv_cac = ltv / cac if (ltv is not None and cac) else None
+
+    runway_months = None
+    if fin["cash"] is not None and fin["burn"]:
+        runway_months = fin["cash"] / fin["burn"]
+
+    implied_year_1_revenue = None
+    if arpc_monthly and fin["customers_y1"]:
+        implied_year_1_revenue = arpc_monthly * 12.0 * fin["customers_y1"]
+
+    return {
+        "growth": growth,
+        "gross_profit": gross_profit,
+        "cac_payback_months": cac_payback_months,
+        "cac_payback_basis": cac_payback_basis,
+        "ltv": ltv,
+        "ltv_cac": ltv_cac,
+        "runway_months": runway_months,
+        "arpc_annual": (
+            arpc_monthly * 12.0 if arpc_monthly is not None else None
+        ),
+        "annual_operating_costs": (
+            fin["burn"] * 12.0 if fin["burn"] is not None else None
+        ),
+        "implied_year_1_revenue": implied_year_1_revenue,
+    }
+
+
+def _add_computed_financials(values, profile, jurisdiction):
+    """Derive the projection table, unit economics and consistency checks.
+
+    Replaces the static "_to be supplied_" unit-economics table: every figure
+    below is either computed from named answers or an explicit prompt to
+    answer the question that would unlock it.
+    """
+    symbol = jurisdiction.currency_symbol or ""
+
+    fin = extract_financial_inputs(profile)
+    metrics = derive_financial_metrics(fin)
+
+    revenue = fin["revenue"]
+    margin_pct = fin["margin_pct"]
+    arpc = fin["arpc"]
+    arpc_period = fin["arpc_period"]
+    arpc_monthly = fin["arpc_monthly"]
+    cac = fin["cac"]
+    burn = fin["burn"]
+    cash = fin["cash"]
+    customers_y1 = fin["customers_y1"]
+
+    # -- Three-year projection table -------------------------------------
+    growth = metrics["growth"]
 
     if any(amount is not None for amount in revenue):
         if margin_pct is not None:
@@ -1048,8 +1278,8 @@ def _add_computed_financials(values, profile, jurisdiction):
                 row = f"| {year_label} | {format_money(amount, symbol)} | {growth_cell} |"
             if margin_pct is not None:
                 profit = (
-                    format_money(amount * margin_pct / 100.0, symbol)
-                    if amount is not None
+                    format_money(metrics["gross_profit"][index], symbol)
+                    if metrics["gross_profit"][index] is not None
                     else "—"
                 )
                 row += f" {profit} |"
@@ -1110,16 +1340,15 @@ def _add_computed_financials(values, profile, jurisdiction):
             "Customer acquisition cost", _coach("Customer Acquisition Cost"), ""
         )
 
-    if cac is not None and arpc_monthly:
-        if margin_pct is not None:
-            payback = cac / (arpc_monthly * margin_pct / 100.0)
+    if metrics["cac_payback_months"] is not None:
+        payback = metrics["cac_payback_months"]
+        if metrics["cac_payback_basis"] == "margin":
             add_row(
                 "CAC payback period",
                 f"{payback:.1f} months",
                 "computed from CAC ÷ (monthly revenue per customer × gross margin)",
             )
         else:
-            payback = cac / arpc_monthly
             add_row(
                 "CAC payback period",
                 f"{payback:.1f} months (revenue basis — no margin supplied)",
@@ -1133,19 +1362,17 @@ def _add_computed_financials(values, profile, jurisdiction):
             "",
         )
 
-    ltv = None
-    if arpc_monthly and margin_pct is not None and churn_monthly_rate:
-        ltv = arpc_monthly * (margin_pct / 100.0) / churn_monthly_rate
+    if metrics["ltv"] is not None:
         add_row(
             "Customer lifetime value",
-            format_money(ltv, symbol),
+            format_money(metrics["ltv"], symbol),
             "computed from monthly revenue per customer × gross margin ÷ "
             "monthly churn",
         )
-        if cac:
+        if metrics["ltv_cac"] is not None:
             add_row(
                 "LTV : CAC",
-                f"{ltv / cac:.1f}x",
+                f"{metrics['ltv_cac']:.1f}x",
                 "computed from lifetime value ÷ acquisition cost",
             )
     else:
@@ -1170,10 +1397,10 @@ def _add_computed_financials(values, profile, jurisdiction):
     else:
         add_row("Cash on hand", _coach("Cash On Hand"), "")
 
-    if cash is not None and burn:
+    if metrics["runway_months"] is not None:
         add_row(
             "Runway",
-            f"{cash / burn:.0f} months",
+            f"{metrics['runway_months']:.0f} months",
             "computed from cash on hand ÷ monthly operating costs",
         )
     else:
@@ -1188,8 +1415,8 @@ def _add_computed_financials(values, profile, jurisdiction):
 
     # -- Consistency checks -----------------------------------------------
     checks = []
-    if revenue[0] and arpc_monthly and customers_y1:
-        implied = arpc_monthly * 12.0 * customers_y1
+    if revenue[0] and metrics["implied_year_1_revenue"]:
+        implied = metrics["implied_year_1_revenue"]
         deviation = implied / revenue[0] - 1.0
         comparison = (
             f"Year 1 revenue ({format_money(revenue[0], symbol)}) vs "
@@ -1236,6 +1463,31 @@ def _split_positioning_lines(text):
     return lines
 
 
+def extract_competitor_rows(profile):
+    """`(name, positioning)` rows for the competitor table.
+
+    Shared by the markdown market analysis and the pitch-deck renderer, so a
+    competitor named in the documents is never missing from the deck. A
+    competitor named without a stance gets a coaching cell, never silence.
+    """
+    positioning = profile.get("competitive_positioning")
+    competitors = profile.get("key_competitors")
+    rows = []
+    if positioning:
+        for line in _split_positioning_lines(positioning):
+            name, _, stance = line.partition(":")
+            if stance.strip():
+                rows.append((name.strip(), stance.strip()))
+            else:
+                rows.append(("—", line))
+    elif competitors:
+        for name in re.split(r",| and ", str(competitors)):
+            name = name.strip(" .")
+            if name:
+                rows.append((name, _coach("Competitive Positioning")))
+    return rows
+
+
 def _add_market_analysis(values, profile):
     """Derive the TAM/SAM/SOM funnel and the competitor positioning table.
 
@@ -1244,9 +1496,8 @@ def _add_market_analysis(values, profile):
     When the answers carry parseable figures, the funnel below shows each
     layer as a share of the one above and flags incoherent values.
     """
-    tam = parse_money(profile.get("market_size_tam"))
-    sam = parse_money(profile.get("market_size_sam"))
-    som = parse_money(profile.get("market_size_som"))
+    fin = extract_financial_inputs(profile)
+    tam, sam, som = fin["tam"], fin["sam"], fin["som"]
 
     # The funnel needs a currency for display; reuse the raw figures' scale
     # via the jurisdiction symbol already used elsewhere in the document.
@@ -1290,21 +1541,7 @@ def _add_market_analysis(values, profile):
         values["market_funnel_table"] = ""
         values["market_sizing_flags"] = ""
 
-    positioning = profile.get("competitive_positioning")
-    competitors = profile.get("key_competitors")
-    rows = []
-    if positioning:
-        for line in _split_positioning_lines(positioning):
-            name, _, stance = line.partition(":")
-            if stance.strip():
-                rows.append((name.strip(), stance.strip()))
-            else:
-                rows.append(("—", line))
-    elif competitors:
-        for name in re.split(r",| and ", str(competitors)):
-            name = name.strip(" .")
-            if name:
-                rows.append((name, _coach("Competitive Positioning")))
+    rows = extract_competitor_rows(profile)
     if rows:
         table = ["| Competitor | Positioning against them |", "| :--- | :--- |"]
         for name, stance in rows:

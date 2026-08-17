@@ -109,6 +109,12 @@ def build_parser():
         default=None,
         help="Deprecated alias: <root>/Compliance is used",
     )
+    compile_parser.add_argument(
+        "--render",
+        action="store_true",
+        help="Also regenerate the derived binary artifacts "
+        "(investor_pitch_deck.pptx, financial_model.xlsx)",
+    )
     compile_parser.add_argument("--quiet", action="store_true")
     _add_common(compile_parser)
 
@@ -207,6 +213,24 @@ def build_parser():
     polish_parser.add_argument("--quiet", action="store_true")
     _add_common(polish_parser)
 
+    render_parser = subparsers.add_parser(
+        "render",
+        help="Render the derived binary artifacts (.pptx investor deck, "
+        ".xlsx financial model) from questions.md. The markdown stays "
+        "canonical: a later compile without --render prunes them as stale.",
+    )
+    render_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    render_parser.add_argument("--name", required=True, help="Instance folder name")
+    render_parser.add_argument(
+        "--compliance-root",
+        default=None,
+        help="Directory containing per-instance compliance folders",
+    )
+    render_parser.add_argument("--quiet", action="store_true")
+    _add_common(render_parser)
+
     list_parser = subparsers.add_parser("list", help="List profiles in the workspace")
     _add_common(list_parser)
 
@@ -223,8 +247,39 @@ def cmd_compile(args):
         workspace_root=args.root,
         compliance_root=args.compliance_root,
         quiet=args.quiet,
+        render=args.render,
     )
     return 0 if result.ok else 1
+
+
+def cmd_render(args):
+    # Imported lazily for the same reason as `polish`: a skill install with a
+    # cached pre-renderer engine can still run every other command.
+    from core import compiler as compiler_mod
+
+    if args.type != "business":
+        print(
+            "[Skip] render produces business artifacts (investor deck, "
+            "financial model); there is nothing to render for a life profile.",
+            file=sys.stderr,
+        )
+        return 1
+
+    data = compiler_mod.load_instance_data(
+        instance_type=args.type,
+        instance_name=args.name,
+        workspace_root=args.root,
+        compliance_root=args.compliance_root,
+        quiet=args.quiet,
+    )
+    written = compiler_mod.render_binary_artifacts(data, quiet=args.quiet)
+    print(
+        f"[StartupOS] {args.type}/{args.name} -> {len(written)} artifacts "
+        f"in {data.out_dir}"
+    )
+    for warning in data.warnings:
+        print(f"  [warn] {warning}")
+    return 0
 
 
 def cmd_provision(args):
@@ -618,6 +673,7 @@ def cmd_jurisdictions(_args):
 
 _COMMANDS = {
     "compile": cmd_compile,
+    "render": cmd_render,
     "provision": cmd_provision,
     "milestone": cmd_milestone,
     "answer": cmd_answer,
