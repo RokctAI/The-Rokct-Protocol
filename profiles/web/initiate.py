@@ -373,11 +373,24 @@ def main():
     else:
         core_skills_dir = os.path.join(PROTOCOL_DIR, "core", "skills")
         dst = os.path.join(ROKCT_DIR, "skills")
+        # Standalone bootstrap: nothing is checked out locally, so stage
+        # core/skills from the pinned release zip first - the same remote
+        # fallback copy_dir() takes for the RokctAI branch above. Walking the
+        # staged copy keeps the non-org selection below (skill directories
+        # only, never .rok) identical to the local-checkout case, instead of
+        # dying on os.listdir() of a directory that was never fetched.
+        temp_core_skills = os.path.join(ROKCT_DIR, "tmp", "core_skills")
+        if not os.path.isdir(core_skills_dir):
+            fetch_dir_from_github("core/skills", temp_core_skills)
+            core_skills_dir = temp_core_skills
         os.makedirs(dst, exist_ok=True)
         for item in os.listdir(core_skills_dir):
             s = os.path.join(core_skills_dir, item)
             if os.path.isdir(s) and item != ".rok":
                 copy_dir(s, os.path.join(dst, item))
+        if core_skills_dir == temp_core_skills and os.path.isdir(temp_core_skills):
+            shutil.rmtree(temp_core_skills)
+            print("[init] Cleaned up temporary core/skills directory")
 
     copy_versioned(
         os.path.join("profiles", "web", "rules.md"),
