@@ -210,6 +210,32 @@ Rules:
   goes to the protocol template — editing only the app's committed copy will be
   clobbered.
 
+## Backend imports and the `{app_name}` token
+
+Frappe module `src/` files never hardcode the target app's package name
+(`paas.`, `rcore.`, ...) — the same source composes into differently named
+shells, so a literal prefix breaks every shell but one.
+
+- **Cross-module imports use the `{app_name}` token**, which
+  `compose_backend.py` substitutes at compose time in `.py`, `.js`, `.html`,
+  and `.json` files (`.dart` files are NOT substituted):
+
+  ```python
+  # <sdk>/frappe/src/api/orders.py
+  from {app_name}.base.api.utils import get_settings  # cross-module: token
+  from .helpers import normalize_order                # same-module: relative
+  ```
+
+- **Same-module internals use relative imports** — they survive composition
+  unchanged and need no token.
+- A `{app_name}` inside an import statement means the raw file is a compose
+  template, not valid Python until composed. That is expected — don't "fix"
+  it by substituting a real app name.
+- **Clients never build app-prefixed method URLs** either. URL/`cmd` strings
+  go through the gateway — `POST /api/v1/method/rokct.platform.api` with a
+  prefix-free `cmd` — never `/api/method/paas.<module>...` (see the endpoint
+  alias registration section of `core/utils/frappe/frappe_sdk_management.md`).
+
 ## Versioning and propagation
 
 - Bump the SDK's `dart/manifest.json` semver **in the same commit** as the
@@ -364,6 +390,9 @@ This repo's runtime-fetched-and-executed files are pinned. See
 ### What NOT to do
 
 - Don't import a sibling SDK package from `lib/` (ADR-005).
+- Don't hardcode an app prefix (`paas.`, `rcore.`) in frappe module `src/` —
+  cross-module imports use `{app_name}`, same-module imports are relative
+  (see "Backend imports and the `{app_name}` token").
 - Don't hand-edit or commit generated `lib/` files in an app shell.
 - Don't commit `.rokct/skills/` or any provisioned composer script.
 - Don't edit an app's committed `composer.json` as the source of truth — the
