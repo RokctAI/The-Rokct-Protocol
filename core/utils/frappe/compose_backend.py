@@ -40,10 +40,13 @@ COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name
 #     literal "*" wildcard frappe accepts for doc_events registered against
 #     every doctype (e.g. core/telemetry's trace-context injector).
 #   - "event": a doc_event / scheduler bucket name (word chars)
+#   - "cron": a cron expression key inside scheduler_events["cron"]
+#     (croniter syntax: digits, *, /, ",", "-", spaces, month/day names)
 _HOOK_VALUE_PATTERNS = {
     "dotted": re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"),
     "doctype": re.compile(r"^(\*|[\w \-]+)$"),
     "event": re.compile(r"^\w+$"),
+    "cron": re.compile(r"^[\w*/,\- ]+$"),
 }
 
 
@@ -531,6 +534,35 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         #    both land, running it twice per tick).
         scheduler_events = hooks.get("scheduler_events", {})
         for event_type, tasks in scheduler_events.items():
+            if isinstance(tasks, dict):
+                # frappe's "cron" bucket: {cron expression: [dotted job paths]}.
+                # The keys are cron expressions, not dotted paths - validate
+                # them as such and only dotted-validate the jobs inside each
+                # expression's list. Expressions union across modules and each
+                # job list extends deduped, like the plain list buckets.
+                append_blocks.append(
+                    f"scheduler_events = globals().get('scheduler_events', {{}})"
+                )
+                append_blocks.append(
+                    f"scheduler_events.setdefault({event_type!r}, {{}})"
+                )
+                for cron_expr, jobs in tasks.items():
+                    _validate_hook_value(
+                        cron_expr, "cron", module_name, "scheduler_events"
+                    )
+                    job_list = [jobs] if isinstance(jobs, str) else list(jobs)
+                    for j in job_list:
+                        _validate_hook_value(
+                            j, "dotted", module_name, "scheduler_events"
+                        )
+                    append_blocks.append(
+                        f"_cron_jobs = scheduler_events[{event_type!r}].setdefault({cron_expr!r}, [])"
+                    )
+                    append_blocks.append(f"for _t in {job_list!r}:")
+                    append_blocks.append(
+                        f"    if _t not in _cron_jobs: _cron_jobs.append(_t)"
+                    )
+                continue
             task_list = [tasks] if isinstance(tasks, str) else list(tasks)
             for t in task_list:
                 _validate_hook_value(t, "dotted", module_name, "scheduler_events")
