@@ -17,10 +17,21 @@
 #                           .update_task_status_from_pr. Also honoured as an
 #                           Actions secret for operators who would rather not
 #                           publish the site hostname in run logs.
-#   ROKCT_ROADMAP_SECRET    organisation Actions *secret* - the value of the
-#                           site's `Roadmap Settings > GitHub Action Secret`.
-#                           Signs the request body; nothing is ever sent
-#                           unsigned.
+#   ROKCT_ROADMAP_SECRET    OPTIONAL organisation Actions *secret* - a
+#                           dedicated HMAC key. When it is unset the signing
+#                           key falls back to MONOREPO_PAT, which the shared
+#                           suite already consumes org-wide, so no new secret
+#                           has to be created for this workflow to work. An
+#                           HMAC key is only a shared string, so either value
+#                           serves; whichever is in force, the site's
+#                           `Roadmap Settings > GitHub Action Secret` must
+#                           hold that same value. The request body is always
+#                           signed; nothing is ever sent unsigned.
+#
+# Note that MONOREPO_PAT is only ever a *key*, never a trigger: a repository
+# with no ROKCT_ROADMAP_ENDPOINT and no ROKCT_ROADMAP_SECRET is still treated
+# as having no roadmap and exits quietly, so inheriting the org PAT does not
+# by itself make a repository start reporting or warning.
 #
 # A repository that needs a different site than the org default overrides
 # either name at the repository level; GitHub resolves repository over
@@ -59,6 +70,14 @@ jobs:
           ROKCT_ROADMAP_ENDPOINT: >-
             ${{ vars.ROKCT_ROADMAP_ENDPOINT || secrets.ROKCT_ROADMAP_ENDPOINT }}
           ROKCT_ROADMAP_SECRET: ${{ secrets.ROKCT_ROADMAP_SECRET }}
+          # The key actually used to sign. An HMAC key is only a shared
+          # string, so the org-wide MONOREPO_PAT serves as one and nothing new
+          # has to be created; a dedicated ROKCT_ROADMAP_SECRET still wins
+          # where one exists. Kept separate from ROKCT_ROADMAP_SECRET above so
+          # that the checks below can still tell "somebody configured a
+          # roadmap here" from "this repository merely inherits the org PAT".
+          ROKCT_ROADMAP_SIGNING_KEY: >-
+            ${{ secrets.ROKCT_ROADMAP_SECRET || secrets.MONOREPO_PAT }}
         run: |
           set -euo pipefail
 
@@ -77,8 +96,8 @@ jobs:
             exit 0
           fi
 
-          if [ -z "${ROKCT_ROADMAP_SECRET:-}" ]; then
-            echo "::warning::ROKCT_ROADMAP_ENDPOINT is set but ROKCT_ROADMAP_SECRET is not; skipping the roadmap callback rather than sending an unsigned request."
+          if [ -z "${ROKCT_ROADMAP_SIGNING_KEY:-}" ]; then
+            echo "::warning::ROKCT_ROADMAP_ENDPOINT is set but no signing key is available - neither ROKCT_ROADMAP_SECRET nor MONOREPO_PAT is set; skipping the roadmap callback rather than sending an unsigned request."
             echo "configured=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -138,7 +157,8 @@ jobs:
         env:
           ROKCT_ROADMAP_ENDPOINT: >-
             ${{ vars.ROKCT_ROADMAP_ENDPOINT || secrets.ROKCT_ROADMAP_ENDPOINT }}
-          ROKCT_ROADMAP_SECRET: ${{ secrets.ROKCT_ROADMAP_SECRET }}
+          ROKCT_ROADMAP_SIGNING_KEY: >-
+            ${{ secrets.ROKCT_ROADMAP_SECRET || secrets.MONOREPO_PAT }}
           ISSUE_NUMBER: ${{ steps.issue.outputs.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
@@ -158,7 +178,7 @@ jobs:
 
           signature="$(
             printf '%s' "$body" \
-              | openssl dgst -sha256 -hmac "$ROKCT_ROADMAP_SECRET" \
+              | openssl dgst -sha256 -hmac "$ROKCT_ROADMAP_SIGNING_KEY" \
               | awk '{print $NF}'
           )"
 
