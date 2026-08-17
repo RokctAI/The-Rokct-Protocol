@@ -136,6 +136,73 @@ def update_json_meta(meta_path, stats, advanced_data):
         json.dump(meta_data, f, indent=2)
 
 
+def parse_tender_card(content):
+    """Parses a tender markdown card into the legacy catalog dict shape.
+
+    Mirrors the retired generate_registries.py parser field-for-field so
+    the published tenders.json keeps the schema its consumers already read:
+    `title` from the H1, snake_case keys from the `- **Key**: Value`
+    bullets, N/A defaults for the mandatory metadata fields, `category`
+    from the `### Category` section.
+    """
+    data = {}
+
+    title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+    data["title"] = title_match.group(1).strip() if title_match else "Unknown"
+
+    for key, val in re.findall(r"-\s+\*\*(.+?)\*\*:\s*(.*)", content):
+        clean_key = key.lower().replace(" ", "_").strip("?")
+        data[clean_key] = val.strip()
+
+    for field in ["flag", "source_card", "status", "last_verified"]:
+        if field not in data:
+            data[field] = "N/A"
+
+    category = "General"
+    cat_match = re.search(r"### Category\n\s*(.+)", content)
+    if cat_match:
+        category = cat_match.group(1).strip()
+    data["category"] = category
+
+    return data
+
+
+def update_json_tenders(tenders_path, tenders_dir):
+    """Regenerates the published tenders.json catalog from the card corpus.
+
+    Without this the sync only rewrote meta.json, so the published catalog
+    stayed frozen at whatever snapshot the retired generator last committed
+    while enrichment kept moving. Card selection matches scan_registry's
+    rules (recursive, skipping templates/audit logs/extracted `_content`
+    files); output is sorted by slug so an unchanged corpus produces a
+    byte-identical (and therefore un-committed) file.
+    """
+    tenders_path.parent.mkdir(parents=True, exist_ok=True)
+
+    items = []
+    for file in tenders_dir.rglob("*.md"):
+        fname = file.name.lower()
+        if (
+            fname
+            in ["template.md", "readme.md", "registry_audit_log.md", "global_audit_log.md"]
+            or fname.startswith("registry_")
+            or fname.endswith("_content.md")
+        ):
+            continue
+        try:
+            with open(file, "r", encoding="utf-8", errors="ignore") as f:
+                item = parse_tender_card(f.read())
+            item["slug"] = file.stem
+            items.append(item)
+        except Exception as e:
+            print(f"[Error] Failed to parse tender card {file}: {e}")
+
+    items.sort(key=lambda item: item["slug"])
+    with open(tenders_path, "w", encoding="utf-8") as f:
+        json.dump(items, f, indent=2)
+    print(f"[Done] tenders.json saved ({len(items)} items).")
+
+
 def save_jules_todo(
     base_dir, todo_list, filename="todo.json", title_prefix="Tender Enrichment Queue"
 ):
