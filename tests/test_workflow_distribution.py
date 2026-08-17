@@ -241,7 +241,12 @@ class TestDeployment(unittest.TestCase):
                 with self.subTest(profile=profile):
                     self.assertEqual(
                         sorted(os.listdir(dst)),
-                        ["agent.yml", "branch-cleanup.yml", "play-deploy.yml"],
+                        [
+                            "agent.yml",
+                            "branch-cleanup.yml",
+                            "play-deploy.yml",
+                            "rokct_pr_merged.yml",
+                        ],
                     )
                     with open(os.path.join(_ROK_DIR, "agent.trimmed.yml"), "rb") as f:
                         trimmed = f.read()
