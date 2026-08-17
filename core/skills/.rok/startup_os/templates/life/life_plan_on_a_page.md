@@ -1,17 +1,25 @@
 # {{full_name}} — Life Plan on a Page
 
-## 1. Core Purpose & Values Statement
+## 1. Core Purpose & Values
 
+{{#if life_purpose}}
 > **Core Purpose**: {{life_purpose}}
+{{else}}
+_No purpose recorded. Answer **Life Purpose** in questions.md — every other
+plan in this suite hangs off it._
+{{/if}}
 
-*   **Freedom & Autonomy**: The ultimate goal is to hold complete sovereignty over our time, location, and creative output.
-*   **Deep Craft**: Pursuing master-level capabilities in engineering and system design.
-*   **Generational Stewardship**: Leaving our family and community physically, financially, and intellectually stronger than we found them.
-*   **Physical Integrity**: Treating our body as the indispensable hardware that runs all life software.
+{{#if personal_values}}
+{{personal_values}}
+{{else}}
+_No values recorded. Answer **Personal Values** — the values you refuse to
+trade away, one per line._
+{{/if}}
 
 ---
 
 ## 2. Dynamic Personal Profile & Metrics
+
 *   **Full Name**: {{full_name}}
 *   **Primary Base**: {{primary_base}}
 {{#if current_role}}
@@ -51,11 +59,28 @@ suggestion, not a description of how you currently spend your day:_
 
 {{/if}}
 
-
 ---
 
-## 4. Key Milestones (12-Month Horizon)
-1.  **Sovereign Asset Baseline**: Achieve our targeted personal net asset cushion to ensure absolute professional flexibility.
-2.  **Health Optimization**: Complete clean biometric screenings and hit target athletic standards.
-3.  **Knowledge Sowing**: Publish three open-source modules or strategic books to share hard-won blueprints with downstream builders.
-4.  **Relational Quality Audit**: Prune calendar obligations to ensure at least 20 hours of focused relational time per week.
+## 4. Focus for the Year Ahead
+
+One line per plan; each links to its own page in this suite.
+
+{{#if wellness_focus}}
+*   **Health**: {{wellness_focus}}
+{{else}}
+*   **Health**: _answer **Wellness Focus** to set the year's health focus._
+{{/if}}
+{{#if skill_focus}}
+*   **Craft**: {{skill_focus}}
+{{else}}
+*   **Craft**: _answer **Skill Focus** — the capability you are deliberately
+    building._
+{{/if}}
+{{#if legacy_vision}}
+*   **Legacy**: {{legacy_vision}}
+{{else}}
+*   **Legacy**: _answer **Legacy Vision** — the long-term stewardship goal._
+{{/if}}
+{{#if daily_rhythm}}
+*   **Rhythm**: protected by the daily loop above.
+{{/if}}

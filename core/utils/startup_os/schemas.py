@@ -657,9 +657,59 @@ BUSINESS_DEPTH_LEVELS = (
 DEPTH_DILIGENCE = BUSINESS_DEPTH_LEVELS[-1].number
 
 
+LIFE_DEPTH_LEVELS = (
+    DepthLevel(
+        1,
+        "foundation",
+        (
+            "full_name",
+            "pronouns",
+            "primary_base",
+            "life_purpose",
+            "wellness_focus",
+            "daily_rhythm",
+        ),
+    ),
+    DepthLevel(
+        2,
+        "stewardship-ready",
+        (
+            "sleep_target",
+            "training_routine",
+            "health_metrics",
+            "focus_blocks",
+            "personal_values",
+            "assets",
+            "liabilities",
+            "life_cover_policies",
+            "monthly_savings",
+            "beneficiaries",
+            "digital_asset_inventory",
+            "release_protocol",
+        ),
+    ),
+    DepthLevel(
+        3,
+        "estate-ready",
+        (
+            "legal_full_name",
+            "marital_status",
+            "children",
+            "executor",
+            "alternate_executor",
+            "specific_bequests",
+            "residue_beneficiaries",
+            "alternate_heirs",
+        ),
+    ),
+)
+
+_DEPTH_LADDERS = {"business": BUSINESS_DEPTH_LEVELS, "life": LIFE_DEPTH_LEVELS}
+
+
 def depth_levels(instance_type):
-    """The ladder for an instance type. Life profiles have no ladder."""
-    return BUSINESS_DEPTH_LEVELS if instance_type == "business" else ()
+    """The ladder for an instance type. Unknown types have no ladder."""
+    return _DEPTH_LADDERS.get(instance_type, ())
 
 
 class DepthReport:
@@ -796,6 +846,207 @@ LIFE_SCHEMA = [
         [
             Question("Daily Rhythm", "What does a productive day look like?"),
             Question("Accountability Partner", "Who holds you to your commitments?"),
+            Question(
+                "Focus Blocks",
+                "When are your deep-focus blocks, and how long do they run?",
+                example="06:00-09:00 daily, phone off",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Productivity Tools",
+                "Which tools or systems keep your commitments visible and on track?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Key Bottlenecks",
+                "What most limits your energy, focus or progress right now?",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    # ---- Extended set: the full life-planning suite draws on these ----
+    Section(
+        "Health & Vitality",
+        [
+            Question(
+                "Sleep Target",
+                "What sleep schedule and duration are you committing to?",
+                example="22:00-06:00, eight hours, screens off an hour before",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Training Routine",
+                "What is your weekly training or movement routine?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Health Metrics",
+                "Which health metrics or goals do you track, and what are the "
+                "current targets?",
+                example="resting heart rate under 60; 10,000 steps daily",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Nutrition Approach",
+                "What nutrition approach fuels your day?",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Values & Philosophy",
+        [
+            Question(
+                "Personal Values",
+                "Which values do you refuse to trade away? One per line.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Financial Philosophy",
+                "What principles govern how you earn, spend and invest? "
+                "One line per principle.",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Financial Stewardship",
+        [
+            Question(
+                "Assets",
+                "What do you own? One asset per line, with its estimated value "
+                "where known.",
+                example="Home: R 1,500,000",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Liabilities",
+                "What do you owe? One debt per line, with the outstanding amount.",
+                example="Home loan: R 900,000",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Life Cover Policies",
+                "Which life insurance policies do you hold? One per line: "
+                "insurer, policy reference, and the cover amount.",
+                example="Alpha Insure, policy LC-1: R 2,000,000",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Beneficiaries",
+                "Who benefits from your policies, savings and investments? "
+                "One per line.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Monthly Income",
+                "What is your total monthly income, after tax?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Monthly Savings",
+                "How much do you save or invest per month?",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Legacy & Digital Estate",
+        [
+            Question(
+                "Executor",
+                "Who should administer your estate as executor?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Alternate Executor",
+                "Who steps in if your first-choice executor cannot act?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Digital Asset Inventory",
+                "Which digital assets matter — accounts, domains, wallets, "
+                "repositories — and where is access to them documented?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Release Protocol",
+                "How should sensitive documents be released after your death "
+                "or incapacity — who verifies the event, over which channels, "
+                "and after what waiting period?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Memorial Wishes",
+                "Any wishes for your memorial or funeral — burial or "
+                "cremation, ceremony, tone?",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Last Will & Testament",
+        [
+            Question(
+                "Legal Full Name",
+                "What is your full legal name, exactly as it appears on your "
+                "identity document?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Marital Status",
+                "What is your marital status, and under which regime — e.g. "
+                "married in community of property, married out of community "
+                "with accrual, single, divorced, widowed?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Spouse Or Partner Name",
+                "What is your spouse or partner's full name, if any?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Children",
+                "List your children, one per line, marking each minor with "
+                "the word 'minor' and their year of birth. Write 'None' if "
+                "you have no children.",
+                example="Thandi (2015, minor)",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Guardian Nomination",
+                "Who should be guardian of any minor children, and who is "
+                "the alternate?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Specific Bequests",
+                "Any specific gifts — one per line: the item or amount, then "
+                "the recipient. Write 'None' to leave everything to the "
+                "residue clause.",
+                example="My watch: to my brother Sipho Dlamini",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Residue Beneficiaries",
+                "Who inherits the rest of the estate (the residue), in what "
+                "shares?",
+                example="My spouse: 100%; failing them, my children equally",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Alternate Heirs",
+                "If a named heir does not survive you, who inherits their "
+                "share instead?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Will Executed",
+                "Has this will been formally signed and witnessed? Record the "
+                "signing date and place once done; leave pending until then.",
+                example="Signed 2026-03-01 at Polokwane before two witnesses",
+                tier=TIER_FULL,
+            ),
         ],
     ),
 ]
@@ -881,7 +1132,14 @@ def render_questions_md(instance_type, display_name, seed=None, include_full=Fal
                 answer = f"Pending — {question.prompt.rstrip('?').lower()}{hint}"
             marker = " *(required)*" if question.required else ""
             lines.append(f"*   **{question.label}**{marker}: {question.prompt}")
-            lines.append(f"    *   **Answer**: {answer}")
+            # Multi-line answers (a list of assets, of children, of bequests)
+            # keep their continuation lines indented past the Answer bullet —
+            # the exact shape the parser reads back. A flat write here would
+            # silently truncate every seeded list to its first line.
+            answer_lines = str(answer).splitlines() or [""]
+            lines.append(f"    *   **Answer**: {answer_lines[0]}")
+            for continuation in answer_lines[1:]:
+                lines.append(f"        {continuation}")
         lines.append("")
 
     lines.append("---")

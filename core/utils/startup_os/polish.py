@@ -99,7 +99,9 @@ SYSTEM_PROMPT = (
 # Any file whose lowercased output-relative name matches one of these is never
 # polished at all. The financial model and the compliance log are wall-to-wall
 # figures and evidence; the on-a-page financial plans are the same material.
-_EXCLUDED_FILE_RE = re.compile(r"financial|compliance", re.IGNORECASE)
+# The will is enforceable language: a "tidied" clause is a different clause,
+# so it belongs in the same never-sent class as the financial model.
+_EXCLUDED_FILE_RE = re.compile(r"financial|compliance|last_will", re.IGNORECASE)
 
 # Sections whose entire content is evidence, figures or regulated claims.
 # Matched against heading text; a match protects everything under that heading
@@ -710,6 +712,25 @@ DRAFT_SLOTS = (
         60,
         ("core_value_proposition", "product_components", "unfair_advantage"),
         "solution prose for a single pitch-deck slide",
+    ),
+    # Life-suite slots. The will is deliberately absent: it is in the
+    # never-sent file class, and no AI ever drafts enforceable language here.
+    DraftSlot(
+        "life_plan_opening",
+        "life_plan_on_a_page.md",
+        "## 1. Core Purpose & Values",
+        120,
+        ("life_purpose", "personal_values", "wellness_focus", "legacy_vision"),
+        "opening paragraph of a personal life plan introducing its owner's "
+        "purpose and values",
+    ),
+    DraftSlot(
+        "legacy_plan_opening",
+        "legacy_plan_on_a_page.md",
+        "## 1. Stewardship Vision",
+        60,
+        ("legacy_vision", "key_relationships", "dependants"),
+        "short stewardship-vision paragraph for a personal legacy plan",
     ),
 )
 

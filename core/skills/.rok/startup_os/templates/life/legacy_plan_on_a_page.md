@@ -1,12 +1,17 @@
 # {{full_name}} — Legacy Plan on a Page
 
-## 1. Vision & Multigenerational Stewardship
+## 1. Stewardship Vision
 
-> **Core Generational Narrative Purpose**: Leave a lasting, constructive trace on our family and community, aligned with core purpose: *{{life_purpose}}*.
+{{#if legacy_vision}}
+> **Long-Term Stewardship Goal**: {{legacy_vision}}
+{{else}}
+_No stewardship goal recorded. Answer **Legacy Vision** in questions.md — what
+should outlast you, and in whose hands?_
+{{/if}}
+{{#if life_purpose}}
 
-*   **Estate & Memory Integration**: Consolidate physical, financial, and digital assets into a secure, release-ready vault.
-*   **Narrative Preservation**: Evolve a dynamic living obituary reflecting professional, intellectual, and personal victories.
-*   **Executor Handshake Gate**: Safeguard release of sensitive resources using Twilio-backed Protocol 99 multi-channel verification alerts.
+Aligned with the core purpose: *{{life_purpose}}*.
+{{/if}}
 
 ---
 
@@ -17,25 +22,74 @@
 {{#if dependants}}
 *   **Dependants**: {{dependants}}
 {{/if}}
-*   **Historical Legacy Wins**: Refer to dynamic milestone logs.
+{{#if key_relationships}}
+*   **Trusted Circle**: {{key_relationships}}
+{{/if}}
+{{#if executor}}
+*   **Nominated Executor**: {{executor}}{{#if alternate_executor}} (alternate: {{alternate_executor}}){{/if}}
+{{else}}
+*   **Nominated Executor**: _not recorded — answer **Executor**; an estate
+    without one is administered by a stranger._
+{{/if}}
 
 ---
 
-## 3. The Secure Release System (Protocol 99 OS)
+## 3. Digital & Document Estate
 
-We implement absolute protection for encrypted vault files using a short-lived single-use verification structure:
+{{#if digital_asset_inventory}}
+*   **Digital Asset Inventory**: {{digital_asset_inventory}}
+{{else}}
+*   **Digital Asset Inventory**: _not recorded — answer **Digital Asset
+    Inventory**: the accounts, domains, wallets and repositories that matter,
+    and where access is documented._
+{{/if}}
 
-| **Stage** | **Sequence Event** | **Core Logic & Security Gate** |
+---
+
+## 4. Verification & Release Protocol
+
+How sensitive documents — the will, policies, access instructions — are
+released when the time comes. Release should never hang on one person's
+memory or one channel.
+
+{{#if release_protocol}}
+{{release_protocol}}
+{{else}}
+_No protocol recorded. Answer **Release Protocol** — who verifies the event,
+over which channels, and after what waiting period. The three-stage shape
+below is a starting suggestion, not a description of your arrangements:_
+
+| Stage | Event | Purpose |
 | :--- | :--- | :--- |
-| **Stage 1** | **Executor Handshake** | Authenticate executor phone and execute secure bootstrap handshake with Control Hub. |
-| **Stage 2** | **Multi-Channel Alert** | Trigger Twilio/Baileys text and voice alert loop: *"Protocol 99 initiated. Reply STOP within 6h if active."* |
-| **Stage 3** | **Vault Release** | Decrypt and release generational legacy, will, and insurance policies exclusively to nominee after 6h silent timeout. |
+| **Verify** | A nominated person confirms the death or incapacity | No release on rumour |
+| **Notify & wait** | The owner (or a second verifier) is alerted over more than one channel, with a waiting period to stop a false trigger | A living owner can halt the release |
+| **Release** | Documents pass to the executor and named recipients only | The right papers reach the right hands |
+{{/if}}
 
 ---
 
-## 4. Legacy Milestones (12-Month Horizon)
+## 5. Memorial Wishes
 
-1.  **Obituary Draft Baseline**: Establish a singleton draft of the evolving biography and keep it dynamically updated via milestones.
-2.  **Legacy Vault Encryption**: Store wills, guardianship preferences, and key assets in an offline-ready, encrypted schema{{#if privacy_law}} aligned to {{privacy_law}}{{/if}}.
-3.  **Nominee Access Map**: Define and verify access levels for all primary executors and relationship partners.
-4.  **Partner Integrations**: Wire the funeral parlor partner desk dashboard for automated, direct document dispatch during execution.
+{{#if memorial_wishes}}
+{{memorial_wishes}}
+{{else}}
+_No wishes recorded. Answer **Memorial Wishes** if you want a say — burial or
+cremation, ceremony, tone. Unrecorded wishes are guessed at the worst time._
+{{/if}}
+
+---
+
+## 6. The Will
+
+{{#if will_execution_status}}
+> [!NOTE]
+> **Will execution recorded by the owner**: {{will_execution_status}}. Only
+> the signed original has legal force — keep it safe, tell the executor where
+> it is, and have any change professionally reviewed and re-executed.
+{{else}}
+> [!WARNING]
+> **The draft will in this suite is UNSIGNED and has no legal force.** Have
+> it reviewed by a qualified professional in {{jurisdiction_name}}, sign it
+> with the required formalities, then record the date under **Will Executed**
+> in questions.md.
+{{/if}}

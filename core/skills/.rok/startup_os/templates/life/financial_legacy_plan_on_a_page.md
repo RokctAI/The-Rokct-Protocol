@@ -1,39 +1,69 @@
 # {{full_name}} — Financial Legacy Plan on a Page
 
-## 1. Wealth Sowing & Sovereignty Philosophy
-True wealth is not measured in luxury purchases; it is measured in the degree of sovereignty we possess over our day-to-day choices and our capacity to fund multigenerational legacy works. We build our wealth asset base to ensure that we never have to compromise our core values for commercial survival.
+## 1. Stewardship Philosophy
+
+{{#if financial_philosophy}}
+{{financial_philosophy}}
+{{else}}
+_No philosophy recorded. Answer **Financial Philosophy** in questions.md — the
+principles that govern how you earn, spend and invest, one per line. Without
+them this plan is arithmetic with no compass._
+{{/if}}
 
 ---
 
-## 2. Dynamic Financial Foundations
+## 2. Computed Financial Position
+
+{{life_financial_summary}}
+
+_Every figure above is computed from your own answers; nothing is estimated
+for you. A line that reads "Pending" unlocks when its question is answered
+with an amount._
+
+---
+
+## 3. Foundations on Record
+
+{{#if assets}}
+*   **Assets**: {{assets}}
+{{/if}}
+{{#if liabilities}}
+*   **Liabilities**: {{liabilities}}
+{{/if}}
+{{#if life_cover_policies}}
+*   **Life Cover Policies**: {{life_cover_policies}}
+{{/if}}
+{{#if monthly_income}}
+*   **Monthly Income (after tax)**: {{monthly_income}}
+{{/if}}
+{{#if monthly_savings}}
+*   **Monthly Savings**: {{monthly_savings}}
+{{/if}}
+{{#if beneficiaries}}
+*   **Beneficiaries**: {{beneficiaries}}
+{{else}}
+*   **Beneficiaries**: _not recorded — answer **Beneficiaries**; cover with no
+    named beneficiary is settled by default rules, not by you._
+{{/if}}
 {{#if key_relationships}}
-*   **Estate & Legacy Trustees**: {{key_relationships}}
+*   **Trusted Circle**: {{key_relationships}}
 {{/if}}
 {{#if dependants}}
 *   **Dependants Provided For**: {{dependants}}
 {{/if}}
-*   **Asset Sowing Base**: Sovereign real assets, scalable IP, tech equity, liquid reserves.
-*   **Target Status**: Secure geographic flexibility and permanent financial independence.
 
 ---
 
-## 3. The 3-Tier Sovereign Asset Architecture
+## 4. Passing It On
 
-### Tier 1: The Sovereignty Buffer (Liquidity & Freedom)
-*   **Objective**: Secure a liquid emergency buffer capable of covering 12 months of baseline operating costs.
-*   **Allocation**: High-yield local interest-bearing vehicles and hard currency reserves.
-*   **Purpose**: Eliminates short-term economic panic, allowing long-term strategic projects to mature without artificial commercial pressure.
-
-### Tier 2: The Core Asset Engines (Growth & Passive Flow)
-*   **Objective**: Build a portfolio of cash-generating assets that outperform inflation and supply permanent passive liquidity.
-*   **Target Vehicles**:
-    *   **Proprietary Intellectual Property (IP)**: Royalties from compiled books, automated codebases, and platform licensing.
-    *   **Strategic Equity**: Shares in high-margin cash-flowing ventures.
-    *   **Real Estate**: Low-leverage residential or light commercial assets in key growth nodes.
-
-### Tier 3: Multigenerational Legacy Sowing (Trust & Protections)
-*   **Objective**: Protect assets from regional economic decay, legal threats, and generational transition taxes.
-*   **Mechanics**:
-    *   **Active Will & Testament**: Bi-annually reviewed and verified legal will specifying exact successor distributions.
-    *   **Legacy Trust Structure**: Sowing capital into a family trust designed to fund successor education, entrepreneurship, and health emergencies.
-    *   **System blueprinting**: Detailed documentation of all financial and system operations so successors can assume management instantly.
+*   **Will**: the draft in this suite assembles your bequests and residue
+    wishes — see the linked Last Will & Testament. It has no legal force
+    until formally executed.
+{{#if executor}}
+*   **Executor**: {{executor}}{{#if alternate_executor}} (alternate: {{alternate_executor}}){{/if}}
+{{else}}
+*   **Executor**: _not recorded — answer **Executor** in questions.md._
+{{/if}}
+{{#if legacy_vision}}
+*   **Legacy Vision**: {{legacy_vision}}
+{{/if}}

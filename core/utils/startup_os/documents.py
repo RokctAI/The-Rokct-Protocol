@@ -63,6 +63,7 @@ def build_version_block(
     applicable_fields=None,
     privacy_law=None,
     depth=None,
+    extra_lines=None,
 ):
     """Build the document version-control callout.
 
@@ -97,6 +98,11 @@ def build_version_block(
             f"> *   **Compliance evidence**: `{verified_fields}/{applicable_fields}` "
             "applicable fields backed by a document"
         )
+
+    if extra_lines:
+        # Document-specific control lines the compiler computed — e.g. the
+        # will's execution status. Already formatted as `> *   ...` rows.
+        lines.extend(extra_lines)
 
     lines.append(
         "> *   **Status**: Generated from `questions.md`. Fields marked *Pending* "

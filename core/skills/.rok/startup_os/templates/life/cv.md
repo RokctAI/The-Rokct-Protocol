@@ -11,10 +11,13 @@
 ---
 
 ## 1. Professional Profile Summary
+
 {{#if current_role}}
 *   **Current Role**: {{current_role}}
 {{/if}}
+{{#if primary_base}}
 *   **Geographical Base**: {{primary_base}}
+{{/if}}
 {{#if skill_focus}}
 *   **Capability In Focus**: {{skill_focus}}
 {{/if}}

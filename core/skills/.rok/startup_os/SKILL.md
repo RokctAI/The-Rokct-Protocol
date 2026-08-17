@@ -38,7 +38,7 @@ core/skills/.rok/startup_os/          # this skill — deployed to <repo>/.rokct
 │   ├── log_milestone.py              # append to the living ledger
 │   └── seed_cv_ledger.py             # extract milestones from a CV PDF
 ├── templates/business/               # 27 templates (19 documents + 8 annexures)
-└── templates/life/                   # 9 templates
+└── templates/life/                   # 10 templates (incl. draft will)
 
 core/utils/startup_os/                # the engine — stays in the protocol repo
 ├── main.py                           # standalone CLI
