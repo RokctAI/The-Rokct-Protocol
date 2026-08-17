@@ -29,7 +29,7 @@ SHA-256, then executes it with the audit subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "a7e5aa686b170fbc5176e7d9aa7a3c52f42d3daf"
+PROTOCOL_REF = "ad0e657a4f06beb95020dc8650e98c5c87208729"
 DELEGATE_PATH = "core/utils/agent_delegation/reporter.py"
 DELEGATE_SHA256 = "fb0da889eed2344b17e2d40bb2ebc286416b4649e2717431a12792f1c1f0f72f"
 GITHUB_RAW_BASE = (

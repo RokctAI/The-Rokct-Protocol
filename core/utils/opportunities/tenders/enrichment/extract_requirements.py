@@ -236,14 +236,28 @@ def process_file(md_file):
             log_failure(tender_id, "No Direct Link found in card.")
             return False
         url = url_match.group(1).strip()
-        if not url.lower().endswith(".pdf"):
-            log_failure(tender_id, f"Direct Link is not a PDF: {url}")
-            return False
 
         resp = requests.get(
             url, headers={"X-Trace-Id": "extract-requirements"}, timeout=15
         )
         if resp.status_code == 200:
+            # Accept the same responses pdf_to_md.py accepts: a Direct Link
+            # may serve a real PDF from a download endpoint or a URL with
+            # query parameters. The old endswith(".pdf") pre-check rejected
+            # those without ever looking at the response, so cards whose text
+            # pdf_to_md.py had already extracted were still logged here as
+            # "not a PDF" and never got a requirements checklist (recurring
+            # entries in requirement_extraction_failures.log; ported from
+            # opportunities#50). Extension and Content-Type are hints only -
+            # the %PDF magic-byte sniff is what decides for everything else.
+            content_type = resp.headers.get("Content-Type", "").lower()
+            if (
+                "application/pdf" not in content_type
+                and not url.lower().endswith(".pdf")
+                and not resp.content.startswith(b"%PDF")
+            ):
+                log_failure(tender_id, f"Direct Link is not a PDF: {url}")
+                return False
             pdf_stream = io.BytesIO(resp.content)
             reqs = extract_requirements_from_pdf(pdf_stream, tender_id)
             update_tender_card(md_file, reqs)

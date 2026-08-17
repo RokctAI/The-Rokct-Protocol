@@ -8,7 +8,7 @@ set -e
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # The initiate.py fetch is pinned to this commit and its SHA-256 is verified
 # before it is executed; a mismatch aborts the install.
-PROTOCOL_REF="a7e5aa686b170fbc5176e7d9aa7a3c52f42d3daf"
+PROTOCOL_REF="ad0e657a4f06beb95020dc8650e98c5c87208729"
 INITIATE_SHA256_LOCAL="ce31f67dca6a02b883e2e8e2e3ec5e35b0f1edc1c20c5347ee3b124d881db2cd"
 INITIATE_SHA256_WEB="a1464c46f6b6380ca8fdcc20311a72b84087ddcd8f9966fd8397e622db299b13"
 
