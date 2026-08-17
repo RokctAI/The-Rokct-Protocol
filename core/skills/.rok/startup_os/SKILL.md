@@ -91,7 +91,7 @@ python scripts/seed_cv_ledger.py --type life --name Amara --pdf ./cv.pdf
 `seed_cv_ledger.py` prints what it extracted and writes nothing until `--apply`.
 
 The engine also has a standalone CLI with `compile`, `provision`, `milestone`,
-`answer`, `check`, `lint`, `list` and `jurisdictions` subcommands:
+`answer`, `check`, `polish`, `lint`, `list` and `jurisdictions` subcommands:
 
 ```bash
 python core/utils/startup_os/main.py check --type business --name AcmeClinic
@@ -106,6 +106,17 @@ python core/utils/startup_os/main.py lint
 
 `lint` reports drift between the question schema and the templates — a template
 needing a field nothing collects, or a question nothing uses.
+
+```bash
+python core/utils/startup_os/main.py polish --type business --name AcmeClinic
+```
+
+`polish` is opt-in AI rephrasing of compiled prose via the Groq API (requires
+`GROQ_API_KEY`; without it the command is a no-op). Every numeric token is
+replaced with an opaque placeholder before any text leaves the machine — the
+transmitted text contains *zero digits* — and tables, financials, compliance
+sections and evidence are never sent at all. Responses are verified
+deterministically and reverted on any mismatch, so no number can change.
 
 ## Environment
 

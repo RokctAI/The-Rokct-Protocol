@@ -76,6 +76,7 @@ ENGINE_MODULES = (
     "schemas.py",
     "compiler.py",
     "agent_bridge.py",
+    "polish.py",
 )
 
 # Expected SHA-256 of every engine module at PROTOCOL_REF, keyed by
