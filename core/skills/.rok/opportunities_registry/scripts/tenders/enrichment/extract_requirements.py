@@ -40,7 +40,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "2ae5a9a72a5be4c02a9ad72f27ab56612e694f86"
+PROTOCOL_REF = "b78d591f02cdc378f832a1ebbd48494f0954e021"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
