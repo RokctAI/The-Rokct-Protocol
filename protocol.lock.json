@@ -1,5 +1,5 @@
 {
-  "ref": "72136b1fb0faae70d6d520ddd827d35347ae662e",
+  "ref": "19ec672d2b117f9108238392dd99a21780f3f3ef",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -17,7 +17,7 @@
     "core/utils/agent_delegation/update_structure.py": "271f16ff662c34d4ac2c1a6fc2b1f476b0bd62bcef665e238ceda33c69dafa17",
     "core/utils/flutter/sdk_composer.py": "222b3853b1df0787c80fe55defba7288f30035e205204276579247f9633a01a3",
     "core/utils/flutter/sdk_installer_base.py": "3a16e624caa8b6d70f56ba55a178ec4b1f9658062f95e7835a62eafcfb838656",
-    "core/utils/frappe/compose_backend.py": "3407dbc8d13e6ce09c1075f5fdb615da6339f0d1e59e9787dfe400bc26e38375",
+    "core/utils/frappe/compose_backend.py": "99bbb6920ed506faa7ac25aaafd6563eb2bc245bff3267d9604a39c5d464abdc",
     "core/utils/opportunities/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
     "core/utils/opportunities/ci/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
     "core/utils/opportunities/eeip/discover_eeip.py": "cef800250a8ac174694948d7b4765879973b9cd7f7b84bd9a93232d7487b85b3",
@@ -56,8 +56,8 @@
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "321b3c24de20a2d8702d03c24ae1e1c7c31960b8e7057eb413d0bf7542df5b8b",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "42c6c0d4946b7db83d9691feecd28e5b1dffb122a5573e91566df2a493f75e54",
-    "profiles/web/initiate.py": "0eada591f3f3e5fb1913e517b7fd5e28f4a5576f90210730220024228d922624",
+    "profiles/local/initiate.py": "62c1cf8db58ef5e819b85da26e3605c5b5743e2ca18abf4db5b46de1590ec911",
+    "profiles/web/initiate.py": "96e9d68ce89dec8499fd5fbdd9b63f130ad5fb6d87a148b3359da46626583588",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
