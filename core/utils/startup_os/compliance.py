@@ -43,8 +43,8 @@ import os
 import re
 from datetime import date, datetime
 
-from core import jurisdictions
-from core.jurisdictions import (
+from . import jurisdictions
+from .jurisdictions import (
     FEATURE_BBEE,
     FEATURE_COMPANY_REGISTRY,
     FEATURE_TAX_CLEARANCE,

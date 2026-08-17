@@ -35,7 +35,7 @@ import os
 import re
 import json
 
-from core.errors import UnsafeNameError, WorkspaceError
+from .errors import UnsafeNameError, WorkspaceError
 
 WORKSPACE_ENV_VAR = "STARTUPOS_ROOT"
 CONFIG_FILENAME = ".startupos.json"

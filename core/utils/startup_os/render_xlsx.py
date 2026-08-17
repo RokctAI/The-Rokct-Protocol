@@ -51,8 +51,8 @@ import io
 import zipfile
 from xml.sax.saxutils import escape
 
-from core import safe_io
-from core.compiler import derive_financial_metrics, extract_financial_inputs
+from . import safe_io
+from .compiler import derive_financial_metrics, extract_financial_inputs
 
 FINANCIAL_MODEL_FILENAME = "financial_model.xlsx"
 

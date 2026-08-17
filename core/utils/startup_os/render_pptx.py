@@ -54,9 +54,9 @@ import io
 import zipfile
 from xml.sax.saxutils import escape
 
-from core import safe_io
-from core import template_engine
-from core.compiler import (
+from . import safe_io
+from . import template_engine
+from .compiler import (
     derive_financial_metrics,
     extract_competitor_rows,
     extract_financial_inputs,
@@ -216,7 +216,7 @@ def _blocks(text):
 
 def _sentences(text):
     """One bullet per sentence — for answers that pack one item per sentence."""
-    from core.compiler import _split_positioning_lines
+    from .compiler import _split_positioning_lines
 
     return [("bullet", _plain(part)) for part in _split_positioning_lines(text)]
 

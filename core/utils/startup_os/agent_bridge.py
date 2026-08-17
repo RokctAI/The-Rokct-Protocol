@@ -39,12 +39,12 @@ import re
 from datetime import date
 from pathlib import Path
 
-from core import paths as path_utils
-from core import safe_io
-from core import schemas
-from core.compiler import compile_instance
-from core.errors import ProfileNotFoundError, QuestionNotFoundError, StartupOSError
-from core.parser import (
+from . import paths as path_utils
+from . import safe_io
+from . import schemas
+from .compiler import compile_instance
+from .errors import ProfileNotFoundError, QuestionNotFoundError, StartupOSError
+from .parser import (
     MILESTONE_HEADING_RE,
     MILESTONE_SECTION_HEADING,
     canonical_key,
@@ -433,7 +433,7 @@ def expand_profile(filepath, instance_type, recompile=False, workspace_root=None
 
 def read_profile(filepath):
     """Parse a profile and return the ParsedProfile, for agent read paths."""
-    from core.parser import parse_questions_md
+    from .parser import parse_questions_md
 
     if not os.path.exists(filepath):
         raise ProfileNotFoundError(f"Profile questions file not found: {filepath}")

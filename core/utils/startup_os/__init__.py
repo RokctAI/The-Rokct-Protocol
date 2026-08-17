@@ -20,10 +20,15 @@
 
 """StartupOS strategic compiler engine.
 
-Canonical home for the engine. The skill wrapper at
-`core/skills/.rok/startup_os/` fetches these modules at runtime and mounts them
-as the `core` package, so every module here must import its siblings via
-`from core.<module> import ...`.
+Canonical home for the engine. It is consumed under two package identities:
+
+- The skill wrapper at `core/skills/.rok/startup_os/` fetches these modules at
+  runtime and mounts them as the `core` package (`from core.parser import ...`).
+- The `pyproject.toml` beside this file publishes the same directory as the
+  pip-installable `startupos` package (`from startupos import parser`).
+
+Every module here therefore imports its siblings *relatively*
+(`from .parser import ...`), which resolves identically under either name.
 """
 
 __version__ = "2.0.0"

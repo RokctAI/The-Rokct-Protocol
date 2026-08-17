@@ -1,0 +1,42 @@
+# Packaging for the StartupOS engine.
+#
+# This directory is consumed two ways and this file only adds the second:
+#
+# 1. Runtime mount (unchanged): consumers register this directory as the
+#    `core` package and do `from core.parser import ...`. The skill wrapper at
+#    core/skills/.rok/startup_os/ and the test suite both work this way.
+# 2. pip install: `pip install <path-to-this-directory>` builds a wheel that
+#    exposes the same modules as the `startupos` import package plus a
+#    `startupos` console script. This is the seam the design_studio /
+#    RokctAI/designer integration imports through.
+#
+# The engine is stdlib-only; the wheel declares no runtime dependencies.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "startupos"
+description = "StartupOS strategic compiler - business and life planning document suites."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "RokctAI" }]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/RokctAI/The-Rokct-Protocol"
+Source = "https://github.com/RokctAI/The-Rokct-Protocol/tree/main/core/utils/startup_os"
+
+[project.scripts]
+startupos = "startupos.main:main"
+
+[tool.setuptools]
+# The engine's modules live flat in this directory; map them to the
+# `startupos` import package. `tests/` is deliberately not listed, so it is
+# not shipped in the wheel.
+packages = ["startupos"]
+package-dir = { startupos = "." }
+
+[tool.setuptools.dynamic]
+version = { attr = "startupos.__version__" }

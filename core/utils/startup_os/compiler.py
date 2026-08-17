@@ -33,16 +33,16 @@ import os
 import re
 from datetime import date
 
-from core import __version__ as ENGINE_VERSION
-from core import compliance as compliance_mod
-from core import documents
-from core import jurisdictions
-from core import paths as path_utils
-from core import safe_io
-from core import schemas
-from core import template_engine
-from core.errors import ProfileNotFoundError, TemplateError
-from core.parser import parse_questions_md
+from . import __version__ as ENGINE_VERSION
+from . import compliance as compliance_mod
+from . import documents
+from . import jurisdictions
+from . import paths as path_utils
+from . import safe_io
+from . import schemas
+from . import template_engine
+from .errors import ProfileNotFoundError, TemplateError
+from .parser import parse_questions_md
 
 COMPLIANCE_ROOT_ENV_VAR = "STARTUPOS_COMPLIANCE_ROOT"
 
@@ -644,7 +644,7 @@ def load_instance_data(
         # Optional designer brand assets. A missing brand/ folder is a
         # coaching line in the compile output; a malformed system file or
         # image raises immediately — never a half-branded deck.
-        from core import branding as branding_mod
+        from . import branding as branding_mod
 
         brand = branding_mod.load_brand(
             path_utils.instance_dir(root, instance_type, instance_name),
@@ -687,7 +687,7 @@ def render_binary_artifacts(data, quiet=False):
     """
     # Imported lazily: a skill install with a cached pre-renderer engine can
     # still compile markdown; only rendering needs the new modules.
-    from core import render_pptx, render_xlsx
+    from . import render_pptx, render_xlsx
 
     written = []
     for module, filename in (

@@ -34,7 +34,7 @@ detectable: `validate_schema_against_templates()` fails when a template needs a
 field the schema never collects.
 """
 
-from core.parser import canonical_key
+from .parser import canonical_key
 
 
 # Question tiers. `core` is what a fresh profile collects by default — enough to
