@@ -29,7 +29,7 @@ fetched pinned to PROTOCOL_REF and SHA-256 verified before it is executed.
 import hashlib, os, sys, urllib.request, importlib.util
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "19ec672d2b117f9108238392dd99a21780f3f3ef"
+PROTOCOL_REF = "435aeacb2d2f79bfa5feaa0df28e2b50d8005d76"
 DELEGATE_PATH = "core/utils/agent_delegation/job_manager.py"
 DELEGATE_SHA256 = "633f9ae1d93fbfe537c77ec8c3cc1eecb9764ab27b39dd9237eee0b1fd5444ab"
 GITHUB_RAW_BASE = (
