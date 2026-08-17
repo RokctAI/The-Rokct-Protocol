@@ -23,8 +23,18 @@ the rate or fee for each._
 
 ## 2. Three-Year Projections
 
+{{#if fin_projection_table}}
+{{fin_projection_table}}
+{{else}}
 {{fin_grid_rev}}
 
+_No numeric projection could be read from the answers. State a figure in
+**Projected Year 1**, **Projected Year 2** and **Projected Year 3**
+(e.g. "R 4,800,000 revenue") and the compiler will build the projection
+table, growth rates and cross-checks from them._
+{{/if}}
+
+### As stated in questions.md
 {{fin_summary}}
 
 ---
@@ -46,21 +56,28 @@ _Not recorded. Answer **Cost Structure** — the main fixed and variable lines._
 ---
 
 ## 4. Unit Economics
-Complete these for the model to be reviewable by a lender or investor:
 
-| Metric | Value |
-| :--- | :--- |
-| Gross margin % | {{gross_margin_target}} |
-| Break-even revenue | {{break_even_point}} |
-| Average revenue per customer | _to be supplied_ |
-| Customer acquisition cost | _to be supplied_ |
-| CAC payback period | _to be supplied_ |
-| Monthly fixed cost base | _to be supplied_ |
-| Cash runway | _to be supplied_ |
+Every derived figure below names the answers it was computed from; anything
+not derivable says which question would unlock it.
+
+{{fin_unit_economics}}
 
 ---
 
-## 5. Funding
+## 5. Consistency Checks
+
+{{#if fin_consistency}}
+{{fin_consistency}}
+{{else}}
+_No cross-checks are possible yet. Give numeric answers to
+**Projected Year 1**, **Average Revenue Per Customer** and
+**Customer Count Year 1** in questions.md and the compiler will reconcile
+them against each other here._
+{{/if}}
+
+---
+
+## 6. Funding
 {{#if funding_requirement}}
 **Sought**: {{funding_requirement}}
 {{/if}}
@@ -78,7 +95,7 @@ _No capital requirement recorded._
 
 ---
 
-## 6. Statutory Cost Lines
+## 7. Statutory Cost Lines
 {{#if_feature company_registry}}
 *   {{registry_name}} annual returns and filing fees
 {{/if_feature}}

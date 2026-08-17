@@ -3,10 +3,14 @@
 > [!NOTE]
 > One slide per section. Figures are management projections from
 > `questions.md` — unaudited, and unverified where marked *Pending*.
+> The italic line under each heading is what a strong version of that
+> slide contains; delete these lines before presenting.
 
 ---
 
 ## Slide 1 — {{company_name}}
+_A strong title slide is one sentence a stranger repeats correctly afterwards: who you serve and what changes for them._
+
 {{#if brand_positioning}}
 {{brand_positioning}}
 {{else}}
@@ -20,6 +24,8 @@
 ---
 
 ## Slide 2 — The Problem
+_A strong problem slide names who has the pain and prices it in money or hours — not "X is broken", but what it costs this customer today._
+
 {{#if problem_statement}}
 {{problem_statement}}
 {{else}}
@@ -29,6 +35,8 @@
 ---
 
 ## Slide 3 — The Solution
+_A strong solution slide shows the before/after for one customer, not a feature list — the demo screenshot beats the architecture diagram._
+
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{/if}}
@@ -40,12 +48,22 @@
 ---
 
 ## Slide 4 — Market
+_A strong market slide shows a sourced funnel and defends the SOM — investors fund the obtainable slice, not the category headline._
+
+{{#if market_funnel_table}}
+{{market_funnel_table}}
+{{#if market_sizing_flags}}
+
+{{market_sizing_flags}}
+{{/if}}
+{{else}}
 {{#if market_size_tam}}
 *   **TAM**: {{market_size_tam}}
 *   **SAM**: {{market_size_sam}}
 *   **SOM (36 months)**: {{market_size_som}}
 {{else}}
 *Required for this deck. Answer **Market Size TAM / SAM / SOM** — with sources.*
+{{/if}}
 {{/if}}
 {{#if market_trends}}
 
@@ -55,6 +73,8 @@
 ---
 
 ## Slide 5 — Business Model
+_A strong model slide states who pays, how much, how often — one line per stream, with the price on the line._
+
 {{#if revenue_streams}}
 {{revenue_streams}}
 {{else}}
@@ -68,6 +88,8 @@
 ---
 
 ## Slide 6 — Traction
+_A strong traction slide is a rising number over time — revenue, customers or usage — with the one metric you steer by._
+
 {{#if achievements_to_date}}
 {{achievements_to_date}}
 {{else}}
@@ -81,6 +103,11 @@
 ---
 
 ## Slide 7 — Competition
+_A strong competition slide names real alternatives (including "do nothing") and states the one axis where you win — never an empty quadrant._
+
+{{#if competitor_table}}
+{{competitor_table}}
+{{else}}
 {{#if competitive_positioning}}
 {{competitive_positioning}}
 {{else}}
@@ -88,6 +115,7 @@
 {{key_competitors}}
 {{else}}
 *No competitive analysis recorded.*
+{{/if}}
 {{/if}}
 {{/if}}
 
@@ -98,6 +126,8 @@
 ---
 
 ## Slide 8 — Go To Market
+_A strong GTM slide names the channel that already works, its acquisition cost, and what each new unit of spend buys._
+
 {{#if acquisition_channels}}
 {{acquisition_channels}}
 {{else}}
@@ -107,23 +137,31 @@
 ---
 
 ## Slide 9 — Financials
+_A strong financials slide fits on one screen: three years of revenue, the unit economics that make growth affordable, and the runway the raise buys._
+
 {{currency_note}}
 
+{{#if fin_projection_table}}
+{{fin_projection_table}}
+{{else}}
 {{fin_grid_rev}}
-
-{{fin_summary}}
-{{#if gross_margin_target}}
-
-**Gross margin target**: {{gross_margin_target}}
 {{/if}}
+
+{{fin_unit_economics}}
 {{#if break_even_point}}
 
 **Break-even**: {{break_even_point}}
+{{/if}}
+{{#if fin_consistency}}
+
+{{fin_consistency}}
 {{/if}}
 
 ---
 
 ## Slide 10 — Team
+_A strong team slide answers "why these people win this market" — one proof point per person beats a wall of logos._
+
 {{#if executive_team}}
 {{executive_team}}
 {{else}}
@@ -141,6 +179,8 @@
 ---
 
 ## Slide 11 — The Ask
+_A strong ask slide states the amount, the runway it buys, and the two or three milestones it reaches — investors fund milestones, not months._
+
 {{#if funding_requirement}}
 {{funding_requirement}}
 {{else}}
@@ -155,6 +195,8 @@
 ---
 
 ## Slide 12 — Corporate Standing
+_A strong closing slide preempts due diligence: registration, tax standing and IP in one glance, each claim document-backed._
+
 {{#if_feature company_registry}}
 *   **{{company_name_status}}**: {{company_name}}
 *   **{{registry_name}} Number**: {{reg_number}}
