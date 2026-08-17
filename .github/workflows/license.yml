@@ -4,6 +4,6 @@ on:
 
 jobs:
   license:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-license.yml@e6e29abcfeb0282f0be44ab21fb16d4f92957e6e # shared-workflows main @ 2026-08-15
+    uses: RokctAI/shared-workflows/.github/workflows/universal-license.yml@97d7d6f3a7ed312da4c651be55ea95774c190a89 # shared-workflows main @ 2026-08-16
     secrets:
       COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
