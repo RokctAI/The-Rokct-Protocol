@@ -213,6 +213,25 @@ def build_parser():
     polish_parser.add_argument("--quiet", action="store_true")
     _add_common(polish_parser)
 
+    draft_parser = subparsers.add_parser(
+        "draft",
+        help="Opt-in AI drafting of specific narrative slots, each under a "
+        "hard word budget; numbers never leave the machine (requires "
+        "$GROQ_API_KEY)",
+    )
+    draft_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    draft_parser.add_argument("--name", required=True, help="Instance folder name")
+    draft_parser.add_argument(
+        "--slot",
+        action="append",
+        default=None,
+        help="Draft only this slot (repeatable); default: every slot",
+    )
+    draft_parser.add_argument("--quiet", action="store_true")
+    _add_common(draft_parser)
+
     render_parser = subparsers.add_parser(
         "render",
         help="Render the derived binary artifacts (.pptx investor deck, "
@@ -388,6 +407,9 @@ def cmd_lint(args):
         "market_funnel_table",
         "market_sizing_flags",
         "competitor_table",
+        "competitor_pricing_table",
+        "fin_cac_by_channel_table",
+        "fin_cohort_analysis",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -440,6 +462,11 @@ def cmd_lint(args):
         "customer_count_year_1",
         "monthly_operating_costs",
         "cash_on_hand",
+        # Diligence-tier inputs: consumed by `compiler._add_diligence_analysis`
+        # to build the Level 3 tables, not referenced by name in a template.
+        "competitor_pricing",
+        "cac_by_channel",
+        "retention_cohorts",
     }
 
     types_to_check = [args.type] if args.type else list(path_utils.INSTANCE_TYPES)
@@ -643,6 +670,35 @@ def cmd_polish(args):
     return 0
 
 
+def cmd_draft(args):
+    # Imported lazily for the same reason as `polish`.
+    from core import polish as polish_mod
+
+    call_model = polish_mod.build_draft_call_model_from_env()
+    if call_model is None:
+        print(
+            f"[Skip] ${polish_mod.API_KEY_ENV_VAR} is not set — the draft step "
+            "is a no-op and your documents are unchanged.\n"
+            "       Export a Groq API key to enable it. Founder answers are "
+            "number-masked before transmission, every draft is verified "
+            "against a hard word budget, and a rejected draft falls back to "
+            "your own text."
+        )
+        return 0
+
+    report = polish_mod.draft_instance(
+        instance_type=args.type,
+        instance_name=args.name,
+        call_model=call_model,
+        slots=args.slot,
+        workspace_root=args.root,
+        quiet=args.quiet,
+    )
+    if args.quiet:
+        print(report.summary())
+    return 0
+
+
 def cmd_list(args):
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
     base = os.path.join(root, "instances")
@@ -679,6 +735,7 @@ _COMMANDS = {
     "answer": cmd_answer,
     "check": cmd_check,
     "polish": cmd_polish,
+    "draft": cmd_draft,
     "lint": cmd_lint,
     "migrate": cmd_migrate,
     "expand": cmd_expand,

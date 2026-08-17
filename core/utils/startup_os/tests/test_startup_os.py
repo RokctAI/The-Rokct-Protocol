@@ -586,6 +586,9 @@ class TestSchemas(unittest.TestCase):
         "market_funnel_table",
         "market_sizing_flags",
         "competitor_table",
+        "competitor_pricing_table",
+        "fin_cac_by_channel_table",
+        "fin_cohort_analysis",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -690,6 +693,242 @@ class TestSchemas(unittest.TestCase):
             profile = parse_questions_md(path)
             parsed = set(profile.answers) | set(profile.pending)
             self.assertEqual(schemas.schema_keys("business") - parsed, set())
+
+
+# --------------------------------------------------------------------------
+# Depth ladder — documents compile at the deepest level the answers support;
+# the coaching names the exact missing fields, and Level 3 analysis blocks
+# never render from guessed data.
+# --------------------------------------------------------------------------
+
+
+class TestDepthLadder(unittest.TestCase):
+    L1 = {
+        "trading_name": "x",
+        "jurisdiction": "x",
+        "primary_base": "x",
+        "industry": "x",
+        "vision_statement": "x",
+        "core_value_proposition": "x",
+        "primary_products": "x",
+        "customer_segments": "x",
+        "growth_strategy": "x",
+    }
+    L2 = {
+        "problem_statement": "x",
+        "market_size_tam": "x",
+        "market_size_sam": "x",
+        "market_size_som": "x",
+        "competitive_positioning": "x",
+        "revenue_streams": "x",
+        "pricing_tiers": "x",
+        "executive_team": "x",
+        "funding_requirement": "x",
+        "gross_margin_target": "x",
+        "average_revenue_per_customer": "x",
+        "customer_acquisition_cost": "x",
+        "monthly_operating_costs": "x",
+        "cash_on_hand": "x",
+    }
+    L3 = {
+        "customer_churn_rate": "x",
+        "funding_history": "x",
+        "hiring_plan": "x",
+        "competitor_pricing": "x",
+        "cac_by_channel": "x",
+        "sales_cycle_length": "x",
+        "retention_cohorts": "x",
+        "cap_table": "x",
+    }
+
+    def test_every_depth_key_is_a_real_schema_key(self):
+        collected = schemas.schema_keys("business")
+        for level in schemas.depth_levels("business"):
+            for key in level.keys:
+                self.assertIn(key, collected, key)
+
+    def test_empty_profile_is_level_zero_and_coaches_level_one(self):
+        report = schemas.compute_depth("business", set())
+        self.assertEqual(report.level, 0)
+        self.assertEqual(report.next_level, 1)
+        described = schemas.describe_depth(report)
+        self.assertIn("Level 0 of 3", described)
+        self.assertIn("to reach Level 1 (foundation) answer:", described)
+        self.assertIn("Trading Name", described)
+
+    def test_core_answers_reach_level_one_and_coach_level_two(self):
+        report = schemas.compute_depth("business", set(self.L1))
+        self.assertEqual(report.level, 1)
+        described = schemas.describe_depth(report)
+        self.assertIn("Level 1 of 3 — foundation", described)
+        self.assertIn("to reach Level 2 (investor-ready) answer:", described)
+        self.assertIn("Market Size TAM", described)
+
+    def test_investor_answers_reach_level_two_and_name_the_l3_gaps(self):
+        report = schemas.compute_depth("business", set(self.L1) | set(self.L2))
+        self.assertEqual(report.level, 2)
+        described = schemas.describe_depth(report)
+        self.assertIn("Level 2 of 3 — investor-ready", described)
+        self.assertIn("to reach Level 3 (diligence-grade) answer:", described)
+        for label in ("CAC By Channel", "Retention Cohorts", "Cap Table"):
+            self.assertIn(label, described)
+
+    def test_all_answers_reach_level_three(self):
+        report = schemas.compute_depth(
+            "business", set(self.L1) | set(self.L2) | set(self.L3)
+        )
+        self.assertEqual(report.level, 3)
+        self.assertIsNone(report.next_level)
+        self.assertIn(
+            "Level 3 of 3 — diligence-grade", schemas.describe_depth(report)
+        )
+
+    def test_life_profiles_have_no_depth_ladder(self):
+        self.assertIsNone(schemas.compute_depth("life", {"full_name"}))
+        self.assertIsNone(schemas.describe_depth(None))
+
+    def test_partial_l3_answers_do_not_unlock_the_analysis_blocks(self):
+        # One diligence answer without the rest stays locked: no level renders
+        # from guessed data, and the depth coaching names what is missing.
+        from core import compiler as compiler_mod
+
+        answers = dict(self.L1, **self.L2)
+        answers["cac_by_channel"] = "Bureau partnerships: R 9,000"
+        values = {}
+        compiler_mod._add_diligence_analysis(
+            values,
+            FakeProfile(answers),
+            jurisdictions.get("ZA"),
+        )
+        self.assertEqual(values["fin_cac_by_channel_table"], "")
+        self.assertEqual(values["fin_cohort_analysis"], "")
+        self.assertEqual(values["competitor_pricing_table"], "")
+
+    def test_full_l3_answers_unlock_the_analysis_blocks(self):
+        from core import compiler as compiler_mod
+
+        answers = dict(self.L1, **self.L2, **self.L3)
+        answers.update(
+            {
+                "competitor_pricing": "GoodX: R 4,100/month\nHealthbridge: R 2,900/month",
+                "cac_by_channel": "Bureau partnerships: R 9,000\nWebinars: R 21,000",
+                "customer_acquisition_cost": "R 14,000 per clinic",
+                "customer_churn_rate": "2% monthly",
+                "retention_cohorts": "82% of a signup cohort active at month 12",
+            }
+        )
+        values = {}
+        compiler_mod._add_diligence_analysis(
+            values, FakeProfile(answers), jurisdictions.get("ZA")
+        )
+        self.assertIn("| GoodX | R 4,100/month |", values["competitor_pricing_table"])
+        self.assertIn("| Bureau partnerships | R9,000 |", values["fin_cac_by_channel_table"])
+        self.assertIn("Blended (all channels)", values["fin_cac_by_channel_table"])
+        self.assertIn("78%", values["fin_cohort_analysis"])  # (1-0.02)^12
+        self.assertIn("50 months", values["fin_cohort_analysis"])  # 1/0.02
+
+
+class TestDepthLadderEndToEnd(unittest.TestCase):
+    TEMPLATE_SRC = os.path.join(
+        os.path.dirname(_ENGINE_DIR),
+        os.pardir,
+        "skills",
+        ".rok",
+        "startup_os",
+        "templates",
+    )
+
+    def _compile(self, seed):
+        import shutil
+
+        from core import compiler as compiler_mod
+
+        if not os.path.isdir(self.TEMPLATE_SRC):
+            self.skipTest("templates not present")
+        self.workspace = TempWorkspace()
+        root = self.workspace.__enter__()
+        self.addCleanup(self.workspace.__exit__, None, None, None)
+        shutil.copytree(self.TEMPLATE_SRC, os.path.join(root, "templates"))
+        write(
+            os.path.join(root, "instances", "business", "Acme", "questions.md"),
+            schemas.render_questions_md("business", "Acme", seed, include_full=True),
+        )
+        result = compiler_mod.compile_instance(
+            "business", "Acme", workspace_root=root, quiet=True
+        )
+        self.assertTrue(result.ok)
+        out = os.path.join(root, "instances", "business", "Acme", "output")
+        return {
+            name: open(os.path.join(out, name), encoding="utf-8").read()
+            for name in ("01_executive_summary.md", "03_market_analysis.md", "07_financial_model.md")
+        }
+
+    SEED_L1 = {
+        "trading_name": "Acme",
+        "jurisdiction": "ZA",
+        "primary_base": "Cape Town, South Africa",
+        "industry": "Retail",
+        "vision_statement": "A store on every corner.",
+        "core_value_proposition": "Fast delivery.",
+        "primary_products": "Groceries",
+        "customer_segments": "Households",
+        "growth_strategy": "Word of mouth",
+    }
+
+    def test_depth_line_renders_with_the_actual_missing_fields(self):
+        docs = self._compile(self.SEED_L1)
+        control = docs["01_executive_summary.md"]
+        self.assertIn("> *   **Depth**: Level 1 of 3 — foundation", control)
+        self.assertIn("to reach Level 2 (investor-ready) answer:", control)
+        self.assertIn("Problem Statement", control)
+        # Level 3 blocks stay locked, with the unlock coaching in place.
+        self.assertNotIn("### CAC by Channel", docs["07_financial_model.md"])
+        self.assertIn(
+            "unlock at Level 3", docs["07_financial_model.md"]
+        )
+        self.assertNotIn(
+            "### Named-Competitor Pricing", docs["03_market_analysis.md"]
+        )
+
+    def test_level_three_profile_unlocks_the_deeper_blocks(self):
+        seed = dict(
+            self.SEED_L1,
+            problem_statement="Households waste hours shopping.",
+            market_size_tam="R 9.6 billion — category report",
+            market_size_sam="R 1.9 billion — reachable slice",
+            market_size_som="R 190 million — 36-month capture",
+            competitive_positioning="BigCo: broad but slow. SmallCo: fast but narrow.",
+            revenue_streams="Delivery fees and subscriptions",
+            pricing_tiers="R 99/month standard",
+            executive_team="Jane Doe — CEO: everything.",
+            funding_requirement="R 5,000,000 seed",
+            gross_margin_target="60%",
+            average_revenue_per_customer="R 250 per month",
+            customer_acquisition_cost="R 900",
+            monthly_operating_costs="R 400,000 per month",
+            cash_on_hand="R 3,000,000",
+            customer_churn_rate="3% monthly",
+            funding_history="R 1,000,000 angel round",
+            hiring_plan="2 drivers in Q1",
+            competitor_pricing="BigCo: R 149/month. SmallCo: R 79/month.",
+            cac_by_channel="Referrals: R 400\nSocial ads: R 1,600",
+            sales_cycle_length="7 days median",
+            retention_cohorts="70% of a cohort active at month 12",
+            cap_table="Ordinary shares only; 10% option pool; no notes outstanding",
+        )
+        docs = self._compile(seed)
+        self.assertIn(
+            "**Depth**: Level 3 of 3 — diligence-grade",
+            docs["01_executive_summary.md"],
+        )
+        financial = docs["07_financial_model.md"]
+        self.assertIn("### CAC by Channel", financial)
+        self.assertIn("| Referrals | R400 |", financial)
+        self.assertIn("### Cohort & Retention Analysis", financial)
+        self.assertNotIn("unlock at Level 3", financial)
+        market = docs["03_market_analysis.md"]
+        self.assertIn("### Named-Competitor Pricing", market)
+        self.assertIn("BigCo", market)
 
 
 # --------------------------------------------------------------------------

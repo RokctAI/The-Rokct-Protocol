@@ -4,9 +4,9 @@
 {{#if key_operational_risks}}
 {{key_operational_risks}}
 {{else}}
-_Not recorded. Answer **Key Operational Risks** — name each risk and its
+*Not recorded. Answer **Key Operational Risks** — name each risk and its
 mitigation. A plan with no risk section reads as one that has not been
-stress-tested._
+stress-tested.*
 {{/if}}
 
 {{#if capacity_constraints}}
@@ -20,7 +20,7 @@ stress-tested._
 {{#if business_continuity_strategy}}
 {{business_continuity_strategy}}
 {{else}}
-_No continuity plan recorded._
+*No continuity plan recorded.*
 {{/if}}
 
 ---
@@ -70,3 +70,18 @@ Record an alternate source for every critical input.
 {{/if}}
 
 See `compliance_log.md` for current certificate status and expiry warnings.
+
+---
+
+## 5. SWOT Synthesis
+
+*Synthesised from the venture's own answers — each quadrant names its
+sources and nothing is inferred. A Pending cell is filled by answering the
+named question in questions.md.*
+
+| Quadrant | Synthesis |
+| :--- | :--- |
+| **Strengths** | {{#if unfair_advantage}}{{unfair_advantage}} (from **Unfair Advantage**){{else}}Pending — answer **Unfair Advantage**{{/if}}{{#if achievements_to_date}} Proven by: {{achievements_to_date}} (from **Achievements To Date**){{/if}} |
+| **Weaknesses** | {{#if capacity_constraints}}{{capacity_constraints}} (from **Capacity Constraints**){{else}}Pending — answer **Capacity Constraints**{{/if}}{{#if key_person_dependencies}} Key-person exposure: {{key_person_dependencies}} (from **Key Person Dependencies**){{/if}} |
+| **Opportunities** | {{#if market_trends}}{{market_trends}} (from **Market Trends**){{else}}Pending — answer **Market Trends**{{/if}}{{#if market_size_som}} Obtainable market: {{market_size_som}} (from **Market Size SOM**){{/if}} |
+| **Threats** | {{#if key_competitors}}Competitive: {{key_competitors}} (from **Key Competitors**){{else}}Pending — answer **Key Competitors**{{/if}}{{#if key_operational_risks}} Operational: {{key_operational_risks}} (from **Key Operational Risks**){{/if}} |

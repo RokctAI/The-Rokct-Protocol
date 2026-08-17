@@ -7,7 +7,7 @@
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Not recorded. Answer **Brand Positioning** in questions.md._
+*Not recorded. Answer **Brand Positioning** in questions.md.*
 {{/if}}
 {{/if}}
 
@@ -24,8 +24,8 @@ _Not recorded. Answer **Brand Positioning** in questions.md._
 {{#if growth_strategy}}
 {{growth_strategy}}
 {{else}}
-_No channels recorded. Answer **Acquisition Channels** — list where customers
-actually come from, not where you hope they will._
+*No channels recorded. Answer **Acquisition Channels** — list where customers
+actually come from, not where you hope they will.*
 {{/if}}
 {{/if}}
 
@@ -40,7 +40,11 @@ actually come from, not where you hope they will._
 {{#if sales_process}}
 {{sales_process}}
 {{else}}
-_Not recorded. Answer **Sales Process** — first contact through to signature._
+*Not recorded. Answer **Sales Process** — first contact through to signature.*
+{{/if}}
+{{#if sales_cycle_length}}
+
+**Average sales cycle**: {{sales_cycle_length}}
 {{/if}}
 
 ---

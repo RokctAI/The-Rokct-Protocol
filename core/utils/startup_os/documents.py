@@ -62,6 +62,7 @@ def build_version_block(
     verified_fields=None,
     applicable_fields=None,
     privacy_law=None,
+    depth=None,
 ):
     """Build the document version-control callout.
 
@@ -84,6 +85,12 @@ def build_version_block(
         lines.append(
             f"> *   **Profile completeness**: `{completeness:.0%}` of questions answered"
         )
+
+    if depth:
+        # The depth ladder: documents compile at the deepest level the answers
+        # support, and this line names the exact answers that unlock the next
+        # level — coaching, not a grade.
+        lines.append(f"> *   **Depth**: {depth}")
 
     if applicable_fields:
         lines.append(
