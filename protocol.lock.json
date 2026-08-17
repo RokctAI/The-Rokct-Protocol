@@ -1,5 +1,5 @@
 {
-  "ref": "75bc45688cfebcbf495b691340e79d28e47bf187",
+  "ref": "2ae5a9a72a5be4c02a9ad72f27ab56612e694f86",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -43,7 +43,7 @@
     "core/utils/opportunities/tenders/utils/tender_resolver.py": "4ec8d661ca08d2def7749a8399c665238796790d511fab61d366c35fe973a827",
     "core/utils/startup_os/__init__.py": "8a6c7a78284e4be34abef93804fd62842f01b4e36bf585370bd40b166f259da4",
     "core/utils/startup_os/agent_bridge.py": "5147f6f2c5872b32d6e34f0826e4719405c01b9acb1d6be9d90eb061b13e2f36",
-    "core/utils/startup_os/compiler.py": "097e342cabd3ef67b4877a1841759cc5dafb0e0b3a8f829ef353c6d644d95395",
+    "core/utils/startup_os/compiler.py": "ca14617a99fd161bb5a1cf5550ef887247b3863d162431893e1bcb5988c40f03",
     "core/utils/startup_os/compliance.py": "0cbbdcf1a5365ee93869039a67f34343ad17184956f93491c83bdd6c5c16b346",
     "core/utils/startup_os/documents.py": "d0a37dc6c1eff6b772fd3fcd0ded41b0f4ffe77cd2a1d4ea2812115f3eed05f4",
     "core/utils/startup_os/errors.py": "d900b381168bf55fe2bc1d50c8577b03e9638a132708c2d55ba2cd25a3a2fe75",
@@ -51,11 +51,13 @@
     "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
     "core/utils/startup_os/paths.py": "f11f635bfa673545b6546d0d9f82cbc8287a10b80dc1fbffbe33a6d889923d03",
     "core/utils/startup_os/polish.py": "e76af6f532607d4a9e3274f9230bf6264691d1e1276261ce93fc57c837032273",
-    "core/utils/startup_os/safe_io.py": "935542b134324f709586e6746b3568717ff1b4f813b1e1f6396089ab2c2c4230",
+    "core/utils/startup_os/render_pptx.py": "f9603d3656e19cf72e1b4e7dd9556339c7b18312a97fb6c2d3901b408fc96b1d",
+    "core/utils/startup_os/render_xlsx.py": "e6163c52babefc7cc67ecb00c04199843ace38336d2acd432d812b639c5f9398",
+    "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "d03e640346db027c3cbd88d8225d79a4f6fccce56acf95168c5bba6600a0ee11",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "50d867b1bcc12684845abb94610b57fca2552d27387e6ce1d59025be5aa02c03",
-    "profiles/web/initiate.py": "d1fdb587549be828b182d9aee2313433165bb3b2e1f877b1e1c3cdf1733f4bbe",
+    "profiles/local/initiate.py": "c43eb574ef323b4d0b09d68cf0d2a0a98dc68817502662d82d856068c8e36610",
+    "profiles/web/initiate.py": "9f03acf29ddee21ebff4fa3642cba50ca6d9929a930788f037f7db22c5a79b67",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
