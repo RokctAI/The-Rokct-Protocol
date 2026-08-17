@@ -36,6 +36,47 @@ from healers import heal_equity_flags
 DEFAULT_AI_BLOCK = """- [ ] Review Tender Documents | 1
 - [ ] Prepare Initial Response | 3"""
 
+# Boilerplate the extractor writes when it can't pull anything specific out
+# of a tender's PDF (tenders/enrichment/extract_requirements.py,
+# generate_actionable_tasks fallback). It differs from DEFAULT_AI_BLOCK, so
+# the scan used to count these cards as ADVANCED forever instead of queueing
+# them for another enrichment pass.
+EXTRACTOR_FALLBACK_BLOCK = """- [ ] Analyze Tender Documents for specific requirements | 1
+- [ ] Identify Mandatory Compliance items | 2
+- [ ] Prepare Initial Response Proposal | 3"""
+
+# Every checklist body that means "no real enrichment happened yet".
+FALLBACK_AI_BLOCKS = (DEFAULT_AI_BLOCK, EXTRACTOR_FALLBACK_BLOCK)
+
+
+def _normalize_checklist(block):
+    """Reduce a checklist block to its task lines for fallback comparison.
+
+    Strips checkbox markers (ticked or not), bullet dashes and surrounding
+    whitespace so a hand-ticked box or re-rendered card still matches its
+    fallback signature.
+    """
+    lines = []
+    for line in block.splitlines():
+        line = re.sub(r"^\s*-\s*\[[ xX]?\]\s*", "", line.strip())
+        line = line.strip("- ").strip()
+        if line:
+            lines.append(line)
+    return tuple(lines)
+
+
+_FALLBACK_SIGNATURES = {_normalize_checklist(b) for b in FALLBACK_AI_BLOCKS}
+
+
+def is_fallback_checklist(tasks):
+    """True when a card's AI Checklist is known generic boilerplate.
+
+    Such a card was never really enriched — the writer (tenders/index.py) or
+    the extractor's no-data fallback stamped placeholder tasks — so the scan
+    must requeue it instead of counting it as done.
+    """
+    return _normalize_checklist(tasks) in _FALLBACK_SIGNATURES
+
 # --- THE WHITELIST (Only aggregate these for the JSON) ---
 # We use 'Flag' instead of 'Country' for more deterministic counting
 INTERESTING_KEYS = [
@@ -144,7 +185,7 @@ def scan_registry(name, path, base_dir):
                     if match:
                         current_tasks = match.group(1).strip()
                         if (
-                            current_tasks != DEFAULT_AI_BLOCK
+                            not is_fallback_checklist(current_tasks)
                             and len(current_tasks) > 10
                         ):
                             advanced_tenders[file.stem] = {

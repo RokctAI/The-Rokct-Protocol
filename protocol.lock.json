@@ -1,5 +1,5 @@
 {
-  "ref": "f8a11e99839ea73d142eb9f79fc0c1af1706c948",
+  "ref": "64b18c8e74b440bc743798a82551eb6834280f52",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -30,7 +30,7 @@
     "core/utils/opportunities/maintenance/index.py": "110517d30cb4e7ccbda16df09b16c428f7d0354ff4d10587a62c8000a1f8cdaf",
     "core/utils/opportunities/registry_orchestrator/healers.py": "9b627944c459d4f5917481891053748c2425e76d7feae6b1ee11bb59b7f9da44",
     "core/utils/opportunities/registry_orchestrator/index.py": "0642abd547a6865d8a00a7fc2918fabcf1002cf29a478a91da8d7a8b7f21e619",
-    "core/utils/opportunities/registry_orchestrator/scanners.py": "6eb3f8b4a5c68543905824e05b6889892f35cd507577a05f7637a656a6beaaee",
+    "core/utils/opportunities/registry_orchestrator/scanners.py": "ac384649f0467a867e5a75685f512ecbcfacb6d57ace3b318e0061128563eea1",
     "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "ec1e8b5c2a0ea23ad817e9ab933e1e870b42443e0cd53ffb752c5a1c30be1f72",
     "core/utils/opportunities/registry_orchestrator/updaters.py": "ff2917ff44ba35d8505910207d61b6c0c6bea9938cdcf474011be70ff9eb20b1",
     "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
@@ -57,8 +57,8 @@
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "72fa8aa992e2e2885e8fd50cf9a7c0cd908d36c5afbc466f1ff87d2056af2166",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "8f446d044260edd603c9befc99b41c68193a38dc13992682383d9dbe7ec02352",
-    "profiles/web/initiate.py": "d5d54df880332d7640d82f53847f23a120a5ad309e6511adfda06b5c5f31eb31",
+    "profiles/local/initiate.py": "a26e183c892f69fee47a3dae8819267c44a0266f0598c146e26732f124b5e708",
+    "profiles/web/initiate.py": "3671cbf85f6c4ddc0a7096cf9c1185ee852bb4da50c2658dfb00315f74ecf3c5",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
