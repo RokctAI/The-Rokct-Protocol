@@ -195,6 +195,18 @@ def build_parser():
     expand_parser.add_argument("--name", required=True)
     _add_common(expand_parser)
 
+    polish_parser = subparsers.add_parser(
+        "polish",
+        help="Opt-in AI rephrasing of compiled prose; numbers never leave "
+        "the machine (requires $GROQ_API_KEY)",
+    )
+    polish_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    polish_parser.add_argument("--name", required=True, help="Instance folder name")
+    polish_parser.add_argument("--quiet", action="store_true")
+    _add_common(polish_parser)
+
     list_parser = subparsers.add_parser("list", help="List profiles in the workspace")
     _add_common(list_parser)
 
@@ -549,6 +561,33 @@ def cmd_expand(args):
     return 0
 
 
+def cmd_polish(args):
+    # Imported lazily: a skill install with a cached pre-polish engine can
+    # still run every other command; only `polish` needs the new module.
+    from core import polish as polish_mod
+
+    call_model = polish_mod.build_call_model_from_env()
+    if call_model is None:
+        print(
+            f"[Skip] ${polish_mod.API_KEY_ENV_VAR} is not set — the polish step "
+            "is a no-op and your documents are unchanged.\n"
+            "       Export a Groq API key to enable it. Numbers, tables and "
+            "evidence never leave this machine either way."
+        )
+        return 0
+
+    report = polish_mod.polish_instance(
+        instance_type=args.type,
+        instance_name=args.name,
+        call_model=call_model,
+        workspace_root=args.root,
+        quiet=args.quiet,
+    )
+    if args.quiet:
+        print(report.summary())
+    return 0
+
+
 def cmd_list(args):
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
     base = os.path.join(root, "instances")
@@ -583,6 +622,7 @@ _COMMANDS = {
     "milestone": cmd_milestone,
     "answer": cmd_answer,
     "check": cmd_check,
+    "polish": cmd_polish,
     "lint": cmd_lint,
     "migrate": cmd_migrate,
     "expand": cmd_expand,
