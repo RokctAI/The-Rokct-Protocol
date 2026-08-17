@@ -29,7 +29,7 @@ SHA-256, then executes it with the health subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "b6f1085be28dd610e8cd72e881868e37876ded3e"
+PROTOCOL_REF = "f8a11e99839ea73d142eb9f79fc0c1af1706c948"
 DELEGATE_PATH = "core/utils/agent_delegation/reporter.py"
 DELEGATE_SHA256 = "fb0da889eed2344b17e2d40bb2ebc286416b4649e2717431a12792f1c1f0f72f"
 GITHUB_RAW_BASE = (

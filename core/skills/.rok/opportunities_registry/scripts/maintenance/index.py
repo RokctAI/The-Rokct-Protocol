@@ -40,7 +40,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "b6f1085be28dd610e8cd72e881868e37876ded3e"
+PROTOCOL_REF = "f8a11e99839ea73d142eb9f79fc0c1af1706c948"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -61,10 +61,10 @@ EXPECTED_SHA256 = {
     "core/utils/opportunities/grants/scrapers/f4c.py": "9c3a233571166e66fdbc2a0ffa6f5b15f8c4f179f7a0f4c0012d3b0626905f1b",
     "core/utils/opportunities/maintenance/index.py": "110517d30cb4e7ccbda16df09b16c428f7d0354ff4d10587a62c8000a1f8cdaf",
     "core/utils/opportunities/registry_orchestrator/healers.py": "9b627944c459d4f5917481891053748c2425e76d7feae6b1ee11bb59b7f9da44",
-    "core/utils/opportunities/registry_orchestrator/index.py": "ad6fce694c814faf8d8a9ac05bf44fb6547ba4e2b833f0da75bdf02d9e66c7df",
+    "core/utils/opportunities/registry_orchestrator/index.py": "0642abd547a6865d8a00a7fc2918fabcf1002cf29a478a91da8d7a8b7f21e619",
     "core/utils/opportunities/registry_orchestrator/scanners.py": "6eb3f8b4a5c68543905824e05b6889892f35cd507577a05f7637a656a6beaaee",
     "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "ec1e8b5c2a0ea23ad817e9ab933e1e870b42443e0cd53ffb752c5a1c30be1f72",
-    "core/utils/opportunities/registry_orchestrator/updaters.py": "5c7901d45036035c3f31532ad648c45aa16d9ec45519400a4142a7b1a16aee2f",
+    "core/utils/opportunities/registry_orchestrator/updaters.py": "ff2917ff44ba35d8505910207d61b6c0c6bea9938cdcf474011be70ff9eb20b1",
     "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
     "core/utils/opportunities/tenders/api/ocds.py": "b5c2cfe9a2208e224629f729ebff6fd8d5475ab4292337b736b07e86497eade7",
     "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "0cb64dc266f413025a729a2d689c9772fa269417f0b7b3450649e0550f4e93a2",
