@@ -31,7 +31,13 @@
 from pathlib import Path
 from datetime import datetime
 from scanners import scan_registry
-from updaters import update_readme, update_audit_log, update_json_meta, save_jules_todo
+from updaters import (
+    update_readme,
+    update_audit_log,
+    update_json_meta,
+    update_json_tenders,
+    save_jules_todo,
+)
 
 # --- CONFIGURATION ---
 BASE_DIR = Path(__file__).resolve()
@@ -47,6 +53,7 @@ REGISTRIES = {
 README_PATH = BASE_DIR / "README.md"
 AUDIT_LOG_PATH = BASE_DIR / "03_tenders" / "registry_audit_log.md"
 META_PATH = BASE_DIR / "published" / "api" / "meta.json"
+TENDERS_PATH = BASE_DIR / "published" / "api" / "tenders.json"
 
 
 def run_orchestration():
@@ -84,6 +91,7 @@ def run_orchestration():
         AUDIT_LOG_PATH, stats["Tenders"][0], stats["Tenders"][1], stats["Tenders"][2]
     )
     update_json_meta(META_PATH, stats, all_advanced_data)
+    update_json_tenders(TENDERS_PATH, REGISTRIES["Tenders"])
 
     # Save specialized task queues
     save_jules_todo(
