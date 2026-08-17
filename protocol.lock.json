@@ -1,5 +1,5 @@
 {
-  "ref": "c98876d3c1c8b8d2dfdaf1ac057314f7d51c0940",
+  "ref": "ad0e657a4f06beb95020dc8650e98c5c87208729",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -35,7 +35,7 @@
     "core/utils/opportunities/registry_orchestrator/updaters.py": "5c7901d45036035c3f31532ad648c45aa16d9ec45519400a4142a7b1a16aee2f",
     "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
     "core/utils/opportunities/tenders/api/ocds.py": "b5c2cfe9a2208e224629f729ebff6fd8d5475ab4292337b736b07e86497eade7",
-    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "6140d9448022a2d2225b49fbf05d1ecf1fcbe690e24c296faf3c08e41c64f500",
+    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "0cb64dc266f413025a729a2d689c9772fa269417f0b7b3450649e0550f4e93a2",
     "core/utils/opportunities/tenders/enrichment/pdf_to_md.py": "c5c18683c0939fa8d5b31456e043fda8eb39479f1cb0e516485c6fc506702029",
     "core/utils/opportunities/tenders/index.py": "0d7e4a80ed63cd962b85588216814c28b191a82dbe84e7ac89968f7eda7abff1",
     "core/utils/opportunities/tenders/scrapers/musina.py": "ed745650c14aea177212c9fc04b8efa35c37546e8533adfb25255e1dac4c83e9",
@@ -57,8 +57,8 @@
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "321b3c24de20a2d8702d03c24ae1e1c7c31960b8e7057eb413d0bf7542df5b8b",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "65d936b3287754d97313974045b938b224fcaa995b93af83b7f59b818c0face0",
-    "profiles/web/initiate.py": "72c3cf35743603053ec33db0aa019ffe710be300a7322b15369e6edb9c802026",
+    "profiles/local/initiate.py": "ce31f67dca6a02b883e2e8e2e3ec5e35b0f1edc1c20c5347ee3b124d881db2cd",
+    "profiles/web/initiate.py": "a1464c46f6b6380ca8fdcc20311a72b84087ddcd8f9966fd8397e622db299b13",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
