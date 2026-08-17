@@ -113,6 +113,23 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `revenue` | `corporate` | yes | — | — |
 | `forex_sdk` | `forex` | yes | yes | — |
 | `design_studio` | `designer` | — | yes | — |
+| `agent` | `SDKs` | yes | yes | — |
+| `betassist` | `SDKs` | yes | yes | — |
+| `comms` | `SDKs` | yes | yes | — |
+| `core` | `SDKs` | yes | yes | — |
+| `corporate` | `SDKs` | yes | — | — |
+| `dev` | `SDKs` | — | yes | — |
+| `fav` | `SDKs` | yes | — | — |
+| `launch` | `SDKs` | yes | — | — |
+| `legal` | `SDKs` | yes | — | — |
+| `payments` | `SDKs` | yes | yes | — |
+| `polaris` | `SDKs` | yes | yes | — |
+| `productivity` | `SDKs` | yes | yes | — |
+| `replay` | `SDKs` | yes | yes | — |
+| `revenue` | `SDKs` | yes | — | — |
+| `subscriptions` | `SDKs` | yes | yes | — |
+| `telemetry` | `SDKs` | — | yes | — |
+| `wallet` | `SDKs` | yes | yes | — |
 <!-- @generated-sdk-census-end -->
 
 The reverse index — which app shells compose each SDK — lives in
