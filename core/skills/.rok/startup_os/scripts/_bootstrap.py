@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "cefa375bd60ae49780231a145206b1533ddd85f8"
+PROTOCOL_REF = "75bc45688cfebcbf495b691340e79d28e47bf187"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -94,6 +94,7 @@ EXPECTED_SHA256 = {
     "core/utils/startup_os/schemas.py": "d03e640346db027c3cbd88d8225d79a4f6fccce56acf95168c5bba6600a0ee11",
     "core/utils/startup_os/compiler.py": "097e342cabd3ef67b4877a1841759cc5dafb0e0b3a8f829ef353c6d644d95395",
     "core/utils/startup_os/agent_bridge.py": "5147f6f2c5872b32d6e34f0826e4719405c01b9acb1d6be9d90eb061b13e2f36",
+    "core/utils/startup_os/polish.py": "e76af6f532607d4a9e3274f9230bf6264691d1e1276261ce93fc57c837032273",
 }
 
 LOCKFILE_NAME = "engine.lock.json"
