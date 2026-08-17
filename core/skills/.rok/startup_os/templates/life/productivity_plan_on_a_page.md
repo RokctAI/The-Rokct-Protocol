@@ -4,7 +4,7 @@
 
 {{#if life_purpose}}
 > **Core Objective**: Structure daily output around the core purpose:
-> *{{life_purpose}}*.
+> _{{life_purpose}}_.
 {{else}}
 _No purpose recorded. Answer **Life Purpose** in questions.md — accountability
 without a purpose is just busyness._

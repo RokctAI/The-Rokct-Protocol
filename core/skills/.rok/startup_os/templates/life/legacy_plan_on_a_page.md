@@ -10,7 +10,7 @@ should outlast you, and in whose hands?_
 {{/if}}
 {{#if life_purpose}}
 
-Aligned with the core purpose: *{{life_purpose}}*.
+Aligned with the core purpose: _{{life_purpose}}_.
 {{/if}}
 
 ---
@@ -64,6 +64,7 @@ below is a starting suggestion, not a description of your arrangements:_
 | **Verify** | A nominated person confirms the death or incapacity | No release on rumour |
 | **Notify & wait** | The owner (or a second verifier) is alerted over more than one channel, with a waiting period to stop a false trigger | A living owner can halt the release |
 | **Release** | Documents pass to the executor and named recipients only | The right papers reach the right hands |
+
 {{/if}}
 
 ---
