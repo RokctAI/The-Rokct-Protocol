@@ -32,10 +32,10 @@
 | **SOM** | {{market_size_som}} | Realistic capture over 36 months |
 
 {{#if market_size_tam}}
-_No figures could be read from the sizing answers, so no funnel shares are
+*No figures could be read from the sizing answers, so no funnel shares are
 computed. State each layer with a number (e.g. "R 1.9 billion — 8,000
 practices reachable...") and the compiler will show SAM as a share of TAM,
-SOM as a share of SAM, and flag incoherent values._
+SOM as a share of SAM, and flag incoherent values.*
 {{/if}}
 {{/if}}
 
@@ -56,16 +56,25 @@ SOM as a share of SAM, and flag incoherent values._
 ### Positioning Against Each
 {{competitor_table}}
 
-_Built from **Competitive Positioning**{{#unless competitive_positioning}} — each named competitor still needs its one-line comparison{{/unless}}._
+*Built from **Competitive Positioning**{{#unless competitive_positioning}} — each named competitor still needs its one-line comparison{{/unless}}.*
 {{else}}
 {{#if competitive_positioning}}
 ### Positioning Against Each
 {{competitive_positioning}}
 {{else}}
-_No competitor comparison recorded. Answer **Competitive Positioning** —
-"we have no competitors" is read as "we have not looked"._
+*No competitor comparison recorded. Answer **Competitive Positioning** —
+"we have no competitors" is read as "we have not looked".*
 {{/if}}
 {{/if}}
+
+{{#if competitor_pricing_table}}
+### Named-Competitor Pricing
+{{competitor_pricing_table}}
+{{/if}}
+{{#unless competitor_pricing_table}}
+*A named-competitor pricing table unlocks at Level 3 (diligence-grade). The
+Depth line in Document Control lists the exact answers still needed.*
+{{/unless}}
 
 {{#if unfair_advantage}}
 ### Defensibility
@@ -92,7 +101,7 @@ _No competitor comparison recorded. Answer **Competitive Positioning** —
 {{#if customer_segments}}
 {{customer_segments}}
 {{else}}
-_Customer segments not recorded._
+*Customer segments not recorded.*
 {{/if}}
 {{/unless}}
 
@@ -105,6 +114,22 @@ _Customer segments not recorded._
 {{#if growth_strategy}}
 {{growth_strategy}}
 {{else}}
-_No acquisition channels recorded._
+*No acquisition channels recorded.*
 {{/if}}
 {{/if}}
+
+---
+
+## 5. Porter's Five Forces
+
+*Each force is filled from the venture's own answers. An empty force is a
+research gap, not a safe assumption — the coaching cell names the question
+that fills it.*
+
+| Force | Assessment |
+| :--- | :--- |
+| **Competitive rivalry** | {{#if competitive_positioning}}{{competitive_positioning}}{{else}}{{#if key_competitors}}{{key_competitors}}{{else}}Pending — answer **Key Competitors** and **Competitive Positioning**{{/if}}{{/if}} |
+| **Threat of new entrants** | {{#if unfair_advantage}}Barriers an entrant must clear: {{unfair_advantage}}{{else}}Pending — answer **Unfair Advantage**: what slows a new entrant down?{{/if}} |
+| **Buyer power** | {{#if customer_segment_primary}}Who holds the pen: {{customer_segment_primary}}{{else}}{{#if customer_segments}}Who holds the pen: {{customer_segments}}{{else}}Pending — answer **Customer Segments**{{/if}}{{/if}} |
+| **Supplier power** | {{#if key_suppliers}}Dependency on: {{key_suppliers}}{{else}}Pending — answer **Key Suppliers**{{/if}} |
+| **Threat of substitutes** | {{#if substitute_solutions}}{{substitute_solutions}}{{else}}Pending — answer **Substitute Solutions**: what do customers use instead of buying from this category at all?{{/if}} |

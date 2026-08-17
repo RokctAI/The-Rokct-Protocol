@@ -331,5 +331,301 @@ class TestProvenanceNote(unittest.TestCase):
         self.assertIn("Plain text only.", noted)
 
 
+# --------------------------------------------------------------------------
+# Word-capped drafting — the model writes narrative slots from masked founder
+# answers, under a hard word budget. Over budget is a rejection and a
+# fallback, never a truncation; drafted output is always labeled.
+# --------------------------------------------------------------------------
+
+
+ANSWERS = {
+    "vision_statement": "Every clinic in the region running on one platform.",
+    "core_value_proposition": (
+        "KarooFlow replaces paper diaries and three tools with one platform "
+        "priced at R 2,400/month for a two-doctor practice."
+    ),
+    "problem_statement": (
+        "A practice loses 8-12% of billable revenue to rejected claims."
+    ),
+    "industry": "Healthcare software",
+    "primary_base": "Cape Town",
+    "customer_segments": "Small private practices with 1-5 practitioners.",
+}
+
+LABELS = {
+    "vision_statement": "Vision Statement",
+    "core_value_proposition": "Core Value Proposition",
+    "problem_statement": "Problem Statement",
+    "industry": "Industry",
+    "primary_base": "Primary Base",
+    "customer_segments": "Customer Segments",
+}
+
+
+def _slot(name):
+    return polish.draft_slots_by_name()[name]
+
+
+class TestDraftRequest(unittest.TestCase):
+    def test_slot_request_is_digit_free_and_budget_is_spelled_out(self):
+        slot = _slot("executive_summary_opening")
+        user_text, masked, mapping = polish.prepare_slot_request(
+            slot, ANSWERS, LABELS
+        )
+        self.assertFalse(any(ch.isdigit() for ch in user_text), user_text)
+        self.assertIn("one hundred and fifty words", user_text)
+        self.assertIn("Vision Statement:", user_text)
+        # The founder's numbers exist only in the local mapping.
+        originals = [token for _p, token in mapping]
+        self.assertIn("R 2,400", originals)
+
+    def test_unanswered_slot_is_a_clean_skip(self):
+        slot = _slot("competitive_narrative")
+        with self.assertRaises(polish.PolishSkipped):
+            polish.prepare_slot_request(slot, {}, LABELS)
+
+    def test_draft_system_prompt_is_digit_free(self):
+        self.assertFalse(any(ch.isdigit() for ch in polish.DRAFT_SYSTEM_PROMPT))
+
+    def test_transport_payload_carries_the_draft_prompt_and_no_digits(self):
+        seen = {}
+
+        def fake_transport(url, data, headers, timeout):
+            request = json.loads(data.decode("utf-8"))
+            seen["system"] = request["messages"][0]["content"]
+            seen["user"] = request["messages"][-1]["content"]
+            return 200, _groq_body("A fine paragraph.")
+
+        call_model = polish.build_call_model(
+            "test-key",
+            transport=fake_transport,
+            system_prompt=polish.DRAFT_SYSTEM_PROMPT,
+        )
+        slot = _slot("pitch_problem")
+        user_text, _masked, _mapping = polish.prepare_slot_request(
+            slot, ANSWERS, LABELS
+        )
+        call_model(user_text)
+        self.assertEqual(seen["system"], polish.DRAFT_SYSTEM_PROMPT)
+        self.assertFalse(any(ch.isdigit() for ch in seen["user"]))
+        self.assertFalse(any(ch.isdigit() for ch in seen["system"]))
+
+
+class TestDraftVerification(unittest.TestCase):
+    def _request(self, slot_name="pitch_problem"):
+        return polish.prepare_slot_request(_slot(slot_name), ANSWERS, LABELS)
+
+    def test_within_budget_draft_is_accepted_with_numbers_restored(self):
+        _user, masked, mapping = self._request()
+        placeholder = mapping[0][0]
+        response = f"Practices lose {placeholder} of revenue to rejected claims."
+        text = polish.verify_draft(response, masked, mapping, 60)
+        self.assertIn("8-12%", text)
+        self.assertNotIn(polish._PLACEHOLDER_OPEN, text)
+
+    def test_over_budget_draft_is_rejected_not_truncated(self):
+        _user, masked, mapping = self._request()
+        response = "word " * 61
+        with self.assertRaises(polish.DraftRejected) as caught:
+            polish.verify_draft(response, masked, mapping, 60)
+        self.assertIn("over budget", str(caught.exception))
+        self.assertIn("rejected rather than truncated", str(caught.exception))
+
+    def test_invented_placeholder_is_rejected(self):
+        _user, masked, mapping = self._request()
+        with self.assertRaises(polish.DraftRejected):
+            polish.verify_draft("Revenue is ⟦NZZ⟧ now.", masked, mapping, 60)
+
+    def test_duplicated_placeholder_is_rejected(self):
+        _user, masked, mapping = self._request()
+        placeholder = mapping[0][0]
+        with self.assertRaises(polish.DraftRejected):
+            polish.verify_draft(
+                f"Lose {placeholder} then {placeholder} again.",
+                masked,
+                mapping,
+                60,
+            )
+
+    def test_stray_digit_is_rejected(self):
+        _user, masked, mapping = self._request()
+        with self.assertRaises(polish.DraftRejected):
+            polish.verify_draft("Growth of 42x is certain.", masked, mapping, 60)
+
+    def test_multi_paragraph_and_structural_markdown_are_rejected(self):
+        _user, masked, mapping = self._request()
+        for response in (
+            "Paragraph one.\n\nParagraph two.",
+            "# A heading",
+            "*   a list item",
+        ):
+            with self.assertRaises(polish.DraftRejected, msg=response):
+                polish.verify_draft(response, masked, mapping, 60)
+
+
+DRAFT_DOCUMENT = "\n".join(
+    [
+        "# Acme — Executive Summary",
+        "",
+        "> [!IMPORTANT]",
+        "> **Document Control**",
+        "> *   **Profile**: `business/Acme`",
+        "",
+        "## 1. The Venture",
+        "Founder text stays here.",
+        "",
+        "## 2. The Problem",
+        "More founder text.",
+    ]
+)
+
+
+class TestDraftApplication(unittest.TestCase):
+    def test_draft_lands_under_its_anchor_with_a_visible_label(self):
+        slot = _slot("executive_summary_opening")
+        updated = polish.apply_draft(DRAFT_DOCUMENT, slot, "Drafted paragraph.")
+        self.assertIn("<!-- ai-draft:executive_summary_opening -->", updated)
+        self.assertIn(polish.DRAFT_PROVENANCE_LABEL, updated)
+        self.assertLess(
+            updated.index("## 1. The Venture"), updated.index("Drafted paragraph.")
+        )
+        self.assertLess(
+            updated.index("Drafted paragraph."), updated.index("## 2. The Problem")
+        )
+        self.assertIn("Founder text stays here.", updated)
+
+    def test_redraft_replaces_the_block_not_stacks_it(self):
+        slot = _slot("executive_summary_opening")
+        once = polish.apply_draft(DRAFT_DOCUMENT, slot, "First draft.")
+        twice = polish.apply_draft(once, slot, "Second draft.")
+        self.assertEqual(twice.count("<!-- ai-draft:"), 1)
+        self.assertIn("Second draft.", twice)
+        self.assertNotIn("First draft.", twice)
+
+    def test_missing_anchor_is_a_skip_not_a_guess(self):
+        slot = _slot("pitch_problem")
+        with self.assertRaises(polish.PolishSkipped):
+            polish.apply_draft("# Something Else\n\nBody.", slot, "text")
+
+    def test_draft_note_lands_in_document_control_idempotently(self):
+        noted = polish.add_draft_note(polish.add_draft_note(DRAFT_DOCUMENT, 1, 0), 2, 1)
+        self.assertEqual(noted.count("**Drafting**"), 1)
+        self.assertIn("2 section(s) AI-drafted from founder answers", noted)
+        self.assertIn("1 draft(s) rejected", noted)
+
+    def test_no_api_key_is_a_clean_noop(self):
+        self.assertIsNone(polish.build_draft_call_model_from_env(environ={}))
+
+
+class TestDraftInstanceEndToEnd(unittest.TestCase):
+    """Full pipeline against a compiled workspace with a fake model."""
+
+    def _workspace(self):
+        import shutil
+        import tempfile
+
+        engine_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_src = os.path.join(
+            os.path.dirname(engine_dir),
+            os.pardir,
+            "skills",
+            ".rok",
+            "startup_os",
+            "templates",
+        )
+        if not os.path.isdir(template_src):
+            self.skipTest("templates not present")
+        root = tempfile.mkdtemp(prefix="startupos-draft-")
+        self.addCleanup(shutil.rmtree, root, True)
+        shutil.copytree(template_src, os.path.join(root, "templates"))
+
+        from core import compiler as compiler_mod
+        from core import schemas as schemas_mod
+
+        os.makedirs(os.path.join(root, "instances", "business", "Acme"))
+        with open(
+            os.path.join(root, "instances", "business", "Acme", "questions.md"),
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            handle.write(
+                schemas_mod.render_questions_md(
+                    "business",
+                    "Acme",
+                    {
+                        "trading_name": "Acme",
+                        "jurisdiction": "ZA",
+                        "primary_base": "Cape Town, South Africa",
+                        "industry": "Retail",
+                        "vision_statement": "A store on every corner.",
+                        "core_value_proposition": "Delivery in 30 minutes for R 99.",
+                        "primary_products": "Groceries",
+                        "customer_segments": "Households",
+                        "growth_strategy": "Word of mouth",
+                    },
+                )
+            )
+        compiler_mod.compile_instance(
+            "business", "Acme", workspace_root=root, quiet=True
+        )
+        return root
+
+    def test_accepted_draft_is_labeled_and_rejected_draft_falls_back(self):
+        root = self._workspace()
+
+        def respond(user_text):
+            if "executive summary" in user_text:
+                return "A concise drafted opening that fits its budget."
+            return "endless " * 100  # over any budget
+
+        report = polish.draft_instance(
+            "business",
+            "Acme",
+            RecordingCallModel(respond),
+            slots=["executive_summary_opening", "pitch_solution"],
+            workspace_root=root,
+            quiet=True,
+        )
+
+        drafted_slots = [name for name, _doc, _words in report.drafted]
+        self.assertEqual(drafted_slots, ["executive_summary_opening"])
+        self.assertEqual(
+            [name for name, _reason in report.rejected], ["pitch_solution"]
+        )
+        self.assertIn("over budget", report.rejected[0][1])
+
+        out = os.path.join(root, "instances", "business", "Acme", "output")
+        with open(
+            os.path.join(out, "01_executive_summary.md"), encoding="utf-8"
+        ) as handle:
+            summary = handle.read()
+        self.assertIn("<!-- ai-draft:executive_summary_opening -->", summary)
+        self.assertIn(polish.DRAFT_PROVENANCE_LABEL, summary)
+        self.assertIn("**Drafting**: 1 section(s) AI-drafted", summary)
+
+        # The rejected slot's document is untouched — founder coaching stands.
+        with open(
+            os.path.join(out, "annexures", "investor_pitch_deck.md"),
+            encoding="utf-8",
+        ) as handle:
+            deck = handle.read()
+        self.assertNotIn("<!-- ai-draft:", deck)
+        self.assertNotIn("**Drafting**", deck)
+
+    def test_everything_transmitted_for_drafting_is_digit_free(self):
+        root = self._workspace()
+        recorder = RecordingCallModel(lambda _text: "Fine.")
+        polish.draft_instance(
+            "business",
+            "Acme",
+            recorder,
+            workspace_root=root,
+            quiet=True,
+        )
+        self.assertTrue(recorder.sent)
+        for payload in recorder.sent:
+            self.assertFalse(any(ch.isdigit() for ch in payload), payload)
+
+
 if __name__ == "__main__":
     unittest.main()

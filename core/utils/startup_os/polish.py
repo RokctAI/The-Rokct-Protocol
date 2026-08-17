@@ -339,19 +339,22 @@ def build_call_model(
     transport=None,
     timeout=REQUEST_TIMEOUT_SECONDS,
     endpoint=GROQ_ENDPOINT,
+    system_prompt=SYSTEM_PROMPT,
 ):
     """Return a `call_model(masked_text) -> rephrased_text` callable.
 
     `transport` is injectable so tests exercise the full pipeline with no
     network. The API key lives only in this closure and the request header —
     it is never logged, never written to disk and never part of an error.
+    `system_prompt` lets the drafting pass reuse this transport with its own
+    instruction; the zero-digit outbound gate applies to both prompts alike.
     """
     model = model or os.environ.get(MODEL_ENV_VAR) or DEFAULT_MODEL
     transport = transport or _urllib_transport
 
     def call_model(masked_text):
         # The final gate: nothing containing a digit is ever transmitted.
-        if _contains_digit(masked_text) or _contains_digit(SYSTEM_PROMPT):
+        if _contains_digit(masked_text) or _contains_digit(system_prompt):
             raise PolishSkipped("digits present after masking; refusing to send")
 
         payload = json.dumps(
@@ -359,7 +362,7 @@ def build_call_model(
                 "model": model,
                 "temperature": 0.2,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": masked_text},
                 ],
             }
@@ -390,14 +393,17 @@ def build_call_model(
     return call_model
 
 
-def build_call_model_from_env(environ=None, transport=None):
+def build_call_model_from_env(environ=None, transport=None, system_prompt=SYSTEM_PROMPT):
     """Env-driven factory. Returns None when no key is set — a clean no-op."""
     environ = os.environ if environ is None else environ
     api_key = environ.get(API_KEY_ENV_VAR)
     if not api_key:
         return None
     return build_call_model(
-        api_key=api_key, model=environ.get(MODEL_ENV_VAR), transport=transport
+        api_key=api_key,
+        model=environ.get(MODEL_ENV_VAR),
+        transport=transport,
+        system_prompt=system_prompt,
     )
 
 
@@ -463,20 +469,16 @@ def polish_text(document, call_model, filename=None):
 
 
 _POLISH_NOTE_RE = re.compile(r"^> \*   \*\*Language\*\*:.*\n?", re.MULTILINE)
+_DRAFT_NOTE_RE = re.compile(r"^> \*   \*\*Drafting\*\*:.*\n?", re.MULTILINE)
 
 
-def add_polish_note(document, polished, reverted):
-    """Record the polish pass inside the Document Control block.
+def _add_control_note(document, note, note_re):
+    """Insert one provenance line into the Document Control block.
 
-    Idempotent: a previous Language line is replaced, not stacked, so
-    repeated runs do not accrete provenance noise.
+    Idempotent: a previous line of the same kind is replaced, not stacked,
+    so repeated runs do not accrete provenance noise.
     """
-    note = (
-        f"> *   **Language**: polished by AI (numbers and evidence untouched); "
-        f"{polished} paragraph(s) rephrased, {reverted} reverted by verification."
-    )
-
-    document = _POLISH_NOTE_RE.sub("", document)
+    document = note_re.sub("", document)
 
     lines = document.split("\n")
     for i, line in enumerate(lines):
@@ -489,6 +491,15 @@ def add_polish_note(document, polished, reverted):
 
     # No control block (not a compiler-assembled file): standalone note on top.
     return "> [!NOTE]\n" + note + "\n\n" + document
+
+
+def add_polish_note(document, polished, reverted):
+    """Record the polish pass inside the Document Control block."""
+    note = (
+        f"> *   **Language**: polished by AI (numbers and evidence untouched); "
+        f"{polished} paragraph(s) rephrased, {reverted} reverted by verification."
+    )
+    return _add_control_note(document, note, _POLISH_NOTE_RE)
 
 
 class PolishReport:
@@ -590,4 +601,403 @@ def polish_instance(
         for note in report.notes:
             print(f"  [note] {note}")
 
+    return report
+
+
+# ---------------------------------------------------------------------------
+# Word-capped AI drafting.
+#
+# The polish pass rephrases prose that already exists. Drafting goes one step
+# further: it writes a first draft of a handful of *specific* narrative slots
+# from the founder's own masked answers. The dangers are different — a model
+# asked for a paragraph happily returns a chapter — so on top of the polish
+# firewall (masked numbers, zero-digit outbound guard, deterministic
+# verification) every slot carries a hard word budget. A response over budget
+# is rejected outright and the document keeps its founder text or coaching;
+# nothing is ever truncated silently, because a truncated argument is a
+# different argument.
+#
+# Drafted output is never anonymous: each slot renders inside HTML markers
+# with a visible "AI-drafted from founder answers" label, and the Document
+# Control block counts what was drafted and what was rejected.
+# ---------------------------------------------------------------------------
+
+DRAFT_SYSTEM_PROMPT = (
+    "You draft one short paragraph of business-document prose from a "
+    "founder's own answers. Use only the facts provided in the request; do "
+    "not add facts, figures, claims, names or qualifiers of your own. The "
+    "input contains opaque placeholders that look like "
+    f"{_PLACEHOLDER_OPEN}NA{_PLACEHOLDER_CLOSE}; when you use one, copy it "
+    "exactly as written, never invent one, and never use one more often "
+    "than it appears in the input. Write plain prose: one paragraph, no "
+    "headings, no lists, no quotes, no markdown structure. Respect the word "
+    "budget stated in the request — a shorter paragraph is better than a "
+    "longer one. Return only the paragraph and nothing else."
+)
+
+# Budgets are transmitted spelled out: the outbound guarantee is "zero
+# digits", and that includes the instruction that carries the budget.
+_BUDGET_WORDS = {
+    60: "sixty",
+    120: "one hundred and twenty",
+    150: "one hundred and fifty",
+}
+
+DRAFT_PROVENANCE_LABEL = "AI-drafted from founder answers (verified numbers untouched)"
+
+
+class DraftRejected(Exception):
+    """A drafted response failed verification; the founder text stands."""
+
+
+class DraftSlot:
+    """One draftable slot: where it goes, what feeds it, how long it may be."""
+
+    __slots__ = ("name", "document", "anchor", "budget", "fields", "purpose")
+
+    def __init__(self, name, document, anchor, budget, fields, purpose):
+        if budget not in _BUDGET_WORDS:
+            raise ValueError(f"no spelled-out form for a budget of {budget}")
+        self.name = name
+        self.document = document
+        self.anchor = anchor
+        self.budget = budget
+        self.fields = fields
+        self.purpose = purpose
+
+
+DRAFT_SLOTS = (
+    DraftSlot(
+        "executive_summary_opening",
+        "01_executive_summary.md",
+        "## 1. The Venture",
+        150,
+        (
+            "vision_statement",
+            "mission_statement",
+            "core_value_proposition",
+            "problem_statement",
+            "industry",
+            "primary_base",
+        ),
+        "opening paragraph of an executive summary introducing the venture",
+    ),
+    DraftSlot(
+        "competitive_narrative",
+        "03_market_analysis.md",
+        "## 2. Competition",
+        120,
+        (
+            "key_competitors",
+            "competitive_positioning",
+            "unfair_advantage",
+            "competitor_pricing",
+        ),
+        "competitive-landscape narrative for a market analysis chapter",
+    ),
+    DraftSlot(
+        "pitch_problem",
+        "annexures/investor_pitch_deck.md",
+        "## Slide 2 — The Problem",
+        60,
+        ("problem_statement", "customer_segments"),
+        "problem prose for a single pitch-deck slide",
+    ),
+    DraftSlot(
+        "pitch_solution",
+        "annexures/investor_pitch_deck.md",
+        "## Slide 3 — The Solution",
+        60,
+        ("core_value_proposition", "product_components", "unfair_advantage"),
+        "solution prose for a single pitch-deck slide",
+    ),
+)
+
+
+def draft_slots_by_name():
+    return {slot.name: slot for slot in DRAFT_SLOTS}
+
+
+def prepare_slot_request(slot, answers, labels=None):
+    """Build the outbound request for one slot.
+
+    Returns `(user_text, masked_block, mapping)`. Only the founder's own
+    answered fields are included, every numeric token is masked, and the
+    word budget travels spelled out — the transmitted text contains zero
+    digit characters or the slot is skipped.
+    """
+    labels = labels or {}
+    lines = []
+    for key in slot.fields:
+        value = answers.get(key)
+        if value:
+            label = labels.get(key, key.replace("_", " ").title())
+            lines.append(f"{label}: {value}")
+    if not lines:
+        raise PolishSkipped("no founder answers for this slot")
+
+    masked, mapping = mask_numbers("\n".join(lines))
+    if _contains_digit(masked):
+        raise PolishSkipped("digits survived masking; refusing to send")
+
+    user_text = (
+        f"Write the {slot.purpose}. Budget: at most "
+        f"{_BUDGET_WORDS[slot.budget]} words, as one paragraph with no "
+        "headings and no lists, adding no facts beyond the founder's answers "
+        "below.\n\nFounder's answers:\n" + masked
+    )
+    if _contains_digit(user_text):
+        raise PolishSkipped("digits present in the drafting request")
+    return user_text, masked, mapping
+
+
+_STRUCTURAL_LEAD = ("#", ">", "|", "-", "*", "+", "`", "!")
+
+
+def verify_draft(response, masked_input, mapping, budget):
+    """All-or-nothing verification of one drafted slot.
+
+    Enforced deterministically, before anything is written: placeholders
+    used must be a sub-multiset of what was sent (no invented or duplicated
+    numbers), no digits outside placeholders, one plain-prose paragraph, and
+    the restored text within the word budget. Over budget is a rejection and
+    a fallback to founder text — never a silent truncation.
+    """
+    if not response or not response.strip():
+        raise DraftRejected("empty response")
+    response = response.strip()
+
+    used = Counter(PLACEHOLDER_RE.findall(response))
+    available = Counter(PLACEHOLDER_RE.findall(masked_input))
+    if used - available:
+        raise DraftRejected("invented or duplicated number placeholder")
+
+    if _contains_digit(PLACEHOLDER_RE.sub("", response)):
+        raise DraftRejected("stray digits in response")
+
+    if "\n\n" in response:
+        raise DraftRejected("more than one paragraph")
+    for line in response.split("\n"):
+        stripped = line.strip()
+        if stripped and (
+            stripped[0] in _STRUCTURAL_LEAD or _NUMBERED_LIST_RE.match(stripped)
+        ):
+            raise DraftRejected("structural markdown in draft")
+
+    # One paragraph means one paragraph — collapse soft line wraps.
+    text = " ".join(part.strip() for part in response.split("\n") if part.strip())
+
+    for placeholder, token in mapping:
+        if placeholder in text:
+            text = text.replace(placeholder, token)
+    if _PLACEHOLDER_OPEN in text or _PLACEHOLDER_CLOSE in text:
+        raise DraftRejected("unrestored placeholder remains")
+
+    words = len(text.split())
+    if words > budget:
+        raise DraftRejected(
+            f"over budget: {words} words against a budget of {budget} — "
+            "rejected rather than truncated"
+        )
+
+    return text
+
+
+def build_draft_block(slot_name, drafted_text):
+    """The labeled block a drafted slot renders as. Provenance is visible."""
+    return [
+        f"<!-- ai-draft:{slot_name} -->",
+        "> [!NOTE]",
+        f"> *{DRAFT_PROVENANCE_LABEL}.*",
+        "",
+        drafted_text,
+        f"<!-- /ai-draft:{slot_name} -->",
+    ]
+
+
+def apply_draft(document, slot, drafted_text):
+    """Place one verified draft into a compiled document.
+
+    A previous draft of the same slot is replaced in place (idempotent);
+    otherwise the block lands directly under the slot's anchor heading. A
+    document without the anchor is left untouched.
+    """
+    block_lines = build_draft_block(slot.name, drafted_text)
+
+    marker_re = re.compile(
+        r"<!-- ai-draft:"
+        + re.escape(slot.name)
+        + r" -->\n.*?<!-- /ai-draft:"
+        + re.escape(slot.name)
+        + r" -->",
+        re.DOTALL,
+    )
+    if marker_re.search(document):
+        return marker_re.sub(lambda _m: "\n".join(block_lines), document, count=1)
+
+    lines = document.split("\n")
+    for i, line in enumerate(lines):
+        if line.strip() == slot.anchor:
+            return "\n".join(lines[: i + 1] + [""] + block_lines + lines[i + 1 :])
+    raise PolishSkipped(f"anchor {slot.anchor!r} not found in {slot.document}")
+
+
+def add_draft_note(document, drafted, rejected):
+    """Record the drafting pass inside the Document Control block."""
+    note = (
+        f"> *   **Drafting**: {drafted} section(s) AI-drafted from founder "
+        f"answers (verified numbers untouched); {rejected} draft(s) rejected "
+        "by the word-budget/number firewall."
+    )
+    return _add_control_note(document, note, _DRAFT_NOTE_RE)
+
+
+def build_draft_call_model_from_env(environ=None, transport=None):
+    """Env-driven factory for drafting. None when no key — a clean no-op."""
+    return build_call_model_from_env(
+        environ=environ, transport=transport, system_prompt=DRAFT_SYSTEM_PROMPT
+    )
+
+
+class DraftReport:
+    """Outcome of drafting one instance's slots."""
+
+    def __init__(self, instance_type, instance_name, output_dir):
+        self.instance_type = instance_type
+        self.instance_name = instance_name
+        self.output_dir = output_dir
+        self.drafted = []  # (slot_name, relative_document, word_count)
+        self.rejected = []  # (slot_name, reason)
+        self.skipped = []  # (slot_name, reason)
+
+    def summary(self):
+        lines = [
+            f"[StartupOS] draft {self.instance_type}/{self.instance_name} "
+            f"-> {len(self.drafted)} slot(s) drafted",
+        ]
+        for name, document, words in self.drafted:
+            lines.append(f"  Drafted  : {name} -> {document} ({words} words)")
+        for name, reason in self.rejected:
+            lines.append(f"  Rejected : {name} — {reason}")
+        for name, reason in self.skipped:
+            lines.append(f"  Skipped  : {name} — {reason}")
+        return "\n".join(lines)
+
+
+def draft_instance(
+    instance_type,
+    instance_name,
+    call_model,
+    slots=None,
+    workspace_root=None,
+    quiet=False,
+):
+    """Draft the requested slots for one compiled instance.
+
+    `call_model` must be built with `DRAFT_SYSTEM_PROMPT` (see
+    `build_draft_call_model_from_env`). Writes go through
+    `safe_io.update_file` — lock, `.history` snapshot, atomic replace.
+    A slot whose response fails any check falls back to the compiled
+    founder text/coaching; the report says which and why.
+    """
+    from core import schemas
+    from core.parser import parse_questions_md
+
+    instance_type = path_utils.validate_instance_type(instance_type)
+    instance_name = path_utils.sanitize_instance_name(instance_name)
+    root = path_utils.resolve_workspace_root(workspace_root, verbose=not quiet)
+    out_dir = path_utils.output_dir(root, instance_type, instance_name)
+
+    if not os.path.isdir(out_dir):
+        raise StartupOSError(
+            f"No compiled output at {out_dir}. Compile first:\n"
+            f"  python main.py compile --type {instance_type} --name {instance_name}"
+        )
+
+    known = draft_slots_by_name()
+    if slots:
+        unknown = sorted(set(slots) - set(known))
+        if unknown:
+            raise StartupOSError(
+                f"Unknown draft slot(s): {', '.join(unknown)}. "
+                f"Available: {', '.join(sorted(known))}"
+            )
+        chosen = [known[name] for name in slots]
+    else:
+        chosen = list(DRAFT_SLOTS)
+
+    profile = parse_questions_md(
+        path_utils.questions_path(root, instance_type, instance_name)
+    )
+    labels = {
+        key: question.label
+        for key, question in schemas.questions_by_key(instance_type).items()
+    }
+
+    report = DraftReport(instance_type, instance_name, out_dir)
+    per_document = {}
+    rejected_per_document = {}
+
+    for slot in chosen:
+        try:
+            user_text, masked, mapping = prepare_slot_request(
+                slot, profile.answers, labels
+            )
+        except PolishSkipped as exc:
+            report.skipped.append((slot.name, str(exc)))
+            continue
+
+        try:
+            response = call_model(user_text)
+        except PolishSkipped as exc:
+            report.skipped.append((slot.name, str(exc)))
+            continue
+
+        try:
+            drafted = verify_draft(response, masked, mapping, slot.budget)
+        except DraftRejected as exc:
+            report.rejected.append((slot.name, str(exc)))
+            rejected_per_document[slot.document] = (
+                rejected_per_document.get(slot.document, 0) + 1
+            )
+            continue
+
+        per_document.setdefault(slot.document, []).append((slot, drafted))
+
+    for relative in sorted(per_document):
+        slot_texts = per_document[relative]
+        full = os.path.join(out_dir, *relative.split("/"))
+        if not os.path.isfile(full):
+            for slot, _text in slot_texts:
+                report.skipped.append((slot.name, f"{relative} is not compiled"))
+            continue
+
+        applied = []
+
+        def _transform(current, _slot_texts=slot_texts, _applied=applied):
+            updated = current
+            del _applied[:]
+            for slot, text in _slot_texts:
+                try:
+                    updated = apply_draft(updated, slot, text)
+                except PolishSkipped as exc:
+                    report.skipped.append((slot.name, str(exc)))
+                    continue
+                _applied.append((slot, text))
+            if not _applied:
+                return None
+            return add_draft_note(
+                updated,
+                len(_applied),
+                rejected_per_document.get(_slot_texts[0][0].document, 0),
+            )
+
+        safe_io.update_file(full, _transform)
+        for slot, text in applied:
+            report.drafted.append((slot.name, relative, len(text.split())))
+            if not quiet:
+                print(f"  Drafted: {slot.name} -> {relative}")
+
+    if not quiet:
+        print(report.summary())
     return report

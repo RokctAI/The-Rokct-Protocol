@@ -10,8 +10,8 @@
 {{#if revenue_streams}}
 {{revenue_streams}}
 {{else}}
-_Not recorded. Answer **Revenue Streams** — every way the venture earns, with
-the rate or fee for each._
+*Not recorded. Answer **Revenue Streams** — every way the venture earns, with
+the rate or fee for each.*
 {{/if}}
 
 {{#if pricing_tiers}}
@@ -28,10 +28,10 @@ the rate or fee for each._
 {{else}}
 {{fin_grid_rev}}
 
-_No numeric projection could be read from the answers. State a figure in
+*No numeric projection could be read from the answers. State a figure in
 **Projected Year 1**, **Projected Year 2** and **Projected Year 3**
 (e.g. "R 4,800,000 revenue") and the compiler will build the projection
-table, growth rates and cross-checks from them._
+table, growth rates and cross-checks from them.*
 {{/if}}
 
 ### As stated in questions.md
@@ -43,7 +43,7 @@ table, growth rates and cross-checks from them._
 {{#if cost_structure}}
 {{cost_structure}}
 {{else}}
-_Not recorded. Answer **Cost Structure** — the main fixed and variable lines._
+*Not recorded. Answer **Cost Structure** — the main fixed and variable lines.*
 {{/if}}
 
 {{#if gross_margin_target}}
@@ -62,6 +62,23 @@ not derivable says which question would unlock it.
 
 {{fin_unit_economics}}
 
+{{#if fin_cac_by_channel_table}}
+### CAC by Channel
+
+{{fin_cac_by_channel_table}}
+
+{{/if}}
+{{#if fin_cohort_analysis}}
+### Cohort & Retention Analysis
+
+{{fin_cohort_analysis}}
+{{/if}}
+{{#unless fin_cohort_analysis}}
+*Channel-level CAC and the cohort/retention analysis unlock at Level 3
+(diligence-grade). The Depth line in Document Control lists the exact
+answers still needed.*
+{{/unless}}
+
 ---
 
 ## 5. Consistency Checks
@@ -69,10 +86,10 @@ not derivable says which question would unlock it.
 {{#if fin_consistency}}
 {{fin_consistency}}
 {{else}}
-_No cross-checks are possible yet. Give numeric answers to
+*No cross-checks are possible yet. Give numeric answers to
 **Projected Year 1**, **Average Revenue Per Customer** and
 **Customer Count Year 1** in questions.md and the compiler will reconcile
-them against each other here._
+them against each other here.*
 {{/if}}
 
 ---
@@ -90,7 +107,7 @@ them against each other here._
 **Raised to date**: {{funding_history}}
 {{/if}}
 {{#unless funding_requirement}}
-_No capital requirement recorded._
+*No capital requirement recorded.*
 {{/unless}}
 
 ---

@@ -40,10 +40,14 @@ from core.parser import canonical_key
 # Question tiers. `core` is what a fresh profile collects by default — enough to
 # produce the one-page suite. `full` adds what the complete business-plan set
 # needs (market sizing, technical architecture, terms of sale, succession).
-# Both tiers are always part of the schema so the linter can check every
-# template; the tier only decides what a newly provisioned file writes out.
+# `diligence` is the deepest set: the answers an investor's due-diligence pass
+# asks for (per-channel CAC, cohort retention, competitor pricing, cap-table
+# detail). All tiers are always part of the schema so the linter can check
+# every template; the tier only decides what a newly provisioned file writes
+# out and which depth level an answer unlocks.
 TIER_CORE = "core"
 TIER_FULL = "full"
+TIER_DILIGENCE = "diligence"
 
 
 class Question:
@@ -239,6 +243,13 @@ BUSINESS_SCHEMA = [
                 "Competitive Positioning",
                 "How does the venture compare to each named competitor? "
                 "One line per competitor.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Substitute Solutions",
+                "What do customers use instead of buying from this category "
+                "at all — spreadsheets, paper, an in-house workaround, doing "
+                "nothing?",
                 tier=TIER_FULL,
             ),
             Question(
@@ -528,7 +539,202 @@ BUSINESS_SCHEMA = [
             ),
         ],
     ),
+    # ---- Diligence set: the answers that unlock depth Level 3 ----
+    Section(
+        "Diligence & Deep Metrics",
+        [
+            Question(
+                "Competitor Pricing",
+                "What does each named competitor actually charge? One "
+                "competitor per line, with the price.",
+                example="GoodX: R 4,100/month for a two-practitioner practice",
+                tier=TIER_DILIGENCE,
+            ),
+            Question(
+                "CAC By Channel",
+                "What does one customer cost to win, per acquisition channel? "
+                "One channel per line, with the all-in cost.",
+                example="Bureau partnerships: R 9,000 per clinic",
+                tier=TIER_DILIGENCE,
+            ),
+            Question(
+                "Sales Cycle Length",
+                "How long from first contact to signed customer, on average?",
+                example="21 days median",
+                tier=TIER_DILIGENCE,
+            ),
+            Question(
+                "Retention Cohorts",
+                "How do customer cohorts behave over time — the share of a "
+                "signup cohort still active after three, six and twelve "
+                "months, or the repeat-purchase rate?",
+                tier=TIER_DILIGENCE,
+            ),
+            Question(
+                "Cap Table",
+                "Beyond the percentage split: share classes, option pool "
+                "size, outstanding notes or SAFEs, and any special investor "
+                "rights.",
+                tier=TIER_DILIGENCE,
+            ),
+        ],
+    ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Depth ladder.
+#
+# Documents compile at the deepest level the answers support — never deeper.
+# Each level names the exact answers that define it, so the coaching in the
+# Document Control block can list the real missing fields instead of a vague
+# "answer more questions". Levels are cumulative: Level 3 requires every
+# Level 1 and Level 2 field as well as its own.
+# ---------------------------------------------------------------------------
+
+
+class DepthLevel:
+    __slots__ = ("number", "name", "keys")
+
+    def __init__(self, number, name, keys):
+        self.number = number
+        self.name = name
+        self.keys = keys
+
+
+BUSINESS_DEPTH_LEVELS = (
+    DepthLevel(
+        1,
+        "foundation",
+        (
+            "trading_name",
+            "jurisdiction",
+            "primary_base",
+            "industry",
+            "vision_statement",
+            "core_value_proposition",
+            "primary_products",
+            "customer_segments",
+            "growth_strategy",
+        ),
+    ),
+    DepthLevel(
+        2,
+        "investor-ready",
+        (
+            "problem_statement",
+            "market_size_tam",
+            "market_size_sam",
+            "market_size_som",
+            "competitive_positioning",
+            "revenue_streams",
+            "pricing_tiers",
+            "executive_team",
+            "funding_requirement",
+            "gross_margin_target",
+            "average_revenue_per_customer",
+            "customer_acquisition_cost",
+            "monthly_operating_costs",
+            "cash_on_hand",
+        ),
+    ),
+    DepthLevel(
+        3,
+        "diligence-grade",
+        (
+            "customer_churn_rate",
+            "funding_history",
+            "hiring_plan",
+            "competitor_pricing",
+            "cac_by_channel",
+            "sales_cycle_length",
+            "retention_cohorts",
+            "cap_table",
+        ),
+    ),
+)
+
+DEPTH_DILIGENCE = BUSINESS_DEPTH_LEVELS[-1].number
+
+
+def depth_levels(instance_type):
+    """The ladder for an instance type. Life profiles have no ladder."""
+    return BUSINESS_DEPTH_LEVELS if instance_type == "business" else ()
+
+
+class DepthReport:
+    """Achieved depth plus exactly what unlocks the next level."""
+
+    __slots__ = ("level", "name", "total", "next_level", "next_name", "missing")
+
+    def __init__(self, level, name, total, next_level, next_name, missing):
+        self.level = level
+        self.name = name
+        self.total = total
+        self.next_level = next_level
+        self.next_name = next_name
+        self.missing = missing  # ordered (key, label) pairs for the next level
+
+
+def compute_depth(instance_type, answered_keys):
+    """Compute the achieved depth level from which answers are present.
+
+    Returns a `DepthReport`, or None for instance types without a ladder.
+    An old questions.md that has never seen the newer questions simply stays
+    at the level its answers support — nothing about a missing question stops
+    a compile.
+    """
+    levels = depth_levels(instance_type)
+    if not levels:
+        return None
+
+    answered = set(answered_keys)
+    labels = questions_by_key(instance_type)
+
+    achieved = 0
+    achieved_name = "unstarted"
+    for level in levels:
+        missing = [key for key in level.keys if key not in answered]
+        if missing:
+            return DepthReport(
+                level=achieved,
+                name=achieved_name,
+                total=levels[-1].number,
+                next_level=level.number,
+                next_name=level.name,
+                missing=[
+                    (key, labels[key].label if key in labels else key)
+                    for key in missing
+                ],
+            )
+        achieved = level.number
+        achieved_name = level.name
+
+    return DepthReport(
+        level=achieved,
+        name=achieved_name,
+        total=levels[-1].number,
+        next_level=None,
+        next_name=None,
+        missing=[],
+    )
+
+
+def describe_depth(report):
+    """One Document Control line: the level, and exactly what unlocks more."""
+    if report is None:
+        return None
+    if report.next_level is None:
+        return (
+            f"Level {report.level} of {report.total} — {report.name}; "
+            "every depth-defining answer is present"
+        )
+    fields = ", ".join(label for _key, label in report.missing)
+    return (
+        f"Level {report.level} of {report.total} — {report.name}; "
+        f"to reach Level {report.next_level} ({report.next_name}) answer: "
+        f"{fields}"
+    )
 
 
 LIFE_SCHEMA = [

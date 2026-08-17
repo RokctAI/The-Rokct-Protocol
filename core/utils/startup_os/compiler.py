@@ -836,6 +836,10 @@ def _assemble(
     """Wrap a rendered body with control block, footers and gap report."""
     fingerprint = documents.content_fingerprint(rendered)
 
+    depth_line = schemas.describe_depth(
+        schemas.compute_depth(instance_type, profile.answers)
+    )
+
     version_block = documents.build_version_block(
         instance_name=instance_name,
         instance_type=instance_type,
@@ -846,6 +850,7 @@ def _assemble(
         verified_fields=record.verified_count if record else None,
         applicable_fields=record.applicable_count if record else None,
         privacy_law=jurisdiction.privacy_law,
+        depth=depth_line,
     )
 
     document = documents.insert_version_block(rendered, version_block)
@@ -902,6 +907,7 @@ def _build_values(
         _add_financials(values, profile, jurisdiction)
         _add_computed_financials(values, profile, jurisdiction)
         _add_market_analysis(values, profile)
+        _add_diligence_analysis(values, profile, jurisdiction)
 
     if record is not None:
         values.update(record.as_render_dict())
@@ -1551,6 +1557,100 @@ def _add_market_analysis(values, profile):
         values["competitor_table"] = "\n".join(table)
     else:
         values["competitor_table"] = ""
+
+
+def _one_line(text):
+    """Collapse a multi-line answer for embedding inside a list bullet."""
+    return "; ".join(part.strip() for part in str(text).splitlines() if part.strip())
+
+
+def _cell(text):
+    """Escape a value for a markdown table cell."""
+    return str(text).replace("|", "\\|")
+
+
+def _add_diligence_analysis(values, profile, jurisdiction):
+    """Build the Level 3 (diligence-grade) analysis blocks — or lock them.
+
+    The depth ladder's rule is that deeper analysis unlocks only at its
+    level: a profile that has answered one diligence question but not the
+    rest stays at Level 2, and these placeholders render empty so the
+    templates show the unlock coaching instead. The Depth line in Document
+    Control names the exact missing answers.
+    """
+    report = schemas.compute_depth("business", profile.answers)
+    unlocked = report is not None and report.level >= schemas.DEPTH_DILIGENCE
+
+    if not unlocked:
+        values["competitor_pricing_table"] = ""
+        values["fin_cac_by_channel_table"] = ""
+        values["fin_cohort_analysis"] = ""
+        return
+
+    symbol = jurisdiction.currency_symbol or ""
+
+    # -- Named-competitor pricing (03) ------------------------------------
+    rows = ["| Competitor | Pricing |", "| :--- | :--- |"]
+    for line in _split_positioning_lines(profile.get("competitor_pricing")):
+        name, _, pricing = line.partition(":")
+        if pricing.strip():
+            cells = (name.strip(), pricing.strip())
+        else:
+            cells = ("—", line)
+        rows.append(f"| {_cell(cells[0])} | {_cell(cells[1])} |")
+    rows.append("")
+    rows.append(
+        "_Stated in **Competitor Pricing** — founder-supplied; verify against "
+        "current price lists before quoting it to an investor._"
+    )
+    values["competitor_pricing_table"] = "\n".join(rows)
+
+    # -- CAC by channel (07) ----------------------------------------------
+    rows = ["| Channel | Acquisition cost | Basis |", "| :--- | :--- | :--- |"]
+    for line in _split_positioning_lines(profile.get("cac_by_channel")):
+        channel, _, rest = line.partition(":")
+        if rest.strip():
+            amount = parse_money(rest)
+            cost = (
+                format_money(amount, symbol) if amount is not None else rest.strip()
+            )
+            rows.append(
+                f"| {_cell(channel.strip())} | {_cell(cost)} | "
+                "from **CAC By Channel** |"
+            )
+        else:
+            rows.append(f"| — | {_cell(line)} | from **CAC By Channel** |")
+    blended = parse_money(profile.get("customer_acquisition_cost"))
+    if blended is not None:
+        rows.append(
+            f"| **Blended (all channels)** | {format_money(blended, symbol)} | "
+            "from **Customer Acquisition Cost** |"
+        )
+    values["fin_cac_by_channel_table"] = "\n".join(rows)
+
+    # -- Cohort & retention analysis (07) ---------------------------------
+    fin = extract_financial_inputs(profile)
+    lines = [
+        "*   **Stated cohort behaviour** (from **Retention Cohorts**): "
+        f"{_one_line(profile.get('retention_cohorts'))}"
+    ]
+    churn_monthly = fin["churn_monthly_rate"]
+    if churn_monthly:
+        retention_12m = (1.0 - churn_monthly) ** 12
+        lifetime_months = 1.0 / churn_monthly
+        lines.append(
+            f"*   **Implied by Customer Churn Rate**: {retention_12m:.0%} of a "
+            "signup cohort remains after twelve months; average customer "
+            f"lifetime ≈ {lifetime_months:.0f} months (computed from "
+            "**Customer Churn Rate** — reconcile against the stated cohorts "
+            "above)."
+        )
+    else:
+        lines.append(
+            "*   **Churn-implied retention**: not derivable — state "
+            "**Customer Churn Rate** as a percentage per month or per year."
+        )
+    values["fin_cohort_analysis"] = "\n".join(lines)
 
 
 def _add_life_values(values, profile, warnings):
