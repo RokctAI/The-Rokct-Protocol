@@ -315,6 +315,12 @@ def cmd_lint(args):
         "trademarks_details",
         "fin_summary",
         "fin_grid_rev",
+        "fin_projection_table",
+        "fin_unit_economics",
+        "fin_consistency",
+        "market_funnel_table",
+        "market_sizing_flags",
+        "competitor_table",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -358,6 +364,15 @@ def cmd_lint(args):
         "historical_turnover_2024",
         "historical_turnover_2025",
         "historical_turnover_2026_ytd",
+        # Unit-economics inputs: consumed by the financial computations in
+        # `compiler._add_computed_financials`, surfaced through the derived
+        # `fin_*` placeholders rather than referenced by name in a template.
+        "average_revenue_per_customer",
+        "customer_acquisition_cost",
+        "customer_churn_rate",
+        "customer_count_year_1",
+        "monthly_operating_costs",
+        "cash_on_hand",
     }
 
     types_to_check = [args.type] if args.type else list(path_utils.INSTANCE_TYPES)
