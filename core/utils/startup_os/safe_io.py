@@ -120,6 +120,25 @@ def atomic_write(path, content, encoding="utf-8"):
     os.replace(temp_path, path)
 
 
+def atomic_write_bytes(path, data):
+    """Binary sibling of `atomic_write`, for the rendered .pptx/.xlsx.
+
+    A zip archive truncated by a crash mid-write is not merely stale — Office
+    refuses to open it at all — so derived binaries get the same temp-file +
+    `os.replace` treatment as the markdown.
+    """
+    directory = os.path.dirname(os.path.abspath(path))
+    os.makedirs(directory, exist_ok=True)
+    temp_path = f"{path}.{os.getpid()}.tmp"
+
+    with open(temp_path, "wb") as handle:
+        handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+    os.replace(temp_path, path)
+
+
 def snapshot(path, keep=20):
     """Copy `path` into a sibling `.history/` directory before mutating it."""
     if not os.path.exists(path):

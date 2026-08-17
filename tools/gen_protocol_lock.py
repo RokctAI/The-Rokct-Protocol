@@ -78,6 +78,8 @@ ENGINE_MODULES = (
     "compiler.py",
     "agent_bridge.py",
     "polish.py",
+    "render_pptx.py",
+    "render_xlsx.py",
 )
 
 # Every backend file the opportunities_registry wrappers extract from the
