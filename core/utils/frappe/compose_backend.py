@@ -27,7 +27,195 @@ import subprocess
 
 PROJECT_ROOT = os.getcwd()
 
-COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name
+COMPILED_DOCTYPES = {}  # maps doctype_name -> module_name (module-root doctype/ trees)
+
+# DocType dirs found nested under a module's src/ tree (src/**/doctype/<dt>/).
+# Tracked separately from COMPILED_DOCTYPES: module-root duplicates have
+# always been hard errors, but src-nested doctypes were historically
+# unguarded, so a collision involving one only WARNS (escalating under
+# ROKCT_COMPOSE_STRICT) instead of breaking composes that succeed today.
+SRC_NESTED_DOCTYPES = {}  # maps doctype_name -> module_name
+
+# Directories/files this compose run wrote into the app shell. Scanned by
+# lint_composed_tokens() after composition for unresolved template tokens.
+COMPOSED_PATHS = []
+
+# File extensions whose content gets template-token substitution when copied
+# (everything else is byte-copied verbatim).
+SUBSTITUTABLE_EXTENSIONS = (".py", ".js", ".html", ".json")
+
+# The composer's template tokens. Only these two exact literals are ever
+# substituted or linted — generic {...} braces (Python format strings, Jinja,
+# JS template literals) are none of the composer's business.
+TOKEN_APP_NAME = "{app_name}"
+TOKEN_MODULE_NAME = "{module_name}"
+
+# Strict compose mode: every compose_warning() below escalates from a printed
+# warning to a hard error, so CI can refuse a compose whose output is known to
+# be degraded. Same env-flag convention as the flutter installer
+# (core/utils/flutter/sdk_installer_base.py) and ROKCT_ALLOW_UNPINNED_SDKS.
+# Default (unset) keeps warn-and-continue so currently-green composes stay
+# green.
+COMPOSE_STRICT_ENV = "ROKCT_COMPOSE_STRICT"
+
+
+def _compose_strict():
+    return os.environ.get(COMPOSE_STRICT_ENV, "").lower() in ("1", "true", "yes")
+
+
+def compose_warning(message):
+    """Loudly surface a compose step that did not fully apply.
+
+    Prints to BOTH stdout (the composer's existing logging stream) and stderr
+    (so wrappers that only surface stderr still show it). With
+    ROKCT_COMPOSE_STRICT=1/true/yes the warning is escalated to a hard error
+    instead, failing the compose with a non-zero exit.
+    """
+    line = f"  [!] WARNING: {message}"
+    print(line)
+    if sys.stderr is not sys.stdout:
+        print(line, file=sys.stderr)
+    if _compose_strict():
+        raise RuntimeError(
+            f"{COMPOSE_STRICT_ENV} is set: escalating compose warning to error: {message}"
+        )
+
+
+def resolve_tokens(content, app_name, module_name=None):
+    """Replace the composer's template tokens in text content.
+
+    {app_name} -> the target shell's app package name (as always).
+    {module_name} -> the composing module's manifest "name" (the value the
+    primary DocType JSON "module" key is rewritten to), when provided.
+    """
+    content = content.replace(TOKEN_APP_NAME, app_name)
+    if module_name is not None:
+        content = content.replace(TOKEN_MODULE_NAME, module_name)
+    return content
+
+
+def copy_doctype_tree_resolving(src, dst, app_name, module_name):
+    """Copy a DocType directory, substituting template tokens where present.
+
+    DocType trees used to be shutil.copytree'd verbatim, which shipped
+    literal {app_name} strings into composed controllers (invalid imports at
+    best, silently broken runtime dotted paths at worst — e.g. the pay SDK's
+    gateway_controller values). Substitutable extensions whose content
+    actually contains a token are rewritten; every other file is byte-copied
+    with shutil.copy2, so tokenless files stay byte-identical to the old
+    copytree behavior.
+    """
+    os.makedirs(dst, exist_ok=True)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            copy_doctype_tree_resolving(s, d, app_name, module_name)
+            continue
+        if s.endswith(SUBSTITUTABLE_EXTENSIONS):
+            with open(s, "rb") as sf:
+                raw = sf.read()
+            if TOKEN_APP_NAME.encode() in raw or TOKEN_MODULE_NAME.encode() in raw:
+                text = resolve_tokens(raw.decode("utf-8"), app_name, module_name)
+                # newline="" keeps the source file's own line endings intact.
+                with open(d, "w", encoding="utf-8", newline="") as df:
+                    df.write(text)
+                continue
+        shutil.copy2(s, d)
+
+
+def rewrite_src_nested_doctype_modules(dest_dir, module_label, module_name):
+    """Rewrite the "module" key of DocType JSONs nested under a src/ tree.
+
+    The primary-JSON module rewrite has always applied to module-root
+    doctype/<dt>/<dt>.json files, but doctypes shipped under
+    src/**/doctype/<dt>/<dt>.json escaped it — the agent SDK composed 13 such
+    JSONs with a literal "module": "{module_name}". The {module_name} token
+    substitution now resolves those; this pass additionally pins any
+    src-nested primary JSON whose "module" still disagrees with the manifest
+    name, and registers the doctype for duplicate detection (warn-only — see
+    SRC_NESTED_DOCTYPES).
+    """
+    for root, dirs, _files in os.walk(dest_dir):
+        if os.path.basename(root) != "doctype":
+            continue
+        for dt in sorted(dirs):
+            dt_dir = os.path.join(root, dt)
+            if dt in COMPILED_DOCTYPES and COMPILED_DOCTYPES[dt] != module_name:
+                compose_warning(
+                    f"src-nested DocType '{dt}' in module '{module_name}' collides "
+                    f"with module '{COMPILED_DOCTYPES[dt]}'s doctype/ tree."
+                )
+            elif dt in SRC_NESTED_DOCTYPES and SRC_NESTED_DOCTYPES[dt] != module_name:
+                compose_warning(
+                    f"src-nested DocType '{dt}' in module '{module_name}' collides "
+                    f"with module '{SRC_NESTED_DOCTYPES[dt]}'s src/ tree."
+                )
+            else:
+                SRC_NESTED_DOCTYPES[dt] = module_name
+            json_file = os.path.join(dt_dir, f"{dt}.json")
+            if not os.path.exists(json_file):
+                continue
+            try:
+                with open(json_file, "r", encoding="utf-8") as jf:
+                    data = json.load(jf)
+                if data.get("module") != module_label:
+                    data["module"] = module_label
+                    with open(json_file, "w", encoding="utf-8") as jf:
+                        json.dump(data, jf, indent=2)
+                    print(
+                        f"[+] Pinned src-nested DocType module: {dt} -> {module_label}"
+                    )
+            except Exception as je:
+                compose_warning(
+                    f"Failed to inject module into src-nested {dt}.json: {je}"
+                )
+
+
+def lint_composed_tokens(paths, project_root):
+    """Post-compose token lint over everything this run wrote.
+
+    Scans the composed output (module trees, app-level www/ and patches/
+    files) for the composer's two literal tokens in substitutable-extension
+    files. Only the exact literals {app_name} and {module_name} are flagged —
+    generic {...} braces (Python format strings, Jinja templates) are
+    legitimate and ignored. Any hit is a loud warning naming every offending
+    file, escalating to a hard error under ROKCT_COMPOSE_STRICT=1.
+    """
+    tokens = (TOKEN_APP_NAME.encode(), TOKEN_MODULE_NAME.encode())
+    offenders = []
+    for base in paths:
+        if os.path.isfile(base):
+            candidates = [base]
+        elif os.path.isdir(base):
+            candidates = [
+                os.path.join(root, name)
+                for root, _dirs, files in os.walk(base)
+                for name in files
+            ]
+        else:
+            continue
+        for fp in candidates:
+            if not fp.endswith(SUBSTITUTABLE_EXTENSIONS):
+                continue
+            try:
+                with open(fp, "rb") as fh:
+                    raw = fh.read()
+            except OSError:
+                continue
+            found = [t.decode() for t in tokens if t in raw]
+            if found:
+                offenders.append((os.path.relpath(fp, project_root), found))
+    if offenders:
+        detail = "; ".join(f"{rel} ({', '.join(found)})" for rel, found in offenders)
+        compose_warning(
+            f"{len(offenders)} composed file(s) still contain literal template "
+            f"tokens: {detail}"
+        )
+    else:
+        print("[+] Token lint: no unresolved template tokens in composed output.")
+    return offenders
+
 
 # Manifest hook values are interpolated into generated Python source
 # (hooks.py). Before any value is written it is validated against a tight
@@ -256,11 +444,198 @@ def resolve_module_sources(modules):
     return resolved
 
 
-def find_target_app_dir(config):
-    # Try to resolve app name from configuration or folder name
+# ---------------------------------------------------------------------------
+# Frappe shell skeleton templates.
+#
+# The canonical, human-readable copies live in this repository at
+# core/utils/frappe/templates/shell/ (mirroring core/base/dart/templates/ on
+# the flutter side). They are ALSO embedded here because the frappe skill
+# wrapper (core/skills/.rok/frappe/scripts/compose.py) fetches and executes
+# compose_backend.py as a single standalone file — at scaffold time inside an
+# app shell there is no protocol checkout to read the template files from.
+# core/utils/frappe/tests/test_compose_backend.py pins the embedded copies
+# byte-identical to the files on disk so the two can never drift.
+#
+# Keys are destination paths relative to the shell repo root; {app_name} and
+# {module_name} tokens in both keys and content are resolved at scaffold time
+# ({module_name} = the shell's own in-shell module, which is named after the
+# app, matching the rcore layout).
+# ---------------------------------------------------------------------------
+
+_SHELL_PY_HEADER = """\
+# Copyright (c) 2026 RokctAI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+
+SHELL_TEMPLATES = {
+    "pyproject.toml": """\
+[project]
+name = "{app_name}"
+version = "0.0.1"
+description = "Composed Frappe app shell for {app_name}"
+authors = [
+    { name = "RokctAI", email = "admin@rokct.ai"}
+]
+dependencies = []
+
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+""",
+    "setup.py": _SHELL_PY_HEADER
+    + """
+
+from setuptools import setup, find_packages
+
+name = "{app_name}"
+version = "0.0.1"
+description = "Composed Frappe app shell for {app_name}"
+author = "RokctAI"
+author_email = "admin@rokct.ai"
+packages = find_packages()
+zip_safe = False
+include_package_data = True
+install_requires = []
+
+setup(
+    name=name,
+    version=version,
+    description=description,
+    author=author,
+    author_email=author_email,
+    packages=packages,
+    zip_safe=zip_safe,
+    include_package_data=include_package_data,
+    install_requires=install_requires,
+)
+""",
+    "MANIFEST.in": """\
+include *.txt
+include *.md
+recursive-include {app_name} *.html
+recursive-include {app_name} *.txt
+recursive-include {app_name} *.js
+recursive-include {app_name} *.css
+recursive-include {app_name} *.png
+recursive-include {app_name} *.svg
+recursive-include {app_name} *.json
+recursive-include {app_name} *.md
+""",
+    "{app_name}/__init__.py": _SHELL_PY_HEADER
+    + """
+__version__ = "0.0.1"
+""",
+    "{app_name}/hooks.py": _SHELL_PY_HEADER
+    + """
+# Shell-owned identity and hooks. The backend composer appends its generated
+# fence (dynamic SDK hooks) at the END of this file on every compose — keep
+# hand-written content above it and never edit the fenced block by hand.
+
+app_name = "{app_name}"
+app_title = "{app_name}"
+app_publisher = "ROKCT INTELLIGENCE (PTY) LTD"
+app_description = "Composed Frappe app shell"
+app_email = "admin@rokct.ai"
+app_license = "mit"
+
+# Installation
+# ------------
+before_install = "{app_name}.install.before_install"
+after_install = "{app_name}.install.after_install"
+
+# Website Route Rules
+# -------------------
+# Shell-owned website routes go here, e.g.:
+# website_route_rules = [
+#     {
+#         "from_route": "/.well-known/assetlinks.json",
+#         "to_route": "{app_name}.api.app_links.get_assetlinks",
+#     },
+# ]
+""",
+    "{app_name}/install.py": _SHELL_PY_HEADER
+    + """
+# Minimal install surface for a freshly scaffolded shell, referenced from
+# hooks.py. Grow it with site-role checks, seeders, or database extension
+# setup as the shell matures (rcore/install.py is the reference example).
+
+
+def before_install():
+    # Runs before `bench install-app {app_name}`.
+    pass
+
+
+def after_install():
+    # Runs after `bench install-app {app_name}`.
+    pass
+""",
+    "{app_name}/modules.txt": """\
+{module_name}
+""",
+    "{app_name}/patches.txt": "",
+    "{app_name}/{module_name}/__init__.py": _SHELL_PY_HEADER,
+    "{app_name}/{module_name}/doctype/__init__.py": _SHELL_PY_HEADER,
+}
+
+
+def derive_app_name(config):
+    """The target shell's app package name, from composer.json or the cwd."""
     app_name = config.get("name", "").replace("_app", "")
     if not app_name:
         app_name = os.path.basename(PROJECT_ROOT)
+    return app_name
+
+
+def scaffold_shell(app_name, explicit=False):
+    """Lay down the tokenized frappe shell skeleton for a missing app shell.
+
+    Runs when the target app shell package does not exist yet, or on an
+    explicit --scaffold flag. STRICTLY additive: a destination file that
+    already exists is NEVER touched — existing shells (and any hand-edited
+    file in a partially scaffolded one) are left exactly as they are.
+    """
+    reason = "--scaffold flag" if explicit else "target app shell missing"
+    print(f"[*] Scaffolding frappe shell skeleton for '{app_name}' ({reason})...")
+    written = 0
+    for rel_template in sorted(SHELL_TEMPLATES):
+        rel_dest = resolve_tokens(rel_template, app_name, app_name)
+        dest = os.path.join(PROJECT_ROOT, *rel_dest.split("/"))
+        if os.path.exists(dest):
+            print(f"[*] Scaffold: kept existing {rel_dest}")
+            continue
+        os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+        content = resolve_tokens(SHELL_TEMPLATES[rel_template], app_name, app_name)
+        with open(dest, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(content)
+        print(f"[+] Scaffold: wrote {rel_dest}")
+        written += 1
+    if written:
+        print(f"[+] Scaffolded {written} shell file(s) for '{app_name}'.")
+    else:
+        print("[*] Scaffold: nothing to do (all shell files already present).")
+
+
+def find_target_app_dir(config):
+    # Try to resolve app name from configuration or folder name
+    app_name = derive_app_name(config)
 
     # Frappe apps are nested as apps/app_name/app_name
     target_path = os.path.join(PROJECT_ROOT, "apps", app_name, app_name)
@@ -300,10 +675,16 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
+    # The module's canonical name: the manifest's "name" (the same value the
+    # primary DocType JSON "module" key is rewritten to). This is what the
+    # {module_name} token resolves to in copied content.
+    module_label = manifest.get("name", module_name)
+
     dest_module_path = os.path.join(target_app_path, module_name)
     if os.path.exists(dest_module_path):
         shutil.rmtree(dest_module_path)
     os.makedirs(dest_module_path, exist_ok=True)
+    COMPOSED_PATHS.append(dest_module_path)
 
     # 1. Copy DocTypes
     src_doctype = os.path.join(src_sdk_path, "doctype")
@@ -319,10 +700,17 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         f"CRITICAL ERROR: Duplicate DocType '{dt}' detected! Already compiled by module '{COMPILED_DOCTYPES[dt]}'. Failing build."
                     )
                 COMPILED_DOCTYPES[dt] = module_name
+                if dt in SRC_NESTED_DOCTYPES and SRC_NESTED_DOCTYPES[dt] != module_name:
+                    compose_warning(
+                        f"DocType '{dt}' in module '{module_name}'s doctype/ tree "
+                        f"collides with module '{SRC_NESTED_DOCTYPES[dt]}'s src/ tree."
+                    )
 
                 if os.path.exists(dest_dt_path):
                     shutil.rmtree(dest_dt_path)
-                shutil.copytree(src_dt_path, dest_dt_path)
+                copy_doctype_tree_resolving(
+                    src_dt_path, dest_dt_path, app_name, module_label
+                )
                 # Overwrite the DocType module property to match composition target
                 json_file = os.path.join(dest_dt_path, f"{dt}.json")
                 if os.path.exists(json_file):
@@ -384,14 +772,15 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         raise ValueError(
                             f"CRITICAL ERROR: Duplicate global www file '{item}' detected! (Attempted by: '{module_name}'). Failing build."
                         )
-                    if item.endswith((".py", ".js", ".html", ".json")):
+                    if item.endswith(SUBSTITUTABLE_EXTENSIONS):
                         with open(s_file, "r", encoding="utf-8") as sf:
                             content = sf.read()
-                        content = content.replace("{app_name}", app_name)
+                        content = resolve_tokens(content, app_name, module_label)
                         with open(d_file, "w", encoding="utf-8") as df:
                             df.write(content)
                     else:
                         shutil.copy2(s_file, d_file)
+                    COMPOSED_PATHS.append(d_file)
                 print(f"[+] Merged global www files from: {module_name}")
                 continue
 
@@ -413,9 +802,10 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                             )
                         with open(s_file, "r", encoding="utf-8") as sf:
                             content = sf.read()
-                        content = content.replace("{app_name}", app_name)
+                        content = resolve_tokens(content, app_name, module_label)
                         with open(d_file, "w", encoding="utf-8") as df:
                             df.write(content)
+                        COMPOSED_PATHS.append(d_file)
                         patch_name = item[:-3]
                         # Register in patches.txt
                         patches_txt_path = os.path.join(target_app_path, "patches.txt")
@@ -443,11 +833,11 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                     f"CRITICAL ERROR: Duplicate source file/folder '{f}' in module '{module_name}'! Failing build."
                 )
             if os.path.isfile(src_file_path):
-                # Copy file and replace {app_name} placeholders dynamically
-                if src_file_path.endswith((".py", ".js", ".html", ".json")):
+                # Copy file and replace {app_name}/{module_name} placeholders
+                if src_file_path.endswith(SUBSTITUTABLE_EXTENSIONS):
                     with open(src_file_path, "r", encoding="utf-8") as sf:
                         content = sf.read()
-                    content = content.replace("{app_name}", app_name)
+                    content = resolve_tokens(content, app_name, module_label)
                     with open(dest_file_path, "w", encoding="utf-8") as df:
                         df.write(content)
                 else:
@@ -466,16 +856,24 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         if os.path.isdir(s):
                             copy_and_resolve(s, d)
                         else:
-                            if s.endswith((".py", ".js", ".html", ".json")):
+                            if s.endswith(SUBSTITUTABLE_EXTENSIONS):
                                 with open(s, "r", encoding="utf-8") as sf:
                                     content = sf.read()
-                                content = content.replace("{app_name}", app_name)
+                                content = resolve_tokens(
+                                    content, app_name, module_label
+                                )
                                 with open(d, "w", encoding="utf-8") as df:
                                     df.write(content)
                             else:
                                 shutil.copy2(s, d)
 
                 copy_and_resolve(src_file_path, dest_file_path)
+                # DocTypes shipped under src/ escape the module-root
+                # doctype/ machinery: pin their primary JSON "module" keys
+                # and register them for (warn-only) duplicate detection.
+                rewrite_src_nested_doctype_modules(
+                    dest_file_path, module_label, module_name
+                )
                 print(f"[+] Copied Source Directory: {f} -> {module_name}")
 
     # 3. Create Frappe Module Package registration markers
@@ -891,6 +1289,20 @@ def main():
         )
 
     config = load_composer_config()
+
+    # Scaffold mode: lay down the tokenized shell skeleton when the target
+    # app shell package is missing entirely (a brand-new shell repo), or when
+    # explicitly requested with --scaffold. Strictly additive either way —
+    # scaffold_shell() never overwrites an existing file, so existing shells
+    # are untouched.
+    scaffold_requested = "--scaffold" in sys.argv[1:]
+    shell_app_name = derive_app_name(config)
+    shell_present = os.path.exists(
+        os.path.join(PROJECT_ROOT, "apps", shell_app_name, shell_app_name)
+    ) or os.path.exists(os.path.join(PROJECT_ROOT, shell_app_name))
+    if scaffold_requested or not shell_present:
+        scaffold_shell(shell_app_name, explicit=scaffold_requested)
+
     app_name, target_app_path = find_target_app_dir(config)
 
     modules = config.get("modules", [])
@@ -937,6 +1349,11 @@ def main():
         merge_hooks(target_app_path, app_name, compiled_manifests)
         merge_commands(target_app_path, app_name, compiled_manifests)
         merge_dependencies(PROJECT_ROOT, compiled_manifests)
+
+    # Post-compose token lint: composed output must not carry unresolved
+    # {app_name}/{module_name} literals (warn; hard error under
+    # ROKCT_COMPOSE_STRICT=1).
+    lint_composed_tokens(COMPOSED_PATHS, PROJECT_ROOT)
 
     print("\n[+] Frappe backend composition complete.")
 

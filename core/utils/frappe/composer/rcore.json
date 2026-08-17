@@ -1,0 +1,218 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Frappe App Shell for Rcore Core Platform",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main",
+      "_comment": "Added during composer schema migration: corporate/polaris/frappe's Loan and LoanTransfer doctypes have Link fields with options=\"Branch\", and Branch is only defined in this module (moved on disk to core/base/frappe from the retired core/core). Without composing it, polaris's doctype links would fail to resolve. manifest.json's own 'name' and its 137 hardcoded '{app_name}.core....' hook path segments were rewritten to 'base' in the same commit as this rename, so the module 'name' here and the manifest's identity now agree."
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "agent",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "polaris",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/polaris/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "pay",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "productivity",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "weather",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/weather/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "lms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/lms/frappe",
+      "ref": "main",
+      "_comment": "Supacharge's home SDK (LMS domain: lessons, schedule, partner links). Moved here from paas/composer.json (2026-07-24) so lms is always present for every tenant via rcore, same as brain, gated by a subscription flag instead of by paas-plan eligibility — a tenant on a non-paas plan no longer loses lms access."
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "delivery",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/delivery/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "map",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/map/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "zones",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/zones/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "hardware",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hardware/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "booking",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/booking/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "kitchen",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "loyalty",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/loyalty/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "merchants",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "orders",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/orders/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "products",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "promotions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/promotions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "dev",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/dev/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "crm",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/frappe",
+      "ref": "main",
+      "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    }
+  ]
+}
