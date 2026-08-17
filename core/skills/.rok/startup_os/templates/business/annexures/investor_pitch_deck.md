@@ -9,7 +9,7 @@
 ---
 
 ## Slide 1 — {{company_name}}
-_A strong title slide is one sentence a stranger repeats correctly afterwards: who you serve and what changes for them._
+*A strong title slide is one sentence a stranger repeats correctly afterwards: who you serve and what changes for them.*
 
 {{#if brand_positioning}}
 {{brand_positioning}}
@@ -24,7 +24,7 @@ _A strong title slide is one sentence a stranger repeats correctly afterwards: w
 ---
 
 ## Slide 2 — The Problem
-_A strong problem slide names who has the pain and prices it in money or hours — not "X is broken", but what it costs this customer today._
+*A strong problem slide names who has the pain and prices it in money or hours — not "X is broken", but what it costs this customer today.*
 
 {{#if problem_statement}}
 {{problem_statement}}
@@ -35,7 +35,7 @@ _A strong problem slide names who has the pain and prices it in money or hours �
 ---
 
 ## Slide 3 — The Solution
-_A strong solution slide shows the before/after for one customer, not a feature list — the demo screenshot beats the architecture diagram._
+*A strong solution slide shows the before/after for one customer, not a feature list — the demo screenshot beats the architecture diagram.*
 
 {{#if core_value_proposition}}
 {{core_value_proposition}}
@@ -48,7 +48,7 @@ _A strong solution slide shows the before/after for one customer, not a feature 
 ---
 
 ## Slide 4 — Market
-_A strong market slide shows a sourced funnel and defends the SOM — investors fund the obtainable slice, not the category headline._
+*A strong market slide shows a sourced funnel and defends the SOM — investors fund the obtainable slice, not the category headline.*
 
 {{#if market_funnel_table}}
 {{market_funnel_table}}
@@ -73,7 +73,7 @@ _A strong market slide shows a sourced funnel and defends the SOM — investors 
 ---
 
 ## Slide 5 — Business Model
-_A strong model slide states who pays, how much, how often — one line per stream, with the price on the line._
+*A strong model slide states who pays, how much, how often — one line per stream, with the price on the line.*
 
 {{#if revenue_streams}}
 {{revenue_streams}}
@@ -88,7 +88,7 @@ _A strong model slide states who pays, how much, how often — one line per stre
 ---
 
 ## Slide 6 — Traction
-_A strong traction slide is a rising number over time — revenue, customers or usage — with the one metric you steer by._
+*A strong traction slide is a rising number over time — revenue, customers or usage — with the one metric you steer by.*
 
 {{#if achievements_to_date}}
 {{achievements_to_date}}
@@ -103,7 +103,7 @@ _A strong traction slide is a rising number over time — revenue, customers or 
 ---
 
 ## Slide 7 — Competition
-_A strong competition slide names real alternatives (including "do nothing") and states the one axis where you win — never an empty quadrant._
+*A strong competition slide names real alternatives (including "do nothing") and states the one axis where you win — never an empty quadrant.*
 
 {{#if competitor_table}}
 {{competitor_table}}
@@ -126,7 +126,7 @@ _A strong competition slide names real alternatives (including "do nothing") and
 ---
 
 ## Slide 8 — Go To Market
-_A strong GTM slide names the channel that already works, its acquisition cost, and what each new unit of spend buys._
+*A strong GTM slide names the channel that already works, its acquisition cost, and what each new unit of spend buys.*
 
 {{#if acquisition_channels}}
 {{acquisition_channels}}
@@ -137,7 +137,7 @@ _A strong GTM slide names the channel that already works, its acquisition cost, 
 ---
 
 ## Slide 9 — Financials
-_A strong financials slide fits on one screen: three years of revenue, the unit economics that make growth affordable, and the runway the raise buys._
+*A strong financials slide fits on one screen: three years of revenue, the unit economics that make growth affordable, and the runway the raise buys.*
 
 {{currency_note}}
 
@@ -160,7 +160,7 @@ _A strong financials slide fits on one screen: three years of revenue, the unit 
 ---
 
 ## Slide 10 — Team
-_A strong team slide answers "why these people win this market" — one proof point per person beats a wall of logos._
+*A strong team slide answers "why these people win this market" — one proof point per person beats a wall of logos.*
 
 {{#if executive_team}}
 {{executive_team}}
@@ -179,7 +179,7 @@ _A strong team slide answers "why these people win this market" — one proof po
 ---
 
 ## Slide 11 — The Ask
-_A strong ask slide states the amount, the runway it buys, and the two or three milestones it reaches — investors fund milestones, not months._
+*A strong ask slide states the amount, the runway it buys, and the two or three milestones it reaches — investors fund milestones, not months.*
 
 {{#if funding_requirement}}
 {{funding_requirement}}
@@ -195,7 +195,7 @@ _A strong ask slide states the amount, the runway it buys, and the two or three 
 ---
 
 ## Slide 12 — Corporate Standing
-_A strong closing slide preempts due diligence: registration, tax standing and IP in one glance, each claim document-backed._
+*A strong closing slide preempts due diligence: registration, tax standing and IP in one glance, each claim document-backed.*
 
 {{#if_feature company_registry}}
 *   **{{company_name_status}}**: {{company_name}}
