@@ -1,0 +1,35 @@
+name: StartupOS Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-startup-os-tests
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "core/utils/startup_os/**"
+      - "core/skills/.rok/startup_os/**"
+      - ".github/workflows/startup-os-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "core/utils/startup_os/**"
+      - "core/skills/.rok/startup_os/**"
+      - ".github/workflows/startup-os-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run the StartupOS test suite
+        run: python -m pytest core/utils/startup_os/tests -q
+      - name: Lint schema/template drift
+        # The skill directory doubles as a workspace root: its templates/
+        # subfolder is exactly what a compiled workspace uses.
+        run: python core/utils/startup_os/main.py lint --root core/skills/.rok/startup_os

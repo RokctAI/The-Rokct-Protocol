@@ -37,7 +37,7 @@ core/skills/.rok/startup_os/          # this skill — deployed to <repo>/.rokct
 │   ├── provision.py                  # create a profile
 │   ├── log_milestone.py              # append to the living ledger
 │   └── seed_cv_ledger.py             # extract milestones from a CV PDF
-├── templates/business/               # 4 templates
+├── templates/business/               # 27 templates (19 documents + 8 annexures)
 └── templates/life/                   # 9 templates
 
 core/utils/startup_os/                # the engine — stays in the protocol repo
@@ -90,8 +90,9 @@ python scripts/seed_cv_ledger.py --type life --name Amara --pdf ./cv.pdf
 
 `seed_cv_ledger.py` prints what it extracted and writes nothing until `--apply`.
 
-The engine also has a standalone CLI with `compile`, `provision`, `milestone`,
-`answer`, `check`, `lint`, `list` and `jurisdictions` subcommands:
+The engine also has a standalone CLI with `compile`, `render`, `provision`,
+`milestone`, `answer`, `check`, `polish`, `draft`, `lint`, `list` and
+`jurisdictions` subcommands:
 
 ```bash
 python core/utils/startup_os/main.py check --type business --name AcmeClinic
@@ -106,6 +107,57 @@ python core/utils/startup_os/main.py lint
 
 `lint` reports drift between the question schema and the templates — a template
 needing a field nothing collects, or a question nothing uses.
+
+```bash
+python core/utils/startup_os/main.py polish --type business --name AcmeClinic
+```
+
+```bash
+python core/utils/startup_os/main.py render --type business --name AcmeClinic
+```
+
+`render` derives two binary artifacts from the same parsed answers and computed
+figures that fill the markdown: `output/investor_pitch_deck.pptx` (a 12-slide
+16:9 deck mirroring the pitch-deck annexure, coaching lines included where
+answers are missing) and `output/financial_model.xlsx` (Assumptions,
+Projections and Unit Economics sheets with *live formulas* over the parsed
+inputs, each carrying the compiler-computed value as its cached result).
+Both are generated stdlib-only, deterministically — same `questions.md` in,
+byte-identical files out. The markdown stays canonical:
+`compile --render` regenerates them alongside the documents, and a plain
+`compile` prunes them as stale rather than leaving binaries that no longer
+match the suite.
+
+`polish` is opt-in AI rephrasing of compiled prose via the Groq API (requires
+`GROQ_API_KEY`; without it the command is a no-op). Every numeric token is
+replaced with an opaque placeholder before any text leaves the machine — the
+transmitted text contains *zero digits* — and tables, financials, compliance
+sections and evidence are never sent at all. Responses are verified
+deterministically and reverted on any mismatch, so no number can change.
+
+```bash
+python core/utils/startup_os/main.py draft --type business --name AcmeClinic
+```
+
+`draft` extends the same firewall from rephrasing to drafting: it writes a
+first draft of four specific narrative slots (executive-summary opening,
+competitive narrative, pitch-deck Problem and Solution prose) from the
+founder's own masked answers, each under a hard word budget (150/120/60/60
+words). A response over budget is rejected outright — the document keeps the
+founder's text or coaching, nothing is truncated. Drafted sections are
+visibly labeled "AI-drafted from founder answers (verified numbers
+untouched)" and counted in the Document Control block. No `GROQ_API_KEY`
+means a clean no-op.
+
+Every compiled business document carries a **Depth** line in its Document
+Control block: documents compile at the deepest level the answers support —
+Level 1 *foundation*, Level 2 *investor-ready*, Level 3 *diligence-grade* —
+and the line names the exact unanswered questions that unlock the next
+level. Level 3 answers (competitor pricing, CAC by channel, sales cycle,
+retention cohorts, cap table, churn, funding history, hiring plan) unlock a
+named-competitor pricing table in the market analysis and channel-level CAC
+plus cohort/retention analysis in the financial model. No level ever renders
+from guessed data.
 
 ## Environment
 

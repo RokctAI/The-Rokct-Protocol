@@ -1,5 +1,5 @@
 {
-  "ref": "ef4e5122410c4c3fc9004abf204b2c6d13a7f48c",
+  "ref": "72136b1fb0faae70d6d520ddd827d35347ae662e",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -17,7 +17,7 @@
     "core/utils/agent_delegation/update_structure.py": "271f16ff662c34d4ac2c1a6fc2b1f476b0bd62bcef665e238ceda33c69dafa17",
     "core/utils/flutter/sdk_composer.py": "222b3853b1df0787c80fe55defba7288f30035e205204276579247f9633a01a3",
     "core/utils/flutter/sdk_installer_base.py": "3a16e624caa8b6d70f56ba55a178ec4b1f9658062f95e7835a62eafcfb838656",
-    "core/utils/frappe/compose_backend.py": "99bbb6920ed506faa7ac25aaafd6563eb2bc245bff3267d9604a39c5d464abdc",
+    "core/utils/frappe/compose_backend.py": "3407dbc8d13e6ce09c1075f5fdb615da6339f0d1e59e9787dfe400bc26e38375",
     "core/utils/opportunities/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
     "core/utils/opportunities/ci/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
     "core/utils/opportunities/eeip/discover_eeip.py": "cef800250a8ac174694948d7b4765879973b9cd7f7b84bd9a93232d7487b85b3",
@@ -43,18 +43,21 @@
     "core/utils/opportunities/tenders/utils/tender_resolver.py": "4ec8d661ca08d2def7749a8399c665238796790d511fab61d366c35fe973a827",
     "core/utils/startup_os/__init__.py": "8a6c7a78284e4be34abef93804fd62842f01b4e36bf585370bd40b166f259da4",
     "core/utils/startup_os/agent_bridge.py": "5147f6f2c5872b32d6e34f0826e4719405c01b9acb1d6be9d90eb061b13e2f36",
-    "core/utils/startup_os/compiler.py": "e5687b22204f69e41081ce66bb835a6b974b2896f3ce462e9a6a2e1cfca05075",
+    "core/utils/startup_os/compiler.py": "9c16b959163286357f6cfbd04faec8e2fa80537f79b624b09daf117948bfd98d",
     "core/utils/startup_os/compliance.py": "0cbbdcf1a5365ee93869039a67f34343ad17184956f93491c83bdd6c5c16b346",
-    "core/utils/startup_os/documents.py": "d0a37dc6c1eff6b772fd3fcd0ded41b0f4ffe77cd2a1d4ea2812115f3eed05f4",
+    "core/utils/startup_os/documents.py": "0b21bda6d2e3631452ab940e43bcdb53ca11f77c2a7f1a15077d43f2cc743e0f",
     "core/utils/startup_os/errors.py": "d900b381168bf55fe2bc1d50c8577b03e9638a132708c2d55ba2cd25a3a2fe75",
     "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
     "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
     "core/utils/startup_os/paths.py": "f11f635bfa673545b6546d0d9f82cbc8287a10b80dc1fbffbe33a6d889923d03",
-    "core/utils/startup_os/safe_io.py": "935542b134324f709586e6746b3568717ff1b4f813b1e1f6396089ab2c2c4230",
-    "core/utils/startup_os/schemas.py": "8ba28628a2c4285e8d5529bfc407dcc64101a0d9d8c574a113a57dc8248d2d2f",
+    "core/utils/startup_os/polish.py": "7215a408b31e5b65f92752f8f2b950a901d5cf2f952b8a229e1748c0e02d859d",
+    "core/utils/startup_os/render_pptx.py": "f9603d3656e19cf72e1b4e7dd9556339c7b18312a97fb6c2d3901b408fc96b1d",
+    "core/utils/startup_os/render_xlsx.py": "e6163c52babefc7cc67ecb00c04199843ace38336d2acd432d812b639c5f9398",
+    "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
+    "core/utils/startup_os/schemas.py": "321b3c24de20a2d8702d03c24ae1e1c7c31960b8e7057eb413d0bf7542df5b8b",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "cce70dde6952eff4ca7080d890d999980c4a9d060c09baea71a4da5b16d1c017",
-    "profiles/web/initiate.py": "954cb98922ab5427be662fbfebbc7ee8173c3575213a5b18d402f41c086c84ce",
+    "profiles/local/initiate.py": "42c6c0d4946b7db83d9691feecd28e5b1dffb122a5573e91566df2a493f75e54",
+    "profiles/web/initiate.py": "0eada591f3f3e5fb1913e517b7fd5e28f4a5576f90210730220024228d922624",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
