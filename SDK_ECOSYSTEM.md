@@ -28,8 +28,9 @@ guides are:
 |---|---|
 | Dart SDK authoring (DDD layout, ADR-005 imports, offline doctrine) | `SDK_README.md` at the root of the `agent` repo |
 | Next.js SDKs (manifest schema, installer, `install.py`) | `core/utils/nextjs/README.md` (this repo) |
-| Frappe backend SDKs (manifest, hooks, `{app_name}` token) | `core/utils/frappe/frappe_sdk_management.md` (this repo) |
-| Composer app-manifest templates | `core/utils/flutter/composer/README.md` (this repo) |
+| Frappe backend SDKs (manifest, hooks, `{app_name}`/`{module_name}` tokens) | `core/utils/frappe/frappe_sdk_management.md` (this repo) |
+| Composer app-manifest templates (flutter) | `core/utils/flutter/composer/README.md` (this repo) |
+| Composer app-manifest templates (frappe) + shell scaffold | `core/utils/frappe/composer/README.md` and `core/utils/frappe/templates/shell/README.md` (this repo) |
 | Full de facto Dart manifest schema | docstrings in `core/utils/flutter/sdk_installer_base.py` (this repo) — each `update_*()` function documents one manifest key, including entry shapes and conflict semantics |
 | Lockfile / pinning procedure | `tools/README.md` (this repo) |
 
@@ -218,7 +219,8 @@ shells, so a literal prefix breaks every shell but one.
 
 - **Cross-module imports use the `{app_name}` token**, which
   `compose_backend.py` substitutes at compose time in `.py`, `.js`, `.html`,
-  and `.json` files (`.dart` files are NOT substituted):
+  and `.json` files — in both the `src/` tree AND the `doctype/` tree
+  (`.dart` files are NOT substituted):
 
   ```python
   # <sdk>/frappe/src/api/orders.py
@@ -226,6 +228,14 @@ shells, so a literal prefix breaks every shell but one.
   from .helpers import normalize_order                # same-module: relative
   ```
 
+- **`{module_name}` is the second (and only other) token** — it resolves to
+  the SDK module's manifest `"name"`. Use it for the `"module"` key in
+  DocType JSONs (module-root primaries are force-rewritten to the manifest
+  name anyway; src-nested `src/**/doctype/` JSONs are pinned too). Only these
+  two exact literals are substituted; generic `{...}` braces (format strings,
+  Jinja) are left alone, and a post-compose lint warns on any literal token
+  remaining in composed output (`ROKCT_COMPOSE_STRICT=1` makes it a hard
+  error).
 - **Same-module internals use relative imports** — they survive composition
   unchanged and need no token.
 - A `{app_name}` inside an import statement means the raw file is a compose
@@ -356,8 +366,11 @@ This repo's runtime-fetched-and-executed files are pinned. See
    it in `installs`; installed files import as `package:${package}/<to-path>`,
    SDK-internal files as `package:<sdk_name>/src/<path>`.
 8. If there is a backend, write `<sdk>/frappe/manifest.json` per
-   `core/utils/frappe/frappe_sdk_management.md` (use the `{app_name}` token;
-   keep testable logic in frappe-free pure Python modules).
+   `core/utils/frappe/frappe_sdk_management.md` (use the `{app_name}` and
+   `{module_name}` tokens; keep testable logic in frappe-free pure Python
+   modules). Add the module to the frappe composer template of every backend
+   shell that should compose it (`core/utils/frappe/composer/<shell>.json`,
+   mirrored to the shell repo's committed `composer.json`).
 9. If the SDK depends on SDKs in another repo, add the entry to the repo's
    root `.relation` file.
 10. Add the SDK to the composer **template** of every app that should compose
