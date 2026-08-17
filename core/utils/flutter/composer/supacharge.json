@@ -33,7 +33,7 @@
       "git": "https://github.com/RokctAI/Users",
       "path": "../Users/auth/dart",
       "ref": "main",
-      "sha256": "721a64db369191db468221e4b66468cf7f9869c0884b9e79c322cbafcf06b237"
+      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea"
     },
     {
       "name": "corporate_sdk",
@@ -42,7 +42,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "fdba196fbe6828c10946d5a911c1d176e1f393cddbcaff310eb39b349e44fb6e",
+      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688",
       "_comment": "Policy/terms pages (auth's login footer links reach them via EmbeddedWidgets) - any composition that includes auth_sdk needs corporate_sdk."
     },
     {
@@ -52,7 +52,7 @@
       "git": "https://github.com/RokctAI/Users",
       "path": "../Users/users/dart",
       "ref": "main",
-      "sha256": "3016b9fe6695eb2ee469fe0b26692174e163456db87d9a44fef4a1576cd96c4f"
+      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d"
     },
     {
       "name": "products_sdk",
@@ -61,7 +61,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/dart",
       "ref": "main",
-      "sha256": "8e2c777cf02c81c2daf52479db99accb56836bed51cac867b5f6442a06d6cfa6",
+      "sha256": "5468d4030bb8e71b3e4745d983ec30a05134510043d4c0951912c3ee615c5983",
       "_comment": "Transitive dependency of users_sdk, not used directly by Supacharge features today."
     },
     {
@@ -71,7 +71,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/merchants/dart",
       "ref": "main",
-      "sha256": "05390338fabec20c1e4c6ad5789572e62f5cf9c377a38f789ee0be1594102d24",
+      "sha256": "7ea45bdbad67b97effc2239599ebd8d6584aca7bac14cd83e5e9117b0f0f62a1",
       "_comment": "Mutual dependency of products_sdk, not used directly by Supacharge features today."
     },
     {
@@ -81,7 +81,7 @@
       "git": "https://github.com/RokctAI/Users",
       "path": "../Users/onboarding/dart",
       "ref": "main",
-      "sha256": "92435e4f66c6769e6f2048d110b8cd40a33c59bdfa321ed47e4f858cba22c34d"
+      "sha256": "e77fd61baf825e906ac99ec5f296b5c58ce2082e905c9f7a357dde46e6dabe47"
     },
     {
       "name": "payments_sdk",
@@ -90,7 +90,7 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/payments/dart",
       "ref": "main",
-      "sha256": "e0df90eb220678501b5374f201e1a5bd0007266c501f5dbabdbc80ce96fa80b0"
+      "sha256": "537b6c25cf48c2c9c64c7ab3df30ea857f3ad22d11857b0b0819a39bd24e32cb"
     },
     {
       "name": "wallet_sdk",
@@ -99,7 +99,7 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/dart",
       "ref": "main",
-      "sha256": "1eb7978d82bac9e4d1497fc0eda410447caa36239d95d74e9fd916f2ec3b963f",
+      "sha256": "f41f54c24761af8e1bad01de5b8dc6c2d30bcc8a19a7cb0a2ad01d8a2901137f",
       "_comment": "Transitive dependency of payments_sdk, not used directly by Supacharge features today."
     },
     {
@@ -156,7 +156,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/productivity/dart",
       "ref": "main",
-      "sha256": "c4ffcd158dedbb994b72d50d8792ff7e86345db8e8d0542afeb58f161b687ef3"
+      "sha256": "b120b6aad382eec86713b2c46fdc2c29ddc90c6624d75d58a815e1a189347019"
     },
     {
       "name": "processing_sdk",
@@ -165,7 +165,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
       "ref": "main",
-      "sha256": "2e0868ac8402b4f9fb3e7bf4131337a570e45aff68f272d2db0fcf0bbc583f0e"
+      "sha256": "677d3dac3ce3c1f31b8cfdc23152eaab95599c0df620585bc20068bce29123d2"
     },
     {
       "name": "desktop_sdk",
@@ -174,7 +174,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/desktop/dart",
       "ref": "main",
-      "sha256": "230276c610b8cb49fea9f6c1be4f7a2db82197c0bc80d33d1e5288d31787b225",
+      "sha256": "188774abbcb8de7dee95dba1444f2c1913a37241826453a987b283646ba756de",
       "_comment": "Native desktop runner scaffolding for Windows builds. The SDK's app_type.supacharge block installs windows/ into the host with ${package}-parameterized naming (supacharge.exe, CMake project name, window title, exe metadata). Supacharge's repo already carries its own windows/ tree - the historical source of these templates - which the installer's host-file guard leaves untouched. The build_windows CI flag stays host-side in supacharge (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors manager.json/pos.json."
     }
   ],
