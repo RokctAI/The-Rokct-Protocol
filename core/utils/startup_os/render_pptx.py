@@ -40,6 +40,14 @@ Design constraints, in order:
     timestamps anywhere (the optional docProps parts, which carry creation
     times, are deliberately omitted) and fixed zip metadata. A recompile with
     unchanged answers produces an unchanged file, so diffs mean something.
+
+Branding: when the instance carries a `brand/` folder (see `core.branding`),
+the deck adopts the designer design system — background, title, body and
+accent colors mapped from the token roles, the first concrete family from
+the font whitelist, `logo.png` on the cover plus a small mark on content
+slides, and `images/` files as cover/per-slide backgrounds (behind a
+translucent scrim so text stays legible). Without a brand the deck renders
+exactly as before, byte for byte.
 """
 
 import io
@@ -93,6 +101,94 @@ ROW_H = 335280  # table row height
 # Coaching lines, mirroring the markdown template exactly where it has one.
 COACH_TRACTION = "No traction recorded. This is the slide investors read most carefully."
 COACH_COMPETITION = "No competitive analysis recorded."
+
+# Logo and background-image geometry.
+LOGO_COVER_H = 731520  # 0.8"
+LOGO_COVER_MAX_W = 2743200  # 3"
+LOGO_MARK_H = 274320  # 0.3"
+LOGO_MARK_MAX_W = 1828800  # 2"
+SCRIM_ALPHA = 60000  # 60% opaque wash over background images
+
+
+class DeckTheme:
+    """Resolved visual constants for one build — engine defaults or brand."""
+
+    def __init__(
+        self,
+        font=FONT,
+        title=COLOR_TITLE,
+        accent=COLOR_ACCENT,
+        body=COLOR_BODY,
+        muted=COLOR_MUTED,
+        band=COLOR_TABLE_BAND,
+        background=COLOR_WHITE,
+        on_accent=COLOR_WHITE,
+    ):
+        self.font = font
+        self.title = title
+        self.accent = accent
+        self.body = body
+        self.muted = muted
+        self.band = band
+        self.background = background
+        self.on_accent = on_accent
+
+
+DEFAULT_THEME = DeckTheme()
+
+
+def _contrast(luminance_a, luminance_b):
+    lighter, darker = max(luminance_a, luminance_b), min(luminance_a, luminance_b)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def theme_from_brand(brand):
+    """Map designer token roles onto the deck's slots.
+
+    surface -> background (first token) and table band (second), ink ->
+    titles, text -> body (first) and muted (second), accent (else primary)
+    -> bars, bullets and table headers. Text on accent fills honours an
+    explicit `accent-ink` token, else picks whichever of ink/background
+    contrasts better. A slot whose role no token carries keeps the engine
+    default — nothing is guessed from unlabeled colors.
+    """
+    if brand is None or brand.system is None:
+        return DEFAULT_THEME
+
+    system = brand.system
+
+    def hex_of(token, fallback):
+        return token.hex.lstrip("#").upper() if token is not None else fallback
+
+    surfaces = system.by_role("surface")
+    texts = system.by_role("text")
+    ink = system.first_hex("ink")
+    accent = system.first_hex("accent", "primary")
+
+    background = surfaces[0] if surfaces else None
+    band = surfaces[1] if len(surfaces) > 1 else background
+    title = ink
+    body = texts[0] if texts else ink
+    muted = texts[1] if len(texts) > 1 else body
+
+    on_accent = system.token("accent-ink") or system.token("on-accent")
+    if on_accent is None and accent is not None:
+        candidates = [token for token in (ink, background) if token is not None]
+        if candidates:
+            on_accent = max(
+                candidates, key=lambda token: _contrast(token.luminance(), accent.luminance())
+            )
+
+    return DeckTheme(
+        font=system.deck_font(FONT),
+        title=hex_of(title, COLOR_TITLE),
+        accent=hex_of(accent, COLOR_ACCENT),
+        body=hex_of(body, COLOR_BODY),
+        muted=hex_of(muted, COLOR_MUTED),
+        band=hex_of(band, COLOR_TABLE_BAND),
+        background=hex_of(background, COLOR_WHITE),
+        on_accent=hex_of(on_accent, COLOR_WHITE),
+    )
 
 
 # --------------------------------------------------------------------------
@@ -415,12 +511,13 @@ _XMLNS = (
 _XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
 
 
-def _run(text, size, bold=False, italic=False, color=COLOR_BODY):
+def _run(theme, text, size, bold=False, italic=False, color=None):
+    color = color or theme.body
     return (
         f'<a:r><a:rPr lang="en-US" sz="{size}" b="{1 if bold else 0}" '
         f'i="{1 if italic else 0}" dirty="0">'
         f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill>'
-        f'<a:latin typeface="{FONT}"/><a:cs typeface="{FONT}"/></a:rPr>'
+        f'<a:latin typeface="{theme.font}"/><a:cs typeface="{theme.font}"/></a:rPr>'
         f"<a:t>{escape(text)}</a:t></a:r>"
     )
 
@@ -444,41 +541,74 @@ def _textbox(shape_id, name, x, y, cx, cy, paragraphs, autofit=True):
     )
 
 
-def _accent_bar(shape_id, x, y, cx, cy):
+def _accent_bar(theme, shape_id, x, y, cx, cy):
     return (
         f'<p:sp><p:nvSpPr><p:cNvPr id="{shape_id}" name="Accent"/>'
         f"<p:cNvSpPr/><p:nvPr/></p:nvSpPr>"
         f'<p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
         f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
-        f'<a:solidFill><a:srgbClr val="{COLOR_ACCENT}"/></a:solidFill>'
+        f'<a:solidFill><a:srgbClr val="{theme.accent}"/></a:solidFill>'
         f"<a:ln><a:noFill/></a:ln></p:spPr>"
         f'<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>'
     )
 
 
-def _table_cell(text, bold=False, fill=None, color=COLOR_BODY):
+def _scrim(theme, shape_id):
+    """Translucent wash between a background image and the slide's text."""
+    return (
+        f'<p:sp><p:nvSpPr><p:cNvPr id="{shape_id}" name="Scrim"/>'
+        f"<p:cNvSpPr/><p:nvPr/></p:nvSpPr>"
+        f'<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{SLIDE_W}" cy="{SLIDE_H}"/></a:xfrm>'
+        f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+        f'<a:solidFill><a:srgbClr val="{theme.background}">'
+        f'<a:alpha val="{SCRIM_ALPHA}"/></a:srgbClr></a:solidFill>'
+        f"<a:ln><a:noFill/></a:ln></p:spPr>"
+        f'<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>'
+    )
+
+
+def _picture(shape_id, name, rid, x, y, cx, cy):
+    return (
+        f'<p:pic><p:nvPicPr><p:cNvPr id="{shape_id}" name="{escape(name)}"/>'
+        f"<p:cNvPicPr/><p:nvPr/></p:nvPicPr>"
+        f'<p:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+        f'<p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+        f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'
+    )
+
+
+def _fit(image, height, max_width):
+    """EMU box for `image` at `height`, aspect preserved, width capped."""
+    width = int(round(height * image.width / image.height))
+    if width > max_width:
+        height = int(round(height * max_width / width))
+        width = max_width
+    return width, height
+
+
+def _table_cell(theme, text, bold=False, fill=None, color=None):
     fill_xml = f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill>' if fill else ""
     return (
         "<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>"
-        + _para(_run(text, SZ_TABLE, bold=bold, color=color), space_after=0)
+        + _para(_run(theme, text, SZ_TABLE, bold=bold, color=color), space_after=0)
         + "</a:txBody>"
         f'<a:tcPr marL="91440" marR="91440" marT="45720" marB="45720">{fill_xml}</a:tcPr></a:tc>'
     )
 
 
-def _table_frame(shape_id, x, y, cx, headers, rows):
+def _table_frame(theme, shape_id, x, y, cx, headers, rows):
     columns = len(headers)
     width = cx // columns
     grid = "".join(f'<a:gridCol w="{width}"/>' for _ in range(columns))
 
     header_cells = "".join(
-        _table_cell(text, bold=True, fill=COLOR_ACCENT, color=COLOR_WHITE)
+        _table_cell(theme, text, bold=True, fill=theme.accent, color=theme.on_accent)
         for text in headers
     )
     body = ""
     for index, row in enumerate(rows):
-        fill = COLOR_TABLE_BAND if index % 2 else None
-        cells = "".join(_table_cell(str(cell), fill=fill) for cell in row)
+        fill = theme.band if index % 2 else None
+        cells = "".join(_table_cell(theme, str(cell), fill=fill) for cell in row)
         body += f'<a:tr h="{ROW_H}">{cells}</a:tr>'
 
     return (
@@ -492,26 +622,42 @@ def _table_frame(shape_id, x, y, cx, headers, rows):
     )
 
 
-def _item_para(kind, text):
+def _item_para(theme, kind, text):
     if kind == "label":
-        return _para(_run(text, SZ_BODY, bold=True, color=COLOR_TITLE), space_after=200)
+        return _para(_run(theme, text, SZ_BODY, bold=True, color=theme.title), space_after=200)
     if kind == "coach":
-        return _para(_run(text, SZ_BODY, italic=True, color=COLOR_MUTED))
+        return _para(_run(theme, text, SZ_BODY, italic=True, color=theme.muted))
     if kind == "bullet":
         return _para(
-            _run("•  ", SZ_BODY, color=COLOR_ACCENT) + _run(text, SZ_BODY)
+            _run(theme, "•  ", SZ_BODY, color=theme.accent) + _run(theme, text, SZ_BODY)
         )
-    return _para(_run(text, SZ_BODY))
+    return _para(_run(theme, text, SZ_BODY))
 
 
-def _slide_xml(slide, number, company):
-    """One slide part. Shape ids restart per slide; ids only need part-local uniqueness."""
+def _slide_xml(theme, slide, number, company, background_rid=None, logo=None):
+    """One slide part. Shape ids restart per slide; ids only need part-local uniqueness.
+
+    `background_rid` is the relationship id of a brand background image for
+    this slide; `logo` is `(rid, BrandImage)` for the brand logo. Both None
+    without a brand, and the emitted XML is then exactly the pre-brand XML.
+    """
     shapes = []
     shape_id = 2
     content_w = SLIDE_W - 2 * MARGIN
 
+    if background_rid is not None:
+        shapes.append(_scrim(theme, shape_id))
+        shape_id += 1
+
     if slide.cover:
-        shapes.append(_accent_bar(shape_id, MARGIN, 2065020, BAR_W, BAR_H))
+        if logo is not None:
+            rid, image = logo
+            width, height = _fit(image, LOGO_COVER_H, LOGO_COVER_MAX_W)
+            shapes.append(
+                _picture(shape_id, "Logo", rid, MARGIN, 1005840, width, height)
+            )
+            shape_id += 1
+        shapes.append(_accent_bar(theme, shape_id, MARGIN, 2065020, BAR_W, BAR_H))
         shape_id += 1
         shapes.append(
             _textbox(
@@ -521,7 +667,7 @@ def _slide_xml(slide, number, company):
                 2286000,
                 content_w,
                 1143000,
-                _para(_run(slide.title, SZ_COVER_TITLE, bold=True, color=COLOR_TITLE)),
+                _para(_run(theme, slide.title, SZ_COVER_TITLE, bold=True, color=theme.title)),
                 autofit=False,
             )
         )
@@ -529,14 +675,29 @@ def _slide_xml(slide, number, company):
         paragraphs = ""
         for kind, text in slide.items:
             size = SZ_COVER_SUB if kind == "para" else SZ_BODY
-            color = COLOR_MUTED if kind == "coach" else COLOR_BODY
-            paragraphs += _para(_run(text, size, color=color))
+            color = theme.muted if kind == "coach" else theme.body
+            paragraphs += _para(_run(theme, text, size, color=color))
         if paragraphs:
             shapes.append(
                 _textbox(shape_id, "Subtitle", MARGIN, 3581400, content_w, 1600200, paragraphs)
             )
             shape_id += 1
     else:
+        if logo is not None:
+            rid, image = logo
+            width, height = _fit(image, LOGO_MARK_H, LOGO_MARK_MAX_W)
+            shapes.append(
+                _picture(
+                    shape_id,
+                    "Logo",
+                    rid,
+                    SLIDE_W - MARGIN - width,
+                    457200,
+                    width,
+                    height,
+                )
+            )
+            shape_id += 1
         shapes.append(
             _textbox(
                 shape_id,
@@ -545,25 +706,27 @@ def _slide_xml(slide, number, company):
                 TITLE_Y,
                 content_w,
                 TITLE_H,
-                _para(_run(slide.title, SZ_TITLE, bold=True, color=COLOR_TITLE)),
+                _para(_run(theme, slide.title, SZ_TITLE, bold=True, color=theme.title)),
                 autofit=False,
             )
         )
         shape_id += 1
-        shapes.append(_accent_bar(shape_id, MARGIN, BAR_Y, BAR_W, BAR_H))
+        shapes.append(_accent_bar(theme, shape_id, MARGIN, BAR_Y, BAR_W, BAR_H))
         shape_id += 1
 
         body_y = BODY_Y
         body_h = BODY_H
         if slide.table:
             headers, rows = slide.table
-            shapes.append(_table_frame(shape_id, MARGIN, body_y, content_w, headers, rows))
+            shapes.append(
+                _table_frame(theme, shape_id, MARGIN, body_y, content_w, headers, rows)
+            )
             shape_id += 1
             used = ROW_H * (len(rows) + 1) + 182880
             body_y += used
             body_h -= used
 
-        paragraphs = "".join(_item_para(kind, text) for kind, text in slide.items)
+        paragraphs = "".join(_item_para(theme, kind, text) for kind, text in slide.items)
         if paragraphs:
             shapes.append(_textbox(shape_id, "Body", MARGIN, body_y, content_w, body_h, paragraphs))
             shape_id += 1
@@ -577,16 +740,30 @@ def _slide_xml(slide, number, company):
             content_w,
             274320,
             _para(
-                _run(f"{company}  ·  {number} / {SLIDE_COUNT}", SZ_FOOTER, color=COLOR_MUTED),
+                _run(
+                    theme,
+                    f"{company}  ·  {number} / {SLIDE_COUNT}",
+                    SZ_FOOTER,
+                    color=theme.muted,
+                ),
                 align="r",
                 space_after=0,
             ),
         )
     )
 
+    background = ""
+    if background_rid is not None:
+        background = (
+            "<p:bg><p:bgPr><a:blipFill>"
+            f'<a:blip r:embed="{background_rid}"/>'
+            "<a:stretch><a:fillRect/></a:stretch></a:blipFill>"
+            "<a:effectLst/></p:bgPr></p:bg>"
+        )
+
     return (
         _XML_DECL
-        + f"<p:sld {_XMLNS}><p:cSld><p:spTree>"
+        + f"<p:sld {_XMLNS}><p:cSld>{background}<p:spTree>"
         + '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
         + '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/>'
         + '<a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
@@ -600,18 +777,23 @@ def _slide_xml(slide, number, company):
 # --------------------------------------------------------------------------
 
 
-def _content_types():
+def _content_types(media_extensions=()):
     overrides = "".join(
         f'<Override PartName="/ppt/slides/slide{n}.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>'
         for n in range(1, SLIDE_COUNT + 1)
+    )
+    media_defaults = "".join(
+        f'<Default Extension="{ext}" ContentType="image/{ext}"/>'
+        for ext in sorted(media_extensions)
     )
     return (
         _XML_DECL
         + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         '<Default Extension="xml" ContentType="application/xml"/>'
-        '<Override PartName="/ppt/presentation.xml" '
+        + media_defaults
+        + '<Override PartName="/ppt/presentation.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>'
         '<Override PartName="/ppt/slideMasters/slideMaster1.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>'
@@ -664,12 +846,12 @@ _EMPTY_SPTREE = (
 )
 
 
-def _slide_master_xml():
+def _slide_master_xml(theme):
     return (
         _XML_DECL
         + f"<p:sldMaster {_XMLNS}>"
         "<p:cSld>"
-        '<p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>'
+        f'<p:bg><p:bgPr><a:solidFill><a:srgbClr val="{theme.background}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>'
         + _EMPTY_SPTREE
         + "</p:cSld>"
         '<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" '
@@ -690,7 +872,7 @@ def _slide_layout_xml():
     )
 
 
-def _theme_xml():
+def _theme_xml(theme):
     """Minimal but complete theme: PowerPoint requires clr/font/fmt schemes."""
     fills = (
         '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
@@ -708,16 +890,16 @@ def _theme_xml():
         + '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="StartupOS">'
         "<a:themeElements>"
         '<a:clrScheme name="StartupOS">'
-        '<a:dk1><a:srgbClr val="10243E"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>'
-        '<a:dk2><a:srgbClr val="333F4D"/></a:dk2><a:lt2><a:srgbClr val="EDF2F8"/></a:lt2>'
-        '<a:accent1><a:srgbClr val="1F4E79"/></a:accent1><a:accent2><a:srgbClr val="2E86AB"/></a:accent2>'
+        f'<a:dk1><a:srgbClr val="{theme.title}"/></a:dk1><a:lt1><a:srgbClr val="{theme.background}"/></a:lt1>'
+        f'<a:dk2><a:srgbClr val="{theme.body}"/></a:dk2><a:lt2><a:srgbClr val="{theme.band}"/></a:lt2>'
+        f'<a:accent1><a:srgbClr val="{theme.accent}"/></a:accent1><a:accent2><a:srgbClr val="2E86AB"/></a:accent2>'
         '<a:accent3><a:srgbClr val="6E7B8A"/></a:accent3><a:accent4><a:srgbClr val="B0C4DE"/></a:accent4>'
         '<a:accent5><a:srgbClr val="4472C4"/></a:accent5><a:accent6><a:srgbClr val="264478"/></a:accent6>'
-        '<a:hlink><a:srgbClr val="1F4E79"/></a:hlink><a:folHlink><a:srgbClr val="6E7B8A"/></a:folHlink>'
+        f'<a:hlink><a:srgbClr val="{theme.accent}"/></a:hlink><a:folHlink><a:srgbClr val="{theme.muted}"/></a:folHlink>'
         "</a:clrScheme>"
         f'<a:fontScheme name="StartupOS">'
-        f'<a:majorFont><a:latin typeface="{FONT}"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont>'
-        f'<a:minorFont><a:latin typeface="{FONT}"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont>'
+        f'<a:majorFont><a:latin typeface="{theme.font}"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont>'
+        f'<a:minorFont><a:latin typeface="{theme.font}"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont>'
         "</a:fontScheme>"
         '<a:fmtScheme name="StartupOS">'
         f"<a:fillStyleLst>{fills}</a:fillStyleLst>"
@@ -747,14 +929,57 @@ def _write_part(archive, name, text):
     archive.writestr(info, text.encode("utf-8"))
 
 
+def _write_media(archive, name, blob):
+    info = zipfile.ZipInfo(name, date_time=_ZIP_DATE)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = 0o600 << 16
+    archive.writestr(info, blob)
+
+
+def _collect_media(brand):
+    """Deduplicated media parts plus per-slide usage, all deterministic.
+
+    Returns `(parts, backgrounds, logo_name)`: `parts` is an ordered list of
+    `(basename, bytes)` for `ppt/media/`, `backgrounds` maps slide number to
+    a basename, `logo_name` is the logo's basename or None. Order is fixed
+    (logo, cover, then slide numbers ascending) so rebuilds stay identical.
+    """
+    parts = []
+    seen = {}
+
+    def register(image):
+        if image.path not in seen:
+            basename = f"image{len(parts) + 1}.{image.ext}"
+            parts.append((basename, image.blob))
+            seen[image.path] = basename
+        return seen[image.path]
+
+    logo_name = None
+    backgrounds = {}
+    if brand is not None:
+        if brand.logo is not None:
+            logo_name = register(brand.logo)
+        if brand.cover_image is not None:
+            backgrounds[1] = register(brand.cover_image)
+        for number in sorted(brand.slide_images):
+            if 1 <= number <= SLIDE_COUNT:
+                backgrounds.setdefault(number, register(brand.slide_images[number]))
+    return parts, backgrounds, logo_name
+
+
 def build_pptx_bytes(data):
     """Assemble the full .pptx package in memory, deterministically."""
+    brand = getattr(data, "brand", None)
+    theme = theme_from_brand(brand)
     slides = build_slides(data)
     company = _plain(data.values.get("company_name") or data.trading_name)
 
+    media_parts, backgrounds, logo_name = _collect_media(brand)
+    media_extensions = {basename.rsplit(".", 1)[-1] for basename, _blob in media_parts}
+
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        _write_part(archive, "[Content_Types].xml", _content_types())
+        _write_part(archive, "[Content_Types].xml", _content_types(media_extensions))
         _write_part(
             archive,
             "_rels/.rels",
@@ -772,7 +997,9 @@ def build_pptx_bytes(data):
                 ]
             ),
         )
-        _write_part(archive, "ppt/slideMasters/slideMaster1.xml", _slide_master_xml())
+        _write_part(
+            archive, "ppt/slideMasters/slideMaster1.xml", _slide_master_xml(theme)
+        )
         _write_part(
             archive,
             "ppt/slideMasters/_rels/slideMaster1.xml.rels",
@@ -789,15 +1016,36 @@ def build_pptx_bytes(data):
             "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
             _rels([("rId1", "slideMaster", "../slideMasters/slideMaster1.xml")]),
         )
-        _write_part(archive, "ppt/theme/theme1.xml", _theme_xml())
+        _write_part(archive, "ppt/theme/theme1.xml", _theme_xml(theme))
+        for basename, blob in media_parts:
+            _write_media(archive, f"ppt/media/{basename}", blob)
         for number, slide in enumerate(slides, start=1):
+            rels = [("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml")]
+            background_rid = None
+            logo = None
+            if number in backgrounds:
+                background_rid = f"rId{len(rels) + 1}"
+                rels.append((background_rid, "image", f"../media/{backgrounds[number]}"))
+            if logo_name is not None:
+                logo_rid = f"rId{len(rels) + 1}"
+                rels.append((logo_rid, "image", f"../media/{logo_name}"))
+                logo = (logo_rid, brand.logo)
             _write_part(
-                archive, f"ppt/slides/slide{number}.xml", _slide_xml(slide, number, company)
+                archive,
+                f"ppt/slides/slide{number}.xml",
+                _slide_xml(
+                    theme,
+                    slide,
+                    number,
+                    company,
+                    background_rid=background_rid,
+                    logo=logo,
+                ),
             )
             _write_part(
                 archive,
                 f"ppt/slides/_rels/slide{number}.xml.rels",
-                _rels([("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml")]),
+                _rels(rels),
             )
 
     return buffer.getvalue()

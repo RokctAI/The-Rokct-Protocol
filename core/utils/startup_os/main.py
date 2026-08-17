@@ -250,6 +250,24 @@ def build_parser():
     render_parser.add_argument("--quiet", action="store_true")
     _add_common(render_parser)
 
+    briefs_parser = subparsers.add_parser(
+        "briefs",
+        help="Export machine-readable design briefs (poster, pull-up banner, "
+        "flyer) from the marketing answers to output/briefs/, in the schema "
+        "the designer engine's brief pipeline consumes",
+    )
+    briefs_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    briefs_parser.add_argument("--name", required=True, help="Instance folder name")
+    briefs_parser.add_argument(
+        "--compliance-root",
+        default=None,
+        help="Directory containing per-instance compliance folders",
+    )
+    briefs_parser.add_argument("--quiet", action="store_true")
+    _add_common(briefs_parser)
+
     list_parser = subparsers.add_parser("list", help="List profiles in the workspace")
     _add_common(list_parser)
 
@@ -299,6 +317,45 @@ def cmd_render(args):
     for warning in data.warnings:
         print(f"  [warn] {warning}")
     return 0
+
+
+def cmd_briefs(args):
+    # Imported lazily for the same reason as `render`: a skill install with a
+    # cached pre-briefs engine can still run every other command.
+    from core import branding as branding_mod
+    from core import compiler as compiler_mod
+
+    if args.type != "business":
+        print(
+            "[Skip] briefs derive from the marketing-plan answers; there is "
+            "nothing to export for a life profile.",
+            file=sys.stderr,
+        )
+        return 1
+
+    data = compiler_mod.load_instance_data(
+        instance_type=args.type,
+        instance_name=args.name,
+        workspace_root=args.root,
+        compliance_root=args.compliance_root,
+        quiet=args.quiet,
+    )
+    written, coaching = branding_mod.export_briefs(data)
+    if written:
+        print(
+            f"[StartupOS] {args.type}/{args.name} -> {len(written)} briefs "
+            f"in {data.out_dir}"
+        )
+        for name in written:
+            print(f"  Exported : {name}")
+    else:
+        print(
+            f"[StartupOS] {args.type}/{args.name} -> no briefs written; the "
+            "marketing answers below unlock them."
+        )
+    for note in coaching:
+        print(f"  [coach] {note}")
+    return 0 if written else 1
 
 
 def cmd_provision(args):
@@ -730,6 +787,7 @@ def cmd_jurisdictions(_args):
 _COMMANDS = {
     "compile": cmd_compile,
     "render": cmd_render,
+    "briefs": cmd_briefs,
     "provision": cmd_provision,
     "milestone": cmd_milestone,
     "answer": cmd_answer,

@@ -77,6 +77,7 @@ ENGINE_MODULES = (
     "compiler.py",
     "agent_bridge.py",
     "polish.py",
+    "branding.py",
     "render_pptx.py",
     "render_xlsx.py",
 )

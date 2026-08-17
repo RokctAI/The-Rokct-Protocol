@@ -61,6 +61,10 @@ copied from this directory, which the protocol installer refreshes on init.
 └── instances/{business,life}/<Name>/
     ├── questions.md          # the SSOT
     ├── compliance/           # optional: certificates for this instance
+    ├── brand/                # optional: designer design system + assets
+    │   ├── system.yaml       # from `designer palette` (system.json also accepted)
+    │   ├── logo.png          # raster logo (an svg-only logo is coached, not embedded)
+    │   └── images/           # cover.png / slide04.png ... deck backgrounds
     ├── .history/             # automatic snapshots before every write
     └── output/               # generated documents (regenerated, never edited)
 ```
@@ -90,9 +94,9 @@ python scripts/seed_cv_ledger.py --type life --name Amara --pdf ./cv.pdf
 
 `seed_cv_ledger.py` prints what it extracted and writes nothing until `--apply`.
 
-The engine also has a standalone CLI with `compile`, `render`, `provision`,
-`milestone`, `answer`, `check`, `polish`, `draft`, `lint`, `list` and
-`jurisdictions` subcommands:
+The engine also has a standalone CLI with `compile`, `render`, `briefs`,
+`provision`, `milestone`, `answer`, `check`, `polish`, `draft`, `lint`,
+`list` and `jurisdictions` subcommands:
 
 ```bash
 python core/utils/startup_os/main.py check --type business --name AcmeClinic
@@ -127,6 +131,42 @@ byte-identical files out. The markdown stays canonical:
 `compile --render` regenerates them alongside the documents, and a plain
 `compile` prunes them as stale rather than leaving binaries that no longer
 match the suite.
+
+The deck is *brand-aware*. Drop a `brand/` folder beside `questions.md`
+containing a designer design system — the file
+`designer palette "#1a56db" "#f59e0b" --name Acme -o system.yaml` writes
+(`system.json` is also accepted; a minimal stdlib parser reads exactly the
+YAML subset designer emits) — plus an optional raster `logo.png` and an
+`images/` folder. The deck then maps the token *roles* onto its slots
+(first `surface` token → background, second → table banding, `ink` →
+titles, `text` → body/muted, `accent` else `primary` → bars, bullets and
+table headers, with text-on-accent honouring an `accent-ink` token or a
+contrast pick), uses the first concrete family from the font whitelist,
+puts the logo on the cover and a small mark on content slides, and uses
+`images/cover.png` as the cover background and `images/slide04.png` (any
+`slide<NN>` name) as that slide's background, behind a translucent scrim.
+No `brand/` folder → the deck renders exactly as before and the compile
+output carries a coaching line with the `designer palette` command. A
+malformed `system.yaml`, logo or image is a *named error* — never a
+half-branded deck. An svg-only logo is coached (`.pptx` embedding is
+raster-only), not converted.
+
+```bash
+python core/utils/startup_os/main.py briefs --type business --name AcmeClinic
+```
+
+`briefs` exports machine-readable design briefs to `output/briefs/`
+(`poster.json`, `pullup-banner.json`, `flyer.json`), mirroring the expo
+brief schema of the RokctAI agent repo
+(`lms/team/marketing/expo/briefs/*.json`: `id`, `asset_type`,
+`dimensions_or_aspect`, `orientation`, `copy`, `visual_direction`,
+`brand_refs`) so the designer engine's brief pipeline can consume them,
+plus a `brand_system` reference pointing at the instance's
+`brand/system.yaml`. Copy is the founder's *verbatim* marketing answers
+(Brand Positioning, Core Value Proposition, Product Components, Pricing
+Tiers...); a brief whose required answers are missing is skipped with a
+coaching line naming the exact questions — never an empty brief — and
+`cta` is `null` for the owner to supply.
 
 `polish` is opt-in AI rephrasing of compiled prose via the Groq API (requires
 `GROQ_API_KEY`; without it the command is a no-op). Every numeric token is

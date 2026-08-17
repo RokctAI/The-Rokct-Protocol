@@ -579,6 +579,7 @@ class InstanceData:
         trading_name,
         values,
         warnings,
+        brand=None,
     ):
         self.instance_type = instance_type
         self.instance_name = instance_name
@@ -590,6 +591,7 @@ class InstanceData:
         self.trading_name = trading_name
         self.values = values
         self.warnings = warnings
+        self.brand = brand
 
 
 def load_instance_data(
@@ -629,6 +631,7 @@ def load_instance_data(
     trading_name = profile.get("trading_name") or _humanise(instance_name)
 
     record = None
+    brand = None
     if instance_type == "business":
         compliance_dir = resolve_compliance_dir(
             root, instance_type, instance_name, compliance_root, warnings
@@ -637,6 +640,17 @@ def load_instance_data(
             compliance_dir, trading_name, jurisdiction
         )
         warnings.extend(record.warnings)
+
+        # Optional designer brand assets. A missing brand/ folder is a
+        # coaching line in the compile output; a malformed system file or
+        # image raises immediately — never a half-branded deck.
+        from core import branding as branding_mod
+
+        brand = branding_mod.load_brand(
+            path_utils.instance_dir(root, instance_type, instance_name),
+            trading_name,
+            warnings,
+        )
 
     values = _build_values(
         profile,
@@ -659,6 +673,7 @@ def load_instance_data(
         trading_name=trading_name,
         values=values,
         warnings=warnings,
+        brand=brand,
     )
 
 
