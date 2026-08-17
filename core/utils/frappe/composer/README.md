@@ -1,7 +1,26 @@
 # Composer Templates (Frappe)
 
-The `.json` files in this folder (currently `rcore.json`) are **templates**, not active
+The `.json` files in this folder are **templates**, not active
 configuration — the frappe analog of `core/utils/flutter/composer/*.json`.
+
+## Per-product templates
+
+One template per docker product. **Every product composes an app named `rcore`**
+(all templates share `"name": "rcore_app"`); products differ only by module set.
+`rcore.json` remains the current full composition and stays authoritative until
+the image build switches to the per-product targets below.
+
+Common to all products: `base`, `auth`, `users`, `subscriptions`, `pay`,
+`telemetry`, `comms`, `wallet`. On top of that:
+
+| Template | Extra modules |
+| --- | --- |
+| `supacharge.json` | `lms`, `agent` |
+| `startupos.json` | `studio`, `productivity`, `agent` |
+| `telephony.json` | — (telephony module pending extraction from control) |
+| `rokctapp.json` | `crm` (erp SDK joins when the erpnext fork lands) |
+| `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
+| `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
 
 To build a given backend shell:
 
