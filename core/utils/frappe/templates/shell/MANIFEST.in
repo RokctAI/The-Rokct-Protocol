@@ -1,0 +1,10 @@
+include *.txt
+include *.md
+recursive-include {app_name} *.html
+recursive-include {app_name} *.txt
+recursive-include {app_name} *.js
+recursive-include {app_name} *.css
+recursive-include {app_name} *.png
+recursive-include {app_name} *.svg
+recursive-include {app_name} *.json
+recursive-include {app_name} *.md

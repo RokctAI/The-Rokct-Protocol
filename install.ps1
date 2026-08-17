@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # The initiate.py fetch is pinned to this commit and its SHA-256 is verified
 # before it is executed; a mismatch aborts the install.
-$ProtocolRef = "85618988fa868ab923648268aa4d36842efa8c04"
+$ProtocolRef = "19ec672d2b117f9108238392dd99a21780f3f3ef"
 $InitiateSha256Local = "62c1cf8db58ef5e819b85da26e3605c5b5743e2ca18abf4db5b46de1590ec911"
 $InitiateSha256Web = "96e9d68ce89dec8499fd5fbdd9b63f130ad5fb6d87a148b3359da46626583588"
 

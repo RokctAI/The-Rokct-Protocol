@@ -1,0 +1,13 @@
+[project]
+name = "{app_name}"
+version = "0.0.1"
+description = "Composed Frappe app shell for {app_name}"
+authors = [
+    { name = "RokctAI", email = "admin@rokct.ai"}
+]
+dependencies = []
+
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"

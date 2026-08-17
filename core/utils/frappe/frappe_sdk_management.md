@@ -29,6 +29,33 @@ SDKs/<sdk_name>/frappe/
 
 All path references in python code and hook values must be genericized using the **`{app_name}`** token placeholder. This enables the composer to dynamically resolve namespaces relative to the final target app shell.
 
+### Template tokens
+
+The composer recognizes exactly two tokens — only these literals are substituted (and
+linted after compose); generic `{...}` braces such as Python format strings or Jinja
+expressions are never touched:
+
+| Token | Resolves to | Use it for |
+|---|---|---|
+| `{app_name}` | the target shell's app package name (e.g. `rcore`) | cross-module imports, dotted hook/handler paths, API alias keys |
+| `{module_name}` | this SDK module's manifest `"name"` | the `"module"` key in DocType JSONs, module-scoped dotted paths |
+
+Both tokens are substituted in `.py`, `.js`, `.html`, and `.json` files in **both** the
+`src/` tree and the `doctype/` tree (doctype trees historically composed verbatim; they
+now get the same substitution pass, with tokenless files still copied byte-for-byte).
+Other extensions are always copied verbatim — don't put tokens in them.
+
+DocType placement and the `"module"` key:
+
+- **Module-root doctypes** (`doctype/<dt>/`) — the primary `<dt>.json`'s `"module"` key
+  is always rewritten to the manifest `"name"` regardless of what it says, so
+  `"module": "{module_name}"` is the self-documenting convention.
+- **Src-nested doctypes** (`src/**/doctype/<dt>/`) — the `{module_name}` token resolves
+  there too, and the composer additionally pins any src-nested primary JSON whose
+  `"module"` still disagrees with the manifest name. Duplicate DocType dirs across
+  modules are a hard error for module-root trees; collisions involving a src-nested
+  doctype are a loud warning (escalating under `ROKCT_COMPOSE_STRICT=1`).
+
 ### Template Structure:
 ```json
 {
@@ -129,11 +156,13 @@ When extraction/partitioning is required:
 
 The composer pipeline (`compose_backend.py`) is responsible for compiling SDK packages into the active app shell:
 1. **Modules Resolution**: Resolves target paths based on `composer.json`.
-2. **Inject Modules**: Registers all active SDKs as modules in `modules.txt`.
-3. **Copy Code & Assets**: Copies DocTypes and APIs into their modular subdirectories under the app package.
-4. **Compile Placeholders**: Replaces `{app_name}` tokens with the actual target app shell name.
-5. **Merge Hooks**: Aggregates all `whitelisted_methods`, `fixtures`, `doc_events`, and `auth_hooks` from all active manifests and appends them dynamically to the end of `hooks.py`.
-6. **Inject Dependencies**: Appends missing Python dependencies to the root `requirements.txt` and `pyproject.toml`.
+2. **Scaffold (when needed)**: If the target app package is missing entirely (a brand-new shell repo), or compose is invoked with `--scaffold`, lays down the tokenized shell skeleton (see §6). Strictly additive — existing files are never overwritten.
+3. **Inject Modules**: Registers all active SDKs as modules in `modules.txt`.
+4. **Copy Code & Assets**: Copies DocTypes and APIs into their modular subdirectories under the app package.
+5. **Compile Placeholders**: Replaces `{app_name}` and `{module_name}` tokens with the target app shell name and the module's manifest name, in `src/` AND `doctype/` trees (`.py`/`.js`/`.html`/`.json`), and pins src-nested DocType JSON `"module"` keys.
+6. **Merge Hooks**: Aggregates all `whitelisted_methods`, `fixtures`, `doc_events`, and `auth_hooks` from all active manifests and appends them dynamically to the end of `hooks.py`.
+7. **Inject Dependencies**: Appends missing Python dependencies to the root `requirements.txt` and `pyproject.toml`.
+8. **Token Lint**: Scans everything the run composed for leftover literal `{app_name}`/`{module_name}` tokens. A hit is a loud warning by default; `ROKCT_COMPOSE_STRICT=1` escalates it (and every other compose warning) to a hard, non-zero-exit error — same env-flag convention as the flutter installer.
 
 ### Endpoint alias registration (`override_whitelisted_methods`)
 
@@ -177,7 +206,35 @@ caveats, now fixed:
 
 ---
 
-## 5. Development & Clean Restores
+## 5. Composer Templates & Shell Scaffolding
+
+Two template surfaces mirror the flutter side:
+
+- **Per-shell composer manifests** — `core/utils/frappe/composer/*.json` (e.g.
+  `rcore.json`), the frappe analog of `core/utils/flutter/composer/*.json`. Templates,
+  not active configuration: copy the matching one to the shell repo root as
+  `composer.json` and run compose. They are the canonical record of each shell's
+  module graph — see `core/utils/frappe/composer/README.md`.
+- **Shell skeleton** — `core/utils/frappe/templates/shell/`, a tokenized frappe app
+  shell (hooks.py identity keys, minimal install.py, pyproject.toml/setup.py/
+  MANIFEST.in, modules.txt, patches.txt, app + in-shell module packages).
+  `compose_backend.py` lays it down automatically when the target app package is
+  missing, or on `--scaffold`; existing files are never overwritten. The composer
+  embeds these templates (it ships as a single pinned file), and
+  `core/utils/frappe/tests/test_compose_backend.py` keeps the embedded and on-disk
+  copies byte-identical — see `core/utils/frappe/templates/shell/README.md`.
+
+Scaffolding a brand-new shell end to end:
+
+```bash
+mkdir mynewshell && cd mynewshell && git init
+# copy core/utils/frappe/composer/<closest>.json here as composer.json, set "name"
+python3 .rokct/skills/.rok/frappe/scripts/compose.py   # scaffolds, then composes
+```
+
+---
+
+## 6. Development & Clean Restores
 
 To keep the development workspace clean and easy to evaluate, enforce post-restore cleanliness:
 1. **Restore Git State**:
