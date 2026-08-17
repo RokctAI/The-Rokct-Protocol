@@ -109,6 +109,12 @@ def build_parser():
         default=None,
         help="Deprecated alias: <root>/Compliance is used",
     )
+    compile_parser.add_argument(
+        "--render",
+        action="store_true",
+        help="Also regenerate the derived binary artifacts "
+        "(investor_pitch_deck.pptx, financial_model.xlsx)",
+    )
     compile_parser.add_argument("--quiet", action="store_true")
     _add_common(compile_parser)
 
@@ -195,6 +201,55 @@ def build_parser():
     expand_parser.add_argument("--name", required=True)
     _add_common(expand_parser)
 
+    polish_parser = subparsers.add_parser(
+        "polish",
+        help="Opt-in AI rephrasing of compiled prose; numbers never leave "
+        "the machine (requires $GROQ_API_KEY)",
+    )
+    polish_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    polish_parser.add_argument("--name", required=True, help="Instance folder name")
+    polish_parser.add_argument("--quiet", action="store_true")
+    _add_common(polish_parser)
+
+    draft_parser = subparsers.add_parser(
+        "draft",
+        help="Opt-in AI drafting of specific narrative slots, each under a "
+        "hard word budget; numbers never leave the machine (requires "
+        "$GROQ_API_KEY)",
+    )
+    draft_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    draft_parser.add_argument("--name", required=True, help="Instance folder name")
+    draft_parser.add_argument(
+        "--slot",
+        action="append",
+        default=None,
+        help="Draft only this slot (repeatable); default: every slot",
+    )
+    draft_parser.add_argument("--quiet", action="store_true")
+    _add_common(draft_parser)
+
+    render_parser = subparsers.add_parser(
+        "render",
+        help="Render the derived binary artifacts (.pptx investor deck, "
+        ".xlsx financial model) from questions.md. The markdown stays "
+        "canonical: a later compile without --render prunes them as stale.",
+    )
+    render_parser.add_argument(
+        "--type", choices=path_utils.INSTANCE_TYPES, required=True
+    )
+    render_parser.add_argument("--name", required=True, help="Instance folder name")
+    render_parser.add_argument(
+        "--compliance-root",
+        default=None,
+        help="Directory containing per-instance compliance folders",
+    )
+    render_parser.add_argument("--quiet", action="store_true")
+    _add_common(render_parser)
+
     list_parser = subparsers.add_parser("list", help="List profiles in the workspace")
     _add_common(list_parser)
 
@@ -211,8 +266,39 @@ def cmd_compile(args):
         workspace_root=args.root,
         compliance_root=args.compliance_root,
         quiet=args.quiet,
+        render=args.render,
     )
     return 0 if result.ok else 1
+
+
+def cmd_render(args):
+    # Imported lazily for the same reason as `polish`: a skill install with a
+    # cached pre-renderer engine can still run every other command.
+    from core import compiler as compiler_mod
+
+    if args.type != "business":
+        print(
+            "[Skip] render produces business artifacts (investor deck, "
+            "financial model); there is nothing to render for a life profile.",
+            file=sys.stderr,
+        )
+        return 1
+
+    data = compiler_mod.load_instance_data(
+        instance_type=args.type,
+        instance_name=args.name,
+        workspace_root=args.root,
+        compliance_root=args.compliance_root,
+        quiet=args.quiet,
+    )
+    written = compiler_mod.render_binary_artifacts(data, quiet=args.quiet)
+    print(
+        f"[StartupOS] {args.type}/{args.name} -> {len(written)} artifacts "
+        f"in {data.out_dir}"
+    )
+    for warning in data.warnings:
+        print(f"  [warn] {warning}")
+    return 0
 
 
 def cmd_provision(args):
@@ -315,6 +401,15 @@ def cmd_lint(args):
         "trademarks_details",
         "fin_summary",
         "fin_grid_rev",
+        "fin_projection_table",
+        "fin_unit_economics",
+        "fin_consistency",
+        "market_funnel_table",
+        "market_sizing_flags",
+        "competitor_table",
+        "competitor_pricing_table",
+        "fin_cac_by_channel_table",
+        "fin_cohort_analysis",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -358,6 +453,20 @@ def cmd_lint(args):
         "historical_turnover_2024",
         "historical_turnover_2025",
         "historical_turnover_2026_ytd",
+        # Unit-economics inputs: consumed by the financial computations in
+        # `compiler._add_computed_financials`, surfaced through the derived
+        # `fin_*` placeholders rather than referenced by name in a template.
+        "average_revenue_per_customer",
+        "customer_acquisition_cost",
+        "customer_churn_rate",
+        "customer_count_year_1",
+        "monthly_operating_costs",
+        "cash_on_hand",
+        # Diligence-tier inputs: consumed by `compiler._add_diligence_analysis`
+        # to build the Level 3 tables, not referenced by name in a template.
+        "competitor_pricing",
+        "cac_by_channel",
+        "retention_cohorts",
     }
 
     types_to_check = [args.type] if args.type else list(path_utils.INSTANCE_TYPES)
@@ -534,6 +643,62 @@ def cmd_expand(args):
     return 0
 
 
+def cmd_polish(args):
+    # Imported lazily: a skill install with a cached pre-polish engine can
+    # still run every other command; only `polish` needs the new module.
+    from core import polish as polish_mod
+
+    call_model = polish_mod.build_call_model_from_env()
+    if call_model is None:
+        print(
+            f"[Skip] ${polish_mod.API_KEY_ENV_VAR} is not set — the polish step "
+            "is a no-op and your documents are unchanged.\n"
+            "       Export a Groq API key to enable it. Numbers, tables and "
+            "evidence never leave this machine either way."
+        )
+        return 0
+
+    report = polish_mod.polish_instance(
+        instance_type=args.type,
+        instance_name=args.name,
+        call_model=call_model,
+        workspace_root=args.root,
+        quiet=args.quiet,
+    )
+    if args.quiet:
+        print(report.summary())
+    return 0
+
+
+def cmd_draft(args):
+    # Imported lazily for the same reason as `polish`.
+    from core import polish as polish_mod
+
+    call_model = polish_mod.build_draft_call_model_from_env()
+    if call_model is None:
+        print(
+            f"[Skip] ${polish_mod.API_KEY_ENV_VAR} is not set — the draft step "
+            "is a no-op and your documents are unchanged.\n"
+            "       Export a Groq API key to enable it. Founder answers are "
+            "number-masked before transmission, every draft is verified "
+            "against a hard word budget, and a rejected draft falls back to "
+            "your own text."
+        )
+        return 0
+
+    report = polish_mod.draft_instance(
+        instance_type=args.type,
+        instance_name=args.name,
+        call_model=call_model,
+        slots=args.slot,
+        workspace_root=args.root,
+        quiet=args.quiet,
+    )
+    if args.quiet:
+        print(report.summary())
+    return 0
+
+
 def cmd_list(args):
     root = path_utils.resolve_workspace_root(args.root, verbose=False)
     base = os.path.join(root, "instances")
@@ -564,10 +729,13 @@ def cmd_jurisdictions(_args):
 
 _COMMANDS = {
     "compile": cmd_compile,
+    "render": cmd_render,
     "provision": cmd_provision,
     "milestone": cmd_milestone,
     "answer": cmd_answer,
     "check": cmd_check,
+    "polish": cmd_polish,
+    "draft": cmd_draft,
     "lint": cmd_lint,
     "migrate": cmd_migrate,
     "expand": cmd_expand,

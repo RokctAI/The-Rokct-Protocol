@@ -20,8 +20,8 @@
 | **Industry** | {{industry}} |
 | **Target Sectors** | {{target_sectors}} |
 
-_No company-registry regime is configured for {{jurisdiction_name}}, so no
-registration details are asserted in this profile._
+*No company-registry regime is configured for {{jurisdiction_name}}, so no
+registration details are asserted in this profile.*
 
 {{/if_feature}}
 
@@ -69,7 +69,7 @@ compliance log before submitting this profile anywhere.
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Required field not yet answered — see **Core Value Proposition** in questions.md._
+*Required field not yet answered — see **Core Value Proposition** in questions.md.*
 {{/if}}
 
 {{#if primary_products}}
@@ -98,6 +98,9 @@ _Required field not yet answered — see **Core Value Proposition** in questions
 {{#if shareholder_distribution}}
 *   **Shareholding**: {{shareholder_distribution}}
 {{/if}}
+{{#if cap_table}}
+*   **Cap table**: {{cap_table}}
+{{/if}}
 *   **Headcount**: {{personnel_count}}
 {{#if key_person_dependencies}}
 *   **Key-person dependencies**: {{key_person_dependencies}}
@@ -110,9 +113,9 @@ _Required field not yet answered — see **Core Value Proposition** in questions
 {{#if achievements_to_date}}
 {{achievements_to_date}}
 {{else}}
-_No achievements recorded. Grants, pilots, awards and signed contracts belong
+*No achievements recorded. Grants, pilots, awards and signed contracts belong
 here — this is the section a funder reads first. Answer **Achievements To
-Date** in questions.md._
+Date** in questions.md.*
 {{/if}}
 
 {{#if funding_history}}

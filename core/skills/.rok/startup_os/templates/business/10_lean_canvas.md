@@ -4,26 +4,28 @@
 
 | Problem | Solution | Unique Value Proposition | Unfair Advantage | Customer Segments |
 | :--- | :--- | :--- | :--- | :--- |
-| {{#if key_operational_risks}}{{key_operational_risks}}{{else}}_Not yet defined_{{/if}} | {{primary_products}} | {{core_value_proposition}} | {{unfair_advantage}} | {{customer_segments}} |
+| {{#if problem_statement}}{{problem_statement}}{{else}}_Not yet defined — answer **Problem Statement**_{{/if}} | {{primary_products}} | {{core_value_proposition}} | {{unfair_advantage}} | {{customer_segments}} |
 
 | Key Metrics | Channels |
 | :--- | :--- |
-| Revenue, gross margin, customer acquisition cost, retention | {{growth_strategy}} |
+| Revenue, gross margin, customer acquisition cost, retention | {{#if sales_channels}}{{sales_channels}}{{else}}{{#if acquisition_channels}}{{acquisition_channels}}{{else}}{{growth_strategy}}{{/if}}{{/if}} |
 
 | Cost Structure | Revenue Streams |
 | :--- | :--- |
-| Personnel, suppliers, infrastructure, compliance | {{primary_products}} |
+| Personnel, suppliers, infrastructure, compliance | {{#if revenue_streams}}{{revenue_streams}}{{else}}{{primary_products}}{{/if}} |
 
 ---
 
 ## 2. Lean Block Breakdown
 
 ### A. The Problem
-{{#if key_operational_risks}}
-{{key_operational_risks}}
+{{#if problem_statement}}
+{{problem_statement}}
 {{else}}
-_The problem this venture solves has not been recorded. Answer
-**Key Operational Risks** and **Core Value Proposition** in questions.md._
+_The customer problem this venture solves has not been recorded. Answer
+**Problem Statement** in questions.md — who has the problem, and what it
+costs them today. (Internal operational risks belong in the risk register,
+not here.)_
 {{/if}}
 
 ### B. The Solution
@@ -66,10 +68,23 @@ _No defensible advantage recorded yet. Investors will ask — answer
 {{/if_feature}}
 
 ### E. Channels
-{{#if growth_strategy}}
-{{growth_strategy}}
+{{#if sales_channels}}
+{{sales_channels}}
 {{else}}
-_Customer acquisition loop not yet recorded._
+{{#if acquisition_channels}}
+{{acquisition_channels}}
+{{else}}
+{{#if growth_strategy}}
+No dedicated channel answer yet — showing the acquisition loop as a stand-in:
+{{growth_strategy}}
+
+_Answer **Sales Channels** in questions.md to state how the product reaches
+the customer._
+{{else}}
+_Path to the customer not yet recorded. Answer **Sales Channels** in
+questions.md._
+{{/if}}
+{{/if}}
 {{/if}}
 
 ### F. Customer Segments
