@@ -47,3 +47,11 @@ class TemplateError(StartupOSError):
 
 class QuestionNotFoundError(StartupOSError):
     """A question label could not be located in questions.md."""
+
+
+class BrandingError(StartupOSError):
+    """A brand/ asset (design system file, logo, image) is malformed.
+
+    Raised instead of rendering a half-branded deck: a deck that silently
+    dropped the brand would look deliberate to the investor reading it.
+    """

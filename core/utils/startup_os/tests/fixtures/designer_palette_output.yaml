@@ -1,0 +1,73 @@
+name: KarooFlow (fictional demo)
+color:
+  tokens:
+    primary:
+      hex: '#1f6f54'
+      role: primary
+    accent:
+      hex: '#e0a63c'
+      role: accent
+    ink:
+      hex: '#10241c'
+      role: ink
+    text:
+      hex: '#284036'
+      role: text
+    on-primary:
+      hex: '#f7fbf9'
+      role: text
+    surface:
+      hex: '#e9f3ee'
+      role: surface
+    paper:
+      hex: '#f7fbf9'
+      role: surface
+    neutral-800:
+      hex: '#2d3f37'
+      role: other
+    neutral-500:
+      hex: '#64776e'
+      role: other
+    neutral-300:
+      hex: '#9fb4aa'
+      role: other
+    neutral-100:
+      hex: '#d5ebe1'
+      role: other
+  max_colors: 11
+  snap_warning_distance: 0.18
+gradient:
+  allowed: true
+  max_stops: 4
+typography:
+  fonts:
+  - Inter
+  - sans-serif
+  scale:
+  - 12
+  - 14
+  - 16
+  - 20
+  - 24
+  - 32
+  - 48
+  - 64
+layout:
+  grid: 8.0
+  min_element_size: 4.0
+  alignment_tolerance: 2.0
+  role_aware_snapping: true
+stroke:
+  widths:
+  - 1
+  - 2
+  - 4
+  - 8
+print:
+  bleed: 35.4
+  min_stroke: 0.75
+  max_ink_coverage: 300
+accessibility:
+  min_contrast_text: 4.5
+  min_contrast_large_text: 3.0
+  large_text_size: 24.0

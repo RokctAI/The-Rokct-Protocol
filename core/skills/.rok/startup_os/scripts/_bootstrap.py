@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "feaaa79559b8c9396cb35723c701fe56cb81fab5"
+PROTOCOL_REF = "c98876d3c1c8b8d2dfdaf1ac057314f7d51c0940"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -77,6 +77,7 @@ ENGINE_MODULES = (
     "compiler.py",
     "agent_bridge.py",
     "polish.py",
+    "branding.py",
     "render_pptx.py",
     "render_xlsx.py",
 )
@@ -85,7 +86,7 @@ ENGINE_MODULES = (
 # repo-relative path. Pinned by tools/gen_protocol_lock.py.
 EXPECTED_SHA256 = {
     "core/utils/startup_os/__init__.py": "8a6c7a78284e4be34abef93804fd62842f01b4e36bf585370bd40b166f259da4",
-    "core/utils/startup_os/errors.py": "d900b381168bf55fe2bc1d50c8577b03e9638a132708c2d55ba2cd25a3a2fe75",
+    "core/utils/startup_os/errors.py": "f219052181385984a895ca13dec51fb2ac83b05c52abccbf6fd67c4b27f5fed6",
     "core/utils/startup_os/paths.py": "f11f635bfa673545b6546d0d9f82cbc8287a10b80dc1fbffbe33a6d889923d03",
     "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
     "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
@@ -94,10 +95,11 @@ EXPECTED_SHA256 = {
     "core/utils/startup_os/documents.py": "0b21bda6d2e3631452ab940e43bcdb53ca11f77c2a7f1a15077d43f2cc743e0f",
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "321b3c24de20a2d8702d03c24ae1e1c7c31960b8e7057eb413d0bf7542df5b8b",
-    "core/utils/startup_os/compiler.py": "9c16b959163286357f6cfbd04faec8e2fa80537f79b624b09daf117948bfd98d",
+    "core/utils/startup_os/compiler.py": "6798dc2fe03ef8944ea36e1aec625a0eacc09aae668f4bca48bf42b5f7402194",
     "core/utils/startup_os/agent_bridge.py": "5147f6f2c5872b32d6e34f0826e4719405c01b9acb1d6be9d90eb061b13e2f36",
     "core/utils/startup_os/polish.py": "7215a408b31e5b65f92752f8f2b950a901d5cf2f952b8a229e1748c0e02d859d",
-    "core/utils/startup_os/render_pptx.py": "f9603d3656e19cf72e1b4e7dd9556339c7b18312a97fb6c2d3901b408fc96b1d",
+    "core/utils/startup_os/branding.py": "03d14b05af4f5ef5a9ca63fbc89974a53adab862398022320495da4b039c91d1",
+    "core/utils/startup_os/render_pptx.py": "54cae11509f9a3e42062606f7e0cc64b2eb3f2b2e3aaa72af4e0dff85c8e1f21",
     "core/utils/startup_os/render_xlsx.py": "e6163c52babefc7cc67ecb00c04199843ace38336d2acd432d812b639c5f9398",
 }
 
