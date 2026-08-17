@@ -2,43 +2,51 @@
 
 ## 1. The Life Lean Grid Layout
 
-This personal development grid highlights key life bottlenecks, daily recovery habits, core purpose triggers, and high-impact life metrics:
+Each cell holds one concept, drawn from your own answers. An italic cell is a
+prompt, not a fact — answer its question in questions.md and it fills in.
 
 | **Core Bottlenecks** | **Key Interventions** | **High-Level Purpose** | **Unfair Advantages** | **Focus Areas** |
 | :--- | :--- | :--- | :--- | :--- |
-| • Chronic time dilution<br>• Sub-optimal sleep recovery<br>• Information clutter<br>• Transactional relationships | • Hard physical boundaries<br>• Rigid sleep/wake timing<br>• Deep-work blocks (3hrs)<br>• Quality-first social circles | • **Autonomy & Sowing**: Creating leverage while mentoring next-gen leaders<br>• **Legacy Focus**: {{life_purpose}} | • Highly developed technical IP<br>• Deep spiritual grounding<br>• High mental focus stamina<br>• Zero-dependency operations | • Health & Biological Capital<br>• Family & Legacy Sowing<br>• Deep Craft & Intellectual IP<br>• Financial Autonomy Assets |
+| {{#if key_bottlenecks}}{{key_bottlenecks}}{{else}}_Answer **Key Bottlenecks**_{{/if}} | {{#if focus_blocks}}{{focus_blocks}}{{else}}_Answer **Focus Blocks**_{{/if}} | {{#if life_purpose}}{{life_purpose}}{{else}}_Answer **Life Purpose**_{{/if}} | {{#if skill_focus}}{{skill_focus}}{{else}}_Answer **Skill Focus**_{{/if}} | {{#if wellness_focus}}{{wellness_focus}}{{else}}_Answer **Wellness Focus**_{{/if}} |
 
 | Key Habits / Metrics | Daily Routines |
 | :--- | :--- |
-| • Mean sleep quality<br>• Weekly deep-work hours<br>• Relational quality<br>• Monthly net asset growth | • Morning study block<br>• Focused afternoon build run<br>• Evening connection and reading<br>• Consistent sleep wind-down |
+| {{#if health_metrics}}{{health_metrics}}{{else}}_Answer **Health Metrics** — what you track decides what improves_{{/if}} | {{#if daily_rhythm}}{{daily_rhythm}}{{else}}_Answer **Daily Rhythm** — the loop that carries every intervention_{{/if}} |
 
-| Relational & Energetic Costs | Legacy Harvest |
+| Sleep & Recovery | Legacy Harvest |
 | :--- | :--- |
-| • Time spent planning and cooking healthy meals<br>• Saying "no" to low-yield requests<br>• Daily discipline energy | • Generational asset protection<br>• Intellectual property and system royalties<br>• Direct community mentorship impact |
+| {{#if sleep_target}}{{sleep_target}}{{else}}_Answer **Sleep Target** — recovery is the base layer_{{/if}} | {{#if legacy_vision}}{{legacy_vision}}{{else}}_Answer **Legacy Vision** — what the discipline is for_{{/if}} |
 
 ---
 
 ## 2. In-Depth Life Lean Breakdown
 
+{{#if key_bottlenecks}}
 ### A. Core Bottlenecks
-1. **Time Fragmentation**: Getting caught in micro-messaging and administrative details instead of blocking deep, multi-hour focus slots.
-2. **Physical Energy Caps**: Sub-optimal sleep depth and irregular nutrition choices directly bottleneck creative writing and engineering output.
-3. **Saying "Yes" Too Often**: Over-committing to projects out of guilt or habit, leaving minimal room for high-leverage legacy builds.
+
+{{key_bottlenecks}}
+{{/if}}
+{{#if focus_blocks}}
 
 ### B. Key Interventions
-1. **The Sleep Sanctuary**: Zero screens in the bedroom after 21:00, blackout curtains, and cool room temperatures.
-2. **The 3-Hour Deep Work Block**: A daily, uninterrupted focus block starting early in the morning before emails or messages are read.
-3. **Structured Sowing Days**: Reserving specific times purely for mentoring, writing open guides, or family interactions.
 
-### C. Unique Value (The Legacy Vision)
-* Bridging high-velocity digital technology with deep, human-centric mentoring. Creating leverage to support regional initiatives without burning out.
+Protected deep-focus time: {{focus_blocks}}
+{{/if}}
+{{#if training_routine}}
 
-### D. Unfair Advantages
-* **Decoupled Work Style**: The ability to build world-class tech and plan suites from anywhere on the planet with zero corporate overhead.
-* **Radical Consistency**: High discipline and the ability to execute the same basic, high-yield routines for years.
+### C. Physical Base
 
-### E. Focus Areas
-* **Health**: The bedrock of all creative and professional efforts.
-* **Craft**: Maintaining elite engineering and strategic design capabilities.
-* **Family**: Deeply protecting, loving, and guiding the immediate relational circle.
-* **Wealth**: Growing resilient cash flows to secure permanent autonomy.{{#if business_ownership}} Venture focus: {{business_ownership}}{{/if}}
+{{training_routine}}
+{{/if}}
+{{#if business_ownership}}
+
+### D. Venture Focus
+
+{{business_ownership}}
+{{/if}}
+{{#unless key_bottlenecks}}
+{{#unless focus_blocks}}
+_This canvas is still empty. Answer **Key Bottlenecks** and **Focus Blocks**
+in questions.md to begin filling it._
+{{/unless}}
+{{/unless}}

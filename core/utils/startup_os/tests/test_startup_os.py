@@ -592,6 +592,10 @@ class TestSchemas(unittest.TestCase):
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
+        "life_financial_summary",
+        "will_bequests_list",
+        "has_minor_children",
+        "will_execution_status",
         "he_she",
         "he_she_lower",
         "his_her",
@@ -783,8 +787,8 @@ class TestDepthLadder(unittest.TestCase):
             "Level 3 of 3 — diligence-grade", schemas.describe_depth(report)
         )
 
-    def test_life_profiles_have_no_depth_ladder(self):
-        self.assertIsNone(schemas.compute_depth("life", {"full_name"}))
+    def test_unknown_instance_types_have_no_depth_ladder(self):
+        self.assertIsNone(schemas.compute_depth("garden", {"full_name"}))
         self.assertIsNone(schemas.describe_depth(None))
 
     def test_partial_l3_answers_do_not_unlock_the_analysis_blocks(self):
@@ -1264,6 +1268,355 @@ class TestOldProfileStillCompiles(unittest.TestCase):
             for name in ("09_business_model_canvas.md", "10_lean_canvas.md"):
                 with open(os.path.join(out, name), encoding="utf-8") as handle:
                     self.assertNotIn("«", handle.read(), name)
+
+
+# --------------------------------------------------------------------------
+# Life suite — de-personalisation, the life depth ladder, computed life
+# financials and the jurisdiction-aware will. CONFIRMED: the previous life
+# templates hardcoded one person's sleep schedule (21:30), training
+# prescriptions, "Protocol 99"/Twilio release machinery and a funeral-parlor
+# integration into every compiled profile.
+# --------------------------------------------------------------------------
+
+
+class TestLifeDepthLadder(unittest.TestCase):
+    L1 = {
+        "full_name": "x",
+        "pronouns": "x",
+        "primary_base": "x",
+        "life_purpose": "x",
+        "wellness_focus": "x",
+        "daily_rhythm": "x",
+    }
+    L2 = {
+        "sleep_target": "x",
+        "training_routine": "x",
+        "health_metrics": "x",
+        "focus_blocks": "x",
+        "personal_values": "x",
+        "assets": "x",
+        "liabilities": "x",
+        "life_cover_policies": "x",
+        "monthly_savings": "x",
+        "beneficiaries": "x",
+        "digital_asset_inventory": "x",
+        "release_protocol": "x",
+    }
+    L3 = {
+        "legal_full_name": "x",
+        "marital_status": "x",
+        "children": "x",
+        "executor": "x",
+        "alternate_executor": "x",
+        "specific_bequests": "x",
+        "residue_beneficiaries": "x",
+        "alternate_heirs": "x",
+    }
+
+    def test_every_life_depth_key_is_a_real_schema_key(self):
+        collected = schemas.schema_keys("life")
+        for level in schemas.depth_levels("life"):
+            for key in level.keys:
+                self.assertIn(key, collected, key)
+
+    def test_empty_life_profile_coaches_level_one(self):
+        report = schemas.compute_depth("life", set())
+        self.assertEqual(report.level, 0)
+        self.assertEqual(report.next_level, 1)
+        described = schemas.describe_depth(report)
+        self.assertIn("Level 0 of 3", described)
+        self.assertIn("to reach Level 1 (foundation) answer:", described)
+        self.assertIn("Full Name", described)
+
+    def test_foundation_answers_reach_level_one_and_coach_stewardship(self):
+        report = schemas.compute_depth("life", set(self.L1))
+        self.assertEqual(report.level, 1)
+        self.assertEqual(report.next_name, "stewardship-ready")
+        self.assertIn("sleep_target", [key for key, _label in report.missing])
+
+    def test_all_answers_reach_estate_ready(self):
+        answered = set(self.L1) | set(self.L2) | set(self.L3)
+        report = schemas.compute_depth("life", answered)
+        self.assertEqual(report.level, 3)
+        self.assertIsNone(report.next_level)
+        self.assertIn("Level 3 of 3 — estate-ready", schemas.describe_depth(report))
+
+    def test_guardian_nomination_is_not_a_ladder_gate(self):
+        # Guardianship only applies with minor children; a childless profile
+        # must still be able to reach estate-ready.
+        for level in schemas.depth_levels("life"):
+            self.assertNotIn("guardian_nomination", level.keys)
+
+
+class TestLifeComputedFinancials(unittest.TestCase):
+    def _values(self, answers):
+        values = {}
+        compiler._add_life_computed(
+            values, FakeProfile(answers), jurisdictions.get("ZA")
+        )
+        return values
+
+    def test_net_worth_is_computed_from_assets_and_liabilities(self):
+        values = self._values(
+            {
+                "assets": "Home: R 1,500,000\nCar: R 200,000",
+                "liabilities": "Home loan: R 900,000",
+            }
+        )
+        summary = values["life_financial_summary"]
+        self.assertIn("R1.7m", summary)  # total assets
+        self.assertIn("R900,000", summary)  # total liabilities
+        self.assertIn("R800,000", summary)  # net worth
+        self.assertIn("computed from total assets − total liabilities", summary)
+        self.assertIn("2 of 2 lines carried an amount", summary)
+
+    def test_total_life_cover_is_summed_across_policies(self):
+        values = self._values(
+            {
+                "life_cover_policies": (
+                    "Alpha Insure, LC-1: R 2,000,000\nBeta Life, LB-9: R 500,000"
+                )
+            }
+        )
+        self.assertIn("R2.5m", values["life_financial_summary"])
+        self.assertIn("2 policy line(s)", values["life_financial_summary"])
+
+    def test_savings_rate_needs_numeric_income(self):
+        with_income = self._values(
+            {"monthly_savings": "R 8,000", "monthly_income": "R 40,000 per month"}
+        )
+        self.assertIn("20% of monthly income", with_income["life_financial_summary"])
+        without = self._values({"monthly_savings": "R 8,000"})
+        self.assertIn(
+            "needs a numeric **Monthly Income**", without["life_financial_summary"]
+        )
+
+    def test_missing_answers_coach_and_compute_nothing(self):
+        summary = self._values({})["life_financial_summary"]
+        self.assertIn("Pending — answer **Assets**", summary)
+        self.assertIn("Pending — answer **Liabilities**", summary)
+        self.assertIn("Pending — answer **Life Cover Policies**", summary)
+        self.assertIn(
+            "needs amounts in both **Assets** and **Liabilities**", summary
+        )
+        # Nothing derivable means no derived figure anywhere.
+        self.assertNotIn("computed from total assets", summary.replace(
+            "Not derivable yet — needs amounts in both **Assets** and "
+            "**Liabilities**", ""
+        ))
+
+    def test_narrative_answers_are_not_forced_into_numbers(self):
+        summary = self._values(
+            {"assets": "A paid-off home and a reliable car", "liabilities": "None"}
+        )["life_financial_summary"]
+        self.assertIn("Pending — answer **Assets**", summary)
+        self.assertIn("Not derivable yet", summary)
+
+    def test_bequests_render_as_a_numbered_list(self):
+        values = self._values(
+            {"specific_bequests": "My watch: to Sipho\nR 50,000: to Thandi"}
+        )
+        self.assertEqual(
+            values["will_bequests_list"],
+            "1.  My watch: to Sipho\n2.  R 50,000: to Thandi",
+        )
+
+    def test_a_none_answer_is_not_a_bequest(self):
+        self.assertEqual(
+            self._values({"specific_bequests": "None"})["will_bequests_list"], ""
+        )
+        self.assertEqual(self._values({})["will_bequests_list"], "")
+
+    def test_minors_are_detected_only_when_marked(self):
+        marked = self._values({"children": "Thandi (2015, minor)\nSipho (1999)"})
+        self.assertEqual(marked["has_minor_children"], "yes")
+        adults = self._values({"children": "Sipho (1999)"})
+        self.assertEqual(adults["has_minor_children"], "")
+        none = self._values({"children": "None"})
+        self.assertEqual(none["has_minor_children"], "")
+
+    def test_will_execution_needs_a_dated_answer(self):
+        undated = self._values({"will_executed": "yes, signed it"})
+        self.assertEqual(undated["will_execution_status"], "")
+        dated = self._values(
+            {"will_executed": "Signed 2026-03-01 at Polokwane before two witnesses"}
+        )
+        self.assertIn("2026-03-01", dated["will_execution_status"])
+
+
+class TestLifeSuiteEndToEnd(unittest.TestCase):
+    TEMPLATE_SRC = os.path.join(
+        os.path.dirname(_ENGINE_DIR),
+        os.pardir,
+        "skills",
+        ".rok",
+        "startup_os",
+        "templates",
+    )
+
+    # Personal hardcodes confirmed in the previous life templates. None of
+    # them may survive into any compiled document for any profile.
+    BANNED = (
+        "Protocol 99",
+        "Twilio",
+        "Baileys",
+        "21:30",
+        "funeral parlor",
+        "deadlifts",
+        "blackout curtains",
+        "VO2 Max",
+    )
+
+    def _compile(self, seed, include_full=True):
+        import shutil
+
+        from core import compiler as compiler_mod
+
+        if not os.path.isdir(self.TEMPLATE_SRC):
+            self.skipTest("templates not present")
+        workspace = TempWorkspace()
+        root = workspace.__enter__()
+        self.addCleanup(workspace.__exit__, None, None, None)
+        shutil.copytree(self.TEMPLATE_SRC, os.path.join(root, "templates"))
+        write(
+            os.path.join(root, "instances", "life", "Nia", "questions.md"),
+            schemas.render_questions_md(
+                "life", "Nia", seed, include_full=include_full
+            ),
+        )
+        result = compiler_mod.compile_instance(
+            "life", "Nia", workspace_root=root, quiet=True
+        )
+        self.assertTrue(result.ok)
+        out = os.path.join(root, "instances", "life", "Nia", "output")
+        documents = {}
+        for name in sorted(os.listdir(out)):
+            if name.endswith(".md"):
+                with open(os.path.join(out, name), encoding="utf-8") as handle:
+                    documents[name] = handle.read()
+        return documents
+
+    SEED_ZA = {
+        "full_name": "Nia Adler",
+        "pronouns": "she/her",
+        "primary_base": "Polokwane, South Africa",
+        "jurisdiction": "ZA",
+        "life_purpose": "Build things that outlast me.",
+        "legal_full_name": "Nia Marie Adler",
+        "marital_status": "Married out of community of property, with accrual",
+        "children": "Thandi (2015, minor)\nSipho (1999)",
+        "guardian_nomination": "Naledi Adler; alternate: Peter Adler",
+        "executor": "Naledi Adler",
+        "alternate_executor": "Peter Adler",
+        "specific_bequests": "My watch: to my brother Sipho\nR 50,000: to Thandi",
+        "residue_beneficiaries": "My spouse: 100%; failing them, my children equally",
+        "alternate_heirs": "A predeceased child's share passes to their children",
+    }
+
+    def test_empty_life_profile_contains_no_personal_hardcodes(self):
+        documents = self._compile({}, include_full=False)
+        self.assertGreaterEqual(len(documents), 10)
+        for name, body in documents.items():
+            for banned in self.BANNED:
+                self.assertNotIn(banned, body, f"{banned!r} leaked into {name}")
+            self.assertNotIn("«", body, name)
+
+    def test_will_renders_guardianship_bequests_and_za_formalities(self):
+        will = self._compile(self.SEED_ZA)["last_will_and_testament.md"]
+        self.assertIn("Nia Marie Adler", will)
+        self.assertIn("Guardianship of Minor Children", will)
+        self.assertIn("Naledi Adler", will)
+        self.assertIn("1.  My watch: to my brother Sipho", will)
+        self.assertIn("2.  R 50,000: to Thandi", will)
+        self.assertIn("Wills Act 7 of 1953", will)
+        self.assertIn("two or more competent witnesses", will)
+        self.assertIn("Witness 2", will)
+        # The top caveat is unconditional and names the jurisdiction.
+        self.assertIn("not legal advice", will)
+        self.assertIn("qualified professional in South Africa", will)
+
+    def test_unsigned_will_is_flagged_everywhere(self):
+        documents = self._compile(self.SEED_ZA)
+        will = documents["last_will_and_testament.md"]
+        self.assertIn("UNSIGNED DRAFT", will)
+        self.assertIn(
+            "**Will execution**: NOT EXECUTED — this compiled file is an "
+            "unsigned draft with no legal force",
+            will,
+        )
+        self.assertIn("UNSIGNED DRAFT", documents["legacy_plan_on_a_page.md"])
+        # The Completion Gaps warning names the answer that clears it.
+        self.assertIn("**Will Executed**", will)
+
+    def test_executed_will_notes_the_date_but_keeps_the_caveat(self):
+        seed = dict(
+            self.SEED_ZA,
+            will_executed="Signed 2026-03-01 at Polokwane before two witnesses",
+        )
+        documents = self._compile(seed)
+        will = documents["last_will_and_testament.md"]
+        self.assertIn("**Will execution**: recorded by the owner", will)
+        self.assertIn("2026-03-01", will)
+        self.assertNotIn("NOT EXECUTED", will)
+        self.assertNotIn("UNSIGNED DRAFT", will)
+        # Execution never removes the professional-review caveat.
+        self.assertIn("not legal advice", will)
+        self.assertIn("only the signed original has legal force", will)
+        legacy = documents["legacy_plan_on_a_page.md"]
+        self.assertIn("Will execution recorded by the owner", legacy)
+        self.assertNotIn("UNSIGNED DRAFT", legacy)
+
+    def test_no_minors_no_guardianship_section(self):
+        seed = dict(self.SEED_ZA, children="Sipho (1999)")
+        will = self._compile(seed)["last_will_and_testament.md"]
+        self.assertNotIn("Guardianship of Minor Children", will)
+
+    def test_non_za_will_gets_the_generic_formalities_note(self):
+        seed = dict(
+            self.SEED_ZA,
+            jurisdiction="US",
+            primary_base="Austin, United States",
+        )
+        will = self._compile(seed)["last_will_and_testament.md"]
+        self.assertNotIn("Wills Act 7 of 1953", will)
+        self.assertIn("Verify the exact formalities", will)
+        self.assertIn("United States", will)
+
+    def test_missing_will_answers_coach_and_invent_no_heirs(self):
+        documents = self._compile(
+            {
+                "full_name": "Nia Adler",
+                "pronouns": "she/her",
+                "jurisdiction": "ZA",
+                "primary_base": "Polokwane, South Africa",
+            }
+        )
+        will = documents["last_will_and_testament.md"]
+        self.assertIn("Answer **Legal Full Name**", will)
+        self.assertIn("No executor recorded", will)
+        self.assertIn("No residue beneficiaries recorded", will)
+        self.assertIn("No heir is ever invented for you", will)
+        self.assertNotIn("«", will)
+
+    def test_life_documents_carry_a_depth_line(self):
+        documents = self._compile(self.SEED_ZA)
+        self.assertIn("> *   **Depth**: Level", documents["life_plan_on_a_page.md"])
+
+    def test_old_core_only_life_profile_still_compiles(self):
+        # A questions.md written before the expanded schema existed — core
+        # questions only — must keep compiling, with coaching, not errors.
+        documents = self._compile(
+            {
+                "full_name": "Nia Adler",
+                "pronouns": "she/her",
+                "primary_base": "Polokwane, South Africa",
+                "life_purpose": "Build things that outlast me.",
+            },
+            include_full=False,
+        )
+        self.assertIn("last_will_and_testament.md", documents)
+        for name, body in documents.items():
+            self.assertNotIn("«", body, name)
 
 
 if __name__ == "__main__":

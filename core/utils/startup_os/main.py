@@ -479,6 +479,10 @@ def cmd_lint(args):
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
+        "life_financial_summary",
+        "will_bequests_list",
+        "has_minor_children",
+        "will_execution_status",
         "he_she",
         "he_she_lower",
         "his_her",
@@ -533,6 +537,11 @@ def cmd_lint(args):
         "competitor_pricing",
         "cac_by_channel",
         "retention_cohorts",
+        # Life inputs consumed by `compiler._add_life_computed` and surfaced
+        # through derived placeholders (`life_financial_summary`,
+        # `will_bequests_list`, `will_execution_status`) rather than by name.
+        "specific_bequests",
+        "will_executed",
     }
 
     types_to_check = [args.type] if args.type else list(path_utils.INSTANCE_TYPES)

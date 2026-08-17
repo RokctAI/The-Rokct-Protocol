@@ -1,42 +1,61 @@
 # {{full_name}} — Health Plan on a Page
 
-## 1. Biological Foundation & Strategy
-Our body is the biological foundation that hosts all personal creativity, mental processing power, and long-term legacy work. We treat physical conditioning, recovery, and cellular integrity with the same rigorous engineering standards as we do our codebases.
-
----
-
-## 2. Dynamic Health Parameters
-{{#if wellness_focus}}
-*   **Primary Wellness Goal**: {{wellness_focus}}
-{{else}}
-*   **Primary Wellness Goal**: _not recorded — answer **Wellness Focus** in questions.md_
-{{/if}}
-*   **Athletic Baseline Targets**: VO2 Max optimization, lean muscle retention, joint mobility.
-*   **Sleep Protocol**: Restoring deep sleep recovery as the ultimate performance enhancer.
-
----
-
-## 3. The 4 Pillars of Health Architecture
-
-### A. Sleep Architecture (The Deep Recovery Loop)
-*   **Bedtime**: Consistent 21:30 wind-down, asleep by 22:00.
-*   **Quality Indicators**: Aiming for > 1.5 hours of combined deep and REM sleep cycles nightly.
-*   **Hygiene**: Digital blackout (no phones, tablets, or laptops in bed), blue light blockers after sunset, cool room temperature.
-
-### B. Nutritional Matrix (Fuel Processing)
-*   **Strategy**: Whole-food, low-inflammatory fuel profile tailored to sustained cognitive performance.
-*   **Primary Sourcing**: Organic green vegetables, clean protein options, and mineral-dense carbohydrates.
-*   **Hydration**: A consistent daily water intake{{#if_jurisdiction ZA}}, meeting SANS 241 potable-water criteria{{/if_jurisdiction}}.
-
 > [!NOTE]
 > This plan is a personal protocol recorded by its owner, not medical advice.
 > Discuss changes with a qualified clinician.
 
-### C. Physical Conditioning (Hardware Strength)
-*   **Resistance Routine**: 3 sessions weekly targeting functional compound movements (deadlifts, squats, overhead press).
-*   **Cardiovascular Thresholds**: 2 sessions weekly of low-intensity steady-state (LISS) training to build a massive aerobic base.
-*   **Mobility**: Daily 10-minute hip and shoulder decompression routines to counter seated writing blocks.
+## 1. Why This Plan Exists
 
-### D. Mental & Nervous System Decompression (Signal Control)
-*   **Grounding**: 15 minutes of early morning sunlight exposure immediately upon waking.
-*   **Focus Breaks**: Standing desk configurations and physical walks for every 90 minutes of continuous deep work.
+The body hosts every other plan in this suite. This page records the owner's
+own commitments — nothing here is prescribed.
+
+{{#if wellness_focus}}
+> **Primary Wellness Goal**: {{wellness_focus}}
+{{else}}
+_No wellness goal recorded. Answer **Wellness Focus** in questions.md — the
+rest of this plan hangs off it._
+{{/if}}
+
+---
+
+## 2. Sleep
+
+{{#if sleep_target}}
+*   **Committed Sleep Schedule**: {{sleep_target}}
+{{else}}
+*   **Committed Sleep Schedule**: _not recorded — answer **Sleep Target** with
+    the schedule and duration you are committing to._
+{{/if}}
+
+---
+
+## 3. Training & Movement
+
+{{#if training_routine}}
+{{training_routine}}
+{{else}}
+_No routine recorded. Answer **Training Routine** — the weekly movement you
+actually do, not an aspiration._
+{{/if}}
+
+---
+
+## 4. Nutrition
+
+{{#if nutrition_approach}}
+{{nutrition_approach}}
+{{else}}
+_No approach recorded. Answer **Nutrition Approach** — how you actually fuel
+a working day._
+{{/if}}
+
+---
+
+## 5. Metrics & Goals
+
+{{#if health_metrics}}
+{{health_metrics}}
+{{else}}
+_No metrics recorded. Answer **Health Metrics** — what you track and the
+current targets. A plan without a measure is a wish._
+{{/if}}

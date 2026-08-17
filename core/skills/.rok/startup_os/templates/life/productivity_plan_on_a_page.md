@@ -2,11 +2,13 @@
 
 ## 1. Accountability Statement & Focus
 
-> **Core Objective**: Optimize high-output daily performance and achieve complete time-mastery aligned with core purpose: *{{life_purpose}}*.
-
-*   **Continuous Feedback Loop**: Capture habits, notes, and milestones ambiently with ROK.
-*   **Structured Intentions**: Set weekly goals every Monday morning and review progress recursively.
-*   **Reward Win Capture**: Celebrate and log accomplishments during Friday Wins prep to build positive momentum.
+{{#if life_purpose}}
+> **Core Objective**: Structure daily output around the core purpose:
+> _{{life_purpose}}_.
+{{else}}
+_No purpose recorded. Answer **Life Purpose** in questions.md — accountability
+without a purpose is just busyness._
+{{/if}}
 
 ---
 
@@ -29,21 +31,40 @@
 
 ---
 
-## 3. High-Output Daily Rituals & Focus Zones
+## 3. Daily Rhythm & Focus Blocks
 
-We prioritize cognitive energy by isolating distinct zones of daily output:
+{{#if daily_rhythm}}
+{{daily_rhythm}}
+{{else}}
+_No daily rhythm recorded. Answer **Daily Rhythm** — what a productive day
+actually looks like, in your own hours._
+{{/if}}
 
-| **Zone** | **Rhythm Phase** | **Focus & Daily Execution Blueprints** |
-| :--- | :--- | :--- |
-| **Zone 1: Sowing** | **Deep Work Focus** | Complete high-leverage intellectual sprints, deep code commits, and strategic architectural writing. |
-| **Zone 2: Harvest** | **Business Operations** | Run tenant actions, dispatch invoice runs, hold client alignment meetings, and scale core projects. |
-| **Zone 3: Stewardship** | **Recharging & Upkeep** | Maintain physical integrity, coordinate family preferences, and handle general admin. |
+{{#if focus_blocks}}
+*   **Deep-Focus Blocks**: {{focus_blocks}}
+{{else}}
+*   **Deep-Focus Blocks**: _not recorded — answer **Focus Blocks** with when
+    they run and for how long._
+{{/if}}
 
 ---
 
-## 4. Master Accountability Milestones (12-Month Horizon)
+## 4. Tools & Systems
 
-1.  **ROK Ambient Loop Integration**: Log 100% of major professional and personal milestones ambiently via chat.
-2.  **Strategic Alignment Score**: Maintain >90% strategy-to-telemetry coherence using the dynamic alignment checks.
-3.  **Output Velocity Tracking**: Complete and evaluate a 24h conversation digest review daily to optimize work rhythms.
-4.  **Habit Optimization**: Maintain stable, high-focus productivity blocks by integrating deep-work windows.
+{{#if productivity_tools}}
+{{productivity_tools}}
+{{else}}
+_No tools recorded. Answer **Productivity Tools** — the systems that keep your
+commitments visible._
+{{/if}}
+
+---
+
+## 5. Known Bottlenecks
+
+{{#if key_bottlenecks}}
+{{key_bottlenecks}}
+{{else}}
+_No bottlenecks recorded. Answer **Key Bottlenecks** — naming what limits you
+is the first accountability act._
+{{/if}}

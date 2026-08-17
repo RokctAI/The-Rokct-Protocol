@@ -2,9 +2,11 @@
 
 ## An Evergreen Record of Stewardship, Leadership, and Love
 
+{{#if life_purpose}}
 > [!IMPORTANT]
 > **Core Purpose & Life Philosophy**:
 > *"{{life_purpose}}"*
+{{/if}}
 
 ---
 
@@ -12,9 +14,14 @@
 
 This evolving biography records the legacy, achievements, and lessons of {{full_name}}, establishing an evergreen blueprint for future generations:
 
+{{#if primary_base}}
 *   **Geographical Foundations**: {{he_she}} established {{his_her}} primary base of operations and family roots in **{{primary_base}}**.
+{{/if}}
 {{#if wellness_focus}}
 *   **Biological High-Performance & Stewardship**: In all things, {{he_she_lower}} maintained a dedicated focus on: *"{{wellness_focus}}"*
+{{/if}}
+{{#if personal_values}}
+*   **Values Held**: {{he_she}} refused to trade away: {{personal_values}}
 {{/if}}
 
 ---
@@ -28,11 +35,15 @@ This evolving biography records the legacy, achievements, and lessons of {{full_
 ---
 
 ## 3. Generational Legacy & Trust Circle
+
 {{#if key_relationships}}
 *   **Nominated Custodians & Trustees**: {{key_relationships}}
 {{/if}}
 {{#if legacy_vision}}
 *   **Generational Legacy Vision**: {{legacy_vision}}
+{{/if}}
+{{#if memorial_wishes}}
+*   **Memorial Wishes on Record**: {{memorial_wishes}}
 {{/if}}
 {{#if business_ownership}}
 *   **Commercial Asset Footprint**: {{business_ownership}}

@@ -188,16 +188,21 @@ class TestSegmentation(unittest.TestCase):
         rebuilt = "\n".join(seg.text for seg in polish.segment(DOCUMENT))
         self.assertEqual(rebuilt, DOCUMENT)
 
-    def test_financial_and_compliance_files_are_never_eligible(self):
+    def test_financial_compliance_and_will_files_are_never_eligible(self):
+        # The will is enforceable language and the financial-legacy plan is
+        # numbers: both sit in the same never-sent class as the financial
+        # model and the compliance log.
         for name in (
             "07_financial_model.md",
             "financial_plan_on_a_page.md",
             "financial_legacy_plan_on_a_page.md",
             "compliance_log.md",
+            "last_will_and_testament.md",
         ):
             self.assertFalse(polish.file_is_eligible(name), name)
         self.assertTrue(polish.file_is_eligible("01_executive_summary.md"))
         self.assertTrue(polish.file_is_eligible("annexures/marketing_plan.md"))
+        self.assertTrue(polish.file_is_eligible("life_plan_on_a_page.md"))
 
 
 # --------------------------------------------------------------------------
@@ -386,6 +391,18 @@ class TestDraftRequest(unittest.TestCase):
 
     def test_draft_system_prompt_is_digit_free(self):
         self.assertFalse(any(ch.isdigit() for ch in polish.DRAFT_SYSTEM_PROMPT))
+
+    def test_life_slots_exist_with_hard_word_budgets(self):
+        slots = polish.draft_slots_by_name()
+        self.assertEqual(slots["life_plan_opening"].budget, 120)
+        self.assertEqual(slots["life_plan_opening"].document, "life_plan_on_a_page.md")
+        self.assertEqual(slots["legacy_plan_opening"].budget, 60)
+        for slot in polish.DRAFT_SLOTS:
+            # Every budget must have a spelled-out, digit-free form.
+            self.assertIn(slot.budget, polish._BUDGET_WORDS, slot.name)
+            # No slot may ever target the will — enforceable language is
+            # never AI-drafted.
+            self.assertNotIn("last_will", slot.document, slot.name)
 
     def test_transport_payload_carries_the_draft_prompt_and_no_digits(self):
         seen = {}

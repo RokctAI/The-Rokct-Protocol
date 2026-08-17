@@ -50,6 +50,11 @@ COMPLIANCE_ROOT_ENV_VAR = "STARTUPOS_COMPLIANCE_ROOT"
 # template can omit a section instead of printing this into running prose.
 UNANSWERED_TEXT = "Not yet provided"
 
+# The one life document that is enforceable language rather than planning
+# prose. Its filename is load-bearing: the polish firewall never sends it,
+# and `_assemble` stamps its execution status into Document Control.
+WILL_FILENAME = "last_will_and_testament.md"
+
 # Re-exported so existing callers keep working.
 resolve_workspace_root = path_utils.resolve_workspace_root
 
@@ -423,6 +428,11 @@ FOOTER_MAPS = {
                 "Personal Lean Canvas",
             ),
             (
+                "last_will_and_testament.md",
+                "Draft will assembled from your answers",
+                "Last Will & Testament",
+            ),
+            (
                 "health_plan_on_a_page.md",
                 "1-Page Biological Conditioning Plan",
                 "Health Plan on a Page",
@@ -456,6 +466,11 @@ FOOTER_MAPS = {
                 "1-Page Life Rhythm Plan",
                 "Life Plan on a Page",
             ),
+            (
+                "last_will_and_testament.md",
+                "Draft will assembled from your answers",
+                "Last Will & Testament",
+            ),
         ],
         "productivity_plan_on_a_page.md": [
             (
@@ -469,6 +484,23 @@ FOOTER_MAPS = {
                 "life_plan_on_a_page.md",
                 "1-Page Life Rhythm Plan",
                 "Life Plan on a Page",
+            ),
+            (
+                "last_will_and_testament.md",
+                "Draft will assembled from your answers",
+                "Last Will & Testament",
+            ),
+        ],
+        "last_will_and_testament.md": [
+            (
+                "legacy_plan_on_a_page.md",
+                "Release protocol and memorial wishes",
+                "Legacy Plan on a Page",
+            ),
+            (
+                "financial_legacy_plan_on_a_page.md",
+                "Assets, cover and beneficiaries behind the estate",
+                "Financial Legacy Plan on a Page",
             ),
         ],
     },
@@ -855,6 +887,39 @@ def _assemble(
         schemas.compute_depth(instance_type, profile.answers)
     )
 
+    # Will-execution accountability. Until the owner records a signing date,
+    # the will and the legacy plan carry a visible unsigned-draft warning in
+    # their Completion Gaps, and the will's Document Control states outright
+    # that it has no legal force. A recorded date is noted — with the
+    # professional-review caveat kept, because a compiled file is never the
+    # signed original.
+    extra_control = []
+    gap_warnings = []
+    if instance_type == "life" and filename in (
+        WILL_FILENAME,
+        "legacy_plan_on_a_page.md",
+    ):
+        status = will_execution_status(profile)
+        if filename == WILL_FILENAME:
+            if status:
+                extra_control.append(
+                    "> *   **Will execution**: recorded by the owner — "
+                    f"{status}. Professional review is still required, and "
+                    "only the signed original has legal force."
+                )
+            else:
+                extra_control.append(
+                    "> *   **Will execution**: NOT EXECUTED — this compiled "
+                    "file is an unsigned draft with no legal force."
+                )
+        if not status:
+            gap_warnings.append(
+                "The last will and testament is an UNSIGNED DRAFT with no "
+                "legal force. Once it has been formally signed and "
+                "witnessed, record the date under **Will Executed** in "
+                "questions.md."
+            )
+
     version_block = documents.build_version_block(
         instance_name=instance_name,
         instance_type=instance_type,
@@ -866,6 +931,7 @@ def _assemble(
         applicable_fields=record.applicable_count if record else None,
         privacy_law=jurisdiction.privacy_law,
         depth=depth_line,
+        extra_lines=extra_control,
     )
 
     document = documents.insert_version_block(rendered, version_block)
@@ -879,7 +945,7 @@ def _assemble(
         )
 
     missing = {key: profile.labels.get(key, key) for key in sorted(profile.pending)}
-    document += documents.build_gap_report(missing, [])
+    document += documents.build_gap_report(missing, gap_warnings)
 
     return document.rstrip() + "\n"
 
@@ -948,6 +1014,7 @@ def _build_values(
 
     if instance_type == "life":
         _add_life_values(values, profile, warnings)
+        _add_life_computed(values, profile, jurisdiction)
 
     return values
 
@@ -1758,3 +1825,195 @@ def _add_life_values(values, profile, warnings):
             "*Legacy milestones will appear here as they are recorded.*"
         )
         values["milestone_count"] = "0"
+
+
+# ---------------------------------------------------------------------------
+# Computed life financials and the will's derived values.
+#
+# Same contract as the business financials: every derived figure names the
+# answers it was computed from, an answer that does not parse is narrative
+# and falls back to coaching, and nothing — no heir, no amount, no signing
+# date — is ever invented.
+# ---------------------------------------------------------------------------
+
+_YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+
+# A literal "none" answer to Specific Bequests or Children is a real answer
+# ("I have no children", "no specific gifts") — it must not render as a
+# bequest called "None".
+_NONE_ANSWER_RE = re.compile(r"^\s*(?:none|no|n/a)\b[.\s]*$", re.IGNORECASE)
+
+_MINOR_RE = re.compile(r"\bminor\b", re.IGNORECASE)
+
+
+def _real_answer(profile, key):
+    """The answer for `key`, or None when it is absent or a placeholder.
+
+    Uses the same truthiness the templates' `{{#if}}` applies, so the
+    compiler and the rendered document never disagree about whether a
+    question has really been answered.
+    """
+    value = profile.get(key)
+    context = template_engine.RenderContext(values={"value": value})
+    return value if context.is_truthy("value") else None
+
+
+def will_execution_status(profile):
+    """The owner's execution record, if it carries a date. Otherwise None.
+
+    An answer without a year ("yes", "signed it") does not count: the whole
+    point of the record is a verifiable signing date, so a dateless answer
+    keeps the unsigned-draft warnings in place.
+    """
+    value = _real_answer(profile, "will_executed")
+    if value and _YEAR_RE.search(str(value)):
+        return _one_line(value)
+    return None
+
+
+def sum_money_lines(text):
+    """Sum the parseable amounts in a one-item-per-line answer.
+
+    Returns `(total, parsed_count, line_count)`. `total` is None when no
+    line carries a figure `parse_money` accepts — the answer is narrative
+    and the caller coaches instead of computing.
+    """
+    if not text:
+        return None, 0, 0
+    lines = [line.strip(" *-\t") for line in str(text).splitlines()]
+    lines = [line for line in lines if line]
+    total = 0.0
+    parsed = 0
+    for line in lines:
+        amount = parse_money(line)
+        if amount is not None:
+            total += amount
+            parsed += 1
+    return (total if parsed else None), parsed, len(lines)
+
+
+def _numbered_lines(text):
+    """Render a one-item-per-line answer as a numbered markdown list."""
+    lines = [line.strip(" *-\t") for line in str(text).splitlines()]
+    lines = [line for line in lines if line]
+    return "\n".join(f"{index}.  {line}" for index, line in enumerate(lines, 1))
+
+
+def _add_life_computed(values, profile, jurisdiction):
+    """Derive net worth, total cover and savings rate, plus the will's
+    conditional values. Coaching, never invention, where answers are missing.
+    """
+    symbol = jurisdiction.currency_symbol or ""
+
+    assets_total, assets_parsed, assets_lines = sum_money_lines(
+        _real_answer(profile, "assets")
+    )
+    liabilities_total, liabilities_parsed, liabilities_lines = sum_money_lines(
+        _real_answer(profile, "liabilities")
+    )
+    cover_total, cover_parsed, _cover_lines = sum_money_lines(
+        _real_answer(profile, "life_cover_policies")
+    )
+    savings = parse_money(_real_answer(profile, "monthly_savings"))
+    income = parse_money(_real_answer(profile, "monthly_income"))
+
+    rows = ["| Measure | Value | Basis |", "| :--- | :--- | :--- |"]
+
+    def add_row(measure, value, basis):
+        rows.append(f"| {measure} | {value} | {basis} |")
+
+    if assets_total is not None:
+        add_row(
+            "Total assets",
+            format_money(assets_total, symbol),
+            f"computed from **Assets** ({assets_parsed} of {assets_lines} "
+            "lines carried an amount)",
+        )
+    else:
+        add_row(
+            "Total assets",
+            _coach("Assets") + " — one asset per line, with its value",
+            "",
+        )
+
+    if liabilities_total is not None:
+        add_row(
+            "Total liabilities",
+            format_money(liabilities_total, symbol),
+            f"computed from **Liabilities** ({liabilities_parsed} of "
+            f"{liabilities_lines} lines carried an amount)",
+        )
+    else:
+        add_row(
+            "Total liabilities",
+            _coach("Liabilities") + " — one debt per line, with the amount",
+            "",
+        )
+
+    if assets_total is not None and liabilities_total is not None:
+        add_row(
+            "Net worth",
+            format_money(assets_total - liabilities_total, symbol),
+            "computed from total assets − total liabilities",
+        )
+    else:
+        add_row(
+            "Net worth",
+            "Not derivable yet — needs amounts in both **Assets** and "
+            "**Liabilities**",
+            "",
+        )
+
+    if cover_total is not None:
+        add_row(
+            "Total life cover",
+            format_money(cover_total, symbol),
+            f"computed from **Life Cover Policies** ({cover_parsed} "
+            "policy line(s))",
+        )
+    else:
+        add_row(
+            "Total life cover",
+            _coach("Life Cover Policies") + " — one policy per line, with "
+            "the cover amount",
+            "",
+        )
+
+    if savings is not None:
+        add_row(
+            "Monthly savings",
+            format_money(savings, symbol),
+            "from **Monthly Savings**",
+        )
+        if income:
+            add_row(
+                "Savings rate",
+                f"{savings / income:.0%} of monthly income",
+                "computed from monthly savings ÷ monthly income",
+            )
+        else:
+            add_row(
+                "Savings rate",
+                "Not derivable yet — needs a numeric **Monthly Income**",
+                "",
+            )
+    else:
+        add_row("Monthly savings", _coach("Monthly Savings"), "")
+
+    values["life_financial_summary"] = "\n".join(rows)
+
+    # -- Will: bequests, minors, execution -------------------------------
+    bequests = _real_answer(profile, "specific_bequests")
+    if bequests and not _NONE_ANSWER_RE.match(str(bequests)):
+        values["will_bequests_list"] = _numbered_lines(bequests)
+    else:
+        values["will_bequests_list"] = ""
+
+    children = _real_answer(profile, "children")
+    if children and _NONE_ANSWER_RE.match(str(children)):
+        children = None
+    values["has_minor_children"] = (
+        "yes" if children and _MINOR_RE.search(str(children)) else ""
+    )
+
+    values["will_execution_status"] = will_execution_status(profile) or ""
