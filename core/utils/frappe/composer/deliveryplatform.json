@@ -1,0 +1,176 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Frappe compose template for the deliveryplatform docker product (composes an app named rcore)",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "pay",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "weather",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/weather/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "delivery",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/delivery/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "map",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/map/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "zones",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/zones/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "hardware",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hardware/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "booking",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/booking/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "kitchen",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "loyalty",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/loyalty/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "merchants",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "orders",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/orders/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "products",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "promotions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/promotions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "builder",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/builder/frappe",
+      "ref": "main",
+      "_comment": "Flutter build pipeline composed under its contract paths ({app_name}.builder.tasks._generate_flutter_app, {app_name}/builder/source_code). Source mirrors the rcore shell's committed composer.json, where builder replaced the 'dev' entry (../corporate/dev/frappe); the two cannot coexist — both ship the flutter_app_configuration / flutter_build_settings doctypes and the composer hard-fails on duplicate DocTypes."
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Frappe compose template for the telephony docker product (composes an app named rcore)",
+  "_comment": "Common modules only for now. The telephony module joins this template once it is extracted from control — hardware/telephony/frappe is an empty placeholder today.",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "pay",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "main"
+    }
+  ]
+}

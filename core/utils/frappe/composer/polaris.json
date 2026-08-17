@@ -1,0 +1,90 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Frappe compose template for the polaris docker product (composes an app named rcore)",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main",
+      "_comment": "Required by polaris: corporate/polaris/frappe's Loan and LoanTransfer doctypes have Link fields with options=\"Branch\", and Branch is only defined in this module. Without composing it, polaris's doctype links would fail to resolve."
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "polaris",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/polaris/frappe",
+      "ref": "main",
+      "_comment": "crm is a hard requirement alongside polaris: polaris's loan_application reads CRM Lead.kyc_status, so this template must always compose the crm module too."
+    },
+    {
+      "name": "pay",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/payments/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "crm",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/frappe",
+      "ref": "main",
+      "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    }
+  ]
+}
