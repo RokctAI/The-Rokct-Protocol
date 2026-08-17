@@ -303,6 +303,23 @@ BUSINESS_SCHEMA = [
                 "From first contact to signed customer, what happens?",
                 tier=TIER_FULL,
             ),
+            # The canvases previously reused `growth_strategy` for both the
+            # Channels and Customer Relationships boxes — one acquisition loop
+            # answered three different questions. These give each box its own
+            # concept; templates fall back to `growth_strategy` for profiles
+            # that have not answered them yet.
+            Question(
+                "Sales Channels",
+                "Through which channels is the product sold and delivered to "
+                "the customer?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Customer Relationships",
+                "How are customers won, kept and grown — self-serve, dedicated "
+                "support, account management, community?",
+                tier=TIER_FULL,
+            ),
             Question(
                 "Brand Positioning",
                 "In one sentence, how should the market see you?",
@@ -392,6 +409,46 @@ BUSINESS_SCHEMA = [
             Question(
                 "Gross Margin Target",
                 "Target gross margin, by line if they differ.",
+                tier=TIER_FULL,
+            ),
+            # Unit economics. The previous financial model shipped a table of
+            # literal "_to be supplied_" cells because nothing ever collected
+            # these; with them answered, the compiler derives CAC payback,
+            # customer lifetime value and runway instead of leaving blanks.
+            Question(
+                "Average Revenue Per Customer",
+                "What does one customer pay on average? State the period — "
+                "per month or per year.",
+                example="R 3,500 per month",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Customer Acquisition Cost",
+                "What does it cost, all-in, to win one customer — sales, "
+                "marketing and onboarding included?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Customer Churn Rate",
+                "What share of customers leave? State the period — per month "
+                "or per year.",
+                example="2% monthly",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Customer Count Year 1",
+                "How many paying customers by the end of Year 1?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Monthly Operating Costs",
+                "What does the venture spend per month, all costs in — the "
+                "monthly burn?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Cash On Hand",
+                "How much cash is in the bank today?",
                 tier=TIER_FULL,
             ),
             Question(
