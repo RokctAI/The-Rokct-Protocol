@@ -29,8 +29,7 @@ import argparse
 import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # --- Encryption core (formerly crypto_utils.py) ---
 
@@ -41,11 +40,16 @@ def encrypt_pii(plain_text, key_b64):
         raise ValueError("Encryption key is missing.")
 
     key = base64.b64decode(key_b64)
-    cipher = AES.new(key, AES.MODE_GCM)
-    ciphertext, tag = cipher.encrypt_and_digest(plain_text.encode("utf-8"))
+    # 16-byte nonce preserves the historic on-disk layout produced by the
+    # previous PyCryptodome implementation (GCM default nonce was 16 bytes).
+    nonce = os.urandom(16)
+    aesgcm = AESGCM(key)
+    # cryptography returns ciphertext with the 16-byte tag appended.
+    ciphertext_with_tag = aesgcm.encrypt(nonce, plain_text.encode("utf-8"), None)
+    ciphertext, tag = ciphertext_with_tag[:-16], ciphertext_with_tag[-16:]
 
-    # We store as: nonce:tag:ciphertext
-    combined = base64.b64encode(cipher.nonce + tag + ciphertext).decode("utf-8")
+    # We store as: nonce:tag:ciphertext (unchanged at-rest format)
+    combined = base64.b64encode(nonce + tag + ciphertext).decode("utf-8")
     return combined
 
 
@@ -62,8 +66,9 @@ def decrypt_pii(encrypted_blob, key_b64):
     tag = data[16:32]
     ciphertext = data[32:]
 
-    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
-    plain_text = cipher.decrypt_and_verify(ciphertext, tag)
+    aesgcm = AESGCM(key)
+    # cryptography expects the tag appended to the ciphertext.
+    plain_text = aesgcm.decrypt(nonce, ciphertext + tag, None)
     return plain_text.decode("utf-8")
 
 
@@ -343,7 +348,7 @@ def main():
         print(decrypt_pii(args.blob, key))
     else:
         # Backward compatibility with standalone crypto_utils quick test when called without args
-        test_key = base64.b64encode(get_random_bytes(32)).decode()
+        test_key = base64.b64encode(os.urandom(32)).decode()
         test_data = "PII Data"
         encrypted = encrypt_pii(test_data, test_key)
         decrypted = decrypt_pii(encrypted, test_key)
