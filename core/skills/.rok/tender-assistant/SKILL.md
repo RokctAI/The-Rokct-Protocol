@@ -481,8 +481,9 @@ submission late.
 ## MODULE: ZA — South Africa
 
 A corpus-grounded companion reference for this module lives at
-`resources/sa-tender-completion-guide.md`, built from 37 real analyzed SA tender
-packs (2026-08). It covers pack triage, ranked disqualification causes,
+`resources/sa-tender-completion-guide.md` (v2.0), built from ~1,198 real
+analyzed SA tender packs — 37 in depth plus a large-scale delta verification
+(2026-08). It covers pack triage, ranked disqualification causes,
 form-by-form completion (SBD/MBD 1, 4, 6.1, 6.2, 8, 9, 3.x, 7),
 functionality-evidence tactics, pricing pitfalls, and a final pre-submission
 checklist. Read it alongside this module when preparing an actual ZA submission.
