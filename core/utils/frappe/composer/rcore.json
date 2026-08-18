@@ -198,12 +198,13 @@
       "ref": "main"
     },
     {
-      "name": "dev",
+      "name": "builder",
       "enabled": true,
       "source": "git",
       "git": "https://github.com/RokctAI/corporate",
-      "path": "../corporate/dev/frappe",
-      "ref": "main"
+      "path": "../corporate/builder/frappe",
+      "ref": "main",
+      "_comment": "Replaces the 'dev' entry (../corporate/dev/frappe): corporate/builder/frappe is the same Flutter build pipeline composed under its contract paths ({app_name}.builder.tasks._generate_flutter_app, {app_name}/builder/source_code). The two entries cannot coexist - both ship the flutter_app_configuration / flutter_build_settings doctypes and the composer hard-fails on duplicate DocTypes."
     },
     {
       "name": "crm",
