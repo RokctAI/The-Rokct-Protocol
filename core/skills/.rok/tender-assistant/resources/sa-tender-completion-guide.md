@@ -75,13 +75,13 @@ The remaining tail: wrong tender box or unsealed/mislabelled envelope, page remo
 **Five verbatim warnings worth memorising:**
 
 > "The tender box shall be locked at exactly 12:00 Noon and tenders arriving only a second after 12:00 or any time thereafter will not be accepted under any circumstance." (joburgtheatre)
-
+>
 > "Reject a non-responsive tender offer, and not allow it to be subsequently made responsive by correction or withdrawal of the non-conforming deviation." (CIDB standard wording, multiple packs)
-
+>
 > "Items against which N/A, left blank or – (dash) is entered are to be considered as incomplete and will also invalidate the tender." (raynkonyeni-mgodlwa-bridge)
-
+>
 > "I understand that the accompanying bid will be disqualified if this disclosure is found not to be true and complete in every respect." (SBD/MBD 4, verbatim in 10+ packs)
-
+>
 > "Digitally completing any part of the returnable documents will not be accepted and will lead to disqualification." (fs-publicworks — a buyer-specific handwriting rule; check your pack)
 
 Two structural insights: **first**, buyers split into "second-chance" and "no-second-chance" cultures — and the split tracks buyer sophistication, not regime. Mature SOEs and large metros (Eskom, Transnet, SANRAL, City of Tshwane — a metro municipality running an SOE-style tiered regime) tier their returnables — some fatal at closing, some curable on request within 48 hours to 7 days — and several provincial buyers (FS Public Works, Limpopo) also run 7-day cure windows. Smaller municipal and provincial buyers are the ones most reliably single-shot: everything must be in the box at closing. Never assume a cure window exists. **Second**, even where a cure window exists, it is the "second chance you can still blow" — missing a 48-hour clarification deadline converts a curable defect into disqualification. Monitor the named contact email daily after submission.
