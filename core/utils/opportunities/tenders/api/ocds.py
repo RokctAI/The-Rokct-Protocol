@@ -28,6 +28,7 @@
 # gitignored) - this IS the checked-in source, at its permanent,
 # allowed location.
 
+import os
 import requests
 import re
 from datetime import datetime, timedelta
@@ -52,22 +53,28 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
     configs = []
     if sources_dir.exists():
         for sf in sources_dir.glob("*.md"):
-            with open(sf, "r", encoding="utf-8") as f:
-                content = f.read()
-                if (
-                    re.search(r"-\s+\*\*Is API\*\*:\s*true", content, re.I)
-                    and "OCDS" in content
-                ):
-                    u = re.search(r"URL\*\*:\s*(https?://[^\s\n]+)", content)
-                    f_match = re.search(r"Flag\*\*:\s*([A-Z]{2})", content)
-                    if u and f_match:
-                        configs.append(
-                            {
-                                "url": u.group(1).strip(),
-                                "flag": f_match.group(1).strip(),
-                                "ref": f"sources/{sf.name}",
-                            }
-                        )
+            # Per-file isolation: one unreadable source card must not
+            # abort the scan of the remaining sources.
+            try:
+                with open(sf, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except OSError as e:
+                print(f"  [Error] Unreadable source card {sf.name}: {e}")
+                continue
+            if (
+                re.search(r"-\s+\*\*Is API\*\*:\s*true", content, re.I)
+                and "OCDS" in content
+            ):
+                u = re.search(r"URL\*\*:\s*(https?://[^\s\n]+)", content)
+                f_match = re.search(r"Flag\*\*:\s*([A-Z]{2})", content)
+                if u and f_match:
+                    configs.append(
+                        {
+                            "url": u.group(1).strip(),
+                            "flag": f_match.group(1).strip(),
+                            "ref": f"sources/{sf.name}",
+                        }
+                    )
 
     for c in configs:
         now = datetime.now()
@@ -85,10 +92,22 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
         try:
             resp = session.get(c["url"], params=params, timeout=120)
             resp.raise_for_status()
-            releases = resp.json().get("releases", [])
+            payload = resp.json()
+            # Schema-drift guard: an unexpected payload shape (error object,
+            # bare list, releases not a list) must fail this source cleanly
+            # instead of crashing mid-parse.
+            releases = payload.get("releases", []) if isinstance(payload, dict) else []
+            if not isinstance(releases, list):
+                print(
+                    f"  [Error] {c['flag']}: unexpected 'releases' payload shape "
+                    f"({type(releases).__name__}). Skipping source."
+                )
+                continue
 
             latest_map = {}
             for r in releases:
+                if not isinstance(r, dict):
+                    continue
                 ocid = r.get("ocid")
                 if ocid and (
                     ocid not in latest_map
@@ -97,25 +116,44 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
                     latest_map[ocid] = r
 
             updates = 0
+            failures = 0
             for ocid, rel in latest_map.items():
-                card_path = resolve_card_path(tender_dir, ocid)
-                existing = ""
-                if card_path and card_path.exists():
-                    with open(card_path, "r", encoding="utf-8") as f:
-                        existing = f.read()
-                    if "VERIFIED" in existing:
-                        continue
+                # Per-item isolation: one malformed release or unwritable
+                # card logs and skips — it must never abort the rest of
+                # the sync (previously it discarded every later release).
+                try:
+                    card_path = resolve_card_path(tender_dir, ocid)
+                    existing = ""
+                    if card_path and card_path.exists():
+                        with open(
+                            card_path, "r", encoding="utf-8", errors="ignore"
+                        ) as f:
+                            existing = f.read()
+                        if "VERIFIED" in existing:
+                            continue
 
-                new_c = generate_md_fn(rel, c["flag"], c["ref"], existing)
-                if [l.strip() for l in existing.splitlines() if l.strip()] != [
-                    l.strip() for l in new_c.splitlines() if l.strip()
-                ]:
-                    write_path = resolve_write_path(tender_dir, ocid)
-                    with open(write_path, "w", encoding="utf-8", newline="\n") as fw:
-                        fw.write(new_c)
-                    updates += 1
+                    new_c = generate_md_fn(rel, c["flag"], c["ref"], existing)
+                    if [l.strip() for l in existing.splitlines() if l.strip()] != [
+                        l.strip() for l in new_c.splitlines() if l.strip()
+                    ]:
+                        write_path = resolve_write_path(tender_dir, ocid)
+                        # Atomic replace so a crash mid-write can never
+                        # leave a truncated card behind.
+                        tmp_path = write_path.with_name(
+                            write_path.name + f".tmp{os.getpid()}"
+                        )
+                        with open(
+                            tmp_path, "w", encoding="utf-8", newline="\n"
+                        ) as fw:
+                            fw.write(new_c)
+                        os.replace(tmp_path, write_path)
+                        updates += 1
+                except Exception as e:
+                    failures += 1
+                    print(f"  [Error] {c['flag']} release {ocid}: {e}")
             print(
-                f"  [+] {c['flag']}: {len(releases)} releases. Updated {updates} files."
+                f"  [+] {c['flag']}: {len(releases)} releases. Updated {updates} "
+                f"files." + (f" {failures} failed (see log above)." if failures else "")
             )
         except Exception as e:
             print(f"  [Error] {c['flag']} Sync: {e}")

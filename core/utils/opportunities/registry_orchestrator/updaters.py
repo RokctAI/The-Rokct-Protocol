@@ -28,12 +28,33 @@
 # gitignored) - this IS the checked-in source, at its permanent,
 # allowed location.
 
+import os
 import re
 import json
 from datetime import datetime
 from pathlib import Path
 
 GLOBAL_DEFAULT_TASKS = ["Review Tender Documents", "Prepare Initial Response"]
+
+
+def atomic_write_text(path, content):
+    """Write-temp-then-rename so a crash mid-write can never truncate a
+    published file: either the old version survives intact or the fully
+    written new one replaces it."""
+    path = Path(path)
+    tmp_path = path.with_name(path.name + f".tmp{os.getpid()}")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    os.replace(tmp_path, path)
+
+
+def atomic_write_json(path, data, indent=2):
+    """Serialize, re-parse as a self-check, then atomically replace the
+    published file. If serialization or validation fails, the previous
+    published file is left untouched."""
+    payload = json.dumps(data, indent=indent)
+    json.loads(payload)  # self-check: what we publish must parse back
+    atomic_write_text(path, payload)
 
 
 def update_readme(readme_path, stats):
@@ -72,8 +93,7 @@ def update_readme(readme_path, stats):
         r"\*\*Overall Progress\*\*:.*$", progress_line, content, flags=re.MULTILINE
     )
 
-    with open(readme_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    atomic_write_text(readme_path, content)
 
 
 def update_audit_log(audit_path, total, verified, incomplete=0):
@@ -105,8 +125,7 @@ def update_audit_log(audit_path, total, verified, incomplete=0):
                 new_lines.append(incomplete_line)
         else:
             new_lines.append(line)
-    with open(audit_path, "w", encoding="utf-8") as f:
-        f.writelines(new_lines)
+    atomic_write_text(audit_path, "".join(new_lines))
 
 
 def update_json_meta(meta_path, stats, advanced_data):
@@ -132,8 +151,7 @@ def update_json_meta(meta_path, stats, advanced_data):
         "advanced_enrichment": advanced_data,
     }
 
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump(meta_data, f, indent=2)
+    atomic_write_json(meta_path, meta_data)
 
 
 def parse_tender_card(content):
@@ -180,6 +198,7 @@ def update_json_tenders(tenders_path, tenders_dir):
     tenders_path.parent.mkdir(parents=True, exist_ok=True)
 
     items = []
+    candidates = 0
     for file in tenders_dir.rglob("*.md"):
         fname = file.name.lower()
         if (
@@ -189,6 +208,14 @@ def update_json_tenders(tenders_path, tenders_dir):
             or fname.endswith("_content.md")
         ):
             continue
+        # Source-registry cards (03_tenders/sources/*.md) describe FETCH
+        # SOURCES (URL / Is API / Update Frequency), not tenders; the
+        # retired generator excluded them and consumers of tenders.json
+        # have never seen their key set. rglob would otherwise publish
+        # them as schema-foreign catalog items.
+        if "sources" in (p.name for p in file.parents):
+            continue
+        candidates += 1
         try:
             with open(file, "r", encoding="utf-8", errors="ignore") as f:
                 item = parse_tender_card(f.read())
@@ -197,9 +224,19 @@ def update_json_tenders(tenders_path, tenders_dir):
         except Exception as e:
             print(f"[Error] Failed to parse tender card {file}: {e}")
 
+    # Never replace a good published catalog with an empty one when the
+    # card corpus is non-empty: that means every parse failed (or the scan
+    # itself is broken), and publishing [] would wipe the catalog for
+    # every consumer. Keep the previous file and flag the run instead.
+    if candidates > 0 and not items:
+        print(
+            f"[Error] All {candidates} tender cards failed to parse - "
+            f"keeping the previously published tenders.json untouched."
+        )
+        return
+
     items.sort(key=lambda item: item["slug"])
-    with open(tenders_path, "w", encoding="utf-8") as f:
-        json.dump(items, f, indent=2)
+    atomic_write_json(tenders_path, items)
     print(f"[Done] tenders.json saved ({len(items)} items).")
 
 
@@ -219,6 +256,5 @@ def save_jules_todo(
         "pending_count": len(todo_list),
         "files": todo_list,
     }
-    with open(todo_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(todo_path, data)
     print(f"[Done] {filename} saved ({len(todo_list)} items).")

@@ -28,6 +28,7 @@
 # gitignored) - this IS the checked-in source, at its permanent,
 # allowed location.
 
+import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -71,6 +72,23 @@ def log_failure(message):
             fl.write(f"[{datetime.now().isoformat()}] {message}\n")
     except OSError:
         pass
+
+
+def get_with_retries(url, trace_id, timeout, attempts=2):
+    """GET with a bounded retry + backoff so one transient network error
+    doesn't cost a detail page or PDF its extraction pass. Raises the last
+    error after the final attempt — callers already handle failures."""
+    last_err = None
+    for attempt in range(attempts):
+        try:
+            return requests.get(
+                url, headers={"X-Trace-Id": trace_id}, timeout=timeout
+            )
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < attempts - 1:
+                time.sleep(2 * (attempt + 1))
+    raise last_err
 
 
 def normalize_date(date_str):
@@ -192,7 +210,7 @@ def extract_text_from_pdf(url):
     if not pdfplumber:
         return ""
     try:
-        resp = requests.get(url, headers={"X-Trace-Id": "musina-list"}, timeout=30)
+        resp = get_with_retries(url, "musina-list", timeout=30)
         if resp.status_code != 200:
             return ""
         with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
@@ -222,7 +240,7 @@ def fetch_deep_details(url, existing_pub):
 
     try:
         time.sleep(0.5)
-        resp = requests.get(url, headers={"X-Trace-Id": "musina-detail"}, timeout=20)
+        resp = get_with_retries(url, "musina-detail", timeout=20)
         if resp.status_code != 200:
             val, est = calculate_fallback_date(existing_pub)
             return val, est, None
@@ -397,77 +415,89 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
         failure_log.parent.mkdir(parents=True, exist_ok=True)
 
         for fid, rdata in rfqs_found.items():
-            card_path = resolve_card_path(tender_dir, fid)
-            existing = ""
-            if card_path and card_path.exists():
-                with open(card_path, "r", encoding="utf-8") as f:
-                    existing = f.read()
-                if "VERIFIED" in existing:
-                    continue
+            # Per-item isolation: one malformed RFQ or unwritable card
+            # logs and skips - it must never abort the rest of the sync.
+            try:
+                card_path = resolve_card_path(tender_dir, fid)
+                existing = ""
+                if card_path and card_path.exists():
+                    with open(card_path, "r", encoding="utf-8") as f:
+                        existing = f.read()
+                    if "VERIFIED" in existing:
+                        continue
 
-            closing_date, is_est, found_pub = fetch_deep_details(
-                rdata["url"], rdata["pub"]
-            )
+                closing_date, is_est, found_pub = fetch_deep_details(
+                    rdata["url"], rdata["pub"]
+                )
 
-            # Only a string that actually normalised to YYYY-MM-DD counts as
-            # a published date; normalize_date echoes unparseable input.
-            final_pub = ""
-            for cand in (found_pub, rdata["pub"]):
-                norm = normalize_date(cand)
-                if norm and re.match(r"\d{4}-\d{2}-\d{2}", norm):
-                    final_pub = norm
-                    break
+                # Only a string that actually normalised to YYYY-MM-DD counts as
+                # a published date; normalize_date echoes unparseable input.
+                final_pub = ""
+                for cand in (found_pub, rdata["pub"]):
+                    norm = normalize_date(cand)
+                    if norm and re.match(r"\d{4}-\d{2}-\d{2}", norm):
+                        final_pub = norm
+                        break
 
-            if not final_pub:
-                # Direct-PDF RFQs often have no date in the listing context;
-                # recover the month from the upload path instead of dropping
-                # the tender entirely (closing date stays whatever
-                # fetch_deep_details found — 'See Documents' when unknown,
-                # which generate_md flags as INCOMPLETE).
-                final_pub = pub_date_from_url(rdata["url"])
-                if final_pub:
+                if not final_pub:
+                    # Direct-PDF RFQs often have no date in the listing context;
+                    # recover the month from the upload path instead of dropping
+                    # the tender entirely (closing date stays whatever
+                    # fetch_deep_details found — 'See Documents' when unknown,
+                    # which generate_md flags as INCOMPLETE).
+                    final_pub = pub_date_from_url(rdata["url"])
+                    if final_pub:
+                        with open(failure_log, "a", encoding="utf-8") as fl:
+                            fl.write(
+                                f"[{datetime.now().isoformat()}] Pub date approximated from upload path (day unknown, using 01) - {fid} ({rdata['url']})\n"
+                            )
+
+                if not final_pub:
                     with open(failure_log, "a", encoding="utf-8") as fl:
                         fl.write(
-                            f"[{datetime.now().isoformat()}] Pub date approximated from upload path (day unknown, using 01) - {fid} ({rdata['url']})\n"
+                            f"[{datetime.now().isoformat()}] Skipped: no published date found - {fid} ({rdata['url']})\n"
                         )
+                    continue
 
-            if not final_pub:
-                with open(failure_log, "a", encoding="utf-8") as fl:
-                    fl.write(
-                        f"[{datetime.now().isoformat()}] Skipped: no published date found - {fid} ({rdata['url']})\n"
+                # Apply (Estimated) suffix when date is a fallback, "See Documents" when unknown
+                if closing_date:
+                    final_close = f"{closing_date} (Estimated)" if is_est else closing_date
+                else:
+                    final_close = "See Documents"
+
+                release = {
+                    "ocid": fid,
+                    "date": final_pub,
+                    "tender": {
+                        "title": rdata["text"],
+                        "procuringEntity": {"name": "Musina Local Municipality"},
+                        "procurementMethodDetails": "Request for Quotation",
+                        "province": "Limpopo",
+                        "deliveryLocation": "Musina",
+                        "category": "General Procurement",
+                        "description": rdata["text"],
+                        "tenderPeriod": {"endDate": final_close},
+                        "documents": [{"title": "RFQ Document", "url": rdata["url"]}],
+                    },
+                }
+
+                new_c = generate_md_fn(release, flag, source_ref, existing)
+                if [l.strip() for l in existing.splitlines() if l.strip()] != [
+                    l.strip() for l in new_c.splitlines() if l.strip()
+                ]:
+                    write_path = resolve_write_path(tender_dir, fid)
+                    # Atomic replace so a crash mid-write can never leave
+                    # a truncated card behind.
+                    tmp_path = write_path.with_name(
+                        write_path.name + f".tmp{os.getpid()}"
                     )
+                    with open(tmp_path, "w", encoding="utf-8", newline="\n") as fw:
+                        fw.write(new_c)
+                    os.replace(tmp_path, write_path)
+                    updates += 1
+            except Exception as e:
+                log_failure(f"RFQ {fid} processing failed: {e}")
                 continue
-
-            # Apply (Estimated) suffix when date is a fallback, "See Documents" when unknown
-            if closing_date:
-                final_close = f"{closing_date} (Estimated)" if is_est else closing_date
-            else:
-                final_close = "See Documents"
-
-            release = {
-                "ocid": fid,
-                "date": final_pub,
-                "tender": {
-                    "title": rdata["text"],
-                    "procuringEntity": {"name": "Musina Local Municipality"},
-                    "procurementMethodDetails": "Request for Quotation",
-                    "province": "Limpopo",
-                    "deliveryLocation": "Musina",
-                    "category": "General Procurement",
-                    "description": rdata["text"],
-                    "tenderPeriod": {"endDate": final_close},
-                    "documents": [{"title": "RFQ Document", "url": rdata["url"]}],
-                },
-            }
-
-            new_c = generate_md_fn(release, flag, source_ref, existing)
-            if [l.strip() for l in existing.splitlines() if l.strip()] != [
-                l.strip() for l in new_c.splitlines() if l.strip()
-            ]:
-                write_path = resolve_write_path(tender_dir, fid)
-                with open(write_path, "w", encoding="utf-8", newline="\n") as fw:
-                    fw.write(new_c)
-                updates += 1
 
         if audit_entries:
             with open(log_path, "a", encoding="utf-8") as log_f:

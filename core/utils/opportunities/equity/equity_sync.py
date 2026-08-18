@@ -37,6 +37,12 @@ from pathlib import Path
 # Identify project root
 BASE_DIR = Path(__file__).resolve()
 while not (BASE_DIR / ".rokct").exists():
+    if BASE_DIR.parent == BASE_DIR:
+        # No .rokct anywhere up the tree (misconfigured checkout) - fall
+        # back to CWD, which CI sets to the repo root, instead of spinning
+        # forever at the filesystem root.
+        BASE_DIR = Path.cwd()
+        break
     BASE_DIR = BASE_DIR.parent
 
 # Ensure the equity scripts directory is in path so we can import funder_manager/finder
@@ -85,7 +91,13 @@ def get_active_sources():
         return sources
 
     for f in sources_dir.glob("*.md"):
-        content = f.read_text(encoding="utf-8")
+        # Per-file isolation: one unreadable/mis-encoded source card must
+        # not abort the scan of the remaining sources.
+        try:
+            content = f.read_text(encoding="utf-8", errors="ignore")
+        except OSError as e:
+            logger.error(f"Unreadable source card {f.name}: {e}")
+            continue
         status_match = re.search(r"Status\*\*:\s*(ACTIVE)", content, re.I)
         url_match = re.search(r"URL\*\*:\s*((?:https?|file)://[^\s\n]+)", content)
         if status_match and url_match:

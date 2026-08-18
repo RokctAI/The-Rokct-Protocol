@@ -42,6 +42,12 @@ from updaters import (
 # --- CONFIGURATION ---
 BASE_DIR = Path(__file__).resolve()
 while not (BASE_DIR / ".rokct").exists():
+    if BASE_DIR.parent == BASE_DIR:
+        # No .rokct anywhere up the tree (misconfigured checkout) - fall
+        # back to CWD, which CI sets to the repo root, instead of spinning
+        # forever at the filesystem root.
+        BASE_DIR = Path.cwd()
+        break
     BASE_DIR = BASE_DIR.parent
 
 REGISTRIES = {
@@ -85,13 +91,31 @@ def run_orchestration():
         elif name == "EEIP":
             eeip_todo = todo
 
-    # Trigger Updaters
-    update_readme(README_PATH, stats)
-    update_audit_log(
-        AUDIT_LOG_PATH, stats["Tenders"][0], stats["Tenders"][1], stats["Tenders"][2]
-    )
-    update_json_meta(META_PATH, stats, all_advanced_data)
-    update_json_tenders(TENDERS_PATH, REGISTRIES["Tenders"])
+    # Trigger Updaters — each isolated so one failing output (e.g. a
+    # README regex mismatch) can't stop the published JSON from updating,
+    # and vice versa. Every updater writes atomically, so a failure here
+    # always leaves the previous published file intact.
+    for label, update in (
+        ("README", lambda: update_readme(README_PATH, stats)),
+        (
+            "audit log",
+            lambda: update_audit_log(
+                AUDIT_LOG_PATH,
+                stats["Tenders"][0],
+                stats["Tenders"][1],
+                stats["Tenders"][2],
+            ),
+        ),
+        ("meta.json", lambda: update_json_meta(META_PATH, stats, all_advanced_data)),
+        (
+            "tenders.json",
+            lambda: update_json_tenders(TENDERS_PATH, REGISTRIES["Tenders"]),
+        ),
+    ):
+        try:
+            update()
+        except Exception as e:
+            print(f"[Error] {label} update failed (previous file kept): {e}")
 
     # Save specialized task queues
     save_jules_todo(

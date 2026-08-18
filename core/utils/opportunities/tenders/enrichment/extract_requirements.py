@@ -29,6 +29,7 @@ import pdfplumber
 import re
 import sys
 import json
+import time
 import requests
 import io
 import os
@@ -38,6 +39,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 BASE_DIR = Path(__file__).resolve()
 while not (BASE_DIR / ".rokct").exists():
+    if BASE_DIR.parent == BASE_DIR:
+        # No .rokct anywhere up the tree (e.g. a bare checkout running the
+        # tests) — fall back to CWD, which CI sets to the repo root. The
+        # unguarded walk spun forever at the filesystem root.
+        BASE_DIR = Path.cwd()
+        break
     BASE_DIR = BASE_DIR.parent
 
 LOG_FILE = (
@@ -52,15 +59,209 @@ def log_failure(tender_id, reason):
         f.write(f"[{timestamp}] {tender_id}: {reason}\n")
 
 
+def fetch_with_retries(url, tender_id, attempts=3, timeout=15):
+    """GET with bounded retries + backoff so one transient network blip
+    doesn't cost a tender its enrichment pass. Returns the response or
+    None (the caller logs and skips — never aborts the batch)."""
+    last_err = None
+    for attempt in range(attempts):
+        try:
+            return requests.get(
+                url, headers={"X-Trace-Id": "extract-requirements"}, timeout=timeout
+            )
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < attempts - 1:
+                time.sleep(2 * (attempt + 1))
+    log_failure(tender_id, f"Fetch failed after {attempts} attempts: {last_err}")
+    return None
+
+
+# --- Deterministic text extraction ---------------------------------------
+# Every pattern below is grounded: it only fires when the tender document
+# literally contains the phrase, and it records the matched text verbatim
+# (the source quote) so nothing on the checklist is invented. Patterns were
+# validated against the real card corpus (203 extracted tender PDFs in
+# RokctAI/opportunities, August 2026) and the SA tender completion guide's
+# disqualification list (core/skills/.rok/tender-assistant/resources/).
+
+# CIDB contractor grading: an absolute eligibility gate where present.
+# Real phrasings covered (corpus tender ids in parentheses):
+#   'grading of\n1EB or higher'                    (ocds-9t57fa-164683)
+#   'CIDB grade 1CE or higher may respond'         (ocds-9t57fa-164649)
+#   'CIDB Grading – 2EP or Higher'                 (ocds-9t57fa-164465)
+#   'REQUIRED GRADING 5 GB or higher CIDB Grading' (KZN ULM panel pack)
+#   'CIDB grade 1 SL or higher registration'       (NRF-SAASTA pack)
+# The gap tolerates line breaks (PDF text is hard-wrapped) but stops at a
+# sentence boundary; the class code whitelist (CIDB's registered classes)
+# keeps 'Grade 12' school qualifications from matching.
+CIDB_GRADING_RX = re.compile(
+    r"(?:CIDB|contractor|grad(?:e|ing))[^.]{0,60}?"
+    r"([1-9]\s?(?:GB|CE|ME|EP|EB|SB|SF|SH|SI|SJ|SK|SL|SM|SN|SO|SQ)\b"
+    r"(?:\s*PE)?(?:\s+or\s+(?:higher|above))?)",
+    re.I,
+)
+
+# Functionality minimum threshold: bids scoring below it are eliminated
+# before price is even considered. Real phrasings covered:
+#   'minimum functionality threshold of 80 points'    (ocds-9t57fa-164502)
+#   'Minimum threshold for functionality: 70%.'       (ocds-9t57fa-164537)
+#   'MINIMUM QUALIFYING SCORE 70 REQUIRED'            (corpus)
+#   'Minimum Required Score for functionality is: 70' (corpus)
+#   'ACCEPTABLE MINIMUM SCORE 60 POINTS'              (ocds-9t57fa-164598)
+FUNCTIONALITY_THRESHOLD_RXES = [
+    re.compile(r"minimum\s+functionality\s+threshold\s+of\s+(\d{1,3})", re.I),
+    re.compile(
+        r"minimum\s+threshold\s+for\s+functionality\s*[:\s]\s*(\d{1,3})\s*%?", re.I
+    ),
+    re.compile(
+        r"minimum\s+(?:qualifying|required)\s+score\s*(?:for\s+functionality)?"
+        r"\s*(?:is|of)?\s*[:\s]\s*(\d{1,3})",
+        re.I,
+    ),
+    re.compile(r"acceptable\s+minimum\s+score\s*[:\s]?\s*(\d{1,3})", re.I),
+]
+
+# Compulsory briefing/site meeting: attendance is pass/fail wherever it
+# appears. Only AFFIRMATIVE phrasings are accepted — SBD boilerplate like
+# 'Where the briefing session is indicated as compulsory...' and 'Failure
+# to attend the compulsory briefing session (if applicable)...' appears in
+# packs with no briefing at all, so conditional wordings never match.
+# Real affirmative phrasings covered:
+#   'THERE WILL BE COMPULSORY BRIEFING SESSION'            (ocds-9t57fa-164547)
+#   'A compulsory Briefing and Site Inspection sessions
+#    will be held'                                         (corpus)
+#   'Briefing Session (briefing is compulsory)'            (ocds-9t57fa-164704)
+#   'Attendance of the compulsory briefing and site
+#    inspection sessions.' (mandatory-criteria bullet)     (ocds-9t57fa-164423)
+BRIEFING_COMPULSORY_RXES = [
+    re.compile(
+        r"there\s+will\s+be\s+a?\s*compulsory\s+"
+        r"(?:briefing|site\s+(?:meeting|inspection|visit))[^.\n]{0,40}",
+        re.I,
+    ),
+    re.compile(
+        r"compulsory\s+(?:site\s+)?(?:briefing|clarification)"
+        r"(?:\s+and\s+site\s+inspection)?\s*(?:session|meeting)?s?\s+"
+        r"(?:will\s+be\s+held|will\s+take\s+place|is\s+scheduled)",
+        re.I,
+    ),
+    re.compile(r"(?:briefing|site\s+meeting)\s+is\s+compulsory", re.I),
+    re.compile(
+        r"attendance\s+of\s+(?:the\s+)?compulsory\s+"
+        r"(?:briefing|site\s+(?:meeting|inspection))[^.\n]{0,40}",
+        re.I,
+    ),
+]
+
+
+def extract_requirements_from_text(full_text):
+    """Deterministic requirement extraction from already-extracted tender
+    text. Pure function (no I/O) so it is directly testable offline; the
+    PDF/table handling stays in extract_requirements_from_pdf."""
+    results = {
+        "gate_1_mandatory": [],
+        "gate_2_functional": [],
+        "pricing_preference": "Unknown",
+        "cidb_grading": [],
+        "briefing_compulsory": "",
+        "functionality_threshold": None,
+    }
+    if not full_text:
+        return results
+
+    # Gate 1: mandatory-document keywords. Each entry is the literal
+    # matched text. Registration gates (CSD, TCS, PSIRA, NHBRC, the
+    # Restricted Suppliers / Tender Defaulters registers) follow the
+    # universal-gate list in the SA tender completion guide and only fire
+    # on a literal occurrence in the document.
+    gate_1_patterns = [
+        r"SBD\s*\d",
+        r"MBD\s*\d",
+        r"CSD\s*report",
+        r"Tax\s*(?:compliance|clearance)",
+        r"B-BBEE\s*(?:certificate|affidavit)",
+        r"COIDA",
+        r"Joint\s*Venture\s*Agreement",
+        r"certified\s*copy",
+        r"municipal\s*account",
+        r"Letter\s*of\s*Good\s*Standing",
+        r"Register\s*for\s*Tender\s*Defaulters",
+        r"List\s*of\s*Restricted\s*Suppliers",
+        r"PSIRA",
+        r"NHBRC",
+    ]
+    for pattern in gate_1_patterns:
+        matches = re.findall(pattern, full_text, re.I)
+        for m in set(matches):
+            clean_m = re.sub(r"[\n\r]", " ", m).strip()
+            if clean_m.upper() not in [
+                x.upper() for x in results["gate_1_mandatory"]
+            ]:
+                results["gate_1_mandatory"].append(clean_m)
+
+    # Gate 2 Regex Fallback
+    weight_matches = re.findall(
+        r"([A-Za-z\s]{10,100})\s+(\d{1,3})\s*(?:points|weight)", full_text, re.I
+    )
+    for criterion, points in weight_matches:
+        if int(points) > 0:
+            if not any(
+                criterion.strip().lower() in x["criterion"].lower()
+                for x in results["gate_2_functional"]
+            ):
+                results["gate_2_functional"].append(
+                    {"criterion": criterion.strip(), "points": points}
+                )
+
+    # Pricing
+    pp_match = re.search(r"(80/20|90/10)", full_text)
+    if pp_match:
+        results["pricing_preference"] = pp_match.group(1)
+
+    # CIDB grading (deduplicated, whitespace-normalized literal grades)
+    for m in CIDB_GRADING_RX.finditer(full_text):
+        grade = re.sub(r"\s+", " ", m.group(1)).strip().upper()
+        if grade not in results["cidb_grading"]:
+            results["cidb_grading"].append(grade)
+
+    # Compulsory briefing (store the matched sentence fragment verbatim)
+    for rx in BRIEFING_COMPULSORY_RXES:
+        m = rx.search(full_text)
+        if m:
+            results["briefing_compulsory"] = re.sub(
+                r"\s+", " ", m.group(0)
+            ).strip()
+            break
+
+    # Functionality threshold (first explicit statement wins)
+    for rx in FUNCTIONALITY_THRESHOLD_RXES:
+        m = rx.search(full_text)
+        if m:
+            score = int(m.group(1))
+            if 0 < score <= 100:
+                results["functionality_threshold"] = {
+                    "score": score,
+                    "quote": re.sub(r"\s+", " ", m.group(0)).strip(),
+                }
+                break
+
+    return results
+
+
 def extract_requirements_from_pdf(pdf_stream, tender_id):
     results = {
         "gate_1_mandatory": [],
         "gate_2_functional": [],
         "pricing_preference": "Unknown",
+        "cidb_grading": [],
+        "briefing_compulsory": "",
+        "functionality_threshold": None,
     }
     try:
         with pdfplumber.open(pdf_stream) as pdf:
             full_text = ""
+            table_criteria = []
             for page in pdf.pages:
                 page_text = page.extract_text() or ""
                 full_text += page_text + "\n"
@@ -77,51 +278,23 @@ def extract_requirements_from_pdf(pdf_stream, tender_id):
                                 if cell.isdigit() and 0 < int(cell) <= 100:
                                     criterion = max(clean_row, key=len)
                                     if len(criterion) > 10 and not criterion.isdigit():
-                                        results["gate_2_functional"].append(
+                                        table_criteria.append(
                                             {"criterion": criterion, "points": cell}
                                         )
                                         break
 
-            # Gate 1
-            gate_1_patterns = [
-                r"SBD\s*\d",
-                r"MBD\s*\d",
-                r"CSD\s*report",
-                r"Tax\s*compliance",
-                r"B-BBEE\s*(?:certificate|affidavit)",
-                r"COIDA",
-                r"Joint\s*Venture\s*Agreement",
-                r"certified\s*copy",
-                r"municipal\s*account",
-                r"Letter\s*of\s*Good\s*Standing",
-            ]
-            for pattern in gate_1_patterns:
-                matches = re.findall(pattern, full_text, re.I)
-                for m in set(matches):
-                    clean_m = re.sub(r"[\n\r]", " ", m).strip()
-                    if clean_m.upper() not in [
-                        x.upper() for x in results["gate_1_mandatory"]
-                    ]:
-                        results["gate_1_mandatory"].append(clean_m)
-
-            # Gate 2 Regex Fallback
-            weight_matches = re.findall(
-                r"([A-Za-z\s]{10,100})\s+(\d{1,3})\s*(?:points|weight)", full_text, re.I
-            )
-            for criterion, points in weight_matches:
-                if int(points) > 0:
-                    if not any(
-                        criterion.strip().lower() in x["criterion"].lower()
-                        for x in results["gate_2_functional"]
-                    ):
-                        results["gate_2_functional"].append(
-                            {"criterion": criterion.strip(), "points": points}
-                        )
-
-            # Pricing
-            pp_match = re.search(r"(80/20|90/10)", full_text)
-            if pp_match:
-                results["pricing_preference"] = pp_match.group(1)
+            results = extract_requirements_from_text(full_text)
+            # Table criteria take precedence over the regex fallback: keep
+            # them first and drop regex duplicates (same rule as before,
+            # applied in merge form).
+            merged = list(table_criteria)
+            for item in results["gate_2_functional"]:
+                if not any(
+                    item["criterion"].lower() in x["criterion"].lower()
+                    for x in merged
+                ):
+                    merged.append(item)
+            results["gate_2_functional"] = merged
 
             if not results["gate_1_mandatory"] and not results["gate_2_functional"]:
                 log_failure(
@@ -135,6 +308,25 @@ def extract_requirements_from_pdf(pdf_stream, tender_id):
 
 def generate_actionable_tasks(requirements, tender_id):
     tasks = []
+
+    # Hard eligibility gates first — per the disqualification league table
+    # in the SA tender completion guide, these kill bids outright, so they
+    # must survive the task cap ahead of document-gathering items. Each
+    # task embeds the literal text extracted from the tender document.
+    cidb_grades = requirements.get("cidb_grading") or []
+    if cidb_grades:
+        tasks.append(
+            "Confirm CIDB contractor grading "
+            f"'{cidb_grades[0]}' is active and in good standing "
+            "(stated in tender document) | 1"
+        )
+    briefing = requirements.get("briefing_compulsory") or ""
+    if briefing:
+        tasks.append(
+            "Attend the compulsory briefing/site meeting and sign the "
+            f"attendance register (document states: '{briefing[:80]}') | 1"
+        )
+
     mandatory = requirements.get("gate_1_mandatory", [])
     if mandatory:
         sbds = sorted(
@@ -168,6 +360,31 @@ def generate_actionable_tasks(requirements, tender_id):
             tasks.append(
                 "Obtain recent municipal accounts (<90 days) for the Company and all Directors | 2"
             )
+        if any(
+            "DEFAULTERS" in m.upper() or "RESTRICTED" in m.upper() for m in mandatory
+        ):
+            tasks.append(
+                "Verify the company and every director are NOT listed on National Treasury's Restricted Suppliers / Tender Defaulters registers | 1"
+            )
+        if any("PSIRA" in m.upper() for m in mandatory):
+            tasks.append(
+                "Attach valid PSIRA registration certificates (company and directors) | 1"
+            )
+        if any("NHBRC" in m.upper() for m in mandatory):
+            tasks.append("Attach valid NHBRC registration proof | 1")
+        if any(
+            "COIDA" in m.upper() or "GOOD STANDING" in m.upper() for m in mandatory
+        ):
+            tasks.append(
+                "Obtain COIDA Letter of Good Standing from the Compensation Fund | 2"
+            )
+
+    threshold = requirements.get("functionality_threshold")
+    if threshold:
+        tasks.append(
+            "Self-score functionality before bidding — document states: "
+            f"'{threshold['quote'][:80]}' | 2"
+        )
 
     functional = requirements.get("gate_2_functional", [])
     if functional:
@@ -197,7 +414,10 @@ def generate_actionable_tasks(requirements, tender_id):
             "Identify Mandatory Compliance items | 2",
             "Prepare Initial Response Proposal | 3",
         ]
-    return tasks[:5]
+    # Cap raised from 5 to 7: the new hard-gate tasks (CIDB, briefing,
+    # restricted-suppliers check) must not push out the methodology and
+    # evidence tasks that were previously the checklist's tail.
+    return tasks[:7]
 
 
 def update_tender_card(md_path, requirements):
@@ -220,8 +440,12 @@ def update_tender_card(md_path, requirements):
     else:
         new_content = content.strip() + "\n\n" + new_checklist_block
 
-    with open(md_path, "w", encoding="utf-8", newline="\n") as f:
+    # Atomic replace: write a sibling temp file and rename it over the card
+    # so a crash mid-write can never leave a truncated card behind.
+    tmp_path = md_path.with_name(md_path.name + f".tmp{os.getpid()}")
+    with open(tmp_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(new_content)
+    os.replace(tmp_path, md_path)
 
 
 def process_file(md_file):
@@ -237,9 +461,9 @@ def process_file(md_file):
             return False
         url = url_match.group(1).strip()
 
-        resp = requests.get(
-            url, headers={"X-Trace-Id": "extract-requirements"}, timeout=15
-        )
+        resp = fetch_with_retries(url, tender_id)
+        if resp is None:
+            return False
         if resp.status_code == 200:
             # Accept the same responses pdf_to_md.py accepts: a Direct Link
             # may serve a real PDF from a download endpoint or a URL with

@@ -28,17 +28,40 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
 from pathlib import Path
 import sys
 
 # Identify project root
 BASE_DIR = Path(__file__).resolve()
 while not (BASE_DIR / ".rokct").exists():
+    if BASE_DIR.parent == BASE_DIR:
+        # No .rokct anywhere up the tree (misconfigured checkout) - fall
+        # back to CWD, which CI sets to the repo root, instead of spinning
+        # forever at the filesystem root.
+        BASE_DIR = Path.cwd()
+        break
     BASE_DIR = BASE_DIR.parent
 
 # Ensure common imports
 sys.path.append(str(BASE_DIR / ".rokct" / "scripts" / "equity"))
 from funder_manager import FunderManager
+
+
+def _get_with_retries(url, headers, attempts=3, timeout=15):
+    """Bounded retries with backoff so one transient network error doesn't
+    cost the whole source. Calls requests.get (not a Session) on purpose:
+    equity_sync.py monkeypatches requests.get to serve file:// URLs in
+    local runs, and that hook must keep working."""
+    last_err = None
+    for attempt in range(attempts):
+        try:
+            return requests.get(url, timeout=timeout, headers=headers)
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < attempts - 1:
+                time.sleep(2 * (attempt + 1))
+    raise last_err
 
 
 def find_candidates(url):
@@ -48,7 +71,7 @@ def find_candidates(url):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "X-Trace-Id": "duckduckgo-query",
         }
-        response = requests.get(url, timeout=15, headers=headers)
+        response = _get_with_retries(url, headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
