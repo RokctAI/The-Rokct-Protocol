@@ -29,7 +29,7 @@ SHA-256, then executes it with the kits subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "170139ef79b5ba4fe43f1f383b8086704da15b01"
+PROTOCOL_REF = "b5af34fae1ae6ee0d0951d3902f398e9620a8fed"
 DELEGATE_PATH = "core/utils/agent_delegation/job_manager.py"
 DELEGATE_SHA256 = "633f9ae1d93fbfe537c77ec8c3cc1eecb9764ab27b39dd9237eee0b1fd5444ab"
 GITHUB_RAW_BASE = (

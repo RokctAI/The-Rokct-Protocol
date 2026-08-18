@@ -180,10 +180,20 @@ def generate_md(release, flag, source_ref, existing_content=""):
 if __name__ == "__main__":
     print(f"[{datetime.now().strftime('%H:%M:%S')}] --- Tender Engine (AI-Aware) ---")
 
+    # Each sub-sync is isolated: an unexpected crash in one source must not
+    # abort the other, nor fail the workflow step (the sync-engine step runs
+    # the grants and equity fetchers after this script under bash -e, so an
+    # uncaught exception here used to cancel those syncs entirely).
     # Run API Syncs (OCDS)
-    ocds.run_sync(TENDER_DIR, SOURCES_DIR, generate_md)
+    try:
+        ocds.run_sync(TENDER_DIR, SOURCES_DIR, generate_md)
+    except Exception as e:
+        print(f"  [Error] OCDS sync crashed: {e}")
 
     # Run Scrapers (Musina)
-    musina.run_sync(TENDER_DIR, SOURCES_DIR, generate_md)
+    try:
+        musina.run_sync(TENDER_DIR, SOURCES_DIR, generate_md)
+    except Exception as e:
+        print(f"  [Error] Musina sync crashed: {e}")
 
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Sync Complete.")

@@ -79,7 +79,7 @@ class FunderManager:
             if file.name in ["template.md", "registry_audit_log.md", "readme.md"]:
                 continue
             try:
-                content = file.read_text()
+                content = file.read_text(encoding="utf-8", errors="ignore")
                 match = org_regex.search(content)
                 if match:
                     name = match.group(1).strip().strip("[]").lower()
@@ -162,8 +162,12 @@ class FunderManager:
             if re.search(r"Verification Status\*\*:\s*VERIFIED", existing):
                 return filepath
 
-        with open(filepath, "w") as f:
+        # Atomic replace: write a sibling temp file and rename it into
+        # place so a crash mid-write can never leave a truncated card.
+        tmp_path = filepath.with_name(filepath.name + f".tmp{os.getpid()}")
+        with open(tmp_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(content)
+        os.replace(tmp_path, filepath)
         return filepath
 
 

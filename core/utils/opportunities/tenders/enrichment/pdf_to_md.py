@@ -32,6 +32,7 @@ import os
 import re
 import sys
 import json
+import time
 import requests
 import pdfplumber
 import shutil
@@ -45,6 +46,12 @@ from tender_resolver import resolve_card_path
 
 BASE_DIR = Path(__file__).resolve()
 while not (BASE_DIR / ".rokct").exists():
+    if BASE_DIR.parent == BASE_DIR:
+        # No .rokct anywhere up the tree (misconfigured checkout) - fall
+        # back to CWD, which CI sets to the repo root, instead of spinning
+        # forever at the filesystem root.
+        BASE_DIR = Path.cwd()
+        break
     BASE_DIR = BASE_DIR.parent
 TENDER_DIR = BASE_DIR / "03_tenders"
 TODO_JSON = BASE_DIR / ".rokct" / "agent" / "todo.json"
@@ -118,7 +125,11 @@ def clean_markdown(text):
 
         cleaned_lines.append(line)
 
-    result = "\\n".join(cleaned_lines)
+    # Join with a real newline. This used to be the two-character literal
+    # "\n" (an escaped backslash), which flattened every extracted
+    # *_content.md into a single line of visible '\n' sequences — visible
+    # in the whole committed corpus.
+    result = "\n".join(cleaned_lines)
 
     # Fix MD037: Spaces inside emphasis markers
     result = re.sub(r"_\s+(.*?)\s+_", r"_\1_", result)
@@ -161,11 +172,23 @@ def process_tender(tender_id):
                 # Content is up to date
                 return
 
-        # Fetch PDF
+        # Fetch PDF (bounded retries with backoff: a transient network
+        # error must not cost the tender its extraction pass)
         try:
-            resp = requests.get(
-                direct_link, headers={"X-Trace-Id": "pdf-to-md"}, timeout=60
-            )
+            resp = None
+            last_err = None
+            for attempt in range(3):
+                try:
+                    resp = requests.get(
+                        direct_link, headers={"X-Trace-Id": "pdf-to-md"}, timeout=60
+                    )
+                    break
+                except requests.RequestException as e:
+                    last_err = e
+                    if attempt < 2:
+                        time.sleep(2 * (attempt + 1))
+            if resp is None:
+                raise last_err
             resp.raise_for_status()
             if "application/pdf" not in resp.headers.get(
                 "Content-Type", ""
@@ -197,8 +220,12 @@ def process_tender(tender_id):
 
             md_content = clean_markdown(md_content)
 
-            with open(content_file, "w", encoding="utf-8") as f:
+            # Atomic replace: a crash or timeout mid-write must never
+            # leave a truncated content file behind.
+            tmp_file = content_file.with_name(content_file.name + f".tmp{os.getpid()}")
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 f.write(md_content)
+            os.replace(tmp_file, content_file)
 
         except Exception as e:
             log_failure(tender_id, f"PDF extraction error: {str(e)}")

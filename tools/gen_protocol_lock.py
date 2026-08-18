@@ -107,6 +107,7 @@ OPPORTUNITIES_FILES = (
     "tenders/api/ocds.py",
     "tenders/enrichment/extract_requirements.py",
     "tenders/enrichment/pdf_to_md.py",
+    "tenders/enrichment/test_extract_requirements.py",
     "tenders/index.py",
     "tenders/scrapers/musina.py",
     "tenders/scrapers/test_musina_dates.py",
@@ -251,8 +252,11 @@ CONSUMERS.update(
 # dict for the archive extraction it verifies.
 _OPP_TARGETS = tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
 for _p in OPPORTUNITIES_FILES:
-    if _p == "tenders/scrapers/test_musina_dates.py":
-        continue  # extracted and pinned with the rest, but has no wrapper
+    if _p in (
+        "tenders/scrapers/test_musina_dates.py",
+        "tenders/enrichment/test_extract_requirements.py",
+    ):
+        continue  # extracted and pinned with the rest, but have no wrapper
     CONSUMERS[f"{_OPP_SCRIPTS}/{_p}"] = [
         ("ref",),
         ("dict", "EXPECTED_SHA256", _OPP_TARGETS),
