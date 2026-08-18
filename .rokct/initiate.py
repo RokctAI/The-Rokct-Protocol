@@ -17,9 +17,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "64b18c8e74b440bc743798a82551eb6834280f52"
+PROTOCOL_REF = "0e4d0feba1b3114778c26913aa5ca24da7aa05c5"
 EXPECTED_SHA256 = {
-    "profiles/local/initiate.py": "a26e183c892f69fee47a3dae8819267c44a0266f0598c146e26732f124b5e708",
+    "profiles/local/initiate.py": "da0af6efedf6f3a9d41fe1626be890c6d262493e13ddf95c663abd641e1ccc48",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_RAW_BASE = (
@@ -386,7 +386,10 @@ def main():
     if email:
         prefix = email.split("@")[0].replace(".", "").lower()
         domain = email.split("@")[1].lower()
-        domain_hash = hashlib.md5(domain.encode()).hexdigest()[:6]
+        # Non-security use: short fingerprint of the email domain to build a
+        # human-readable safe identity. usedforsecurity=False documents intent
+        # and clears bandit B324 (CWE-327) without changing the digest output.
+        domain_hash = hashlib.md5(domain.encode(), usedforsecurity=False).hexdigest()[:6]
         safe_id = f"{prefix}.{domain_hash}"
         mem = os.path.join(ROKCT_DIR, "memory.md")
         existing_mem_content = ""
