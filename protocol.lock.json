@@ -1,5 +1,5 @@
 {
-  "ref": "64b18c8e74b440bc743798a82551eb6834280f52",
+  "ref": "0e4d0feba1b3114778c26913aa5ca24da7aa05c5",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -12,7 +12,7 @@
     "core/utils/agent_delegation/handle_groq_output.py": "503e26aa93aae36669a5e157a14d0d6215080cd98fb7242bf42de8567e29a51f",
     "core/utils/agent_delegation/job_manager.py": "633f9ae1d93fbfe537c77ec8c3cc1eecb9764ab27b39dd9237eee0b1fd5444ab",
     "core/utils/agent_delegation/manage_sessions.py": "adbbdd2c4c970f0ffec2dcd2bb9575009248a759174da48b3eea7aec505062e3",
-    "core/utils/agent_delegation/privacy.py": "b094c70ed64d75a5d2036c2ea4483315e7ec1b7a5aacc97cbc1da903429bd7f9",
+    "core/utils/agent_delegation/privacy.py": "33a75837ece5c153f2e56e310eca05ca6a5deeaf4dc56c69403fb845d7dc9798",
     "core/utils/agent_delegation/reporter.py": "fb0da889eed2344b17e2d40bb2ebc286416b4649e2717431a12792f1c1f0f72f",
     "core/utils/agent_delegation/update_structure.py": "271f16ff662c34d4ac2c1a6fc2b1f476b0bd62bcef665e238ceda33c69dafa17",
     "core/utils/flutter/sdk_composer.py": "222b3853b1df0787c80fe55defba7288f30035e205204276579247f9633a01a3",
@@ -57,8 +57,8 @@
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "72fa8aa992e2e2885e8fd50cf9a7c0cd908d36c5afbc466f1ff87d2056af2166",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "a26e183c892f69fee47a3dae8819267c44a0266f0598c146e26732f124b5e708",
-    "profiles/web/initiate.py": "3671cbf85f6c4ddc0a7096cf9c1185ee852bb4da50c2658dfb00315f74ecf3c5",
+    "profiles/local/initiate.py": "da0af6efedf6f3a9d41fe1626be890c6d262493e13ddf95c663abd641e1ccc48",
+    "profiles/web/initiate.py": "49070254f818539e5d1baa2134d5a48cca7598b6c9843ce3df3fc3a1e8b098e8",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
