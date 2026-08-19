@@ -66,7 +66,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/productivity/frappe",
-      "ref": "4823b5e3fa477a1ff7747c9b4cda228acc0a7e6c"
+      "ref": "9807cd6c53f33de05ccaf1c093bdf36766ffb837"
     },
     {
       "name": "weather",
@@ -99,7 +99,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "afb2a84678206f71b617d5bd41e14e20b54318ff"
+      "ref": "cdb7280e4d5db3562898c0a80ccebe667ab48ac0"
     },
     {
       "name": "gateways",
@@ -107,7 +107,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/gateways/frappe",
-      "ref": "afb2a84678206f71b617d5bd41e14e20b54318ff",
+      "ref": "cdb7280e4d5db3562898c0a80ccebe667ab48ac0",
       "_comment": "Full frappe/payments port (Payment Gateway + Braintree/GoCardless/Mpesa/Paymob/PayPal/Paytm/Razorpay/Stripe settings) plus Rokct's own PayFast/Paystack gateways and paystack_checkout page, which moved here from pay's payments/frappe when the 'pay' module entry was retired. Composing this module replaces installing the standalone payments app - a site must NOT have Frappenize/payments installed alongside rcore, since the doctype names are intentionally identical and would double-define (same rule as the crm entry below)."
     },
     {
@@ -213,7 +213,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/crm/frappe",
-      "ref": "4823b5e3fa477a1ff7747c9b4cda228acc0a7e6c",
+      "ref": "9807cd6c53f33de05ccaf1c093bdf36766ffb837",
       "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
     }
   ]
