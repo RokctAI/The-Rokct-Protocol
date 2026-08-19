@@ -182,6 +182,9 @@ under **both** keys in the composed `hooks.py`:
 Keys and values are emitted exactly as declared in the manifest (after
 `{app_name}` placeholder substitution), so each composed shell exposes only
 its own `{app_name}.*` alias names — no cross-shell prefixes are synthesized.
+Keys may additionally carry a single gateway prefix
+(e.g. `"control:claim_tender"`), the shape frappe's cmd registry accepts for
+gateway-scoped commands; values must always remain plain dotted paths.
 
 ### Semantics of the git-clone fallback
 

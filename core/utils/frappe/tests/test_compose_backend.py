@@ -379,6 +379,72 @@ class TokenLintTest(ComposeBackendTestBase):
         self.assertEqual(offenders, [])
 
 
+class WhitelistedMethodsKeyValidationTest(ComposeBackendTestBase):
+    """whitelisted_methods KEYS may carry a single gateway prefix
+    ("control:claim_tender") so SDK modules can register gateway-scoped
+    cmds; VALUES stay strictly dotted and a second prefix is rejected."""
+
+    def _manifest(self, whitelisted):
+        return {
+            "name": self.MODULE,
+            "description": "test sdk",
+            "hooks": {"whitelisted_methods": whitelisted},
+        }
+
+    def setUp(self):
+        super().setUp()
+        self.make_composer_json()
+        self.make_shell()
+
+    def test_gateway_prefixed_key_composes(self):
+        self.make_sdk(
+            manifest=self._manifest(
+                {
+                    "control:claim_tender": "{app_name}.tender.control.claim_tender",
+                    "{app_name}.tender.claim": "{app_name}.tender.control.claim_tender",
+                }
+            )
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        hooks = self.read(f"{self.APP}/hooks.py")
+        val = f"{self.APP}.tender.control.claim_tender"
+        self.assertIn(
+            f"whitelisted_methods[{'control:claim_tender'!r}] = {val!r}", hooks
+        )
+        self.assertIn(
+            f"override_whitelisted_methods[{'control:claim_tender'!r}] = {val!r}",
+            hooks,
+        )
+        self.assertIn(
+            f"whitelisted_methods[{f'{self.APP}.tender.claim'!r}] = {val!r}", hooks
+        )
+
+    def test_colon_in_value_still_aborts(self):
+        self.make_sdk(
+            manifest=self._manifest(
+                {
+                    "control:claim_tender": (
+                        "control:{app_name}.tender.control.claim_tender"
+                    ),
+                }
+            )
+        )
+        composer = self.load_composer()
+        with self.assertRaises(SystemExit):
+            self.run_main(composer)
+
+    def test_double_prefixed_key_aborts(self):
+        self.make_sdk(
+            manifest=self._manifest(
+                {"control:extra:claim": "{app_name}.tender.control.claim_tender"}
+            )
+        )
+        composer = self.load_composer()
+        with self.assertRaises(SystemExit):
+            self.run_main(composer)
+
+
 class ShellTemplateSyncTest(ComposeBackendTestBase):
     """The embedded SHELL_TEMPLATES and the canonical on-disk templates in
     core/utils/frappe/templates/shell/ must never drift apart."""
