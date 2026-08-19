@@ -87,6 +87,16 @@
       "path": "../pay/erp/nextjs",
       "ref": "main",
       "_comment": "Read by the Next.js composer (core/utils/nextjs/sdk_composer.py) only — the frappe engine reads 'modules' above and ignores this key. The erp SDK's nextjs half (accounting + hrms app trees). A Next.js shell for this product commits just '.rokct/config/app_type' containing 'rokctapp' and composes this list."
+    },
+    {
+      "name": "crm_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/nextjs",
+      "ref": "main",
+      "_comment": "The crm SDK's nextjs half (leads, deals, contacts, organizations, dashboard — the frontend of the crm frappe module above). Listed after erp_sdk because its manifest 'requires' names accounting action files erp_sdk installs (requires is a warn-only prerequisite check in sdk_installer_base.py's check_requires(), not an auto-install)."
     }
-  ]
+  ],
+  "_sdks_comment": "A future agent tier means adding agent_sdk (../agent/agent/nextjs) here — its manifest's 'requires' names host paths installed by erp_sdk (app/actions/handson/all/accounting/*, .../hrms/*) and by productivity_sdk (app/actions/handson/all/projects/*), so an agent-tier compose needs BOTH of those SDKs in this list as well. check_requires() only warns about missing prerequisites; nothing pulls an SDK in automatically."
 }

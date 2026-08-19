@@ -447,6 +447,12 @@ class RealRegistryTest(unittest.TestCase):
         self.assertIn("erp_sdk", sdk_names)
         erp = data["sdks"][sdk_names.index("erp_sdk")]
         self.assertEqual(erp["path"], "../pay/erp/nextjs")
+        self.assertIn("crm_sdk", sdk_names)
+        crm = data["sdks"][sdk_names.index("crm_sdk")]
+        self.assertEqual(crm["path"], "../productivity/crm/nextjs")
+        # crm_sdk's manifest "requires" names accounting files erp_sdk
+        # installs; keep erp_sdk ahead of crm_sdk in the compose order.
+        self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("crm_sdk"))
 
 
 if __name__ == "__main__":
