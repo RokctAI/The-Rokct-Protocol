@@ -29,7 +29,7 @@ SHA-256, then executes it with the sync subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "9f40b3015a8d182a8def7bcaab46d020dec045d3"
+PROTOCOL_REF = "bacf4caf239034c870780e97edf62e79a6d8fecd"
 DELEGATE_PATH = "core/utils/agent_delegation/privacy.py"
 DELEGATE_SHA256 = "33a75837ece5c153f2e56e310eca05ca6a5deeaf4dc56c69403fb845d7dc9798"
 GITHUB_RAW_BASE = (
