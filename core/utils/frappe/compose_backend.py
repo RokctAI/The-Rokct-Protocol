@@ -24,6 +24,8 @@ import shutil
 import json
 import re
 import subprocess
+import urllib.error
+import urllib.request
 
 PROJECT_ROOT = os.getcwd()
 
@@ -269,7 +271,159 @@ def load_composer_config():
         return json.load(f)
 
 
-def resolve_app_type():
+# ---------------------------------------------------------------------------
+# Composer template registry.
+#
+# The protocol keeps one composer.json template per product in
+# core/utils/frappe/composer/ (rcore.json, supacharge.json, ...). A shell repo
+# can stay THIN: instead of committing a hand-copied composer.json, it commits
+# only the one-line .rokct/config/app_type file naming the template to
+# compose. This is the exact model the flutter side already uses
+# (universal-flutter-build.yml overwrites the shell's composer.json from
+# core/utils/flutter/composer/<app_type>.json) — the same one-line value
+# doubles as the shell's role/persona marker and as its template name; the
+# two have shared a namespace on the flutter side since role-based
+# composition landed (supacharge/manager/driver are both personas and
+# template file names).
+#
+# Resolution is shared with the Next.js composer: core/utils/nextjs/
+# sdk_composer.py imports this module and calls resolve_composer_config(), so
+# both stacks resolve WHAT to compose from this one registry with this one
+# implementation. A product template may carry BOTH a "modules" array (read
+# by this frappe engine) and an "sdks" array (read by the Next.js composer);
+# each composer reads only its own key.
+#
+# Backward compatibility is absolute: a shell with no app_type file, or with
+# an app_type value that names no template in the registry (a plain role
+# marker like "manager"), composes from its committed composer.json exactly
+# as before — resolve_composer_config() is then a no-op.
+# ---------------------------------------------------------------------------
+
+COMPOSER_TEMPLATES_DIR_ENV = "ROKCT_COMPOSER_TEMPLATES_DIR"
+PROTOCOL_DIR_ENV = "ROKCT_PROTOCOL_DIR"
+PROTOCOL_REPO_NAME = "The-Rokct-Protocol"
+COMPOSER_TEMPLATES_REL = "core/utils/frappe/composer"
+COMPOSER_TEMPLATES_RAW_BASE = (
+    "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
+    + COMPOSER_TEMPLATES_REL
+)
+
+# Template names are plain registry file basenames — anything else (path
+# separators, dots, uppercase) is treated as "not a template name" so a role
+# marker can never be turned into a path traversal or a surprise fetch.
+_TEMPLATE_NAME_RE = re.compile(r"^[a-z0-9_-]+$")
+
+
+def _local_template_dirs(project_root):
+    """Candidate registry directories, most explicit first: the env override,
+    an explicitly named protocol checkout, the checkout this file itself sits
+    in (when running from a protocol clone rather than a standalone fetch),
+    and the standard sibling-checkout workspace layout that
+    resolve_module_sources() already relies on."""
+    dirs = []
+    env_dir = os.environ.get(COMPOSER_TEMPLATES_DIR_ENV)
+    if env_dir:
+        dirs.append(env_dir)
+    protocol_dir = os.environ.get(PROTOCOL_DIR_ENV)
+    if protocol_dir:
+        dirs.append(os.path.join(protocol_dir, *COMPOSER_TEMPLATES_REL.split("/")))
+    here = os.path.dirname(os.path.abspath(__file__))
+    dirs.append(os.path.join(here, "composer"))
+    dirs.append(
+        os.path.join(
+            os.path.dirname(os.path.abspath(project_root)),
+            PROTOCOL_REPO_NAME,
+            *COMPOSER_TEMPLATES_REL.split("/"),
+        )
+    )
+    return dirs
+
+
+def fetch_composer_template(name, project_root=None):
+    """Look up registry template <name>.json.
+
+    Returns (template_text, source_description), or (None, None) when no
+    template by that name exists — the caller then treats the app_type value
+    as a plain role marker, exactly the legacy semantics.
+
+    A locally available registry directory is authoritative: when one exists,
+    a missing name is a definitive miss and no network is touched (so
+    role-marker shells in a normal workspace stay fully offline). Only when
+    no local registry can be found at all does this fall back to fetching the
+    template from raw.githubusercontent.com — data-only, mirroring the
+    flutter CI's curl of composer/<app_type>.json; no fetched code is ever
+    executed."""
+    root = project_root or PROJECT_ROOT
+    if not name or not _TEMPLATE_NAME_RE.match(name):
+        return None, None
+    filename = f"{name}.json"
+    saw_local_registry = False
+    for d in _local_template_dirs(root):
+        if not os.path.isdir(d):
+            continue
+        saw_local_registry = True
+        candidate = os.path.join(d, filename)
+        if os.path.isfile(candidate):
+            with open(candidate, "r", encoding="utf-8") as fh:
+                return fh.read(), candidate
+    if saw_local_registry:
+        return None, None
+    url = f"{COMPOSER_TEMPLATES_RAW_BASE}/{filename}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "rokct-composer"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8"), url
+    except Exception as e:
+        if isinstance(e, urllib.error.HTTPError) and e.code == 404:
+            # No such template — a plain role marker. Quiet, legacy path.
+            return None, None
+        compose_warning(
+            f"composer template lookup for '{name}' failed ({url}): {e}. "
+            f"Falling back to the committed composer.json."
+        )
+    return None, None
+
+
+def resolve_composer_config(project_root=None):
+    """Materialize composer.json from the registry template this shell's
+    .rokct/config/app_type names, when it names one.
+
+    Returns True when composer.json was (re)written from a template, False
+    when the legacy path applies (no marker, or a marker that is a role, not
+    a template). When a template resolves it WINS over a committed
+    composer.json — the registry templates are canonical (same clobber
+    semantics as the flutter CI's manifest-selection step)."""
+    root = project_root or PROJECT_ROOT
+    name = resolve_app_type(root)
+    if not name:
+        return False
+    text, source = fetch_composer_template(name, root)
+    composer_path = os.path.join(root, "composer.json")
+    if text is None:
+        if not os.path.exists(composer_path):
+            print(
+                f"[!] .rokct/config/app_type is '{name}' but no composer template "
+                f"'{name}.json' was found in the registry ({COMPOSER_TEMPLATES_REL}/) "
+                f"and no composer.json is committed — nothing to compose."
+            )
+        return False
+    try:
+        json.loads(text)
+    except Exception as e:
+        compose_warning(
+            f"composer template '{name}' from {source} is not valid JSON: {e}. "
+            f"Falling back to the committed composer.json."
+        )
+        return False
+    action = "overwritten" if os.path.exists(composer_path) else "written"
+    with open(composer_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    print(f"[+] composer.json {action} from registry template '{name}' ({source})")
+    return True
+
+
+def resolve_app_type(project_root=None):
     """This shell's own role marker (e.g. 'manager', 'customer', 'pos'), read
     from .rokct/config/app_type - a plain one-line text file checked into the
     shell's own repo, relative to the same root the shell's composer.json is
@@ -280,8 +434,12 @@ def resolve_app_type():
     Returns None when the file doesn't exist - manifests with no matching
     app_type block then behave exactly as before (nothing filtered, nothing
     extra merged). A tenant backend that deliberately serves ALL roles at
-    once simply declares no marker: absence = all."""
-    path = os.path.join(PROJECT_ROOT, ".rokct", "config", "app_type")
+    once simply declares no marker: absence = all.
+
+    The same one-line value is also the shell's composer TEMPLATE name when
+    it matches a registry template (see resolve_composer_config above) —
+    the shared-namespace convention the flutter side established."""
+    path = os.path.join(project_root or PROJECT_ROOT, ".rokct", "config", "app_type")
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             value = f.read().strip().lower()
@@ -1294,6 +1452,14 @@ def main():
         print(
             f"[!] Warning: Git clean/restore failed (perhaps not a git repo or git not in PATH): {e}"
         )
+
+    # Template-registry resolution: a thin shell that names a registry
+    # template in .rokct/config/app_type gets its composer.json materialized
+    # from the protocol's canonical template before anything is read. Runs
+    # AFTER the git clean above so the materialized file survives this run.
+    # No-op (and byte-identical legacy behavior) when the marker is absent or
+    # is a plain role name.
+    resolve_composer_config()
 
     config = load_composer_config()
 

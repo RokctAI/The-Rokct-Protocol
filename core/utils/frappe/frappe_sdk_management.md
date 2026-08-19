@@ -95,6 +95,14 @@ Ported from the Dart composer (`core/utils/flutter/sdk_installer_base.py` /
 at once simply declares no marker and composes exactly as before. There is no
 `"all"` pseudo-role.
 
+The same one-line value ALSO doubles as the shell's composer **template
+name** when it matches a registry template in `core/utils/frappe/composer/`
+(the shared-namespace convention the flutter side established): the composer
+then materializes `composer.json` from that template before composing, so a
+product shell repo can commit just the marker file. A value matching no
+template is a plain role marker as described here — see
+`core/utils/frappe/composer/README.md` for the registry contract.
+
 **The manifest's `app_type` block** — optional, keyed by persona name. Each
 persona's value mirrors the manifest top level (`hooks`, `dependencies`), and
 is merged in ONLY when the persona matches the shell's marker. Everything at

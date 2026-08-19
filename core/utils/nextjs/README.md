@@ -106,6 +106,29 @@ for consistency across the two client SDK kinds — same shape, different manife
   silently drop — it has to be declared. Not a substitute for a real cross-SDK dependency mechanism if
   one becomes necessary later; just makes today's coupling visible instead of a silent broken import.
 
+## Template-based composition (`app_type` names a registry template)
+
+WHAT a Next.js shell composes is resolved through the shared product template
+registry at `core/utils/frappe/composer/` — `sdk_composer.py` imports the
+frappe composer core (`core/utils/frappe/compose_backend.py`) and calls its
+`resolve_composer_config()`, so both stacks resolve templates with one
+implementation. A shell repo can stay THIN: commit only a one-line
+`.rokct/config/app_type` naming a registry template (e.g. `rokctapp`) and the
+composer materializes `composer.json` from the template before reading the
+SDK list. One template per product carries both stacks' inputs: its `modules`
+array is read by the frappe engine, its `sdks` array by this composer.
+
+When no protocol checkout is locatable (no `ROKCT_PROTOCOL_DIR`, not running
+from a protocol clone, no sibling `../The-Rokct-Protocol/`), the composer
+falls back to fetching the template JSON from the protocol repo's `main` —
+data only, mirroring the flutter CI's curl of its `composer/<app_type>.json`;
+no code is ever fetched or executed.
+
+A resolved template wins over a committed `composer.json` (the registry is
+canonical). A marker value that names no registry template is a plain role
+marker (below) and the committed `composer.json` is used exactly as before; a
+shell with no marker file behaves byte-identically to the legacy flow.
+
 ## Role-based composition (`app_type`)
 
 Ported from the Dart composer (`core/utils/flutter/sdk_installer_base.py` / `sdk_composer.py`) so all
