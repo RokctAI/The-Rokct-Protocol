@@ -50,6 +50,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `pay`,
 | `rokctapp.json` | `crm` (erp SDK joins when the erpnext fork lands) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
 | `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
+| `control.json` | `tender` (hub/control docker; tender is control-only per owner ruling 2026-08-18; the `control` module itself joins when the control repo's SDK-ification lands) |
 
 To build a given backend shell:
 
