@@ -43,7 +43,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/polaris/frappe",
       "ref": "main",
-      "_comment": "crm is a hard requirement alongside polaris: polaris's loan_application reads CRM Lead.kyc_status, so this template must always compose the crm module too."
+      "_comment": "crm is a hard requirement alongside polaris: polaris's loan_application KYC validation and credit-decision engine read Lead.kyc_status (the crm module's unprefixed Lead doctype), so this template must always compose the crm module too."
     },
     {
       "name": "pay",
@@ -84,7 +84,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/crm/frappe",
       "ref": "main",
-      "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+      "_comment": "Core CRM slice (leads, opportunities, prospects, campaigns, appointments, contracts, sales notes/tasks, statuses) from the productivity SDK, using unprefixed doctype names (Lead, Opportunity, Prospect, ...). Composing this module replaces installing a standalone CRM app — a site should NOT have frappe/crm installed alongside rcore; rcore's own modules (e.g. polaris's Lead.kyc_status reads) are wired to this module's unprefixed doctypes, not to frappe/crm's 'CRM '-prefixed ones. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
     }
   ]
 }
