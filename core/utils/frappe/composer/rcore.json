@@ -99,7 +99,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "cdb7280e4d5db3562898c0a80ccebe667ab48ac0"
+      "ref": "e83a1a8bea0fe2849fbc20a179ec57f8147b2cf2"
     },
     {
       "name": "gateways",
@@ -107,7 +107,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/gateways/frappe",
-      "ref": "cdb7280e4d5db3562898c0a80ccebe667ab48ac0",
+      "ref": "e83a1a8bea0fe2849fbc20a179ec57f8147b2cf2",
       "_comment": "Full frappe/payments port (Payment Gateway + Braintree/GoCardless/Mpesa/Paymob/PayPal/Paytm/Razorpay/Stripe settings) plus Rokct's own PayFast/Paystack gateways and paystack_checkout page, which moved here from pay's payments/frappe when the 'pay' module entry was retired. Composing this module replaces installing the standalone payments app - a site must NOT have Frappenize/payments installed alongside rcore, since the doctype names are intentionally identical and would double-define (same rule as the crm entry below)."
     },
     {
