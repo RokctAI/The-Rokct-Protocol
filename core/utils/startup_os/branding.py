@@ -170,8 +170,10 @@ def _parse_block(lines, index, indent, source):
     """Parse one block (map or list) whose entries sit at `indent`."""
     if lines[index][1].startswith("- ") or lines[index][1] == "-":
         items = []
-        while index < len(lines) and lines[index][0] == indent and (
-            lines[index][1].startswith("- ") or lines[index][1] == "-"
+        while (
+            index < len(lines)
+            and lines[index][0] == indent
+            and (lines[index][1].startswith("- ") or lines[index][1] == "-")
         ):
             _, content, lineno = lines[index]
             items.append(_parse_scalar(content[1:], source, lineno))
@@ -268,7 +270,9 @@ class BrandToken:
 
         def channel(value):
             value /= 255.0
-            return value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4
+            return (
+                value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4
+            )
 
         r, g, b = (channel(c) for c in self.rgb)
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -313,7 +317,14 @@ class BrandSystem:
 
     def deck_font(self, default):
         """First concrete family from the whitelist; generics are skipped."""
-        generic = {"sans-serif", "serif", "monospace", "system-ui", "cursive", "fantasy"}
+        generic = {
+            "sans-serif",
+            "serif",
+            "monospace",
+            "system-ui",
+            "cursive",
+            "fantasy",
+        }
         for family in self.fonts:
             name = str(family).strip()
             if name and name.lower() not in generic and not name.startswith("-"):
@@ -348,7 +359,9 @@ def system_from_mapping(mapping, source):
             raise BrandingError(
                 f"Malformed brand system {source}: token {name!r} has no hex value."
             )
-        tokens.append(BrandToken(str(name), _normalise_hex(hex_value, source, name), role))
+        tokens.append(
+            BrandToken(str(name), _normalise_hex(hex_value, source, name), role)
+        )
 
     typography = mapping.get("typography")
     fonts = []
@@ -366,12 +379,16 @@ def load_system_file(path):
     try:
         text = blob.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise BrandingError(f"Malformed brand system {path}: not UTF-8 ({exc}).") from exc
+        raise BrandingError(
+            f"Malformed brand system {path}: not UTF-8 ({exc})."
+        ) from exc
     if path.lower().endswith(".json"):
         try:
             mapping = json.loads(text)
         except ValueError as exc:
-            raise BrandingError(f"Malformed brand system {path}: invalid JSON ({exc}).") from exc
+            raise BrandingError(
+                f"Malformed brand system {path}: invalid JSON ({exc})."
+            ) from exc
     else:
         mapping = parse_minimal_yaml(text, source=path)
     return system_from_mapping(mapping, path)
@@ -416,7 +433,9 @@ class BrandImage:
     def __init__(self, path, blob):
         self.path = path
         self.blob = blob
-        self.ext = "jpeg" if os.path.splitext(path)[1].lower() in (".jpg", ".jpeg") else "png"
+        self.ext = (
+            "jpeg" if os.path.splitext(path)[1].lower() in (".jpg", ".jpeg") else "png"
+        )
         self.width, self.height = image_size(blob, path)
         if not self.width or not self.height:
             raise BrandingError(f"Brand image {path} reports a zero dimension.")
@@ -644,7 +663,12 @@ def build_briefs(data):
                 "imagery": _imagery(brand, briefs_dir),
                 "notes": f"{_VERBATIM_NOTE} {_CTA_NOTE}",
             },
-            "brand_refs": ["color.tokens", "typography.fonts", "print", "accessibility"],
+            "brand_refs": [
+                "color.tokens",
+                "typography.fonts",
+                "print",
+                "accessibility",
+            ],
             "brand_system": brand_system,
         }
 
@@ -694,12 +718,18 @@ def build_briefs(data):
         [
             ("core_value_proposition", "Core Value Proposition"),
             (
-                "product_components" if answered("product_components") else "primary_products",
+                "product_components"
+                if answered("product_components")
+                else "primary_products",
                 "Product Components (or Primary Products)",
             ),
         ],
     ):
-        copy = {"headline": value_prop, "cta": None, "supporting": _clean_lines(components)}
+        copy = {
+            "headline": value_prop,
+            "cta": None,
+            "supporting": _clean_lines(components),
+        }
         vision = answered("vision_statement") or answered("mission_statement")
         if vision:
             copy["subcopy"] = vision

@@ -1202,9 +1202,7 @@ def extract_financial_inputs(profile):
     Every value is a float or None — None meaning the answer is absent or
     narrative, never zero. Callers render None as coaching, not as a number.
     """
-    revenue = [
-        parse_money(profile.get(f"projected_year_{year}")) for year in (1, 2, 3)
-    ]
+    revenue = [parse_money(profile.get(f"projected_year_{year}")) for year in (1, 2, 3)]
     margin_pct = parse_percent(profile.get("gross_margin_target"))
     arpc = parse_money(profile.get("average_revenue_per_customer"))
     arpc_period = detect_period(profile.get("average_revenue_per_customer"))
@@ -1308,9 +1306,7 @@ def derive_financial_metrics(fin):
         "ltv": ltv,
         "ltv_cac": ltv_cac,
         "runway_months": runway_months,
-        "arpc_annual": (
-            arpc_monthly * 12.0 if arpc_monthly is not None else None
-        ),
+        "arpc_annual": (arpc_monthly * 12.0 if arpc_monthly is not None else None),
         "annual_operating_costs": (
             fin["burn"] * 12.0 if fin["burn"] is not None else None
         ),
@@ -1363,7 +1359,9 @@ def _add_computed_financials(values, profile, jurisdiction):
                 growth_cell = (
                     f"{growth[index]:+.0%}" if growth[index] is not None else "—"
                 )
-                row = f"| {year_label} | {format_money(amount, symbol)} | {growth_cell} |"
+                row = (
+                    f"| {year_label} | {format_money(amount, symbol)} | {growth_cell} |"
+                )
             if margin_pct is not None:
                 profit = (
                     format_money(metrics["gross_profit"][index], symbol)
@@ -1395,8 +1393,7 @@ def _add_computed_financials(values, profile, jurisdiction):
 
     if arpc is not None:
         period_note = arpc_period or (
-            "period not stated — say per month or per year to unlock "
-            "payback and LTV"
+            "period not stated — say per month or per year to unlock payback and LTV"
         )
         add_row(
             "Average revenue per customer",
@@ -1411,9 +1408,7 @@ def _add_computed_financials(values, profile, jurisdiction):
         )
 
     if margin_pct is not None:
-        add_row(
-            "Gross margin", f"{margin_pct:.0f}%", "from **Gross Margin Target**"
-        )
+        add_row("Gross margin", f"{margin_pct:.0f}%", "from **Gross Margin Target**")
     else:
         add_row("Gross margin", _coach("Gross Margin Target"), "")
 
@@ -1424,9 +1419,7 @@ def _add_computed_financials(values, profile, jurisdiction):
             "from **Customer Acquisition Cost**",
         )
     else:
-        add_row(
-            "Customer acquisition cost", _coach("Customer Acquisition Cost"), ""
-        )
+        add_row("Customer acquisition cost", _coach("Customer Acquisition Cost"), "")
 
     if metrics["cac_payback_months"] is not None:
         payback = metrics["cac_payback_months"]
@@ -1454,8 +1447,7 @@ def _add_computed_financials(values, profile, jurisdiction):
         add_row(
             "Customer lifetime value",
             format_money(metrics["ltv"], symbol),
-            "computed from monthly revenue per customer × gross margin ÷ "
-            "monthly churn",
+            "computed from monthly revenue per customer × gross margin ÷ monthly churn",
         )
         if metrics["ltv_cac"] is not None:
             add_row(
@@ -1693,9 +1685,7 @@ def _add_diligence_analysis(values, profile, jurisdiction):
         channel, _, rest = line.partition(":")
         if rest.strip():
             amount = parse_money(rest)
-            cost = (
-                format_money(amount, symbol) if amount is not None else rest.strip()
-            )
+            cost = format_money(amount, symbol) if amount is not None else rest.strip()
             rows.append(
                 f"| {_cell(channel.strip())} | {_cell(cost)} | "
                 "from **CAC By Channel** |"
@@ -1959,8 +1949,7 @@ def _add_life_computed(values, profile, jurisdiction):
     else:
         add_row(
             "Net worth",
-            "Not derivable yet — needs amounts in both **Assets** and "
-            "**Liabilities**",
+            "Not derivable yet — needs amounts in both **Assets** and **Liabilities**",
             "",
         )
 
@@ -1968,8 +1957,7 @@ def _add_life_computed(values, profile, jurisdiction):
         add_row(
             "Total life cover",
             format_money(cover_total, symbol),
-            f"computed from **Life Cover Policies** ({cover_parsed} "
-            "policy line(s))",
+            f"computed from **Life Cover Policies** ({cover_parsed} policy line(s))",
         )
     else:
         add_row(
