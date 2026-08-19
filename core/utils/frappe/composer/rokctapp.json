@@ -2,7 +2,7 @@
   "name": "rcore_app",
   "version": "1.0.0",
   "description": "Frappe compose template for the rokctapp docker product (composes an app named rcore)",
-  "_comment": "The erp SDK joins this template when the erpnext fork lands (tracked in a separate thread).",
+  "_comment": "The erpnext fork has landed: the erp SDK's frappe module lives at pay/erp/frappe and its nextjs half at pay/erp/nextjs (composed via the 'sdks' key below). Adding the erp frappe module to 'modules' here is a deliberate follow-up (dependency and doctype-collision review), not automatic.",
   "modules": [
     {
       "name": "base",

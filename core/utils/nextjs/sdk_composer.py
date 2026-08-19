@@ -502,6 +502,15 @@ def run_npm_install():
     """
     if not os.path.exists(os.path.join(PROJECT_ROOT, "package.json")):
         return
+    # Escape hatch for hosts whose package manager is not npm (e.g. a pnpm
+    # CI): skip the install step entirely and leave dependency installation
+    # to the host's own tooling. Default (unset) behavior is unchanged.
+    if os.environ.get("ROKCT_SKIP_NPM_INSTALL", "").lower() in ("1", "true", "yes"):
+        print(
+            "\n[*] ROKCT_SKIP_NPM_INSTALL is set: skipping npm install "
+            "(run your package manager's install yourself)."
+        )
+        return
     print("\n[*] Running npm install...")
     # Pass the command as a STRING with shell=True rather than a list. A list
     # argv with shell=True silently no-ops the arguments on POSIX
