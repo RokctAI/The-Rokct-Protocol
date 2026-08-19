@@ -2,7 +2,7 @@
   "name": "rcore_app",
   "version": "1.0.0",
   "description": "Frappe compose template for the rokctapp docker product (composes an app named rcore)",
-  "_comment": "The erp SDK joins this template when the erpnext fork lands (tracked in a separate thread).",
+  "_comment": "The erpnext fork has landed: the erp SDK's frappe module lives at pay/erp/frappe and its nextjs half at pay/erp/nextjs (composed via the 'sdks' key below). Adding the erp frappe module to 'modules' here is a deliberate follow-up (dependency and doctype-collision review), not automatic.",
   "modules": [
     {
       "name": "base",
@@ -77,5 +77,26 @@
       "ref": "main",
       "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
     }
-  ]
+  ],
+  "sdks": [
+    {
+      "name": "erp_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/nextjs",
+      "ref": "main",
+      "_comment": "Read by the Next.js composer (core/utils/nextjs/sdk_composer.py) only — the frappe engine reads 'modules' above and ignores this key. The erp SDK's nextjs half (accounting + hrms app trees). A Next.js shell for this product commits just '.rokct/config/app_type' containing 'rokctapp' and composes this list."
+    },
+    {
+      "name": "crm_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/nextjs",
+      "ref": "main",
+      "_comment": "The crm SDK's nextjs half (leads, deals, contacts, organizations, dashboard — the frontend of the crm frappe module above). Listed after erp_sdk because its manifest 'requires' names accounting action files erp_sdk installs (requires is a warn-only prerequisite check in sdk_installer_base.py's check_requires(), not an auto-install)."
+    }
+  ],
+  "_sdks_comment": "A future agent tier means adding agent_sdk (../agent/agent/nextjs) here — its manifest's 'requires' names host paths installed by erp_sdk (app/actions/handson/all/accounting/*, .../hrms/*) and by productivity_sdk (app/actions/handson/all/projects/*), so an agent-tier compose needs BOTH of those SDKs in this list as well. check_requires() only warns about missing prerequisites; nothing pulls an SDK in automatically."
 }

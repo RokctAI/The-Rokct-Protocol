@@ -502,6 +502,15 @@ def run_npm_install():
     """
     if not os.path.exists(os.path.join(PROJECT_ROOT, "package.json")):
         return
+    # Escape hatch for hosts whose package manager is not npm (e.g. a pnpm
+    # CI): skip the install step entirely and leave dependency installation
+    # to the host's own tooling. Default (unset) behavior is unchanged.
+    if os.environ.get("ROKCT_SKIP_NPM_INSTALL", "").lower() in ("1", "true", "yes"):
+        print(
+            "\n[*] ROKCT_SKIP_NPM_INSTALL is set: skipping npm install "
+            "(run your package manager's install yourself)."
+        )
+        return
     print("\n[*] Running npm install...")
     # Pass the command as a STRING with shell=True rather than a list. A list
     # argv with shell=True silently no-ops the arguments on POSIX
@@ -524,7 +533,154 @@ def run_npm_install():
         sys.exit(1)
 
 
+# ---------------------------------------------------------------------------
+# Composer template registry — shared with the frappe composer.
+#
+# WHAT to compose is resolved through the frappe composer core
+# (core/utils/frappe/compose_backend.py), which owns the protocol's single
+# composer-template registry at core/utils/frappe/composer/. A shell repo can
+# stay THIN: instead of committing a hand-maintained composer.json it commits
+# only the one-line .rokct/config/app_type file naming a registry template
+# (e.g. "rokctapp"); the template is materialized as composer.json before the
+# SDK list is read. One template per product carries BOTH stacks' inputs: its
+# "modules" array is read by the frappe engine and its "sdks" array by this
+# composer — each stack reads only its own key, so a single product template
+# drives the backend shell and the Next.js shell alike.
+#
+# The same one-line value doubles as the shell's role/persona marker (see
+# resolve_app_type above) — the shared-namespace convention the flutter side
+# established (supacharge/manager/driver are both personas and template
+# names). A marker that names no registry template is a plain role marker and
+# composing proceeds from the committed composer.json exactly as before;
+# absence of the file is byte-identical legacy behavior.
+# ---------------------------------------------------------------------------
+
+PROTOCOL_REPO_NAME = "The-Rokct-Protocol"
+PROTOCOL_DIR_ENV = "ROKCT_PROTOCOL_DIR"
+FRAPPE_COMPOSE_BACKEND_REL = "core/utils/frappe/compose_backend.py"
+COMPOSER_TEMPLATES_REL = "core/utils/frappe/composer"
+COMPOSER_TEMPLATES_RAW_BASE = (
+    "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
+    + COMPOSER_TEMPLATES_REL
+)
+
+
+def _locate_composer_core():
+    """Find the shared composer core (the frappe composer) on disk: an
+    explicitly named protocol checkout, the checkout this file itself sits in
+    (protocol clone / test runs), or the standard sibling-checkout workspace
+    layout that resolve_and_cache_sdks() already relies on for SDK repos."""
+    candidates = []
+    protocol_dir = os.environ.get(PROTOCOL_DIR_ENV)
+    if protocol_dir:
+        candidates.append(
+            os.path.join(protocol_dir, *FRAPPE_COMPOSE_BACKEND_REL.split("/"))
+        )
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates.append(
+        os.path.abspath(os.path.join(here, "..", "frappe", "compose_backend.py"))
+    )
+    candidates.append(
+        os.path.join(
+            os.path.dirname(os.path.abspath(PROJECT_ROOT)),
+            PROTOCOL_REPO_NAME,
+            *FRAPPE_COMPOSE_BACKEND_REL.split("/"),
+        )
+    )
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def load_composer_core():
+    """Import the shared composer core from a local protocol checkout.
+
+    Returns the loaded compose_backend module, or None when no checkout is
+    available (this composer was fetched standalone into a shell with no
+    protocol clone anywhere). Never fetches code over the network — only
+    already-present, locally checked-out protocol code is ever imported."""
+    path = _locate_composer_core()
+    if not path:
+        return None
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("rokct_composer_core", path)
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as e:
+        print(f"[!] Failed to load shared composer core from {path}: {e}")
+        return None
+    return module
+
+
+def _fetch_template_standalone(name):
+    """Data-only registry fallback for standalone runs with no protocol
+    checkout: fetch composer/<name>.json from the protocol repo, mirroring
+    the flutter CI's curl of its composer/<app_type>.json. Only template
+    DATA is fetched — no code is ever downloaded or executed. Returns the
+    template text or None (a 404 means the marker is a plain role name)."""
+    import urllib.error
+    import urllib.request
+
+    url = f"{COMPOSER_TEMPLATES_RAW_BASE}/{name}.json"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "rokct-composer"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status == 200:
+                return resp.read().decode("utf-8")
+    except Exception as e:
+        if isinstance(e, urllib.error.HTTPError) and e.code == 404:
+            return None
+        print(
+            f"[!] WARNING: composer template lookup for '{name}' failed ({url}): {e}. "
+            f"Falling back to the committed composer.json."
+        )
+    return None
+
+
+def resolve_composer_config():
+    """Materialize composer.json from the registry template named by
+    .rokct/config/app_type, when it names one. Delegates to the shared
+    composer core (core/utils/frappe/compose_backend.py) whenever a protocol
+    checkout is locatable, so both stacks resolve templates with one
+    implementation; otherwise falls back to the same data-only fetch the
+    flutter CI uses. Returns True when composer.json was (re)written."""
+    core = load_composer_core()
+    if core is not None:
+        return core.resolve_composer_config(PROJECT_ROOT)
+
+    name = resolve_app_type()
+    if not name or not all(c.islower() or c.isdigit() or c in "_-" for c in name):
+        return False
+    text = _fetch_template_standalone(name)
+    if text is None:
+        return False
+    try:
+        json.loads(text)
+    except Exception as e:
+        print(
+            f"[!] WARNING: composer template '{name}' is not valid JSON: {e}. "
+            f"Falling back to the committed composer.json."
+        )
+        return False
+    composer_path = os.path.join(PROJECT_ROOT, "composer.json")
+    action = "overwritten" if os.path.exists(composer_path) else "written"
+    with open(composer_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    print(f"[+] composer.json {action} from registry template '{name}'")
+    return True
+
+
 def main():
+    # Template-registry resolution first: a thin shell that names a registry
+    # template in .rokct/config/app_type gets its composer.json materialized
+    # from the protocol's canonical template before the SDK list is read.
+    # No-op (and byte-identical legacy behavior) when the marker is absent or
+    # is a plain role name.
+    resolve_composer_config()
+
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
     sdks_to_install = []
 
