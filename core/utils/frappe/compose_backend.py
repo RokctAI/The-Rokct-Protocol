@@ -224,6 +224,10 @@ def lint_composed_tokens(paths, project_root):
 # "x'; import os; os.system('id') #" used to land verbatim in hooks.py).
 # Values are also embedded with repr()/!r for defense in depth.
 #   - "dotted": a Python import path (handler / method / class path)
+#   - "gateway_key": a whitelisted_methods KEY - a dotted path optionally
+#     carrying a single "<gateway>:" prefix (e.g. "control:claim_tender"),
+#     the shape frappe's cmd registry accepts for gateway-scoped commands.
+#     Values stay strictly "dotted"; only keys may carry the prefix.
 #   - "doctype": a frappe DocType name (word chars, spaces, hyphens), or the
 #     literal "*" wildcard frappe accepts for doc_events registered against
 #     every doctype (e.g. core/telemetry's trace-context injector).
@@ -232,6 +236,9 @@ def lint_composed_tokens(paths, project_root):
 #     (croniter syntax: digits, *, /, ",", "-", spaces, month/day names)
 _HOOK_VALUE_PATTERNS = {
     "dotted": re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"),
+    "gateway_key": re.compile(
+        r"^([A-Za-z_][A-Za-z0-9_]*:)?[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"
+    ),
     "doctype": re.compile(r"^(\*|[\w \-]+)$"),
     "event": re.compile(r"^\w+$"),
     "cron": re.compile(r"^[\w*/,\- ]+$"),
@@ -1008,7 +1015,7 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             )
             for api_key, api_val in whitelisted.items():
                 _validate_hook_value(
-                    api_key, "dotted", module_name, "whitelisted_methods"
+                    api_key, "gateway_key", module_name, "whitelisted_methods"
                 )
                 _validate_hook_value(
                     api_val, "dotted", module_name, "whitelisted_methods"
