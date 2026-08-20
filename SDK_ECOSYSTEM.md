@@ -233,27 +233,36 @@ today.
   `tenant` for tenant backends (whatever product flavor the committed
   `composer.json` builds) and `control` for the control plane. A value that
   names no registry template is a pure role marker — `compose_backend.py`
-  then uses the committed `composer.json` as-is. **Warning:** never add
-  `control` or `tenant` as registry template names; markers and templates
-  share a namespace, and a template of either name would clobber a shell's
-  committed `composer.json`.
-- **Precedents — two SDK modules are persona-gated today:**
-  - `zones/weather/frappe`: full control + tenant flavors — the severe-weather
-    warnings engine under `src/control/`, a thin proxy/subscriber under
-    `src/tenant/`.
-  - `corporate/tender/frappe`: a control flavor carrying the `control:`
-    gateway cmds and the legacy dotted aliases. Tender was extracted from
-    control — `control/hooks.py` now defers to the SDK manifest, and zero
+  then uses the committed `composer.json` as-is. Markers and registry
+  templates share one namespace, though: a registry template with the same
+  name as a marker value overrides a shell's committed `composer.json`. That
+  cuts both ways, and it is an open decision (Ray's) which way `control`
+  goes: draft protocol PR #251 (2026-08-18) proposes a `control.json` hub
+  template, which would turn the marker into a template selector rather than
+  a pure role marker.
+- **Precedents — the mechanism, then two persona-gated modules.** Role
+  composition landed in protocol PR #166 (2026-08-11), whose body records
+  Ray's rationale verbatim: "this will give opportunity to break control
+  into sdks."
+  - `corporate/tender/frappe` (first execution: corporate #25, 2026-08-18):
+    a control flavor carrying the `control:` gateway cmds and the legacy
+    dotted aliases. Tender was extracted from control (control #134, same
+    day) — `control/hooks.py` now defers to the SDK manifest, and zero
     tender code remains in control.
+  - `zones/weather/frappe` (zones #40, 2026-08-19): full control + tenant
+    flavors — the severe-weather warnings engine under `src/control/`, a
+    thin proxy/subscriber under `src/tenant/`.
 
-How control composes, when it starts — and it does not start yet.
+How control composes, when it starts — and it does not fully start yet.
 Sequencing is a standing order (Ray, 2026-08-20): extraction of control's
 remaining code into SDKs completes FIRST; only then does composition switch
-on. Until then, no `composer.json` and no compose-triggering
-`.rokct/config/app_type` marker lands in the control repo, and control keeps
-its bench-based deployment. The end-state switch is two files:
-`.rokct/config/app_type` containing `control`, and a committed root
-`composer.json` with
+on. The switch is two files, and the first has already landed: control #142
+(merged 2026-08-20) added `.rokct/config/app_type` = `control` to the
+control repo. The marker alone triggers nothing — `universal-frappe-ci`
+auto-composes only when a committed `composer.json` exists at the repo
+root — and per the sequencing order no `composer.json` lands until
+extraction completes, so control keeps its bench-based deployment. The
+second file is a committed root `composer.json` with
 `"name": "control"` and SHA-pinned module entries. `compose_backend.py`
 carries no rcore assumptions — `{app_name}` tokens substitute to any shell
 name, `merge_hooks` is additive (it appends its marker block to an existing
@@ -263,7 +272,8 @@ whenever a `composer.json` exists at the repo root and commits the composed
 output back to the branch.
 
 Current state, honestly: control today is still a hand-maintained Frappe app
-with no marker and no `composer.json`. It deploys bench-based —
+carrying the role marker (since control #142) but no `composer.json`. It
+deploys bench-based —
 `install_stack.py` drives `bench get-app` + `bench install-app`, and the
 live site self-updates weekly via `control/control/update_tasks.py` — and it
 couples to the composed rcore at runtime in both directions (SDK code phones
