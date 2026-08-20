@@ -256,8 +256,20 @@ today.
 How control composes, when it starts — and it does not fully start yet.
 Sequencing is a standing order (Ray, 2026-08-20): extraction of control's
 remaining code into SDKs completes FIRST; only then does composition switch
-on. The switch is two files, and the first has already landed: control #142
-(merged 2026-08-20) added `.rokct/config/app_type` = `control` to the
+on. The migration order within that extraction is fixed too:
+
+1. every SDK moves ALL of its code behind `src/tenant/` — tenant is the
+   default home for existing SDK code, not common;
+2. control's code is extracted into the SDKs' `src/control/`;
+3. only afterwards is code needed by both personas promoted to common — and
+   each such promotion requires the owner's explicit confirmation first.
+
+The persona folders are a compose-time mechanism only; they are unrelated to
+any `control/` / `tenant/` directories that once existed inside the apps
+themselves.
+
+The compose switch is two files, and the first has already landed:
+control #142 (merged 2026-08-20) added `.rokct/config/app_type` = `control` to the
 control repo. The marker alone triggers nothing — `universal-frappe-ci`
 auto-composes only when a committed `composer.json` exists at the repo
 root — and per the sequencing order no `composer.json` lands until
