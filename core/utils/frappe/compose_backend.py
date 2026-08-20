@@ -174,6 +174,91 @@ def rewrite_src_nested_doctype_modules(dest_dir, module_label, module_name):
                 )
 
 
+def relocate_persona_doctypes(
+    dest_persona_dir, dest_module_path, persona, module_label, module_name
+):
+    """Relocate DocType dirs composed under a persona folder to the module root.
+
+    Persona-scoped doctypes ship at src/<persona>/doctype/<dt>/ in an SDK
+    module. Frappe only model-syncs and imports doctypes living at
+    {app}/{module}/doctype/<dt>/, so a doctype left under the composed persona
+    subtree ({app}/{module}/<persona>/doctype/<dt>/) is invisible to
+    `bench migrate` and unimportable as a controller. Persona scoping itself
+    already happened before this runs: excluded personas' folders were never
+    copied at all, so every doctype found here belongs in this compose.
+
+    Each */doctype/<dt>/ dir found under the copied persona folder is MOVED to
+    {app}/{module}/doctype/<dt>/ and given the exact module-root doctype
+    treatment:
+
+      * registration in COMPILED_DOCTYPES with the HARD duplicate error —
+        warn-only is no longer safe once relocation makes collisions real
+        (two personas' same-named doctypes would land in the same directory,
+        which also means a role-less compose of both personas hard-errors on
+        a cross-persona duplicate);
+      * the primary <dt>.json "module" key rewrite to the manifest name.
+
+    Token substitution already happened when copy_and_resolve wrote the
+    persona tree, so the move ships fully resolved content. The emptied
+    nested doctype/ dir is removed so no duplicate class files remain in the
+    persona subtree.
+    """
+    doctype_dirs = []
+    for root, dirs, _files in os.walk(dest_persona_dir):
+        if os.path.basename(root) == "doctype":
+            doctype_dirs.append(root)
+            dirs[:] = []  # never descend into a doctype tree itself
+    dest_doctype_root = os.path.join(dest_module_path, "doctype")
+    for dt_parent in doctype_dirs:
+        for dt in sorted(os.listdir(dt_parent)):
+            dt_dir = os.path.join(dt_parent, dt)
+            if not os.path.isdir(dt_dir):
+                continue
+            if dt in COMPILED_DOCTYPES:
+                raise ValueError(
+                    f"CRITICAL ERROR: Duplicate DocType '{dt}' detected! "
+                    f"Persona folder '{persona}' of module '{module_name}' "
+                    f"collides with module '{COMPILED_DOCTYPES[dt]}'. "
+                    f"Failing build."
+                )
+            COMPILED_DOCTYPES[dt] = module_name
+            if dt in SRC_NESTED_DOCTYPES and SRC_NESTED_DOCTYPES[dt] != module_name:
+                compose_warning(
+                    f"Persona DocType '{dt}' in module '{module_name}' collides "
+                    f"with module '{SRC_NESTED_DOCTYPES[dt]}'s src/ tree."
+                )
+            os.makedirs(dest_doctype_root, exist_ok=True)
+            dest_dt_path = os.path.join(dest_doctype_root, dt)
+            shutil.move(dt_dir, dest_dt_path)
+            # Overwrite the DocType module property to match composition
+            # target — same semantics as the module-root doctype/ pass.
+            json_file = os.path.join(dest_dt_path, f"{dt}.json")
+            if os.path.exists(json_file):
+                try:
+                    with open(json_file, "r", encoding="utf-8") as jf:
+                        data = json.load(jf)
+                    data["module"] = module_label
+                    with open(json_file, "w", encoding="utf-8") as jf:
+                        json.dump(data, jf, indent=2)
+                    print(
+                        f"[+] Relocated persona DocType: {persona}/{dt} -> "
+                        f"{module_name}/doctype/{dt} (module: {module_label})"
+                    )
+                except Exception as je:
+                    compose_warning(
+                        f"Failed to inject module into relocated {dt}.json: {je}"
+                    )
+            else:
+                print(
+                    f"[+] Relocated persona DocType: {persona}/{dt} -> "
+                    f"{module_name}/doctype/{dt}"
+                )
+        # Drop the emptied nested doctype/ dir (an __init__.py scaffold file
+        # is part of the relocated tree's old home, not persona code).
+        if not [e for e in os.listdir(dt_parent) if e != "__init__.py"]:
+            shutil.rmtree(dt_parent)
+
+
 def lint_composed_tokens(paths, project_root):
     """Post-compose token lint over everything this run wrote.
 
@@ -1033,12 +1118,30 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                                 shutil.copy2(s, d)
 
                 copy_and_resolve(src_file_path, dest_file_path)
-                # DocTypes shipped under src/ escape the module-root
-                # doctype/ machinery: pin their primary JSON "module" keys
-                # and register them for (warn-only) duplicate detection.
-                rewrite_src_nested_doctype_modules(
-                    dest_file_path, module_label, module_name
-                )
+                if f in declared_personas:
+                    # Persona folders (src/<persona>/) may ship persona-scoped
+                    # doctypes (src/<persona>/doctype/<dt>/). Scoping already
+                    # happened above (excluded personas were skipped, and with
+                    # no role marker EVERY declared persona composes — absence
+                    # of marker = serve all roles), so relocate whatever
+                    # doctypes were copied into the Frappe-conventional
+                    # module-root doctype/ destination, with module-root
+                    # semantics (hard-error dupes, "module" key injection).
+                    relocate_persona_doctypes(
+                        dest_file_path,
+                        dest_module_path,
+                        f,
+                        module_label,
+                        module_name,
+                    )
+                else:
+                    # DocTypes shipped under non-persona src/ dirs escape the
+                    # module-root doctype/ machinery and stay at their nested
+                    # composed path: pin their primary JSON "module" keys and
+                    # register them for (warn-only) duplicate detection.
+                    rewrite_src_nested_doctype_modules(
+                        dest_file_path, module_label, module_name
+                    )
                 print(f"[+] Copied Source Directory: {f} -> {module_name}")
 
     # 3. Create Frappe Module Package registration markers
