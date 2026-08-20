@@ -39,8 +39,9 @@ One template per docker product. **Every product composes an app named `rcore`**
 `rcore.json` remains the current full composition and stays authoritative until
 the image build switches to the per-product targets below.
 
-Common to all products: `base`, `auth`, `users`, `subscriptions`, `pay`,
-`telemetry`, `comms`, `wallet`. On top of that:
+Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
+`telemetry`, `comms`, `wallet` (`gateways` + `wallet` replaced the retired
+`pay` module — `pay/payments/frappe` no longer exists). On top of that:
 
 | Template | Extra modules |
 | --- | --- |
