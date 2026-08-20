@@ -81,9 +81,7 @@ def get_with_retries(url, trace_id, timeout, attempts=2):
     last_err = None
     for attempt in range(attempts):
         try:
-            return requests.get(
-                url, headers={"X-Trace-Id": trace_id}, timeout=timeout
-            )
+            return requests.get(url, headers={"X-Trace-Id": trace_id}, timeout=timeout)
         except requests.RequestException as e:
             last_err = e
             if attempt < attempts - 1:
@@ -461,7 +459,9 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
 
                 # Apply (Estimated) suffix when date is a fallback, "See Documents" when unknown
                 if closing_date:
-                    final_close = f"{closing_date} (Estimated)" if is_est else closing_date
+                    final_close = (
+                        f"{closing_date} (Estimated)" if is_est else closing_date
+                    )
                 else:
                     final_close = "See Documents"
 

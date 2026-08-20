@@ -134,9 +134,7 @@ def _declared_parts(parts):
     """Part names covered by [Content_Types].xml, via Default or Override."""
     ns = "{http://schemas.openxmlformats.org/package/2006/content-types}"
     tree = ET.fromstring(parts["[Content_Types].xml"])
-    defaults = {
-        node.get("Extension").lower() for node in tree.findall(f"{ns}Default")
-    }
+    defaults = {node.get("Extension").lower() for node in tree.findall(f"{ns}Default")}
     overrides = {node.get("PartName") for node in tree.findall(f"{ns}Override")}
     covered = set()
     for name in parts:
@@ -175,9 +173,7 @@ class TestPitchDeckPackage(unittest.TestCase):
             "ppt/slideMasters/_rels/slideMaster1.xml.rels",
             "ppt/slideLayouts/slideLayout1.xml",
             "ppt/theme/theme1.xml",
-        ] + [
-            f"ppt/slides/slide{n}.xml" for n in range(1, render_pptx.SLIDE_COUNT + 1)
-        ]
+        ] + [f"ppt/slides/slide{n}.xml" for n in range(1, render_pptx.SLIDE_COUNT + 1)]
         for name in required:
             self.assertIn(name, self.parts)
 
@@ -199,7 +195,9 @@ class TestPitchDeckPackage(unittest.TestCase):
             self.assertIn("slideLayout1.xml", rels, f"slide{n}")
 
     def test_title_slide_carries_the_company_name(self):
-        self.assertIn("Acme Clinics", self.parts["ppt/slides/slide1.xml"].decode("utf-8"))
+        self.assertIn(
+            "Acme Clinics", self.parts["ppt/slides/slide1.xml"].decode("utf-8")
+        )
 
     def test_financials_slide_shows_compiler_figures(self):
         slide = self.parts["ppt/slides/slide9.xml"].decode("utf-8")
@@ -316,9 +314,7 @@ class TestFinancialModelPackage(unittest.TestCase):
         self.assertEqual(
             cells["B3"][0], "Assumptions!B4/(Assumptions!B2*Assumptions!B3)"
         )
-        self.assertEqual(
-            cells["B4"][0], "Assumptions!B2*Assumptions!B3/Assumptions!B5"
-        )
+        self.assertEqual(cells["B4"][0], "Assumptions!B2*Assumptions!B3/Assumptions!B5")
         self.assertEqual(cells["B5"][0], "B4/Assumptions!B4")
         self.assertEqual(cells["B6"][0], "Assumptions!B7/Assumptions!B6")
 
@@ -372,7 +368,9 @@ class TestFinancialModelHonesty(unittest.TestCase):
     def test_arpc_without_period_stays_locked(self):
         answers = dict(MINIMAL_ANSWERS, average_revenue_per_customer="R 3,500")
         data = _instance_data(answers, name="Bare2")
-        cells = _cells(_parts(render_xlsx.build_xlsx_bytes(data))["xl/worksheets/sheet1.xml"])
+        cells = _cells(
+            _parts(render_xlsx.build_xlsx_bytes(data))["xl/worksheets/sheet1.xml"]
+        )
         formula, value, text = cells["B2"]
         self.assertIsNone(value)
         self.assertIn("no period", text)

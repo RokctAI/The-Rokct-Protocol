@@ -263,7 +263,9 @@ def render_census(census):
     ]
     for repo in sorted(census, key=census_repo_key):
         for sdk, dart, frappe, nextjs in census[repo]:
-            halves = " | ".join("yes" if half else "—" for half in (dart, frappe, nextjs))
+            halves = " | ".join(
+                "yes" if half else "—" for half in (dart, frappe, nextjs)
+            )
             lines.append(f"| `{sdk}` | `{repo}` | {halves} |\n")
     return "".join(lines)
 
@@ -281,7 +283,7 @@ def write_census(census):
             f"({CENSUS_START} ... {CENSUS_END})"
         )
     block = f"{CENSUS_START}\n{render_census(census)}{CENSUS_END}"
-    new_content = content[:start] + block + content[end + len(CENSUS_END):]
+    new_content = content[:start] + block + content[end + len(CENSUS_END) :]
     if new_content != content:
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(new_content)
