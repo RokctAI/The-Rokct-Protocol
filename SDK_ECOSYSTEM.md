@@ -226,10 +226,13 @@ today.
   should have persona as some are needed by control while others are needed
   by tenant or both"): persona-specific doctypes live under
   `src/<persona>/doctype/`, module-root `doctype/` means needed by all
-  personas. The strip side already excludes the other personas' doctypes,
-  but the composer does not yet relocate src-nested doctypes to the
-  Frappe-discoverable `<module>/doctype/` path — that composer support
-  ships with the migration wave. A
+  personas. Composer support shipped with the migration wave (PR #263):
+  the strip excludes the other personas' doctypes, and `compose_backend.py`
+  relocates the included persona's `src/<persona>/doctype/<dt>/` dirs to the
+  Frappe-discoverable module-root `doctype/` at compose time, with hard-error
+  duplicate detection. Relocation applies only to declared persona folders —
+  other src-nested doctypes (e.g. a `src/feature/doctype/` with no `app_type`
+  declaration) keep the legacy nested-path warn-only behavior. A
   runtime `app_role` site-config check is legitimate ONLY in common
   (role-less) code that ships to every persona and must branch at runtime —
   e.g.
