@@ -377,9 +377,7 @@ def build_call_model(
         try:
             status, body = transport(endpoint, payload, headers, timeout)
         except Exception as exc:
-            raise PolishSkipped(
-                f"API call failed ({exc.__class__.__name__})"
-            ) from exc
+            raise PolishSkipped(f"API call failed ({exc.__class__.__name__})") from exc
         if status != 200:
             raise PolishSkipped(f"API returned HTTP {status}")
 
@@ -395,7 +393,9 @@ def build_call_model(
     return call_model
 
 
-def build_call_model_from_env(environ=None, transport=None, system_prompt=SYSTEM_PROMPT):
+def build_call_model_from_env(
+    environ=None, transport=None, system_prompt=SYSTEM_PROMPT
+):
     """Env-driven factory. Returns None when no key is set — a clean no-op."""
     environ = os.environ if environ is None else environ
     api_key = environ.get(API_KEY_ENV_VAR)
@@ -558,9 +558,7 @@ def polish_instance(
     report = PolishReport(instance_type, instance_name, out_dir)
 
     for directory, subdirs, filenames in os.walk(out_dir):
-        subdirs[:] = sorted(
-            name for name in subdirs if name != safe_io.HISTORY_DIRNAME
-        )
+        subdirs[:] = sorted(name for name in subdirs if name != safe_io.HISTORY_DIRNAME)
         for filename in sorted(filenames):
             if not filename.endswith(".md"):
                 continue
@@ -578,9 +576,7 @@ def polish_instance(
                 _holder["outcome"] = outcome
                 if outcome.polished == 0:
                     return None  # nothing improved; do not rewrite the file
-                return add_polish_note(
-                    outcome.text, outcome.polished, outcome.reverted
-                )
+                return add_polish_note(outcome.text, outcome.polished, outcome.reverted)
 
             changed = safe_io.update_file(full, _transform)
             outcome = holder.get("outcome")
