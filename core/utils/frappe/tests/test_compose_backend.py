@@ -27,9 +27,15 @@ Pins the literal-token gap fixes and the shell scaffold:
     escape classes), while tokenless files stay byte-identical.
   * {module_name} is a real token, resolved to the manifest "name" in src/
     and doctype/ passes.
-  * src-nested doctype JSONs (src/**/doctype/<dt>/<dt>.json) get the
-    "module"-key rewrite the module-root primaries always had, and duplicate
-    detection for them WARNS instead of failing the build.
+  * src-nested doctype JSONs (src/**/doctype/<dt>/<dt>.json) under
+    NON-persona src/ dirs get the "module"-key rewrite the module-root
+    primaries always had, and duplicate detection for them WARNS instead of
+    failing the build.
+  * persona-scoped doctypes (src/<persona>/doctype/<dt>/, persona declared in
+    the manifest's app_type) RELOCATE to the module-root doctype/ destination
+    with module-root semantics: hard-error duplicates and the "module"-key
+    injection from the manifest name. Excluded personas' doctypes never
+    compose; a role-less compose relocates every persona's doctypes.
   * scaffold mode lays the tokenized shell skeleton into a fresh repo and
     never overwrites a file an existing shell already has.
   * the post-compose token lint warns on unresolved {app_name}/{module_name}
@@ -226,6 +232,14 @@ class ModuleNameTokenInSrcTest(ComposeBackendTestBase):
 
 
 class SrcNestedDoctypeTest(ComposeBackendTestBase):
+    """Doctypes nested under NON-persona src/ dirs (src/feature/doctype/...,
+    where "feature" is not declared in the manifest's app_type) keep their
+    established composed path and warn-only duplicate handling. Only doctypes
+    under declared PERSONA folders relocate to the module root — see
+    PersonaDoctypeRelocationTest; a blanket src/**/doctype/ relocation would
+    move the existing src-nested doctypes of non-persona modules and break
+    imports referencing their composed paths."""
+
     def setUp(self):
         super().setUp()
         self.make_composer_json()
@@ -282,6 +296,120 @@ class SrcNestedDoctypeTest(ComposeBackendTestBase):
         self.assertTrue(
             self.exists(f"{self.APP}/othermod/feature/doctype/clash/clash.json")
         )
+
+
+class PersonaDoctypeRelocationTest(ComposeBackendTestBase):
+    """Persona-scoped doctypes: src/<persona>/doctype/<dt>/ (persona declared
+    in the manifest's app_type) relocates to the module-root doctype/
+    destination — the only path Frappe's model sync walks and get_controller
+    imports — with module-root semantics: hard-error duplicates via
+    COMPILED_DOCTYPES and the primary-JSON "module" key injected from the
+    manifest name. The persona strip still governs inclusion: an excluded
+    persona's folder (doctypes included) never composes, and a role-less
+    shell (no .rokct/config/app_type marker = serve all roles) composes and
+    relocates EVERY declared persona's doctypes."""
+
+    def make_persona_sdk(self, module=None):
+        module = module or self.MODULE
+        self.make_sdk(
+            module,
+            manifest={
+                "name": module,
+                "description": "test sdk",
+                "app_type": {"tenant": {}, "control": {}},
+            },
+        )
+
+    def set_role(self, value):
+        # A plain role marker: matches no registry template (verified miss
+        # against the local registry dir), so resolve_composer_config stays a
+        # no-op and no network is touched.
+        self.write(".rokct/config/app_type", f"{value}\n")
+
+    def write_persona_doctype(self, persona, dt, module=None):
+        module = module or self.MODULE
+        self.write(
+            f"sdk/{module}/frappe/src/{persona}/doctype/{dt}/{dt}.json",
+            json.dumps({"name": dt.title(), "module": "{module_name}"}),
+        )
+        self.write(
+            f"sdk/{module}/frappe/src/{persona}/doctype/{dt}/{dt}.py",
+            "from frappe.model.document import Document\n"
+            f'PATH = "{{app_name}}.{self.MODULE}.doctype.{dt}.{dt}"\n'
+            f"class {dt.title()}(Document):\n    pass\n",
+        )
+
+    def test_included_persona_doctype_relocates_to_module_root(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_persona_sdk()
+        self.set_role("tenant")
+        self.write_persona_doctype("tenant", "widget")
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/tenant/api.py", 'APP = "{app_name}"\n'
+        )
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        # Relocated to the module-root doctype/ destination, module key
+        # injected from the manifest name, tokens resolved.
+        data = json.loads(
+            self.read(f"{self.APP}/{self.MODULE}/doctype/widget/widget.json")
+        )
+        self.assertEqual(data["module"], self.MODULE)
+        controller = self.read(f"{self.APP}/{self.MODULE}/doctype/widget/widget.py")
+        self.assertIn(f'"{self.APP}.{self.MODULE}.doctype.widget.widget"', controller)
+        self.assertNotIn("{app_name}", controller)
+        self.assertIn("Relocated persona DocType: tenant/widget", out)
+        # No duplicate copy left under the composed persona subtree
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/tenant/doctype"))
+        # The rest of the persona folder still composes as a subpackage
+        self.assertEqual(
+            self.read(f"{self.APP}/{self.MODULE}/tenant/api.py"),
+            f'APP = "{self.APP}"\n',
+        )
+
+    def test_excluded_persona_doctype_stripped(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_persona_sdk()
+        self.set_role("tenant")
+        self.write_persona_doctype("control", "secret")
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertIn("Skipped unused role folder src/control/", out)
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/doctype/secret"))
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/control"))
+
+    def test_roleless_compose_relocates_all_personas(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_persona_sdk()
+        # No .rokct/config/app_type marker: absence = serve all roles.
+        self.write_persona_doctype("tenant", "alpha")
+        self.write_persona_doctype("control", "beta")
+        composer = self.load_composer()
+        self.run_main(composer)
+        for dt in ("alpha", "beta"):
+            data = json.loads(
+                self.read(f"{self.APP}/{self.MODULE}/doctype/{dt}/{dt}.json")
+            )
+            self.assertEqual(data["module"], self.MODULE, dt)
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/tenant/doctype"))
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/control/doctype"))
+
+    def test_duplicate_doctype_across_persona_dirs_hard_errors(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_persona_sdk()
+        # Role-less compose pulls BOTH persona folders — the same doctype in
+        # two persona dirs would land twice in module-root doctype/, so this
+        # is a hard error, not the src-nested warn.
+        self.write_persona_doctype("tenant", "clash")
+        self.write_persona_doctype("control", "clash")
+        composer = self.load_composer()
+        with self.assertRaises(ValueError) as ctx:
+            self.run_main(composer)
+        self.assertIn("Duplicate DocType 'clash'", str(ctx.exception))
 
 
 class ScaffoldTest(ComposeBackendTestBase):
