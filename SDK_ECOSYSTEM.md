@@ -211,6 +211,102 @@ Rules:
   goes to the protocol template — editing only the app's committed copy will be
   clobbered.
 
+## The control persona: control-plane code in the SDK ecosystem
+
+The design rule: no app skips the SDK ecosystem. Feature code lives in SDK
+modules; apps are consumers. The control plane is not an exception — it is
+the *control persona* consumer of the same persona-gated SDKs, mid-absorption
+today.
+
+- **Persona composition is THE gating mechanism.** A module declares flavor
+  blocks in its manifest's `app_type` block and splits persona-specific code
+  into `src/control/` / `src/tenant/` folders; `compose_backend.py` strips
+  the other personas' folders and merges only the matching flavor block.
+  DocTypes are persona-scoped by design too (Ray, 2026-08-20: "doctypes
+  should have persona as some are needed by control while others are needed
+  by tenant or both"): persona-specific doctypes live under
+  `src/<persona>/doctype/`, module-root `doctype/` means needed by all
+  personas. Composer support shipped with the migration wave (PR #263):
+  the strip excludes the other personas' doctypes, and `compose_backend.py`
+  relocates the included persona's `src/<persona>/doctype/<dt>/` dirs to the
+  Frappe-discoverable module-root `doctype/` at compose time, with hard-error
+  duplicate detection. Relocation applies only to declared persona folders —
+  other src-nested doctypes (e.g. a `src/feature/doctype/` with no `app_type`
+  declaration) keep the legacy nested-path warn-only behavior. A
+  runtime `app_role` site-config check is legitimate ONLY in common
+  (role-less) code that ships to every persona and must branch at runtime —
+  e.g.
+  `core/telemetry/frappe/src/telemetry/forward_error_to_control/forward_error_to_control.py`
+  enqueues error forwarding only when `app_role == "tenant"`. Standalone
+  `app_role` gates in persona-specific code are legacy/transitional, not the
+  pattern.
+- **`app_type` names a backend shell's ROLE.** `.rokct/config/app_type` is
+  `tenant` for tenant backends (whatever product flavor the committed
+  `composer.json` builds) and `control` for the control plane. A value that
+  names no registry template is a pure role marker — `compose_backend.py`
+  then uses the committed `composer.json` as-is. Markers and registry
+  templates share one namespace, though: a registry template with the same
+  name as a marker value overrides a shell's committed `composer.json`.
+  Registry composer templates exist ONLY for products that will have dockers
+  (deployable tenant products) — control-plane products don't get templates;
+  they are absorbed into SDKs instead (Ray, 2026-08-20). That sharpens the
+  open decision (still Ray's) on which way `control` goes: draft protocol
+  PR #251 (2026-08-18) proposes a `control.json` hub template — turning the
+  marker into a template selector — which now sits against the
+  templates-are-for-docker-products rule.
+- **Precedents — the mechanism, then two persona-gated modules.** Role
+  composition landed in protocol PR #166 (2026-08-11), whose body records
+  Ray's rationale verbatim: "this will give opportunity to break control
+  into sdks."
+  - `corporate/tender/frappe` (first execution: corporate #25, 2026-08-18):
+    a control flavor carrying the `control:` gateway cmds and the legacy
+    dotted aliases. Tender was extracted from control (control #134, same
+    day) — `control/hooks.py` now defers to the SDK manifest, and zero
+    tender code remains in control.
+  - `zones/weather/frappe` (zones #40, 2026-08-19): full control + tenant
+    flavors — the severe-weather warnings engine under `src/control/`, a
+    thin proxy/subscriber under `src/tenant/`.
+
+How control composes, when it starts — and it does not fully start yet.
+Sequencing is a standing order (Ray, 2026-08-20): extraction of control's
+remaining code into SDKs completes FIRST; only then does composition switch
+on. The migration order within that extraction is fixed too:
+
+1. every SDK moves ALL of its code behind `src/tenant/` — tenant is the
+   default home for existing SDK code, not common;
+2. control's code is extracted into the SDKs' `src/control/`;
+3. only afterwards is code needed by both personas promoted to common — and
+   each such promotion requires the owner's explicit confirmation first.
+
+The persona folders are a compose-time mechanism only; they are unrelated to
+any `control/` / `tenant/` directories that once existed inside the apps
+themselves.
+
+The compose switch is two files, and the first has already landed:
+control #142 (merged 2026-08-20) added `.rokct/config/app_type` = `control` to the
+control repo. The marker alone triggers nothing — `universal-frappe-ci`
+auto-composes (and commits the composed output back to the branch) only
+when a committed `composer.json` exists at the repo root — and per the
+sequencing order no `composer.json` lands until extraction completes, so
+control keeps its bench-based deployment. The second file is a committed
+root `composer.json` with `"name": "control"` and SHA-pinned module
+entries. `compose_backend.py` carries no rcore assumptions — `{app_name}`
+tokens substitute to any shell name, `merge_hooks` is additive (it appends
+its marker block to an existing hand-written `hooks.py`), and the
+`modules.txt` / `requirements` / `pyproject` merges are additive too.
+
+Current state, honestly: control today is still a hand-maintained Frappe app
+carrying the role marker (since control #142) but no `composer.json`. It
+deploys bench-based —
+`install_stack.py` drives `bench get-app` + `bench install-app`, and the
+live site self-updates every Sunday via `control/control/update_tasks.py` — and it
+couples to the composed rcore at runtime in both directions (SDK code phones
+home over HTTP branching on `app_role`; control soft-imports
+`rcore.services` on the same bench). Absorption ledger: tender extracted
+(`corporate/tender`); telephony pending extraction (noted in
+`core/utils/frappe/composer/telephony.json`); the remainder of control's
+surface awaits extraction.
+
 ## Backend imports and the `{app_name}` token
 
 Frappe module `src/` files never hardcode the target app's package name
