@@ -211,6 +211,37 @@ Rules:
   goes to the protocol template — editing only the app's committed copy will be
   clobbered.
 
+## The control plane (outside the SDK ecosystem)
+
+Everything above describes composed apps. The `control` repo (Frappe app name
+`control`) sits outside that model: it is a hand-maintained, non-composed
+app — not an SDK, not a shell. It has no `composer.json`, no
+`.rokct/config/app_type` marker, and no product template in
+`core/utils/frappe/composer/` builds or includes it (all seven frappe product
+templates compose an app named `rcore`). It ships via bench, not compose:
+`install_stack.py` at the control repo root drives `bench get-app` +
+`bench install-app` for the full stack from version config, and the live
+control site self-updates via the Sunday job in
+`control/control/update_tasks.py`.
+
+The composed world still meets it at runtime, in both directions:
+
+- Composed rcore / SDK code calls the control plane over HTTP, branching on
+  the per-site `app_role` config flag (`"control"`/`"tenant"`) — e.g.
+  `core/telemetry/frappe/src/telemetry/forward_error_to_control/forward_error_to_control.py`
+  enqueues error forwarding only when `app_role == "tenant"`.
+- The control app soft-imports rcore on the same bench
+  (`control/control/bootstrap.py` imports `rcore.services.llm_service` with a
+  fallback), and its installer treats rcore as a critical co-installed app.
+- The `app_role` flag itself is set by control's own `install.py` from the
+  site name at install time (bench `set-config`); both control's hooks and
+  SDK code branch on it at runtime.
+
+One piece is in transit: the telephony module is pending extraction from
+control into the SDK world (already noted in
+`core/utils/frappe/composer/telephony.json` and the composer README). This
+section documents the current state, not a target.
+
 ## Backend imports and the `{app_name}` token
 
 Frappe module `src/` files never hardcode the target app's package name
