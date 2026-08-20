@@ -285,23 +285,21 @@ themselves.
 The compose switch is two files, and the first has already landed:
 control #142 (merged 2026-08-20) added `.rokct/config/app_type` = `control` to the
 control repo. The marker alone triggers nothing — `universal-frappe-ci`
-auto-composes only when a committed `composer.json` exists at the repo
-root — and per the sequencing order no `composer.json` lands until
-extraction completes, so control keeps its bench-based deployment. The
-second file is a committed root `composer.json` with
-`"name": "control"` and SHA-pinned module entries. `compose_backend.py`
-carries no rcore assumptions — `{app_name}` tokens substitute to any shell
-name, `merge_hooks` is additive (it appends its marker block to an existing
-hand-written `hooks.py`), and the `modules.txt` / `requirements` /
-`pyproject` merges are additive too. `universal-frappe-ci` auto-composes
-whenever a `composer.json` exists at the repo root and commits the composed
-output back to the branch.
+auto-composes (and commits the composed output back to the branch) only
+when a committed `composer.json` exists at the repo root — and per the
+sequencing order no `composer.json` lands until extraction completes, so
+control keeps its bench-based deployment. The second file is a committed
+root `composer.json` with `"name": "control"` and SHA-pinned module
+entries. `compose_backend.py` carries no rcore assumptions — `{app_name}`
+tokens substitute to any shell name, `merge_hooks` is additive (it appends
+its marker block to an existing hand-written `hooks.py`), and the
+`modules.txt` / `requirements` / `pyproject` merges are additive too.
 
 Current state, honestly: control today is still a hand-maintained Frappe app
 carrying the role marker (since control #142) but no `composer.json`. It
 deploys bench-based —
 `install_stack.py` drives `bench get-app` + `bench install-app`, and the
-live site self-updates weekly via `control/control/update_tasks.py` — and it
+live site self-updates every Sunday via `control/control/update_tasks.py` — and it
 couples to the composed rcore at runtime in both directions (SDK code phones
 home over HTTP branching on `app_role`; control soft-imports
 `rcore.services` on the same bench). Absorption ledger: tender extracted
