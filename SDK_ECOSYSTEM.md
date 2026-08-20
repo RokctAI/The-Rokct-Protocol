@@ -221,7 +221,15 @@ today.
 - **Persona composition is THE gating mechanism.** A module declares flavor
   blocks in its manifest's `app_type` block and splits persona-specific code
   into `src/control/` / `src/tenant/` folders; `compose_backend.py` strips
-  the other personas' folders and merges only the matching flavor block. A
+  the other personas' folders and merges only the matching flavor block.
+  DocTypes are persona-scoped by design too (Ray, 2026-08-20: "doctypes
+  should have persona as some are needed by control while others are needed
+  by tenant or both"): persona-specific doctypes live under
+  `src/<persona>/doctype/`, module-root `doctype/` means needed by all
+  personas. The strip side already excludes the other personas' doctypes,
+  but the composer does not yet relocate src-nested doctypes to the
+  Frappe-discoverable `<module>/doctype/` path — that composer support
+  ships with the migration wave. A
   runtime `app_role` site-config check is legitimate ONLY in common
   (role-less) code that ships to every persona and must branch at runtime —
   e.g.
