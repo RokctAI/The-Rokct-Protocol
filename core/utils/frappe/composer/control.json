@@ -75,8 +75,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/tender/frappe",
-      "ref": "025e07c7d2536e609403a3665a31d0dcad27778f",
-      "_comment": "TenderAssist module (SA public-sector tendering: opportunity catalog, tender bids with checklists, deterministic compliance layer). Control-only per the owner ruling of 2026-08-18. Pinned to corporate#30's merge, whose manifest self-registers the module's gateway cmds from its control persona block — no whitelisted_methods/hook lines are needed in this template. The full-SHA ref pin is intentional — the composer only accepts SHA pins when cloning (hard-fails unpinned refs), unlike the legacy 'main' refs above which predate that rule."
+      "ref": "7436e0ddf5e7ae5f147a8fb0695457bd33ffd240",
+      "_comment": "TenderAssist module (SA public-sector tendering: opportunity catalog, tender bids with checklists, deterministic compliance layer). Control-only per the owner ruling of 2026-08-18. Pinned to post-persona-wave corporate main (corporate#34); since corporate#30 the manifest self-registers the module's gateway cmds from its control persona block — no whitelisted_methods/hook lines are needed in this template. The full-SHA ref pin is intentional — the composer only accepts SHA pins when cloning (hard-fails unpinned refs), unlike the legacy 'main' refs above which predate that rule."
     }
   ]
 }
