@@ -1,8 +1,8 @@
 {
-  "name": "rcore_app",
+  "name": "control_app",
   "version": "1.0.0",
-  "description": "Frappe compose template for the hub/control docker (composes an app named rcore)",
-  "_comment": "Hub/control docker template. The control module itself joins this list when the control repo's SDK-ification lands (separate wave). tender is composed here and ONLY here: tender is control-only per the owner ruling of 2026-08-18 — it must not appear in any tenant template. tender self-registers its gateway cmds from its control persona block (corporate#30), so no hook lines are needed here.",
+  "description": "Frappe compose template for the hub/control docker (composes an app named control)",
+  "_comment": "Hub/control docker template. Unlike the tenant templates (all 'rcore_app'), this template is named 'control_app' so the composer derives an app named 'control' — the hub app keeps the name control per the owner ruling of 2026-08-20, matching the live hub's existing app name, so no app-rename migration is needed on the hub. The control module itself joins this list when the control repo's SDK-ification lands (separate wave). tender is composed here and ONLY here: tender is control-only per the owner ruling of 2026-08-18 — it must not appear in any tenant template. tender self-registers its gateway cmds from its control persona block (corporate#30), so no hook lines are needed here.",
   "modules": [
     {
       "name": "base",
@@ -37,12 +37,13 @@
       "ref": "main"
     },
     {
-      "name": "pay",
+      "name": "gateways",
       "enabled": true,
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
-      "path": "../pay/payments/frappe",
-      "ref": "main"
+      "path": "../pay/gateways/frappe",
+      "ref": "main",
+      "_comment": "Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
     },
     {
       "name": "telemetry",

@@ -34,8 +34,11 @@ the one-line `app_type` file.**
 
 ## Per-product templates
 
-One template per docker product. **Every product composes an app named `rcore`**
-(all templates share `"name": "rcore_app"`); products differ only by module set.
+One template per docker product. **Every tenant product composes an app named
+`rcore`** (the tenant templates share `"name": "rcore_app"`); products differ only
+by module set. The one exception is the hub: `control.json` is named
+`"control_app"` and composes an app named `control` (per the owner ruling of
+2026-08-20 — matching the live hub's existing app name, so no rename migration).
 `rcore.json` remains the current full composition and stays authoritative until
 the image build switches to the per-product targets below.
 
@@ -51,7 +54,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `rokctapp.json` | `crm` (erp SDK joins when the erpnext fork lands) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
 | `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
-| `control.json` | `tender` (hub/control docker; tender is control-only per owner ruling 2026-08-18; the `control` module itself joins when the control repo's SDK-ification lands) |
+| `control.json` | `tender` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; the `control` module itself joins when the control repo's SDK-ification lands) |
 
 To build a given backend shell:
 
