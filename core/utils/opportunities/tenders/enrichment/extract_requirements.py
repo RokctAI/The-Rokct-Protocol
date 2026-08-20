@@ -195,9 +195,7 @@ def extract_requirements_from_text(full_text):
         matches = re.findall(pattern, full_text, re.I)
         for m in set(matches):
             clean_m = re.sub(r"[\n\r]", " ", m).strip()
-            if clean_m.upper() not in [
-                x.upper() for x in results["gate_1_mandatory"]
-            ]:
+            if clean_m.upper() not in [x.upper() for x in results["gate_1_mandatory"]]:
                 results["gate_1_mandatory"].append(clean_m)
 
     # Gate 2 Regex Fallback
@@ -229,9 +227,7 @@ def extract_requirements_from_text(full_text):
     for rx in BRIEFING_COMPULSORY_RXES:
         m = rx.search(full_text)
         if m:
-            results["briefing_compulsory"] = re.sub(
-                r"\s+", " ", m.group(0)
-            ).strip()
+            results["briefing_compulsory"] = re.sub(r"\s+", " ", m.group(0)).strip()
             break
 
     # Functionality threshold (first explicit statement wins)
@@ -290,8 +286,7 @@ def extract_requirements_from_pdf(pdf_stream, tender_id):
             merged = list(table_criteria)
             for item in results["gate_2_functional"]:
                 if not any(
-                    item["criterion"].lower() in x["criterion"].lower()
-                    for x in merged
+                    item["criterion"].lower() in x["criterion"].lower() for x in merged
                 ):
                     merged.append(item)
             results["gate_2_functional"] = merged
@@ -372,9 +367,7 @@ def generate_actionable_tasks(requirements, tender_id):
             )
         if any("NHBRC" in m.upper() for m in mandatory):
             tasks.append("Attach valid NHBRC registration proof | 1")
-        if any(
-            "COIDA" in m.upper() or "GOOD STANDING" in m.upper() for m in mandatory
-        ):
+        if any("COIDA" in m.upper() or "GOOD STANDING" in m.upper() for m in mandatory):
             tasks.append(
                 "Obtain COIDA Letter of Good Standing from the Compensation Fund | 2"
             )

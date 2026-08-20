@@ -194,10 +194,13 @@ def run():
 
                     # Deadline
                     deadline_match = re.search(
-                        r"Deadline Date:\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", text_content
+                        r"Deadline Date:\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})",
+                        text_content,
                     )
                     deadline = (
-                        normalize_date(deadline_match.group(1)) if deadline_match else None
+                        normalize_date(deadline_match.group(1))
+                        if deadline_match
+                        else None
                     )
                     if deadline and deadline < today:
                         continue
@@ -250,7 +253,9 @@ def run():
                         if valid_op_links:
                             # Official link is usually the last one in .OP_content
                             applying_link = valid_op_links[-1]["href"]
-                            applying_org_candidate = valid_op_links[-1].get_text().strip()
+                            applying_org_candidate = (
+                                valid_op_links[-1].get_text().strip()
+                            )
 
                     # Fallback vicinity search near info markers
                     if applying_link == source_url:
@@ -358,7 +363,8 @@ def run():
                                 # Favor existing full name over abbreviation
                                 if (
                                     org == "FCT"
-                                    and "Portuguese Foundation" in applying_org_candidate
+                                    and "Portuguese Foundation"
+                                    in applying_org_candidate
                                 ):
                                     org = applying_org_candidate
                                 elif org == "Unspecified":
@@ -439,7 +445,9 @@ def run():
                     if not eligibility:
                         eligibility = "See source for details."
 
-                    safe_title = re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_")
+                    safe_title = (
+                        re.sub(r"[^\w\s-]", "", title).strip().replace(" ", "_")
+                    )
                     date_prefix = deadline if deadline else "Ongoing"
                     filename = f"{date_prefix}_{safe_title}.md"
                     if len(filename) > 100:
@@ -501,7 +509,9 @@ def run():
                             existing_card = filepath.read_text(encoding="utf-8")
                         except Exception:
                             existing_card = ""
-                        if re.search(r"Verification Status\*\*:\s*VERIFIED", existing_card):
+                        if re.search(
+                            r"Verification Status\*\*:\s*VERIFIED", existing_card
+                        ):
                             scraper_logger.info(
                                 f"Skipped overwrite of VERIFIED card: {filename}"
                             )
