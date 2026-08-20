@@ -37,12 +37,13 @@
       "ref": "main"
     },
     {
-      "name": "pay",
+      "name": "gateways",
       "enabled": true,
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
-      "path": "../pay/payments/frappe",
-      "ref": "main"
+      "path": "../pay/gateways/frappe",
+      "ref": "main",
+      "_comment": "Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
     },
     {
       "name": "telemetry",
