@@ -246,11 +246,14 @@ today.
   names no registry template is a pure role marker — `compose_backend.py`
   then uses the committed `composer.json` as-is. Markers and registry
   templates share one namespace, though: a registry template with the same
-  name as a marker value overrides a shell's committed `composer.json`. That
-  cuts both ways, and it is an open decision (Ray's) which way `control`
-  goes: draft protocol PR #251 (2026-08-18) proposes a `control.json` hub
-  template, which would turn the marker into a template selector rather than
-  a pure role marker.
+  name as a marker value overrides a shell's committed `composer.json`.
+  Registry composer templates exist ONLY for products that will have dockers
+  (deployable tenant products) — control-plane products don't get templates;
+  they are absorbed into SDKs instead (Ray, 2026-08-20). That sharpens the
+  open decision (still Ray's) on which way `control` goes: draft protocol
+  PR #251 (2026-08-18) proposes a `control.json` hub template — turning the
+  marker into a template selector — which now sits against the
+  templates-are-for-docker-products rule.
 - **Precedents — the mechanism, then two persona-gated modules.** Role
   composition landed in protocol PR #166 (2026-08-11), whose body records
   Ray's rationale verbatim: "this will give opportunity to break control
