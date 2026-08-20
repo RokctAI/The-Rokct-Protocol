@@ -40,7 +40,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "90bc8dbbc4f24ca5afb2a81800225249a9537129"
+PROTOCOL_REF = "762cda0f97bc326512c64f2cece645ac0bb569d1"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -58,20 +58,20 @@ EXPECTED_SHA256 = {
     "core/utils/opportunities/equity/funder_finder.py": "2edfbd505a518d120168a67b3d3c68eaf1b2e2beeb5d84a3d9f7d93cf0659faf",
     "core/utils/opportunities/equity/funder_manager.py": "d182c2b7785be644098896131358cdb96c9a7cccc19884bcdef564e4a0c8d55d",
     "core/utils/opportunities/equity/verify_sources.py": "b6602aedc5d33f55fde27d68bb10fd6c4cbd486a98e9b83085dda7383fa7bcce",
-    "core/utils/opportunities/grants/scrapers/f4c.py": "c9d80dd7e0295a172aa1aa43199a2cf12b9627f47c3f5be1032309cc0cc0f724",
+    "core/utils/opportunities/grants/scrapers/f4c.py": "7b80d8160d4371e3c438bbd99e7b85e331eddfd7c95e06cb4a972889bba32ea4",
     "core/utils/opportunities/maintenance/index.py": "110517d30cb4e7ccbda16df09b16c428f7d0354ff4d10587a62c8000a1f8cdaf",
     "core/utils/opportunities/registry_orchestrator/healers.py": "9b627944c459d4f5917481891053748c2425e76d7feae6b1ee11bb59b7f9da44",
     "core/utils/opportunities/registry_orchestrator/index.py": "bec11cf2a07d95f1eb60d3f5f328fa3f46ba08364ccff37612980c373f218f2a",
-    "core/utils/opportunities/registry_orchestrator/scanners.py": "ac384649f0467a867e5a75685f512ecbcfacb6d57ace3b318e0061128563eea1",
+    "core/utils/opportunities/registry_orchestrator/scanners.py": "ba7a61ae6dd90a34c5a467ba7122dcee30cfec267a1ac9c1e238fecc675a0cfe",
     "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "ec1e8b5c2a0ea23ad817e9ab933e1e870b42443e0cd53ffb752c5a1c30be1f72",
-    "core/utils/opportunities/registry_orchestrator/updaters.py": "2f23f0b666177e7b1f385cb9fac63e832ad158b30d3a0c2dd1da120aa0ebce0f",
+    "core/utils/opportunities/registry_orchestrator/updaters.py": "1b957f307f39f37fba52f444ac621387f83e4c3968100f3adbee6c1844bc74ac",
     "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
     "core/utils/opportunities/tenders/api/ocds.py": "57f77189c2af44747a693de8968861e97e0bdd698c5de42dd87ce9e9b09e22e0",
-    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "267cd4247132118a5aa4f9b425834bc0aafda622f331bb0d27bd978bcd36bf48",
+    "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "74119520b47c2ce8adaf5d2b432b02d333d93b453a958db9408fcb07f3bd095f",
     "core/utils/opportunities/tenders/enrichment/pdf_to_md.py": "c0c911678fd77a5787d4204b1845263f84e38dc14c90df1a5505bb83802e8c7e",
     "core/utils/opportunities/tenders/enrichment/test_extract_requirements.py": "8a2c2d9aa87173718ceebfbcbc1ab2575225ca717384aed02d4e168d5fd8ef95",
     "core/utils/opportunities/tenders/index.py": "b7b0269dcc403670710ea7416edc6c1c94296fd6c2a96ec80f30f82fe0219fe1",
-    "core/utils/opportunities/tenders/scrapers/musina.py": "39b4c627404d8de5579ae60942d874fa19a8eb12292e08bbfbd47d95e1190cdd",
+    "core/utils/opportunities/tenders/scrapers/musina.py": "a8f490caabf52e714458248397c87f24d4365cf7df482a3da5dbe63bf37c4fc2",
     "core/utils/opportunities/tenders/scrapers/test_musina_dates.py": "9abd791589e3fa47dffc66fec80c591c8cacda4e97f19f18068d97d8e3b19775",
     "core/utils/opportunities/tenders/utils/tender_resolver.py": "4ec8d661ca08d2def7749a8399c665238796790d511fab61d366c35fe973a827",
 }
