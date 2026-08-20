@@ -211,36 +211,61 @@ Rules:
   goes to the protocol template — editing only the app's committed copy will be
   clobbered.
 
-## The control plane (outside the SDK ecosystem)
+## The control persona: control-plane code in the SDK ecosystem
 
-Everything above describes composed apps. The `control` repo (Frappe app name
-`control`) sits outside that model: it is a hand-maintained, non-composed
-app — not an SDK, not a shell. It has no `composer.json`, no
-`.rokct/config/app_type` marker, and no product template in
-`core/utils/frappe/composer/` builds or includes it (all seven frappe product
-templates compose an app named `rcore`). It ships via bench, not compose:
-`install_stack.py` at the control repo root drives `bench get-app` +
-`bench install-app` for the full stack from version config, and the live
-control site self-updates via the Sunday job in
-`control/control/update_tasks.py`.
+The design rule: no app skips the SDK ecosystem. Feature code lives in SDK
+modules; apps are consumers. The control plane is not an exception — it is
+the *control persona* consumer of the same persona-gated SDKs, mid-absorption
+today.
 
-The composed world still meets it at runtime, in both directions:
-
-- Composed rcore / SDK code calls the control plane over HTTP, branching on
-  the per-site `app_role` config flag (`"control"`/`"tenant"`) — e.g.
+- **Persona composition is THE gating mechanism.** A module declares flavor
+  blocks in its manifest's `app_type` block and splits persona-specific code
+  into `src/control/` / `src/tenant/` folders; `compose_backend.py` strips
+  the other personas' folders and merges only the matching flavor block. A
+  runtime `app_role` site-config check is legitimate ONLY in common
+  (role-less) code that ships to every persona and must branch at runtime —
+  e.g.
   `core/telemetry/frappe/src/telemetry/forward_error_to_control/forward_error_to_control.py`
-  enqueues error forwarding only when `app_role == "tenant"`.
-- The control app soft-imports rcore on the same bench
-  (`control/control/bootstrap.py` imports `rcore.services.llm_service` with a
-  fallback), and its installer treats rcore as a critical co-installed app.
-- The `app_role` flag itself is set by control's own `install.py` from the
-  site name at install time (bench `set-config`); both control's hooks and
-  SDK code branch on it at runtime.
+  enqueues error forwarding only when `app_role == "tenant"`. Standalone
+  `app_role` gates in persona-specific code are legacy/transitional, not the
+  pattern.
+- **`app_type` names a backend shell's ROLE.** `.rokct/config/app_type` is
+  `tenant` for tenant backends (whatever product flavor the committed
+  `composer.json` builds) and `control` for the control plane. A value that
+  names no registry template is a pure role marker — `compose_backend.py`
+  then uses the committed `composer.json` as-is. **Warning:** never add
+  `control` or `tenant` as registry template names; markers and templates
+  share a namespace, and a template of either name would clobber a shell's
+  committed `composer.json`.
+- **Precedents — two SDK modules are persona-gated today:**
+  - `zones/weather/frappe`: full control + tenant flavors — the severe-weather
+    warnings engine under `src/control/`, a thin proxy/subscriber under
+    `src/tenant/`.
+  - `corporate/tender/frappe`: a control flavor carrying the `control:`
+    gateway cmds and the legacy dotted aliases. Tender was extracted from
+    control — `control/hooks.py` now defers to the SDK manifest, and zero
+    tender code remains in control.
 
-One piece is in transit: the telephony module is pending extraction from
-control into the SDK world (already noted in
-`core/utils/frappe/composer/telephony.json` and the composer README). This
-section documents the current state, not a target.
+How control composes, when it starts: two files. `.rokct/config/app_type`
+containing `control`, and a committed root `composer.json` with
+`"name": "control"` and SHA-pinned module entries. `compose_backend.py`
+carries no rcore assumptions — `{app_name}` tokens substitute to any shell
+name, `merge_hooks` is additive (it appends its marker block to an existing
+hand-written `hooks.py`), and the `modules.txt` / `requirements` /
+`pyproject` merges are additive too. `universal-frappe-ci` auto-composes
+whenever a `composer.json` exists at the repo root and commits the composed
+output back to the branch.
+
+Current state, honestly: control today is still a hand-maintained Frappe app
+with no marker and no `composer.json`. It deploys bench-based —
+`install_stack.py` drives `bench get-app` + `bench install-app`, and the
+live site self-updates weekly via `control/control/update_tasks.py` — and it
+couples to the composed rcore at runtime in both directions (SDK code phones
+home over HTTP branching on `app_role`; control soft-imports
+`rcore.services` on the same bench). Absorption ledger: tender extracted
+(`corporate/tender`); telephony pending extraction (noted in
+`core/utils/frappe/composer/telephony.json`); the remainder of control's
+surface awaits extraction.
 
 ## Backend imports and the `{app_name}` token
 
