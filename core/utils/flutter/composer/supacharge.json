@@ -11,7 +11,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
-      "sha256": "60c14d48989ded5e5f4bfc4a16f7706e6599cf2c6f69420d459522441292b363",
+      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
       "home_sdk": false,
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
@@ -22,7 +22,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/lms/dart",
       "ref": "main",
-      "sha256": "fa96f77d71d27589c57652eb1c102e8d3703bd61ed88742dcae840bd4be6f7ec",
+      "sha256": "badba5fe458a2643e71959ccdc4977ba87b505ab504eb1f975cb1324cd71c8c6",
       "home_sdk": true,
       "_comment": "LMS domain SDK (2026-07 carve-out from agent_sdk/replay_sdk); owns the lesson-player experience and is Supacharge's home SDK."
     },
@@ -109,7 +109,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/dart",
       "ref": "main",
-      "sha256": "ac8e31b44e13130219b3091543c579c67186d7a4258c51657f7c859233d03e4d"
+      "sha256": "74f7299ca0beb740ed7c84d9dd176d0204390a6fa2e4a15c57cc22bbda9250ea"
     },
     {
       "name": "replay_sdk",
@@ -118,7 +118,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/replay/dart",
       "ref": "main",
-      "sha256": "1965f8ba5d80bc318593da25ce36150d67cfc4bb7b22fb528a808a8f0eeb9909"
+      "sha256": "8b8ae42bbe6d63b8346a47c37c6d77fa7ee7b3130bd5d6f47ea678e2bce789f9"
     },
     {
       "name": "agent_sdk",
@@ -127,7 +127,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/dart",
       "ref": "main",
-      "sha256": "ef5d8eef4313003a155413b1119d7ed6b072a2b4510b65e4387ecaa66a6aa2ed",
+      "sha256": "ea30e6fa45f6042e22e15d262f88eb5d02165adf6ef5365c93e3d656ee71a91e",
       "home_sdk": false
     },
     {
@@ -137,7 +137,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/fav/dart",
       "ref": "main",
-      "sha256": "a4788720167c593e05e4174d0d4d8e06867f608709658926a09abcd18036c779",
+      "sha256": "f1683f7a6d376922ad1db443a1e11bb485281f05cd0365697c66f5fb30da2a06",
       "_comment": "Used today for shop/product favoriting only. Subject-selection reuse (ADR-004 in decision_log.md) is still PENDING - do not assume subject selection works via fav_sdk until that redesign lands."
     },
     {
@@ -147,7 +147,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
-      "sha256": "f6656411a48da896b76f302b23d74686a7ca2893890374338b826d0eb371dc5b"
+      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9"
     },
     {
       "name": "productivity_sdk",
