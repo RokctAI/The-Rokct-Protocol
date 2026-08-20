@@ -246,8 +246,14 @@ today.
     control — `control/hooks.py` now defers to the SDK manifest, and zero
     tender code remains in control.
 
-How control composes, when it starts: two files. `.rokct/config/app_type`
-containing `control`, and a committed root `composer.json` with
+How control composes, when it starts — and it does not start yet.
+Sequencing is a standing order (Ray, 2026-08-20): extraction of control's
+remaining code into SDKs completes FIRST; only then does composition switch
+on. Until then, no `composer.json` and no compose-triggering
+`.rokct/config/app_type` marker lands in the control repo, and control keeps
+its bench-based deployment. The end-state switch is two files:
+`.rokct/config/app_type` containing `control`, and a committed root
+`composer.json` with
 `"name": "control"` and SHA-pinned module entries. `compose_backend.py`
 carries no rcore assumptions — `{app_name}` tokens substitute to any shell
 name, `merge_hooks` is additive (it appends its marker block to an existing
