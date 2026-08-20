@@ -58,9 +58,7 @@ from core import polish  # noqa: E402
 
 
 def _groq_body(content):
-    return json.dumps({"choices": [{"message": {"content": content}}]}).encode(
-        "utf-8"
-    )
+    return json.dumps({"choices": [{"message": {"content": content}}]}).encode("utf-8")
 
 
 class RecordingCallModel:
@@ -221,9 +219,7 @@ class TestVerification(unittest.TestCase):
         self.assertEqual(outcome.polished, 0)
 
     def test_invented_placeholder_reverts_the_paragraph(self):
-        outcome = polish.polish_text(
-            PROSE, RecordingCallModel(lambda m: m + " ⟦NZZ⟧")
-        )
+        outcome = polish.polish_text(PROSE, RecordingCallModel(lambda m: m + " ⟦NZZ⟧"))
         self.assertEqual(outcome.text, PROSE)
         self.assertEqual(outcome.reverted, 1)
 
@@ -316,9 +312,7 @@ class TestProvenanceNote(unittest.TestCase):
     def test_note_lands_inside_the_document_control_block(self):
         noted = polish.add_polish_note(DOCUMENT, 3, 1)
         lines = noted.split("\n")
-        note_index = next(
-            i for i, line in enumerate(lines) if "**Language**" in line
-        )
+        note_index = next(i for i, line in enumerate(lines) if "**Language**" in line)
         self.assertTrue(lines[note_index].startswith("> *   "))
         self.assertTrue(lines[note_index - 1].startswith(">"))
         self.assertIn("3 paragraph(s) rephrased, 1 reverted", noted)
@@ -374,9 +368,7 @@ def _slot(name):
 class TestDraftRequest(unittest.TestCase):
     def test_slot_request_is_digit_free_and_budget_is_spelled_out(self):
         slot = _slot("executive_summary_opening")
-        user_text, masked, mapping = polish.prepare_slot_request(
-            slot, ANSWERS, LABELS
-        )
+        user_text, masked, mapping = polish.prepare_slot_request(slot, ANSWERS, LABELS)
         self.assertFalse(any(ch.isdigit() for ch in user_text), user_text)
         self.assertIn("one hundred and fifty words", user_text)
         self.assertIn("Vision Statement:", user_text)

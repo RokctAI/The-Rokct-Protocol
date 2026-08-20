@@ -99,7 +99,9 @@ FOOTER_Y = 6396990
 ROW_H = 335280  # table row height
 
 # Coaching lines, mirroring the markdown template exactly where it has one.
-COACH_TRACTION = "No traction recorded. This is the slide investors read most carefully."
+COACH_TRACTION = (
+    "No traction recorded. This is the slide investors read most carefully."
+)
 COACH_COMPETITION = "No competitive analysis recorded."
 
 # Logo and background-image geometry.
@@ -176,7 +178,8 @@ def theme_from_brand(brand):
         candidates = [token for token in (ink, background) if token is not None]
         if candidates:
             on_accent = max(
-                candidates, key=lambda token: _contrast(token.luminance(), accent.luminance())
+                candidates,
+                key=lambda token: _contrast(token.luminance(), accent.luminance()),
             )
 
     return DeckTheme(
@@ -235,7 +238,9 @@ def build_slides(data):
     """Derive the 12 slides from an `InstanceData`, mirroring the markdown."""
     values = data.values
     ctx = template_engine.RenderContext(
-        values=values, jurisdiction=data.jurisdiction, features=data.jurisdiction.features
+        values=values,
+        jurisdiction=data.jurisdiction,
+        features=data.jurisdiction.features,
     )
 
     def answered(key):
@@ -275,7 +280,12 @@ def build_slides(data):
             "The Problem",
             _blocks(problem)
             if problem
-            else [("coach", "Required for this deck. Answer Problem Statement in questions.md.")],
+            else [
+                (
+                    "coach",
+                    "Required for this deck. Answer Problem Statement in questions.md.",
+                )
+            ],
         )
     )
 
@@ -287,7 +297,12 @@ def build_slides(data):
         items.append(("label", "What ships"))
         items.extend(_blocks(answered("product_components")))
     if not items:
-        items = [("coach", "Required for this deck. Answer Core Value Proposition in questions.md.")]
+        items = [
+            (
+                "coach",
+                "Required for this deck. Answer Core Value Proposition in questions.md.",
+            )
+        ]
     slides.append(_Slide("The Solution", items))
 
     # 4 — Market (TAM/SAM/SOM funnel)
@@ -322,7 +337,10 @@ def build_slides(data):
                 items.append(("bullet", f"{label}: {answered(key)}"))
     else:
         items.append(
-            ("coach", "Required for this deck. Answer Market Size TAM / SAM / SOM — with sources.")
+            (
+                "coach",
+                "Required for this deck. Answer Market Size TAM / SAM / SOM — with sources.",
+            )
         )
     if answered("market_trends"):
         items.append(("label", "Why now"))
@@ -373,7 +391,12 @@ def build_slides(data):
             "Go To Market",
             _blocks(gtm)
             if gtm
-            else [("coach", "No go-to-market recorded. Answer Acquisition Channels in questions.md.")],
+            else [
+                (
+                    "coach",
+                    "No go-to-market recorded. Answer Acquisition Channels in questions.md.",
+                )
+            ],
         )
     )
 
@@ -387,7 +410,11 @@ def build_slides(data):
         body_rows = []
         for index, amount in enumerate(fin["revenue"]):
             if amount is None:
-                row = [f"Year {index + 1}", f"Pending — answer Projected Year {index + 1}", "—"]
+                row = [
+                    f"Year {index + 1}",
+                    f"Pending — answer Projected Year {index + 1}",
+                    "—",
+                ]
             else:
                 growth = metrics["growth"][index]
                 row = [
@@ -401,14 +428,31 @@ def build_slides(data):
             body_rows.append(row)
         table = (headers, body_rows)
     else:
-        items.append(("coach", "No revenue projections recorded. Answer Projected Year 1–3 in questions.md."))
+        items.append(
+            (
+                "coach",
+                "No revenue projections recorded. Answer Projected Year 1–3 in questions.md.",
+            )
+        )
 
     if metrics["cac_payback_months"] is not None:
-        basis = "" if metrics["cac_payback_basis"] == "margin" else " (revenue basis — no margin supplied)"
-        items.append(("bullet", f"CAC payback: {metrics['cac_payback_months']:.1f} months{basis}"))
+        basis = (
+            ""
+            if metrics["cac_payback_basis"] == "margin"
+            else " (revenue basis — no margin supplied)"
+        )
+        items.append(
+            (
+                "bullet",
+                f"CAC payback: {metrics['cac_payback_months']:.1f} months{basis}",
+            )
+        )
     else:
         items.append(
-            ("coach", "CAC payback not derivable yet — needs Customer Acquisition Cost and a per-period Average Revenue Per Customer.")
+            (
+                "coach",
+                "CAC payback not derivable yet — needs Customer Acquisition Cost and a per-period Average Revenue Per Customer.",
+            )
         )
     if metrics["ltv"] is not None:
         line = f"Customer lifetime value: {format_money(metrics['ltv'], symbol)}"
@@ -417,7 +461,10 @@ def build_slides(data):
         items.append(("bullet", line))
     else:
         items.append(
-            ("coach", "LTV not derivable yet — needs Average Revenue Per Customer, Gross Margin Target and Customer Churn Rate.")
+            (
+                "coach",
+                "LTV not derivable yet — needs Average Revenue Per Customer, Gross Margin Target and Customer Churn Rate.",
+            )
         )
     if metrics["runway_months"] is not None:
         items.append(
@@ -429,7 +476,12 @@ def build_slides(data):
             )
         )
     else:
-        items.append(("coach", "Runway not derivable yet — needs Cash On Hand and Monthly Operating Costs."))
+        items.append(
+            (
+                "coach",
+                "Runway not derivable yet — needs Cash On Hand and Monthly Operating Costs.",
+            )
+        )
     if answered("break_even_point"):
         items.append(("bullet", f"Break-even: {answered('break_even_point')}"))
     items.append(("coach", _plain(values.get("currency_note") or "")))
@@ -441,7 +493,9 @@ def build_slides(data):
     if team:
         items.extend(_sentences(team))
     else:
-        items.append(("coach", "No team recorded. Answer Executive Team in questions.md."))
+        items.append(
+            ("coach", "No team recorded. Answer Executive Team in questions.md.")
+        )
     if answered("personnel_count"):
         items.append(("bullet", f"Headcount: {answered('personnel_count')}"))
     if answered("hiring_plan"):
@@ -454,7 +508,9 @@ def build_slides(data):
     if answered("funding_requirement"):
         items.extend(_blocks(answered("funding_requirement")))
     else:
-        items.append(("coach", "No capital requirement recorded. Answer Funding Requirement."))
+        items.append(
+            ("coach", "No capital requirement recorded. Answer Funding Requirement.")
+        )
     if answered("capital_allocation"):
         items.append(("label", "Use of funds"))
         items.extend(_sentences(answered("capital_allocation")))
@@ -467,10 +523,18 @@ def build_slides(data):
         status = _plain(values.get("company_name_status") or "Registered name")
         items.append(("bullet", f"{status}: {company}"))
         registry = _plain(values.get("registry_name") or "Registry")
-        items.append(("bullet", f"{registry} number: {_plain(values.get('reg_number') or 'Pending')}"))
+        items.append(
+            (
+                "bullet",
+                f"{registry} number: {_plain(values.get('reg_number') or 'Pending')}",
+            )
+        )
         if "tax_clearance" in features:
             items.append(
-                ("bullet", f"Tax compliance: {_plain(values.get('tax_compliance_status') or 'Pending')}")
+                (
+                    "bullet",
+                    f"Tax compliance: {_plain(values.get('tax_compliance_status') or 'Pending')}",
+                )
             )
     if "bbee" in features:
         if ctx.is_truthy("bee_level"):
@@ -483,14 +547,24 @@ def build_slides(data):
                 )
             )
         else:
-            items.append(("bullet", "B-BBEE: no certificate on file; no level is claimed."))
+            items.append(
+                ("bullet", "B-BBEE: no certificate on file; no level is claimed.")
+            )
     if answered("intellectual_property"):
         items.append(("label", "Intellectual property"))
         items.extend(_blocks(answered("intellectual_property")))
     if not items:
-        items.append(("coach", "No corporate records on file. Add compliance evidence to make this slide."))
+        items.append(
+            (
+                "coach",
+                "No corporate records on file. Add compliance evidence to make this slide.",
+            )
+        )
     items.append(
-        ("coach", "Figures are management projections from questions.md — unaudited, and unverified where marked Pending.")
+        (
+            "coach",
+            "Figures are management projections from questions.md — unaudited, and unverified where marked Pending.",
+        )
     )
     slides.append(_Slide("Corporate Standing", items))
 
@@ -624,7 +698,9 @@ def _table_frame(theme, shape_id, x, y, cx, headers, rows):
 
 def _item_para(theme, kind, text):
     if kind == "label":
-        return _para(_run(theme, text, SZ_BODY, bold=True, color=theme.title), space_after=200)
+        return _para(
+            _run(theme, text, SZ_BODY, bold=True, color=theme.title), space_after=200
+        )
     if kind == "coach":
         return _para(_run(theme, text, SZ_BODY, italic=True, color=theme.muted))
     if kind == "bullet":
@@ -667,7 +743,11 @@ def _slide_xml(theme, slide, number, company, background_rid=None, logo=None):
                 2286000,
                 content_w,
                 1143000,
-                _para(_run(theme, slide.title, SZ_COVER_TITLE, bold=True, color=theme.title)),
+                _para(
+                    _run(
+                        theme, slide.title, SZ_COVER_TITLE, bold=True, color=theme.title
+                    )
+                ),
                 autofit=False,
             )
         )
@@ -679,7 +759,15 @@ def _slide_xml(theme, slide, number, company, background_rid=None, logo=None):
             paragraphs += _para(_run(theme, text, size, color=color))
         if paragraphs:
             shapes.append(
-                _textbox(shape_id, "Subtitle", MARGIN, 3581400, content_w, 1600200, paragraphs)
+                _textbox(
+                    shape_id,
+                    "Subtitle",
+                    MARGIN,
+                    3581400,
+                    content_w,
+                    1600200,
+                    paragraphs,
+                )
             )
             shape_id += 1
     else:
@@ -726,9 +814,15 @@ def _slide_xml(theme, slide, number, company, background_rid=None, logo=None):
             body_y += used
             body_h -= used
 
-        paragraphs = "".join(_item_para(theme, kind, text) for kind, text in slide.items)
+        paragraphs = "".join(
+            _item_para(theme, kind, text) for kind, text in slide.items
+        )
         if paragraphs:
-            shapes.append(_textbox(shape_id, "Body", MARGIN, body_y, content_w, body_h, paragraphs))
+            shapes.append(
+                _textbox(
+                    shape_id, "Body", MARGIN, body_y, content_w, body_h, paragraphs
+                )
+            )
             shape_id += 1
 
     shapes.append(
@@ -824,11 +918,11 @@ def _rels(pairs):
 
 def _presentation_xml():
     slide_ids = "".join(
-        f'<p:sldId id="{255 + n}" r:id="rId{1 + n}"/>' for n in range(1, SLIDE_COUNT + 1)
+        f'<p:sldId id="{255 + n}" r:id="rId{1 + n}"/>'
+        for n in range(1, SLIDE_COUNT + 1)
     )
     return (
-        _XML_DECL
-        + f"<p:presentation {_XMLNS}>"
+        _XML_DECL + f"<p:presentation {_XMLNS}>"
         '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
         f"<p:sldIdLst>{slide_ids}</p:sldIdLst>"
         f'<p:sldSz cx="{SLIDE_W}" cy="{SLIDE_H}"/>'
@@ -848,8 +942,7 @@ _EMPTY_SPTREE = (
 
 def _slide_master_xml(theme):
     return (
-        _XML_DECL
-        + f"<p:sldMaster {_XMLNS}>"
+        _XML_DECL + f"<p:sldMaster {_XMLNS}>"
         "<p:cSld>"
         f'<p:bg><p:bgPr><a:solidFill><a:srgbClr val="{theme.background}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>'
         + _EMPTY_SPTREE
@@ -864,8 +957,7 @@ def _slide_master_xml(theme):
 
 def _slide_layout_xml():
     return (
-        _XML_DECL
-        + f'<p:sldLayout {_XMLNS} type="blank" preserve="1">'
+        _XML_DECL + f'<p:sldLayout {_XMLNS} type="blank" preserve="1">'
         '<p:cSld name="Blank">' + _EMPTY_SPTREE + "</p:cSld>"
         "<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>"
         "</p:sldLayout>"
@@ -1025,7 +1117,9 @@ def build_pptx_bytes(data):
             logo = None
             if number in backgrounds:
                 background_rid = f"rId{len(rels) + 1}"
-                rels.append((background_rid, "image", f"../media/{backgrounds[number]}"))
+                rels.append(
+                    (background_rid, "image", f"../media/{backgrounds[number]}")
+                )
             if logo_name is not None:
                 logo_rid = f"rId{len(rels) + 1}"
                 rels.append((logo_rid, "image", f"../media/{logo_name}"))

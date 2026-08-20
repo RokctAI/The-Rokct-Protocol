@@ -783,9 +783,7 @@ class TestDepthLadder(unittest.TestCase):
         )
         self.assertEqual(report.level, 3)
         self.assertIsNone(report.next_level)
-        self.assertIn(
-            "Level 3 of 3 — diligence-grade", schemas.describe_depth(report)
-        )
+        self.assertIn("Level 3 of 3 — diligence-grade", schemas.describe_depth(report))
 
     def test_unknown_instance_types_have_no_depth_ladder(self):
         self.assertIsNone(schemas.compute_depth("garden", {"full_name"}))
@@ -826,7 +824,9 @@ class TestDepthLadder(unittest.TestCase):
             values, FakeProfile(answers), jurisdictions.get("ZA")
         )
         self.assertIn("| GoodX | R 4,100/month |", values["competitor_pricing_table"])
-        self.assertIn("| Bureau partnerships | R9,000 |", values["fin_cac_by_channel_table"])
+        self.assertIn(
+            "| Bureau partnerships | R9,000 |", values["fin_cac_by_channel_table"]
+        )
         self.assertIn("Blended (all channels)", values["fin_cac_by_channel_table"])
         self.assertIn("78%", values["fin_cohort_analysis"])  # (1-0.02)^12
         self.assertIn("50 months", values["fin_cohort_analysis"])  # 1/0.02
@@ -864,7 +864,11 @@ class TestDepthLadderEndToEnd(unittest.TestCase):
         out = os.path.join(root, "instances", "business", "Acme", "output")
         return {
             name: open(os.path.join(out, name), encoding="utf-8").read()
-            for name in ("01_executive_summary.md", "03_market_analysis.md", "07_financial_model.md")
+            for name in (
+                "01_executive_summary.md",
+                "03_market_analysis.md",
+                "07_financial_model.md",
+            )
         }
 
     SEED_L1 = {
@@ -887,12 +891,8 @@ class TestDepthLadderEndToEnd(unittest.TestCase):
         self.assertIn("Problem Statement", control)
         # Level 3 blocks stay locked, with the unlock coaching in place.
         self.assertNotIn("### CAC by Channel", docs["07_financial_model.md"])
-        self.assertIn(
-            "unlock at Level 3", docs["07_financial_model.md"]
-        )
-        self.assertNotIn(
-            "### Named-Competitor Pricing", docs["03_market_analysis.md"]
-        )
+        self.assertIn("unlock at Level 3", docs["07_financial_model.md"])
+        self.assertNotIn("### Named-Competitor Pricing", docs["03_market_analysis.md"])
 
     def test_level_three_profile_unlocks_the_deeper_blocks(self):
         seed = dict(
@@ -1396,14 +1396,16 @@ class TestLifeComputedFinancials(unittest.TestCase):
         self.assertIn("Pending — answer **Assets**", summary)
         self.assertIn("Pending — answer **Liabilities**", summary)
         self.assertIn("Pending — answer **Life Cover Policies**", summary)
-        self.assertIn(
-            "needs amounts in both **Assets** and **Liabilities**", summary
-        )
+        self.assertIn("needs amounts in both **Assets** and **Liabilities**", summary)
         # Nothing derivable means no derived figure anywhere.
-        self.assertNotIn("computed from total assets", summary.replace(
-            "Not derivable yet — needs amounts in both **Assets** and "
-            "**Liabilities**", ""
-        ))
+        self.assertNotIn(
+            "computed from total assets",
+            summary.replace(
+                "Not derivable yet — needs amounts in both **Assets** and "
+                "**Liabilities**",
+                "",
+            ),
+        )
 
     def test_narrative_answers_are_not_forced_into_numbers(self):
         summary = self._values(
@@ -1480,9 +1482,7 @@ class TestLifeSuiteEndToEnd(unittest.TestCase):
         shutil.copytree(self.TEMPLATE_SRC, os.path.join(root, "templates"))
         write(
             os.path.join(root, "instances", "life", "Nia", "questions.md"),
-            schemas.render_questions_md(
-                "life", "Nia", seed, include_full=include_full
-            ),
+            schemas.render_questions_md("life", "Nia", seed, include_full=include_full),
         )
         result = compiler_mod.compile_instance(
             "life", "Nia", workspace_root=root, quiet=True
