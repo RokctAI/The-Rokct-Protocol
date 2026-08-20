@@ -1,5 +1,5 @@
 {
-  "ref": "b4762a509bc10a05293795a4791f8f42474ab389",
+  "ref": "90bc8dbbc4f24ca5afb2a81800225249a9537129",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -34,7 +34,7 @@
     "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "ec1e8b5c2a0ea23ad817e9ab933e1e870b42443e0cd53ffb752c5a1c30be1f72",
     "core/utils/opportunities/registry_orchestrator/updaters.py": "2f23f0b666177e7b1f385cb9fac63e832ad158b30d3a0c2dd1da120aa0ebce0f",
     "core/utils/opportunities/response_kits/index.py": "2196399a9d3c2478a96ad284a55a530f4f18f887beef9d016bf44bd52e2f9dc7",
-    "core/utils/opportunities/tenders/api/ocds.py": "50af12f932ed5eeed5b1274724055e8633a75fda1095f48df4473c7013c6da7a",
+    "core/utils/opportunities/tenders/api/ocds.py": "57f77189c2af44747a693de8968861e97e0bdd698c5de42dd87ce9e9b09e22e0",
     "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "267cd4247132118a5aa4f9b425834bc0aafda622f331bb0d27bd978bcd36bf48",
     "core/utils/opportunities/tenders/enrichment/pdf_to_md.py": "c0c911678fd77a5787d4204b1845263f84e38dc14c90df1a5505bb83802e8c7e",
     "core/utils/opportunities/tenders/enrichment/test_extract_requirements.py": "8a2c2d9aa87173718ceebfbcbc1ab2575225ca717384aed02d4e168d5fd8ef95",
@@ -58,8 +58,8 @@
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "72fa8aa992e2e2885e8fd50cf9a7c0cd908d36c5afbc466f1ff87d2056af2166",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "a588ae9b39c059ef8202bfb1f57d5635708f7ba3d1c60b9662a1ee4c9a138f27",
-    "profiles/web/initiate.py": "76aad83618a308f95cb3d3c0d6a500f5dc26e9ed5b111b00ac6b4540c1907021",
+    "profiles/local/initiate.py": "8fd91fc45107bdcac974418c22419d0219bdbe4b1df4ec7ae5fbeeb396493c54",
+    "profiles/web/initiate.py": "70b063902f7b139708572887cb453c323bf0831c726a6e45949501c5235e3879",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
