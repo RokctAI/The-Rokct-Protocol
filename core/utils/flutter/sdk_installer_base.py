@@ -1417,9 +1417,7 @@ def _update_android_permissions():
         flags=re.DOTALL,
     )
     host_owned = set(
-        re.findall(
-            r'<uses-permission[^>]*android:name="([^"]+)"', body_without_block
-        )
+        re.findall(r'<uses-permission[^>]*android:name="([^"]+)"', body_without_block)
     )
 
     lines = [

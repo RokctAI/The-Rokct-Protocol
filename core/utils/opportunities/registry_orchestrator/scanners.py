@@ -77,6 +77,7 @@ def is_fallback_checklist(tasks):
     """
     return _normalize_checklist(tasks) in _FALLBACK_SIGNATURES
 
+
 # --- THE WHITELIST (Only aggregate these for the JSON) ---
 # We use 'Flag' instead of 'Country' for more deterministic counting
 INTERESTING_KEYS = [

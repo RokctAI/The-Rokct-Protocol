@@ -203,7 +203,12 @@ def update_json_tenders(tenders_path, tenders_dir):
         fname = file.name.lower()
         if (
             fname
-            in ["template.md", "readme.md", "registry_audit_log.md", "global_audit_log.md"]
+            in [
+                "template.md",
+                "readme.md",
+                "registry_audit_log.md",
+                "global_audit_log.md",
+            ]
             or fname.startswith("registry_")
             or fname.endswith("_content.md")
         ):

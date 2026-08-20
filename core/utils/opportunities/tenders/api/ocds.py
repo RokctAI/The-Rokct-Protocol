@@ -142,9 +142,7 @@ def run_sync(tender_dir, sources_dir, generate_md_fn):
                         tmp_path = write_path.with_name(
                             write_path.name + f".tmp{os.getpid()}"
                         )
-                        with open(
-                            tmp_path, "w", encoding="utf-8", newline="\n"
-                        ) as fw:
+                        with open(tmp_path, "w", encoding="utf-8", newline="\n") as fw:
                             fw.write(new_c)
                         os.replace(tmp_path, write_path)
                         updates += 1

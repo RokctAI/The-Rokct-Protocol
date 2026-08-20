@@ -1029,8 +1029,7 @@ LIFE_SCHEMA = [
             ),
             Question(
                 "Residue Beneficiaries",
-                "Who inherits the rest of the estate (the residue), in what "
-                "shares?",
+                "Who inherits the rest of the estate (the residue), in what shares?",
                 example="My spouse: 100%; failing them, my children equally",
                 tier=TIER_FULL,
             ),
