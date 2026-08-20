@@ -1349,7 +1349,15 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         if isinstance(after_installs, str):
             after_installs = [after_installs]
         if after_installs:
+            # The shell's own hooks.py may declare after_install as a bare
+            # string (standard Frappe style, and what the scaffold template
+            # emits), so coerce it to a list in the EMITTED code before
+            # appending — otherwise importing the composed hooks module would
+            # raise AttributeError on str.append.
             append_blocks.append(f"after_install = globals().get('after_install', [])")
+            append_blocks.append(
+                "if isinstance(after_install, str): after_install = [after_install]"
+            )
             for ai in after_installs:
                 _validate_hook_value(ai, "dotted", module_name, "after_install")
                 append_blocks.append(

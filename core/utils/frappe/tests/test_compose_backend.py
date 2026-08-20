@@ -573,6 +573,65 @@ class WhitelistedMethodsKeyValidationTest(ComposeBackendTestBase):
             self.run_main(composer)
 
 
+class AfterInstallShellCoercionTest(ComposeBackendTestBase):
+    """A shell hooks.py may declare after_install as a bare string (standard
+    Frappe style, and what the scaffold template emits). The emitted merge
+    block must coerce that string to a list before appending module hooks,
+    or importing the composed hooks module raises AttributeError."""
+
+    SHELL_HOOK = "testshell.install.after_install"
+
+    def _compose_with_shell_hooks(self, shell_hooks_content):
+        self.make_composer_json()
+        self.write(f"{self.APP}/__init__.py", "__version__ = '0.0.1'\n")
+        self.write(f"{self.APP}/hooks.py", shell_hooks_content)
+        self.write(f"{self.APP}/modules.txt", f"{self.APP}\n")
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"after_install": "{app_name}.mymod.install.after_install"},
+            }
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        return self.read(f"{self.APP}/hooks.py")
+
+    def _exec_hooks(self, content):
+        """Execute the composed hooks.py the way an import would; any
+        AttributeError from the merge block surfaces here."""
+        namespace = {}
+        exec(compile(content, "hooks.py", "exec"), namespace)
+        return namespace
+
+    def test_string_shell_after_install_coerced_to_list(self):
+        content = self._compose_with_shell_hooks(
+            f'app_name = "{self.APP}"\nafter_install = "{self.SHELL_HOOK}"\n'
+        )
+        ns = self._exec_hooks(content)
+        self.assertEqual(
+            ns["after_install"],
+            [self.SHELL_HOOK, f"{self.APP}.mymod.install.after_install"],
+        )
+
+    def test_list_shell_after_install_preserved(self):
+        content = self._compose_with_shell_hooks(
+            f'app_name = "{self.APP}"\nafter_install = ["{self.SHELL_HOOK}"]\n'
+        )
+        ns = self._exec_hooks(content)
+        self.assertEqual(
+            ns["after_install"],
+            [self.SHELL_HOOK, f"{self.APP}.mymod.install.after_install"],
+        )
+
+    def test_absent_shell_after_install_starts_fresh_list(self):
+        content = self._compose_with_shell_hooks(f'app_name = "{self.APP}"\n')
+        ns = self._exec_hooks(content)
+        self.assertEqual(
+            ns["after_install"], [f"{self.APP}.mymod.install.after_install"]
+        )
+
+
 class ShellTemplateSyncTest(ComposeBackendTestBase):
     """The embedded SHELL_TEMPLATES and the canonical on-disk templates in
     core/utils/frappe/templates/shell/ must never drift apart."""
