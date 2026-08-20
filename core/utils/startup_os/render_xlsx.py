@@ -166,30 +166,76 @@ def _assumptions_sheet(fin):
 
     spec = [
         # (label, value, style, coaching text when absent, source note)
-        ("Average revenue per customer (per month)", arpc_value, S_CURRENCY,
-         arpc_coach, arpc_note),
-        ("Gross margin target",
-         fin["margin_pct"] / 100.0 if fin["margin_pct"] is not None else None,
-         S_PERCENT, _coach("Gross Margin Target"),
-         "Parsed from 'Gross Margin Target'"),
-        ("Customer acquisition cost", fin["cac"], S_CURRENCY,
-         _coach("Customer Acquisition Cost"),
-         "Parsed from 'Customer Acquisition Cost'"),
-        ("Customer churn rate (per month)", fin["churn_monthly_rate"], S_PERCENT,
-         _coach("Customer Churn Rate"), churn_note),
-        ("Monthly operating costs", fin["burn"], S_CURRENCY,
-         _coach("Monthly Operating Costs"),
-         "Parsed from 'Monthly Operating Costs'"),
-        ("Cash on hand", fin["cash"], S_CURRENCY,
-         _coach("Cash On Hand"), "Parsed from 'Cash On Hand'"),
-        ("Customer count — Year 1", fin["customers_y1"], S_DEFAULT,
-         _coach("Customer Count Year 1"), "Parsed from 'Customer Count Year 1'"),
-        ("Projected revenue — Year 1", fin["revenue"][0], S_CURRENCY,
-         _coach("Projected Year 1"), "Parsed from 'Projected Year 1'"),
-        ("Projected revenue — Year 2", fin["revenue"][1], S_CURRENCY,
-         _coach("Projected Year 2"), "Parsed from 'Projected Year 2'"),
-        ("Projected revenue — Year 3", fin["revenue"][2], S_CURRENCY,
-         _coach("Projected Year 3"), "Parsed from 'Projected Year 3'"),
+        (
+            "Average revenue per customer (per month)",
+            arpc_value,
+            S_CURRENCY,
+            arpc_coach,
+            arpc_note,
+        ),
+        (
+            "Gross margin target",
+            fin["margin_pct"] / 100.0 if fin["margin_pct"] is not None else None,
+            S_PERCENT,
+            _coach("Gross Margin Target"),
+            "Parsed from 'Gross Margin Target'",
+        ),
+        (
+            "Customer acquisition cost",
+            fin["cac"],
+            S_CURRENCY,
+            _coach("Customer Acquisition Cost"),
+            "Parsed from 'Customer Acquisition Cost'",
+        ),
+        (
+            "Customer churn rate (per month)",
+            fin["churn_monthly_rate"],
+            S_PERCENT,
+            _coach("Customer Churn Rate"),
+            churn_note,
+        ),
+        (
+            "Monthly operating costs",
+            fin["burn"],
+            S_CURRENCY,
+            _coach("Monthly Operating Costs"),
+            "Parsed from 'Monthly Operating Costs'",
+        ),
+        (
+            "Cash on hand",
+            fin["cash"],
+            S_CURRENCY,
+            _coach("Cash On Hand"),
+            "Parsed from 'Cash On Hand'",
+        ),
+        (
+            "Customer count — Year 1",
+            fin["customers_y1"],
+            S_DEFAULT,
+            _coach("Customer Count Year 1"),
+            "Parsed from 'Customer Count Year 1'",
+        ),
+        (
+            "Projected revenue — Year 1",
+            fin["revenue"][0],
+            S_CURRENCY,
+            _coach("Projected Year 1"),
+            "Parsed from 'Projected Year 1'",
+        ),
+        (
+            "Projected revenue — Year 2",
+            fin["revenue"][1],
+            S_CURRENCY,
+            _coach("Projected Year 2"),
+            "Parsed from 'Projected Year 2'",
+        ),
+        (
+            "Projected revenue — Year 3",
+            fin["revenue"][2],
+            S_CURRENCY,
+            _coach("Projected Year 3"),
+            "Parsed from 'Projected Year 3'",
+        ),
     ]
 
     rows = [
@@ -252,10 +298,17 @@ def _projections_sheet(fin, metrics):
     ]
 
     revenue_cells = [_Cell("A2", text="Revenue")]
-    for column, ref, amount, year in zip(columns, revenue_refs, fin["revenue"], (1, 2, 3)):
+    for column, ref, amount, year in zip(
+        columns, revenue_refs, fin["revenue"], (1, 2, 3)
+    ):
         if amount is not None:
             revenue_cells.append(
-                _Cell(f"{column}2", S_CURRENCY, formula=f"Assumptions!{ref}", number=amount)
+                _Cell(
+                    f"{column}2",
+                    S_CURRENCY,
+                    formula=f"Assumptions!{ref}",
+                    number=amount,
+                )
             )
         else:
             revenue_cells.append(
@@ -263,7 +316,10 @@ def _projections_sheet(fin, metrics):
             )
     rows.append(_row(2, revenue_cells))
 
-    growth_cells = [_Cell("A3", text="Revenue growth (YoY)"), _Cell("B3", S_NOTE, text="—")]
+    growth_cells = [
+        _Cell("A3", text="Revenue growth (YoY)"),
+        _Cell("B3", S_NOTE, text="—"),
+    ]
     for index, column, previous in ((1, "C", "B"), (2, "D", "C")):
         value = metrics["growth"][index]
         if value is not None:
@@ -371,7 +427,9 @@ def _unit_economics_sheet(fin, metrics):
 
     if metrics["cac_payback_basis"] == "revenue":
         payback_formula = f"Assumptions!{a['cac']}/Assumptions!{a['arpc_monthly']}"
-        payback_basis = "CAC ÷ monthly revenue per customer (revenue basis — no margin supplied)"
+        payback_basis = (
+            "CAC ÷ monthly revenue per customer (revenue basis — no margin supplied)"
+        )
     else:
         payback_formula = (
             f"Assumptions!{a['cac']}/"
@@ -530,7 +588,7 @@ def _styles_xml(currency_symbol):
         '<fill><patternFill patternType="none"/></fill>'
         '<fill><patternFill patternType="gray125"/></fill>'
         '<fill><patternFill patternType="solid"><fgColor rgb="FFEDF2F8"/>'
-        "<bgColor indexed=\"64\"/></patternFill></fill>"
+        '<bgColor indexed="64"/></patternFill></fill>'
         "</fills>"
         '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
         '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'

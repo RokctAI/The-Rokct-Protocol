@@ -77,7 +77,9 @@ def make_png(width, height, rgb=(31, 111, 84)):
 
     def chunk(tag, payload):
         body = tag + payload
-        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
+        return (
+            struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
+        )
 
     header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
     raw = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
@@ -145,17 +147,21 @@ def _write_brand(instance_dir, system_text=None, logo=True, cover=True, slide4=F
         write_bytes(os.path.join(brand_dir, "logo.png"), make_png(8, 4))
     if cover:
         write_bytes(
-            os.path.join(brand_dir, "images", "cover.png"), make_png(16, 9, (233, 243, 238))
+            os.path.join(brand_dir, "images", "cover.png"),
+            make_png(16, 9, (233, 243, 238)),
         )
     if slide4:
         write_bytes(
-            os.path.join(brand_dir, "images", "slide04.png"), make_png(16, 9, (224, 166, 60))
+            os.path.join(brand_dir, "images", "slide04.png"),
+            make_png(16, 9, (224, 166, 60)),
         )
     return brand_dir
 
 
 def _load(root, name="Acme"):
-    return compiler.load_instance_data("business", name, workspace_root=root, quiet=True)
+    return compiler.load_instance_data(
+        "business", name, workspace_root=root, quiet=True
+    )
 
 
 def _parts(blob):
@@ -299,9 +305,7 @@ class TestBrandLoading(unittest.TestCase):
                 logo=False,
                 cover=False,
             )
-            write_text(
-                os.path.join(instance, "brand", "logo.svg"), "<svg></svg>"
-            )
+            write_text(os.path.join(instance, "brand", "logo.svg"), "<svg></svg>")
             data = _load(root)
         self.assertIsNone(data.brand.logo)
         self.assertTrue(any("logo.svg" in w for w in data.warnings))
@@ -333,9 +337,7 @@ class TestBrandedDeck(unittest.TestCase):
     def setUpClass(cls):
         cls.workspace = tempfile.mkdtemp(prefix="startupos-brand-deck-")
         instance = _make_instance(cls.workspace)
-        _write_brand(
-            instance, _fixture("designer_palette_output.yaml"), slide4=True
-        )
+        _write_brand(instance, _fixture("designer_palette_output.yaml"), slide4=True)
         cls.data = _load(cls.workspace)
         cls.blob = render_pptx.build_pptx_bytes(cls.data)
         cls.parts = _parts(cls.blob)
@@ -361,14 +363,20 @@ class TestBrandedDeck(unittest.TestCase):
         self.assertNotIn("1F4E79", slide)  # the default accent is gone
 
     def test_brand_font_reaches_runs_and_theme(self):
-        self.assertIn('typeface="Inter"', self.parts["ppt/slides/slide1.xml"].decode("utf-8"))
-        self.assertIn('typeface="Inter"', self.parts["ppt/theme/theme1.xml"].decode("utf-8"))
+        self.assertIn(
+            'typeface="Inter"', self.parts["ppt/slides/slide1.xml"].decode("utf-8")
+        )
+        self.assertIn(
+            'typeface="Inter"', self.parts["ppt/theme/theme1.xml"].decode("utf-8")
+        )
 
     def test_logo_part_embedded_and_referenced_on_every_slide(self):
         self.assertIn("ppt/media/image1.png", self.parts)
         self.assertEqual(self.parts["ppt/media/image1.png"][:8], b"\x89PNG\r\n\x1a\n")
         for number in range(1, render_pptx.SLIDE_COUNT + 1):
-            rels = self.parts[f"ppt/slides/_rels/slide{number}.xml.rels"].decode("utf-8")
+            rels = self.parts[f"ppt/slides/_rels/slide{number}.xml.rels"].decode(
+                "utf-8"
+            )
             self.assertIn("../media/image1.png", rels, f"slide{number}")
             slide = self.parts[f"ppt/slides/slide{number}.xml"].decode("utf-8")
             self.assertIn("<p:pic>", slide, f"slide{number}")
@@ -410,10 +418,16 @@ class TestBriefsExporter(unittest.TestCase):
             written, coaching = branding.export_briefs(data)
             self.assertEqual(
                 written,
-                ["briefs/poster.json", "briefs/pullup-banner.json", "briefs/flyer.json"],
+                [
+                    "briefs/poster.json",
+                    "briefs/pullup-banner.json",
+                    "briefs/flyer.json",
+                ],
             )
             for name in written:
-                with open(os.path.join(data.out_dir, *name.split("/")), encoding="utf-8") as handle:
+                with open(
+                    os.path.join(data.out_dir, *name.split("/")), encoding="utf-8"
+                ) as handle:
                     payload = json.loads(handle.read())
                 for key in (
                     "id",
@@ -427,7 +441,9 @@ class TestBriefsExporter(unittest.TestCase):
                 ):
                     self.assertIn(key, payload, name)
                 self.assertIn("headline", payload["copy"], name)
-                self.assertTrue(payload["brand_system"].endswith("brand/system.yaml"), name)
+                self.assertTrue(
+                    payload["brand_system"].endswith("brand/system.yaml"), name
+                )
                 self.assertIn("color.tokens", payload["brand_refs"], name)
                 # imagery references resolve from output/briefs/ back to brand/
                 briefs_dir = os.path.join(data.out_dir, "briefs")
