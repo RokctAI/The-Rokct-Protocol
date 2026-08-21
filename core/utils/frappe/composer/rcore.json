@@ -34,7 +34,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "a42c610293cd7d49e9cdaf6d03e23aaf9526d3e1"
+      "ref": "add09e7d5440780fec583fd2944a9a2483a65a78"
     },
     {
       "name": "agent",
@@ -42,7 +42,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/frappe",
-      "ref": "a42c610293cd7d49e9cdaf6d03e23aaf9526d3e1"
+      "ref": "add09e7d5440780fec583fd2944a9a2483a65a78"
     },
     {
       "name": "polaris",
@@ -82,7 +82,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/lms/frappe",
-      "ref": "a42c610293cd7d49e9cdaf6d03e23aaf9526d3e1",
+      "ref": "add09e7d5440780fec583fd2944a9a2483a65a78",
       "_comment": "Supacharge's home SDK (LMS domain: lessons, schedule, partner links). Moved here from paas/composer.json (2026-07-24) so lms is always present for every tenant via rcore, same as brain, gated by a subscription flag instead of by paas-plan eligibility — a tenant on a non-paas plan no longer loses lms access."
     },
     {
