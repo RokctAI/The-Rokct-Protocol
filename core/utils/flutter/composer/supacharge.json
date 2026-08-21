@@ -178,13 +178,6 @@
       "_comment": "Native desktop runner scaffolding for Windows builds. The SDK's app_type.supacharge block installs windows/ into the host with ${package}-parameterized naming (supacharge.exe, CMake project name, window title, exe metadata). Supacharge's repo already carries its own windows/ tree - the historical source of these templates - which the installer's host-file guard leaves untouched. The build_windows CI flag stays host-side in supacharge (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors manager.json/pos.json."
     }
   ],
-  "host_routes": [
-    {
-      "path": "/onboarding-intro",
-      "page": "OnboardingRoute.page",
-      "type": "MaterialRoute",
-      "import": "package:${package}/presentation/routes/onboarding_route_pages.dart",
-      "_comment": "Host composition file (imports lms_sdk directly, so ADR-005 forbids it living inside any single SDK's lib/) — Supacharge's onboarding-carousel entry surface. auth_sdk's login/register/reset routes are NOT here — auth_sdk now owns them directly via its own manifest + templated auth_route_pages.dart, installed automatically into every app that installs auth_sdk."
-    }
-  ]
+  "host_routes": [],
+  "_comment_host_routes": "OnboardingRoute moved out on 2026-08-21: onboarding_sdk's own manifest.json now declares the /onboarding-intro route AND installs the host-composition template (Users/onboarding commit 21669ce, 2026-08-09), so the host_routes copy registered the same auto_route name twice and the composed app crashed at router build with 'Route name must be unique: OnboardingRoute' (first caught by guided-tour run 32489369159 - the first CI that actually runs the composed app). host_routes stays for genuinely app-only routes no SDK manifest declares."
 }
