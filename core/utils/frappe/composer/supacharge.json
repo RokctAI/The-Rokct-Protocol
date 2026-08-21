@@ -33,7 +33,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d"
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
     },
     {
       "name": "agent",
@@ -41,7 +41,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/frappe",
-      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d"
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
     },
     {
       "name": "gateways",
@@ -66,8 +66,17 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/lms/frappe",
-      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d",
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315",
       "_comment": "Supacharge's home SDK (LMS domain: lessons, schedule, partner links)."
+    },
+    {
+      "name": "replay",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/replay/frappe",
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315",
+      "_comment": "Supacharge's session-replay SDK (Replay Session schedule + decision #8 release-asset pipeline: fetch/cache/serve, warm + evict). Composed beside lms, which its serving gates resolve into."
     },
     {
       "name": "comms",

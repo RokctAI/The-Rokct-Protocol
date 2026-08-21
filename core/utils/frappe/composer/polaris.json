@@ -34,7 +34,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d"
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
     },
     {
       "name": "polaris",
