@@ -187,8 +187,9 @@ class TestSegmentation(unittest.TestCase):
         self.assertEqual(rebuilt, DOCUMENT)
 
     def test_financial_compliance_and_will_files_are_never_eligible(self):
-        # The will is enforceable language and the financial-legacy plan is
-        # numbers: both sit in the same never-sent class as the financial
+        # The will, the living will and the power of attorney are enforceable
+        # (or medically directive) language and the financial-legacy plan is
+        # numbers: all sit in the same never-sent class as the financial
         # model and the compliance log.
         for name in (
             "07_financial_model.md",
@@ -196,6 +197,8 @@ class TestSegmentation(unittest.TestCase):
             "financial_legacy_plan_on_a_page.md",
             "compliance_log.md",
             "last_will_and_testament.md",
+            "living_will_and_healthcare_directive.md",
+            "power_of_attorney.md",
         ):
             self.assertFalse(polish.file_is_eligible(name), name)
         self.assertTrue(polish.file_is_eligible("01_executive_summary.md"))

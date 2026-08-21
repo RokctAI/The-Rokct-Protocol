@@ -50,10 +50,13 @@ COMPLIANCE_ROOT_ENV_VAR = "STARTUPOS_COMPLIANCE_ROOT"
 # template can omit a section instead of printing this into running prose.
 UNANSWERED_TEXT = "Not yet provided"
 
-# The one life document that is enforceable language rather than planning
-# prose. Its filename is load-bearing: the polish firewall never sends it,
-# and `_assemble` stamps its execution status into Document Control.
+# The life documents that are enforceable (or medically directive) language
+# rather than planning prose. Their filenames are load-bearing: the polish
+# firewall never sends them, and `_assemble` stamps each one's execution
+# status into Document Control.
 WILL_FILENAME = "last_will_and_testament.md"
+LIVING_WILL_FILENAME = "living_will_and_healthcare_directive.md"
+POA_FILENAME = "power_of_attorney.md"
 
 # Re-exported so existing callers keep working.
 resolve_workspace_root = path_utils.resolve_workspace_root
@@ -174,6 +177,24 @@ FOOTER_MAPS = {
                 "The funding ask",
                 "Investor Pitch Deck",
             ),
+            (
+                "monthly_investor_update.md",
+                "This month's numbers and milestones",
+                "Monthly Investor Update",
+            ),
+        ],
+        "monthly_investor_update.md": [
+            ("07_financial_model.md", "Full financial model", "Financial Model"),
+            (
+                "annexures/cap_table_and_funding_history.md",
+                "Who owns what, and what has been raised",
+                "Cap Table & Funding History",
+            ),
+            (
+                "annexures/due_diligence_data_room_index.md",
+                "What a diligence pass will ask for",
+                "Data-Room Index",
+            ),
         ],
         "08_risk_and_mitigation.md": [
             (
@@ -244,6 +265,11 @@ FOOTER_MAPS = {
                 "Compliance Log",
             ),
             ("01_executive_summary.md", "The venture in one page", "Executive Summary"),
+            (
+                "annexures/grant_and_tender_pack.md",
+                "Submission-ready registration and returnables",
+                "Grant & Tender Pack",
+            ),
         ],
         "financial_plan_on_a_page.md": [
             ("07_financial_model.md", "Full financial model", "Financial Model"),
@@ -390,6 +416,41 @@ FOOTER_MAPS = {
             ),
             ("annexures/sales_plan.md", "How they are used in the field", "Sales Plan"),
         ],
+        "annexures/cap_table_and_funding_history.md": [
+            ("business_profile.md", "Corporate standing", "Business Profile"),
+            (
+                "annexures/investor_pitch_deck.md",
+                "The investment case this ownership backs",
+                "Investor Pitch Deck",
+            ),
+            ("07_financial_model.md", "Figures behind the raise", "Financial Model"),
+        ],
+        "annexures/due_diligence_data_room_index.md": [
+            (
+                "compliance_log.md",
+                "Certificate status and expiry warnings",
+                "Compliance Log",
+            ),
+            (
+                "annexures/cap_table_and_funding_history.md",
+                "Ownership and funding evidence",
+                "Cap Table & Funding History",
+            ),
+            ("business_profile.md", "Corporate summary", "Business Profile"),
+        ],
+        "annexures/grant_and_tender_pack.md": [
+            ("business_profile.md", "Full corporate profile", "Business Profile"),
+            (
+                "compliance_log.md",
+                "Certificate status and expiry warnings",
+                "Compliance Log",
+            ),
+            (
+                "annexures/product_pricing_list.md",
+                "Prices for the pricing schedule",
+                "Price List",
+            ),
+        ],
     },
     "life": {
         "09_life_model_canvas.md": [
@@ -471,6 +532,11 @@ FOOTER_MAPS = {
                 "Draft will assembled from your answers",
                 "Last Will & Testament",
             ),
+            (
+                "personal_budget_plan_on_a_page.md",
+                "Monthly cash flow behind the stewardship",
+                "Personal Budget Plan on a Page",
+            ),
         ],
         "productivity_plan_on_a_page.md": [
             (
@@ -501,6 +567,69 @@ FOOTER_MAPS = {
                 "financial_legacy_plan_on_a_page.md",
                 "Assets, cover and beneficiaries behind the estate",
                 "Financial Legacy Plan on a Page",
+            ),
+            (
+                "living_will_and_healthcare_directive.md",
+                "Healthcare wishes while you are alive but unable",
+                "Living Will & Healthcare Directive",
+            ),
+            (
+                "power_of_attorney.md",
+                "Who may act for you, and within what limits",
+                "Power of Attorney",
+            ),
+        ],
+        "living_will_and_healthcare_directive.md": [
+            (
+                "last_will_and_testament.md",
+                "Draft will assembled from your answers",
+                "Last Will & Testament",
+            ),
+            (
+                "emergency_information_page.md",
+                "The one-page summary a responder needs",
+                "Emergency Information Page",
+            ),
+            (
+                "health_plan_on_a_page.md",
+                "1-Page Biological Conditioning Plan",
+                "Health Plan on a Page",
+            ),
+        ],
+        "power_of_attorney.md": [
+            (
+                "last_will_and_testament.md",
+                "Draft will assembled from your answers",
+                "Last Will & Testament",
+            ),
+            (
+                "financial_legacy_plan_on_a_page.md",
+                "The finances an agent may need to manage",
+                "Financial Legacy Plan on a Page",
+            ),
+        ],
+        "emergency_information_page.md": [
+            (
+                "living_will_and_healthcare_directive.md",
+                "Healthcare wishes and the proxy's authority",
+                "Living Will & Healthcare Directive",
+            ),
+            (
+                "legacy_plan_on_a_page.md",
+                "Release protocol and document custody",
+                "Legacy Plan on a Page",
+            ),
+        ],
+        "personal_budget_plan_on_a_page.md": [
+            (
+                "financial_legacy_plan_on_a_page.md",
+                "Net worth, cover and stewardship",
+                "Financial Legacy Plan on a Page",
+            ),
+            (
+                "life_plan_on_a_page.md",
+                "1-Page Life Rhythm Plan",
+                "Life Plan on a Page",
             ),
         ],
     },
@@ -920,6 +1049,42 @@ def _assemble(
                 "questions.md."
             )
 
+    # The living will and the power of attorney carry the same execution
+    # accountability as the will: a dated owner record is stamped into
+    # Document Control, and until one exists the file is loudly an unsigned
+    # draft — because both documents only matter at the exact moment nobody
+    # can ask the owner whether they ever signed them.
+    if instance_type == "life" and filename in (LIVING_WILL_FILENAME, POA_FILENAME):
+        label, answer_key, answer_label = {
+            LIVING_WILL_FILENAME: (
+                "Living will execution",
+                "living_will_executed",
+                "Living Will Executed",
+            ),
+            POA_FILENAME: (
+                "Power of attorney execution",
+                "poa_executed",
+                "POA Executed",
+            ),
+        }[filename]
+        status = directive_execution_status(profile, answer_key)
+        if status:
+            extra_control.append(
+                f"> *   **{label}**: recorded by the owner — {status}. "
+                "Professional review is still required, and only the signed "
+                "original has legal force."
+            )
+        else:
+            extra_control.append(
+                f"> *   **{label}**: NOT EXECUTED — this compiled file is "
+                "an unsigned draft with no legal force."
+            )
+            gap_warnings.append(
+                f"This document is an UNSIGNED DRAFT with no legal force. "
+                f"Once it has been formally signed, record the date under "
+                f"**{answer_label}** in questions.md."
+            )
+
     version_block = documents.build_version_block(
         instance_name=instance_name,
         instance_type=instance_type,
@@ -989,6 +1154,9 @@ def _build_values(
         _add_computed_financials(values, profile, jurisdiction)
         _add_market_analysis(values, profile)
         _add_diligence_analysis(values, profile, jurisdiction)
+        _add_cap_table_analysis(values, profile)
+        _add_business_ledger(values, profile)
+        _add_dd_analysis(values, record, jurisdiction)
 
     if record is not None:
         values.update(record.as_render_dict())
@@ -1268,9 +1436,11 @@ def derive_financial_metrics(fin):
             growth[year] = revenue[year] / revenue[year - 1] - 1.0
 
     gross_profit = [
-        amount * margin_pct / 100.0
-        if (amount is not None and margin_pct is not None)
-        else None
+        (
+            amount * margin_pct / 100.0
+            if (amount is not None and margin_pct is not None)
+            else None
+        )
         for amount in revenue
     ]
 
@@ -1725,6 +1895,178 @@ def _add_diligence_analysis(values, profile, jurisdiction):
     values["fin_cohort_analysis"] = "\n".join(lines)
 
 
+def extract_ownership_rows(profile):
+    """`(holder, percent_or_None, raw_line)` rows from Shareholder Distribution.
+
+    A single-line answer often packs the whole split ("Ray: 60%; Naledi:
+    40%"), so one line is split on semicolons and commas before parsing.
+    A line without a parseable percentage stays in the table as narrative —
+    never silently dropped, never forced into a number.
+    """
+    text = _real_answer(profile, "shareholder_distribution")
+    if not text:
+        return []
+    lines = [line.strip(" *-\t") for line in str(text).splitlines()]
+    lines = [line for line in lines if line]
+    if len(lines) == 1:
+        parts = re.split(r"[;,]\s*", lines[0])
+        if len(parts) > 1:
+            lines = [part.strip() for part in parts if part.strip()]
+
+    rows = []
+    for line in lines:
+        percent = parse_percent(line)
+        name, _, rest = line.partition(":")
+        if rest.strip():
+            holder = name.strip()
+        else:
+            holder = _PERCENT_RE.sub("", line).strip(" -—:•\t") or "—"
+        rows.append((holder, percent, line))
+    return rows
+
+
+def _add_cap_table_analysis(values, profile):
+    """Ownership table plus the sum-to-100% sanity check.
+
+    Renders only what **Shareholder Distribution** states. The check is the
+    honest-compiler move: stated percentages that do not sum to roughly 100%
+    are flagged for reconciliation, not normalised.
+    """
+    rows = extract_ownership_rows(profile)
+    if not rows:
+        values["cap_table_ownership_table"] = ""
+        values["cap_table_ownership_check"] = ""
+        return
+
+    table = ["| Holder | Stated share | Basis |", "| :--- | :--- | :--- |"]
+    total = 0.0
+    parsed = 0
+    for holder, percent, raw in rows:
+        if percent is not None:
+            total += percent
+            parsed += 1
+            share = f"{percent:g}%"
+        else:
+            share = f"stated without a percentage — {_cell(raw)}"
+        table.append(
+            f"| {_cell(holder)} | {share} | from **Shareholder Distribution** |"
+        )
+
+    if not parsed:
+        # Narrative answer, no figures: the template coaches instead.
+        values["cap_table_ownership_table"] = ""
+        values["cap_table_ownership_check"] = ""
+        return
+
+    table.append(
+        f"| **Total stated** | **{total:g}%** | computed from the {parsed} "
+        "percentage-bearing line(s) above |"
+    )
+    values["cap_table_ownership_table"] = "\n".join(table)
+
+    if abs(total - 100.0) > 1.0:
+        values["cap_table_ownership_check"] = (
+            f"*   **Check**: stated shareholdings sum to {total:g}%, not "
+            "100%. Reconcile **Shareholder Distribution** — an option pool, "
+            "an unlisted holder or a typo usually explains the gap."
+        )
+    else:
+        values["cap_table_ownership_check"] = (
+            f"*   **Consistent**: stated shareholdings sum to {total:g}% — "
+            "a full allocation (within 1%)."
+        )
+
+
+def _add_business_ledger(values, profile):
+    """The venture's milestone ledger, for the monthly investor update.
+
+    Same source as the life suite's living ledger: milestones logged into
+    `questions.md` by `startupos milestone` (or Hermes). Empty stays empty —
+    the template coaches; no milestone is ever invented.
+    """
+    milestones = getattr(profile, "milestones", None) or []
+    if milestones:
+        values["business_milestone_ledger"] = "\n".join(
+            f"*   **{item.date}** | *{item.category}* — {item.text}"
+            for item in sorted(milestones, key=lambda m: m.date)
+        )
+    else:
+        values["business_milestone_ledger"] = ""
+
+
+def _add_dd_analysis(values, record, jurisdiction):
+    """The data-room evidence table: what is proven, asserted or missing.
+
+    Each row is one certificate-backed evidence item in this jurisdiction's
+    regime, labelled with the same provenance discipline as the compliance
+    footer: *Document-backed* (a parsed certificate), *Operator-asserted*
+    (`compliance_overrides.json`), or *Unverified* with the exact file to
+    add. Regimes the jurisdiction does not have produce no row at all.
+    """
+    if record is None or not jurisdiction.is_known:
+        values["dd_evidence_table"] = ""
+        return
+
+    def status_cells(keys, filename):
+        fields = [record.get(key) for key in keys]
+        fields = [field for field in fields if field is not None]
+        verified = [
+            field
+            for field in fields
+            if field.status == compliance_mod.STATUS_VERIFIED and field.value
+        ]
+        asserted = [
+            field
+            for field in fields
+            if field.status == compliance_mod.STATUS_OVERRIDE and field.value
+        ]
+        if verified:
+            return "Document-backed", verified[0].source or filename
+        if asserted:
+            return "Operator-asserted", "compliance_overrides.json"
+        return (
+            "**Unverified**",
+            f"place `{filename}` in the compliance folder",
+        )
+
+    rows = ["| Evidence item | Status | Source / next step |", "| :--- | :--- | :--- |"]
+
+    if jurisdiction.supports(jurisdictions.FEATURE_COMPANY_REGISTRY):
+        status, source = status_cells(
+            ("company_name", "reg_number"),
+            f"{jurisdiction.registry_document}.pdf",
+        )
+        registry = jurisdiction.registry_name or "Company registry"
+        rows.append(f"| {registry} registration certificate | {status} | {source} |")
+    if jurisdiction.supports(jurisdictions.FEATURE_TAX_CLEARANCE):
+        status, source = status_cells(("tax_pin", "tax_number"), "Tax_Pin.pdf")
+        authority = jurisdiction.tax_authority or "Tax authority"
+        rows.append(f"| {authority} tax compliance PIN | {status} | {source} |")
+    if jurisdiction.supports(jurisdictions.FEATURE_BBEE):
+        status, source = status_cells(("bee_level",), "BEE.pdf")
+        rows.append(f"| B-BBEE certificate | {status} | {source} |")
+    if jurisdiction.supports(jurisdictions.FEATURE_TRADEMARKS):
+        count = len(record.trademarks)
+        if count:
+            rows.append(
+                f"| Trademark registrations | Document-backed | "
+                f"{count} document(s) parsed from `TradeMark/` |"
+            )
+        else:
+            rows.append(
+                "| Trademark registrations | None on file | add filings to "
+                "the compliance folder's `TradeMark/` directory, if any |"
+            )
+
+    rows.append("")
+    rows.append(
+        "_Statuses are read from the evidence on disk — nothing above is "
+        "asserted without a document, and operator-asserted values come from "
+        "`compliance_overrides.json`._"
+    )
+    values["dd_evidence_table"] = "\n".join(rows)
+
+
 def _add_life_values(values, profile, warnings):
     """Pronouns and the living ledger for life profiles."""
     gender = (profile.get("gender") or "").strip().lower()
@@ -1848,17 +2190,23 @@ def _real_answer(profile, key):
     return value if context.is_truthy("value") else None
 
 
-def will_execution_status(profile):
-    """The owner's execution record, if it carries a date. Otherwise None.
+def directive_execution_status(profile, key):
+    """The owner's execution record for `key`, if it carries a date.
 
     An answer without a year ("yes", "signed it") does not count: the whole
     point of the record is a verifiable signing date, so a dateless answer
-    keeps the unsigned-draft warnings in place.
+    keeps the unsigned-draft warnings in place. Shared by the will, the
+    living will and the power of attorney — one rule, three documents.
     """
-    value = _real_answer(profile, "will_executed")
+    value = _real_answer(profile, key)
     if value and _YEAR_RE.search(str(value)):
         return _one_line(value)
     return None
+
+
+def will_execution_status(profile):
+    """The will's execution record — see `directive_execution_status`."""
+    return directive_execution_status(profile, "will_executed")
 
 
 def sum_money_lines(text):
@@ -2005,3 +2353,137 @@ def _add_life_computed(values, profile, jurisdiction):
     )
 
     values["will_execution_status"] = will_execution_status(profile) or ""
+    values["living_will_execution_status"] = (
+        directive_execution_status(profile, "living_will_executed") or ""
+    )
+    values["poa_execution_status"] = (
+        directive_execution_status(profile, "poa_executed") or ""
+    )
+
+    _add_budget_computed(values, profile, jurisdiction)
+
+
+def _split_labelled_amount_lines(text):
+    """`(label, amount_or_None, raw_line)` rows from a category: amount answer."""
+    lines = [line.strip(" *-\t") for line in str(text or "").splitlines()]
+    lines = [line for line in lines if line]
+    rows = []
+    for line in lines:
+        name, _, rest = line.partition(":")
+        label = name.strip() if rest.strip() else line
+        amount = parse_money(rest if rest.strip() else line)
+        rows.append((label, amount, line))
+    return rows
+
+
+def _add_budget_computed(values, profile, jurisdiction):
+    """The monthly cash-flow table and its coverage/pressure checks.
+
+    Same contract as every other computed block: figures come only from
+    **Monthly Income**, **Monthly Expenses**, **Monthly Savings** and
+    **Liquid Savings**; a missing or narrative answer coaches instead of
+    computing, and every derived line names its inputs.
+    """
+    symbol = jurisdiction.currency_symbol or ""
+
+    income = parse_money(_real_answer(profile, "monthly_income"))
+    savings = parse_money(_real_answer(profile, "monthly_savings"))
+    liquid = parse_money(_real_answer(profile, "liquid_savings"))
+    expense_rows = _split_labelled_amount_lines(
+        _real_answer(profile, "monthly_expenses")
+    )
+    expenses_total = sum(
+        amount for _l, amount, _r in expense_rows if amount is not None
+    )
+    expenses_parsed = sum(1 for _l, amount, _r in expense_rows if amount is not None)
+
+    rows = ["| Line | Monthly amount | Basis |", "| :--- | :--- | :--- |"]
+
+    if income is not None:
+        rows.append(
+            f"| Income (after tax) | {format_money(income, symbol)} | "
+            "from **Monthly Income** |"
+        )
+    else:
+        rows.append(f"| Income (after tax) | {_coach('Monthly Income')} | |")
+
+    for label, amount, raw in expense_rows:
+        if amount is not None:
+            rows.append(
+                f"| Expense — {_cell(label)} | {format_money(amount, symbol)} | "
+                "from **Monthly Expenses** |"
+            )
+        else:
+            rows.append(
+                f"| Expense — {_cell(label)} | no amount parsed — {_cell(raw)} | "
+                "from **Monthly Expenses** |"
+            )
+    if expenses_parsed:
+        rows.append(
+            f"| **Total expenses** | **{format_money(expenses_total, symbol)}** | "
+            f"computed from **Monthly Expenses** ({expenses_parsed} of "
+            f"{len(expense_rows)} lines carried an amount) |"
+        )
+    else:
+        rows.append(
+            f"| Total expenses | {_coach('Monthly Expenses')} — one category "
+            "per line, with the amount | |"
+        )
+
+    if savings is not None:
+        rows.append(
+            f"| Savings committed | {format_money(savings, symbol)} | "
+            "from **Monthly Savings** |"
+        )
+    else:
+        rows.append(f"| Savings committed | {_coach('Monthly Savings')} | |")
+
+    if income is not None and expenses_parsed:
+        net = income - expenses_total - (savings or 0.0)
+        basis = "computed from income − total expenses"
+        if savings is not None:
+            basis += " − savings committed"
+        else:
+            basis += " (no **Monthly Savings** answered — none subtracted)"
+        rows.append(f"| **Unallocated** | **{format_money(net, symbol)}** | {basis} |")
+    else:
+        net = None
+        rows.append(
+            "| Unallocated | Not derivable yet — needs a numeric "
+            "**Monthly Income** and amounts in **Monthly Expenses** | |"
+        )
+
+    if savings is not None and income:
+        rows.append(
+            f"| Savings rate | {savings / income:.0%} of income | "
+            "computed from monthly savings ÷ monthly income |"
+        )
+
+    if liquid is not None and expenses_parsed and expenses_total:
+        rows.append(
+            f"| Expense cover | {liquid / expenses_total:.1f} months | "
+            "computed from **Liquid Savings** ÷ total monthly expenses |"
+        )
+    else:
+        rows.append(
+            "| Expense cover | Not derivable yet — needs **Liquid Savings** "
+            "and amounts in **Monthly Expenses** | |"
+        )
+
+    values["budget_cash_flow_table"] = "\n".join(rows)
+
+    flags = []
+    if net is not None and net < 0:
+        flags.append(
+            "*   **Check**: expenses plus committed savings exceed income by "
+            f"{format_money(abs(net), symbol)} per month. Reconcile "
+            "**Monthly Income**, **Monthly Expenses** and **Monthly Savings** "
+            "— one of them is out of date, or the plan runs a deficit."
+        )
+    if expense_rows and expenses_parsed < len(expense_rows):
+        flags.append(
+            f"*   **Note**: {len(expense_rows) - expenses_parsed} expense "
+            "line(s) carried no parseable amount and are excluded from the "
+            "totals — add an amount to each line of **Monthly Expenses**."
+        )
+    values["budget_flags"] = "\n".join(flags)

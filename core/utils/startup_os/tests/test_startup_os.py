@@ -589,6 +589,10 @@ class TestSchemas(unittest.TestCase):
         "competitor_pricing_table",
         "fin_cac_by_channel_table",
         "fin_cohort_analysis",
+        "cap_table_ownership_table",
+        "cap_table_ownership_check",
+        "business_milestone_ledger",
+        "dd_evidence_table",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -596,6 +600,10 @@ class TestSchemas(unittest.TestCase):
         "will_bequests_list",
         "has_minor_children",
         "will_execution_status",
+        "living_will_execution_status",
+        "poa_execution_status",
+        "budget_cash_flow_table",
+        "budget_flags",
         "he_she",
         "he_she_lower",
         "his_her",
@@ -1311,6 +1319,8 @@ class TestLifeDepthLadder(unittest.TestCase):
         "specific_bequests": "x",
         "residue_beneficiaries": "x",
         "alternate_heirs": "x",
+        "healthcare_proxy": "x",
+        "attorney_in_fact": "x",
     }
 
     def test_every_life_depth_key_is_a_real_schema_key(self):
@@ -1617,6 +1627,458 @@ class TestLifeSuiteEndToEnd(unittest.TestCase):
         self.assertIn("last_will_and_testament.md", documents)
         for name, body in documents.items():
             self.assertNotIn("«", body, name)
+
+
+# --------------------------------------------------------------------------
+# Cap table & funding history — CONFIRMED against the previous suite: stated
+# shareholdings that summed to 90% rendered without remark, and no document
+# assembled the ownership, instrument and funding answers in one place.
+# --------------------------------------------------------------------------
+
+
+class TestCapTableAnalysis(unittest.TestCase):
+    def _values(self, answers):
+        values = {}
+        compiler._add_cap_table_analysis(values, FakeProfile(answers))
+        return values
+
+    def test_full_allocation_reads_consistent(self):
+        values = self._values(
+            {"shareholder_distribution": "Ray Sinyage: 60%\nNaledi Adler: 40%"}
+        )
+        table = values["cap_table_ownership_table"]
+        self.assertIn("| Ray Sinyage | 60% |", table)
+        self.assertIn("| Naledi Adler | 40% |", table)
+        self.assertIn("**Total stated** | **100%**", table)
+        self.assertIn("**Consistent**", values["cap_table_ownership_check"])
+
+    def test_shares_not_summing_to_100_are_flagged_not_normalised(self):
+        values = self._values({"shareholder_distribution": "Ray: 60%\nNaledi: 30%"})
+        self.assertIn("**Total stated** | **90%**", values["cap_table_ownership_table"])
+        check = values["cap_table_ownership_check"]
+        self.assertIn("**Check**", check)
+        self.assertIn("90%, not 100%", check)
+        self.assertIn("**Shareholder Distribution**", check)
+
+    def test_single_line_split_is_parsed_per_holder(self):
+        values = self._values({"shareholder_distribution": "Ray: 55%; Naledi: 45%"})
+        self.assertIn("| Ray | 55% |", values["cap_table_ownership_table"])
+        self.assertIn("| Naledi | 45% |", values["cap_table_ownership_table"])
+        self.assertIn("**Consistent**", values["cap_table_ownership_check"])
+
+    def test_narrative_answer_computes_nothing(self):
+        values = self._values(
+            {"shareholder_distribution": "Founders hold the majority"}
+        )
+        self.assertEqual(values["cap_table_ownership_table"], "")
+        self.assertEqual(values["cap_table_ownership_check"], "")
+
+    def test_missing_answer_computes_nothing(self):
+        values = self._values({})
+        self.assertEqual(values["cap_table_ownership_table"], "")
+        self.assertEqual(values["cap_table_ownership_check"], "")
+
+
+# --------------------------------------------------------------------------
+# Data-room evidence index — the same fail-closed provenance the compliance
+# log uses, one row per certificate the jurisdiction's regime expects.
+# --------------------------------------------------------------------------
+
+
+class TestDataRoomEvidence(unittest.TestCase):
+    def _values(self, record, code="ZA"):
+        values = {}
+        compiler._add_dd_analysis(values, record, jurisdictions.get(code))
+        return values
+
+    def test_pending_evidence_reads_unverified_with_the_exact_file(self):
+        record = compliance.ComplianceRecord(jurisdictions.get("ZA"), "Acme")
+        table = self._values(record)["dd_evidence_table"]
+        self.assertIn("**Unverified**", table)
+        self.assertIn("Tax_Pin.pdf", table)
+        self.assertIn("BEE.pdf", table)
+        self.assertIn("B-BBEE certificate", table)
+        self.assertNotIn("Document-backed |", table)
+
+    def test_verified_and_overridden_fields_are_labelled_by_source(self):
+        record = compliance.ComplianceRecord(jurisdictions.get("ZA"), "Acme")
+        record.set(
+            "reg_number", "2019/123456/07", compliance.STATUS_VERIFIED, "CoR14.3.pdf"
+        )
+        record.set(
+            "bee_level",
+            "Level 1 Contributor",
+            compliance.STATUS_OVERRIDE,
+            "compliance_overrides.json",
+        )
+        table = self._values(record)["dd_evidence_table"]
+        self.assertIn("registration certificate | Document-backed | CoR14.3.pdf", table)
+        self.assertIn(
+            "B-BBEE certificate | Operator-asserted | compliance_overrides.json",
+            table,
+        )
+
+    def test_regimes_the_jurisdiction_lacks_produce_no_row(self):
+        record = compliance.ComplianceRecord(jurisdictions.get("US"), "Acme")
+        table = self._values(record, code="US")["dd_evidence_table"]
+        self.assertNotIn("B-BBEE", table)
+        self.assertNotIn("tax compliance PIN", table)
+        self.assertIn("registration certificate", table)
+
+    def test_no_record_or_unknown_jurisdiction_renders_nothing(self):
+        self.assertEqual(self._values(None)["dd_evidence_table"], "")
+        record = compliance.ComplianceRecord(jurisdictions.get("XX"), "Acme")
+        self.assertEqual(self._values(record, code="XX")["dd_evidence_table"], "")
+
+
+# --------------------------------------------------------------------------
+# Personal budget — computed cash flow with the same coach-not-invent rule
+# as every other derived table.
+# --------------------------------------------------------------------------
+
+
+class TestBudgetComputation(unittest.TestCase):
+    def _values(self, answers):
+        values = {}
+        compiler._add_budget_computed(
+            values, FakeProfile(answers), jurisdictions.get("ZA")
+        )
+        return values
+
+    FULL = {
+        "monthly_income": "R 40,000 per month",
+        "monthly_expenses": "Housing: R 12,000\nFood: R 6,000\nTransport: R 2,000",
+        "monthly_savings": "R 8,000",
+        "liquid_savings": "R 60,000",
+    }
+
+    def test_cash_flow_is_computed_with_named_bases(self):
+        table = self._values(self.FULL)["budget_cash_flow_table"]
+        self.assertIn("| Income (after tax) | R40,000 |", table)
+        self.assertIn("| Expense — Housing | R12,000 |", table)
+        self.assertIn("**Total expenses** | **R20,000**", table)
+        self.assertIn("3 of 3 lines carried an amount", table)
+        self.assertIn("**Unallocated** | **R12,000**", table)
+        self.assertIn(
+            "computed from income − total expenses − savings committed", table
+        )
+        self.assertIn("| Savings rate | 20% of income |", table)
+        self.assertIn("| Expense cover | 3.0 months |", table)
+        self.assertIn(
+            "computed from **Liquid Savings** ÷ total monthly expenses", table
+        )
+
+    def test_overspend_is_flagged_not_hidden(self):
+        answers = dict(self.FULL, monthly_expenses="Housing: R 45,000")
+        values = self._values(answers)
+        self.assertIn("**Check**", values["budget_flags"])
+        self.assertIn("exceed income by R13,000", values["budget_flags"])
+
+    def test_unparsed_expense_lines_are_noted_and_excluded(self):
+        answers = dict(
+            self.FULL,
+            monthly_expenses="Housing: R 12,000\nSundry: whatever is left",
+        )
+        values = self._values(answers)
+        table = values["budget_cash_flow_table"]
+        self.assertIn("no amount parsed — Sundry: whatever is left", table)
+        self.assertIn("1 of 2 lines carried an amount", table)
+        self.assertIn("**Total expenses** | **R12,000**", table)
+        self.assertIn(
+            "1 expense line(s) carried no parseable amount", values["budget_flags"]
+        )
+
+    def test_missing_answers_coach_and_compute_nothing(self):
+        values = self._values({})
+        table = values["budget_cash_flow_table"]
+        self.assertIn("Pending — answer **Monthly Income**", table)
+        self.assertIn("Pending — answer **Monthly Expenses**", table)
+        self.assertIn("Pending — answer **Monthly Savings**", table)
+        self.assertIn("Not derivable yet", table)
+        self.assertNotIn("**Unallocated** | **R", table)
+        self.assertEqual(values["budget_flags"], "")
+
+
+# --------------------------------------------------------------------------
+# Living will and power of attorney execution tracking — the will's dated-
+# record rule, applied to both new drafts.
+# --------------------------------------------------------------------------
+
+
+class TestDirectiveExecutionStatus(unittest.TestCase):
+    def _values(self, answers):
+        values = {}
+        compiler._add_life_computed(
+            values, FakeProfile(answers), jurisdictions.get("ZA")
+        )
+        return values
+
+    def test_dateless_answers_do_not_count_as_executed(self):
+        values = self._values(
+            {"living_will_executed": "yes", "poa_executed": "signed it"}
+        )
+        self.assertEqual(values["living_will_execution_status"], "")
+        self.assertEqual(values["poa_execution_status"], "")
+
+    def test_dated_answers_are_recorded(self):
+        values = self._values(
+            {
+                "living_will_executed": "Signed 2026-03-01 at Polokwane",
+                "poa_executed": "Signed 2026-04-02 before a notary",
+            }
+        )
+        self.assertIn("2026-03-01", values["living_will_execution_status"])
+        self.assertIn("2026-04-02", values["poa_execution_status"])
+
+
+# --------------------------------------------------------------------------
+# End-to-end: the four new business documents.
+# --------------------------------------------------------------------------
+
+
+class TestBusinessNewDocsEndToEnd(unittest.TestCase):
+    TEMPLATE_SRC = os.path.join(
+        os.path.dirname(_ENGINE_DIR),
+        os.pardir,
+        "skills",
+        ".rok",
+        "startup_os",
+        "templates",
+    )
+
+    def _compile(self, seed, milestones=(), include_full=True):
+        import shutil
+
+        from core import compiler as compiler_mod
+
+        if not os.path.isdir(self.TEMPLATE_SRC):
+            self.skipTest("templates not present")
+        workspace = TempWorkspace()
+        root = workspace.__enter__()
+        self.addCleanup(workspace.__exit__, None, None, None)
+        shutil.copytree(self.TEMPLATE_SRC, os.path.join(root, "templates"))
+        body = schemas.render_questions_md(
+            "business", "Acme", seed, include_full=include_full
+        )
+        for line in milestones:
+            body += f"{line}\n"
+        write(os.path.join(root, "instances", "business", "Acme", "questions.md"), body)
+        result = compiler_mod.compile_instance(
+            "business", "Acme", workspace_root=root, quiet=True
+        )
+        self.assertTrue(result.ok)
+        out = os.path.join(root, "instances", "business", "Acme", "output")
+        rendered = {}
+        for current, _subdirs, filenames in os.walk(out):
+            for name in filenames:
+                if not name.endswith(".md"):
+                    continue
+                relative = os.path.relpath(os.path.join(current, name), out).replace(
+                    os.sep, "/"
+                )
+                with open(os.path.join(current, name), encoding="utf-8") as handle:
+                    rendered[relative] = handle.read()
+        return rendered
+
+    SEED = {
+        "trading_name": "Acme Clinics",
+        "jurisdiction": "ZA",
+        "primary_base": "Polokwane, South Africa",
+        "industry": "Healthcare software",
+        "vision_statement": "Every clinic on modern rails.",
+        "core_value_proposition": "Practice software clinics can afford.",
+        "primary_products": "Practice OS",
+        "customer_segments": "Independent clinics",
+        "growth_strategy": "Bureau partnerships",
+        "shareholder_distribution": "Ray Sinyage: 60%\nNaledi Adler: 30%",
+        "funding_history": "2025 SAFE: R 1,500,000 from Karoo Angels",
+        "funding_requirement": "R 5,000,000 seed for 24 months of runway",
+        "monthly_operating_costs": "R 250,000 per month",
+        "cash_on_hand": "R 3,000,000",
+        "reference_contacts": "Dept of Health Limpopo: Dr N. Baloyi, 015 000 0000",
+    }
+
+    def test_cap_table_annexure_flags_the_ninety_percent_split(self):
+        documents = self._compile(self.SEED)
+        annexure = documents["annexures/cap_table_and_funding_history.md"]
+        self.assertIn("**Total stated** | **90%**", annexure)
+        self.assertIn("90%, not 100%", annexure)
+        self.assertIn("2025 SAFE: R 1,500,000 from Karoo Angels", annexure)
+        # The diligence-tier instrument detail is coached, not invented.
+        self.assertIn("Answer **Cap Table** in questions.md", annexure)
+
+    def test_investor_update_computes_runway_and_renders_the_ledger(self):
+        documents = self._compile(
+            self.SEED,
+            milestones=[
+                "*   **[2026-08-01] (Sales)**: Signed the first paying clinic."
+            ],
+        )
+        update = documents["monthly_investor_update.md"]
+        self.assertIn("| Runway | 12 months |", update)
+        self.assertIn("computed from cash on hand ÷ monthly operating costs", update)
+        self.assertIn("Signed the first paying clinic.", update)
+        self.assertIn("recompiles fresh from `questions.md`", update)
+        # Level 3 KPI sections stay locked with coaching, never fabricated.
+        self.assertIn("unlock at depth Level 3", update)
+
+    def test_data_room_index_reads_evidence_fail_closed(self):
+        documents = self._compile(self.SEED)
+        index = documents["annexures/due_diligence_data_room_index.md"]
+        self.assertIn("**Unverified**", index)
+        self.assertIn("BEE.pdf", index)
+        self.assertIn("B-BBEE certificate", index)
+        self.assertNotIn("Document-backed |", index)
+
+    def test_non_za_data_room_has_no_bbee_row(self):
+        seed = dict(self.SEED, jurisdiction="US", primary_base="Austin, USA")
+        index = self._compile(seed)["annexures/due_diligence_data_room_index.md"]
+        self.assertNotIn("B-BBEE", index)
+
+    def test_grant_pack_claims_no_bee_level_without_a_certificate(self):
+        documents = self._compile(self.SEED)
+        pack = documents["annexures/grant_and_tender_pack.md"]
+        self.assertIn("No B-BBEE certificate is on file", pack)
+        self.assertIn("Dr N. Baloyi", pack)
+        self.assertIn("Pending", pack)  # unverified registry values stay Pending
+
+    def test_empty_business_profile_compiles_new_docs_with_coaching_only(self):
+        documents = self._compile({}, include_full=False)
+        for name in (
+            "monthly_investor_update.md",
+            "annexures/cap_table_and_funding_history.md",
+            "annexures/due_diligence_data_room_index.md",
+            "annexures/grant_and_tender_pack.md",
+        ):
+            self.assertIn(name, documents)
+            self.assertNotIn("«", documents[name], name)
+        self.assertIn(
+            "Answer **Shareholder Distribution**",
+            documents["annexures/cap_table_and_funding_history.md"],
+        )
+        self.assertIn(
+            "No milestones logged yet", documents["monthly_investor_update.md"]
+        )
+
+
+# --------------------------------------------------------------------------
+# End-to-end: the four new life documents.
+# --------------------------------------------------------------------------
+
+
+class TestLifeNewDocsEndToEnd(unittest.TestCase):
+    TEMPLATE_SRC = TestLifeSuiteEndToEnd.TEMPLATE_SRC
+
+    _compile = TestLifeSuiteEndToEnd._compile
+
+    SEED = {
+        "full_name": "Nia Adler",
+        "pronouns": "she/her",
+        "primary_base": "Polokwane, South Africa",
+        "jurisdiction": "ZA",
+        "life_purpose": "Build things that outlast me.",
+        "legal_full_name": "Nia Marie Adler",
+        "healthcare_proxy": "Naledi Adler",
+        "alternate_healthcare_proxy": "Peter Adler",
+        "life_sustaining_treatment": "Withhold if two doctors agree recovery is not expected.",
+        "resuscitation_preference": "Attempt CPR unless terminally ill.",
+        "pain_relief_priority": "Comfort first, even at the cost of alertness.",
+        "organ_donation_wishes": "Donate any organs that can help.",
+        "attorney_in_fact": "Naledi Adler",
+        "alternate_attorney_in_fact": "Peter Adler",
+        "powers_granted": "Operate FNB cheque account 123\nSign the lease renewal",
+        "poa_effective_conditions": "Immediately, for the 2026 relocation only",
+        "emergency_contacts": "Naledi Adler, spouse, 082 000 0000",
+        "primary_doctor": "Dr T. Mabasa, 015 111 1111",
+        "allergies_and_conditions": "Penicillin allergy\nType 2 diabetes",
+        "key_document_locations": "Will: fireproof safe at home\nPolicies: with the broker",
+        "monthly_income": "R 40,000 per month",
+        "monthly_expenses": "Housing: R 12,000\nFood: R 6,000",
+        "monthly_savings": "R 8,000",
+        "liquid_savings": "R 60,000",
+    }
+
+    def test_unsigned_living_will_warns_and_names_the_za_reality(self):
+        documents = self._compile(self.SEED)
+        directive = documents["living_will_and_healthcare_directive.md"]
+        self.assertIn("Nia Marie Adler", directive)
+        self.assertIn("not statutorily regulated", directive)
+        self.assertIn("persuasive evidence", directive)
+        self.assertIn("UNSIGNED DRAFT", directive)
+        self.assertIn("**Living will execution**: NOT EXECUTED", directive)
+        self.assertIn("**Living Will Executed**", directive)
+        self.assertIn("Naledi Adler", directive)
+        self.assertIn("Comfort first", directive)
+
+    def test_executed_living_will_notes_the_date_but_keeps_the_caveat(self):
+        seed = dict(self.SEED, living_will_executed="Signed 2026-03-01 at Polokwane")
+        directive = self._compile(seed)["living_will_and_healthcare_directive.md"]
+        self.assertIn("**Living will execution**: recorded by the owner", directive)
+        self.assertIn("2026-03-01", directive)
+        self.assertNotIn("UNSIGNED DRAFT", directive)
+        self.assertIn("not statutorily regulated", directive)
+
+    def test_poa_carries_the_lapses_on_incapacity_caution(self):
+        documents = self._compile(self.SEED)
+        poa = documents["power_of_attorney.md"]
+        self.assertIn("lapses the moment the principal loses legal capacity", poa)
+        self.assertIn("incapacity plan.", poa)
+        self.assertIn("I appoint **Naledi Adler**", poa)
+        self.assertIn("Operate FNB cheque account 123", poa)
+        self.assertIn("UNSIGNED DRAFT", poa)
+        self.assertIn("**POA Executed**", poa)
+
+    def test_non_za_drafts_get_generic_verify_warnings(self):
+        seed = dict(self.SEED, jurisdiction="US", primary_base="Austin, USA")
+        documents = self._compile(seed)
+        self.assertNotIn(
+            "not statutorily regulated",
+            documents["living_will_and_healthcare_directive.md"],
+        )
+        self.assertIn(
+            "whether this document binds a treating team",
+            documents["living_will_and_healthcare_directive.md"],
+        )
+        self.assertNotIn("South African law", documents["power_of_attorney.md"])
+        self.assertIn("durable or enduring form", documents["power_of_attorney.md"])
+
+    def test_emergency_page_distils_answers_and_coaches_gaps(self):
+        documents = self._compile(self.SEED)
+        ice = documents["emergency_information_page.md"]
+        self.assertIn("Naledi Adler, spouse, 082 000 0000", ice)
+        self.assertIn("Penicillin allergy", ice)
+        self.assertIn("Will: fireproof safe at home", ice)
+        bare = self._compile({"full_name": "Nia Adler", "pronouns": "she/her"})
+        bare_ice = bare["emergency_information_page.md"]
+        self.assertIn("Answer **Emergency Contacts**", bare_ice)
+        self.assertIn("**Allergies And Conditions**", bare_ice)
+        self.assertNotIn("«", bare_ice)
+
+    def test_budget_page_computes_cash_flow_and_cover(self):
+        documents = self._compile(self.SEED)
+        budget = documents["personal_budget_plan_on_a_page.md"]
+        self.assertIn("**Total expenses** | **R18,000**", budget)
+        self.assertIn("**Unallocated** | **R14,000**", budget)
+        self.assertIn("| Savings rate | 20% of income |", budget)
+        self.assertIn("| Expense cover | 3.3 months |", budget)
+        self.assertIn(
+            "computed from **Liquid Savings** ÷ total monthly expenses", budget
+        )
+
+    def test_empty_life_profile_compiles_new_docs_clean(self):
+        documents = self._compile({}, include_full=False)
+        for name in (
+            "living_will_and_healthcare_directive.md",
+            "power_of_attorney.md",
+            "emergency_information_page.md",
+            "personal_budget_plan_on_a_page.md",
+        ):
+            self.assertIn(name, documents)
+            self.assertNotIn("«", documents[name], name)
+        self.assertIn(
+            "Pending — answer **Monthly Income**",
+            documents["personal_budget_plan_on_a_page.md"],
+        )
 
 
 if __name__ == "__main__":

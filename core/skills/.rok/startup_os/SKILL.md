@@ -37,8 +37,8 @@ core/skills/.rok/startup_os/          # this skill — deployed to <repo>/.rokct
 │   ├── provision.py                  # create a profile
 │   ├── log_milestone.py              # append to the living ledger
 │   └── seed_cv_ledger.py             # extract milestones from a CV PDF
-├── templates/business/               # 27 templates (19 documents + 8 annexures)
-└── templates/life/                   # 10 templates (incl. draft will)
+├── templates/business/               # 31 templates (20 documents + 11 annexures)
+└── templates/life/                   # 14 templates (incl. the legal drafts)
 
 core/utils/startup_os/                # the engine — stays in the protocol repo
 ├── main.py                           # standalone CLI
@@ -188,6 +188,22 @@ founder's text or coaching, nothing is truncated. Drafted sections are
 visibly labeled "AI-drafted from founder answers (verified numbers
 untouched)" and counted in the Document Control block. No `GROQ_API_KEY`
 means a clean no-op.
+
+The business suite covers the ten business-plan chapters, the on-a-page set,
+the business profile, a **monthly investor update** (recompiled fresh each
+month from the current answers and the milestone ledger), and annexures
+including the pitch deck, a **cap table & funding history** (with a computed
+ownership-sum check), a **due-diligence data-room index** (driven by the
+compliance evidence on disk) and a **grant & tender application pack**
+(evidence-gated registration, tax and B-BBEE blocks where the jurisdiction
+has those regimes). The life suite covers the canvases and on-a-page set,
+the CV/obituary pair, a **personal budget plan** (computed monthly cash
+flow, savings rate and expense cover), an **emergency information page**
+(ICE), and three never-polished legal drafts: the will, a **living will /
+healthcare directive** and a **power of attorney** — each with execution
+tracking that keeps an unsigned draft loudly labelled as one, and honest
+jurisdiction caveats (e.g. ZA: living wills are not statutorily regulated;
+an ordinary ZA power of attorney lapses on incapacity).
 
 Every compiled business document carries a **Depth** line in its Document
 Control block: documents compile at the deepest level the answers support —

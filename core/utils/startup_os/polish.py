@@ -99,9 +99,13 @@ SYSTEM_PROMPT = (
 # Any file whose lowercased output-relative name matches one of these is never
 # polished at all. The financial model and the compliance log are wall-to-wall
 # figures and evidence; the on-a-page financial plans are the same material.
-# The will is enforceable language: a "tidied" clause is a different clause,
-# so it belongs in the same never-sent class as the financial model.
-_EXCLUDED_FILE_RE = re.compile(r"financial|compliance|last_will", re.IGNORECASE)
+# The will, the living will / healthcare directive and the power of attorney
+# are enforceable (or medically directive) language: a "tidied" clause is a
+# different clause, so all three belong in the same never-sent class as the
+# financial model.
+_EXCLUDED_FILE_RE = re.compile(
+    r"financial|compliance|last_will|living_will|power_of_attorney", re.IGNORECASE
+)
 
 # Sections whose entire content is evidence, figures or regulated claims.
 # Matched against heading text; a match protects everything under that heading

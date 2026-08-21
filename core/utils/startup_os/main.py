@@ -476,6 +476,10 @@ def cmd_lint(args):
         "competitor_pricing_table",
         "fin_cac_by_channel_table",
         "fin_cohort_analysis",
+        "cap_table_ownership_table",
+        "cap_table_ownership_check",
+        "business_milestone_ledger",
+        "dd_evidence_table",
         "living_ledger_cv",
         "living_ledger_obituary",
         "milestone_count",
@@ -483,6 +487,10 @@ def cmd_lint(args):
         "will_bequests_list",
         "has_minor_children",
         "will_execution_status",
+        "living_will_execution_status",
+        "poa_execution_status",
+        "budget_cash_flow_table",
+        "budget_flags",
         "he_she",
         "he_she_lower",
         "his_her",
@@ -542,6 +550,11 @@ def cmd_lint(args):
         # `will_bequests_list`, `will_execution_status`) rather than by name.
         "specific_bequests",
         "will_executed",
+        # Execution records for the living will and the power of attorney:
+        # consumed by `compiler.directive_execution_status`, surfaced through
+        # the derived `*_execution_status` placeholders.
+        "living_will_executed",
+        "poa_executed",
     }
 
     types_to_check = [args.type] if args.type else list(path_utils.INSTANCE_TYPES)
