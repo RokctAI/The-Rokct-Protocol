@@ -36,7 +36,6 @@ field the schema never collects.
 
 from .parser import canonical_key
 
-
 # Question tiers. `core` is what a fresh profile collects by default — enough to
 # produce the one-page suite. `full` adds what the complete business-plan set
 # needs (market sizing, technical architecture, terms of sale, succession).
@@ -507,6 +506,13 @@ BUSINESS_SCHEMA = [
                 "Wins worth citing: grants, pilots, awards, contracts.",
                 tier=TIER_FULL,
             ),
+            Question(
+                "Reference Contacts",
+                "Contactable references for tenders and grants — one per "
+                "line: organisation, contact person, role, phone or email.",
+                example="Dept of Health Limpopo: Dr N. Baloyi, programme lead, 015 000 0000",
+                tier=TIER_FULL,
+            ),
         ],
     ),
     Section(
@@ -700,6 +706,11 @@ LIFE_DEPTH_LEVELS = (
             "specific_bequests",
             "residue_beneficiaries",
             "alternate_heirs",
+            # Estate-readiness also means naming who acts while you are
+            # alive but unable: the medical and financial agents behind the
+            # living will and the power-of-attorney draft.
+            "healthcare_proxy",
+            "attorney_in_fact",
         ),
     ),
 )
@@ -948,6 +959,19 @@ LIFE_SCHEMA = [
                 "How much do you save or invest per month?",
                 tier=TIER_FULL,
             ),
+            Question(
+                "Monthly Expenses",
+                "What do you spend per month, by category? One category per "
+                "line, with the monthly amount.",
+                example="Housing: R 12,000",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Liquid Savings",
+                "How much is held in cash or same-day-accessible savings "
+                "today — the emergency fund?",
+                tier=TIER_FULL,
+            ),
         ],
     ),
     Section(
@@ -980,6 +1004,120 @@ LIFE_SCHEMA = [
                 "Memorial Wishes",
                 "Any wishes for your memorial or funeral — burial or "
                 "cremation, ceremony, tone?",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Healthcare Directives",
+        [
+            Question(
+                "Healthcare Proxy",
+                "Who should make healthcare decisions on your behalf if you "
+                "cannot speak for yourself?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Alternate Healthcare Proxy",
+                "Who steps in if your first-choice healthcare proxy cannot act?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Life Sustaining Treatment",
+                "If you are terminally ill or permanently unconscious, should "
+                "life-sustaining treatment be continued or withheld? Say it "
+                "in your own words.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Resuscitation Preference",
+                "Should resuscitation (CPR) be attempted if your heart or "
+                "breathing stops? State any conditions.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Pain Relief Priority",
+                "How should pain relief be weighed against other goals of "
+                "care — e.g. comfort first, even at the cost of alertness?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Organ Donation Wishes",
+                "What are your wishes on organ and tissue donation?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Living Will Executed",
+                "Has the living will / advance directive been signed and "
+                "witnessed? Record the signing date and place once done; "
+                "leave pending until then.",
+                example="Signed 2026-03-01 at Polokwane before two witnesses",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Power of Attorney",
+        [
+            Question(
+                "Attorney In Fact",
+                "Who should act as your agent (attorney-in-fact) under a "
+                "power of attorney?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Alternate Attorney In Fact",
+                "Who steps in if your first-choice agent cannot act?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Powers Granted",
+                "Which powers are granted — general authority, or special "
+                "powers listed one per line (bank account, property, a "
+                "specific transaction)?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "POA Effective Conditions",
+                "From when, and under what conditions, does the power "
+                "operate — immediately, from a date, or only for a named "
+                "transaction or period?",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "POA Executed",
+                "Has the power of attorney been signed (and witnessed or "
+                "notarised where required)? Record the signing date and "
+                "place once done; leave pending until then.",
+                example="Signed 2026-03-01 at Polokwane before two witnesses",
+                tier=TIER_FULL,
+            ),
+        ],
+    ),
+    Section(
+        "Emergency Readiness",
+        [
+            Question(
+                "Emergency Contacts",
+                "Who should be called first in an emergency? One per line: "
+                "name, relationship, phone.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Primary Doctor",
+                "Who is your primary doctor or practice? Name and phone.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Allergies And Conditions",
+                "Which allergies, chronic conditions and daily medications "
+                "should an emergency responder know about? One per line.",
+                tier=TIER_FULL,
+            ),
+            Question(
+                "Key Document Locations",
+                "Where do your key documents live — will, policies, identity "
+                "document, medical aid details? One per line.",
                 tier=TIER_FULL,
             ),
         ],
