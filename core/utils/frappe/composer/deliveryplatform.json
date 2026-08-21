@@ -33,7 +33,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "main"
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
     },
     {
       "name": "gateways",
