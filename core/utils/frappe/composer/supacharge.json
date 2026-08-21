@@ -33,7 +33,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "main"
+      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d"
     },
     {
       "name": "agent",
@@ -41,7 +41,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/frappe",
-      "ref": "main"
+      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d"
     },
     {
       "name": "gateways",
@@ -66,7 +66,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/lms/frappe",
-      "ref": "main",
+      "ref": "0e75abdd4c380cd837233fe54bde387be65af52d",
       "_comment": "Supacharge's home SDK (LMS domain: lessons, schedule, partner links)."
     },
     {
