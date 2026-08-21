@@ -2081,5 +2081,539 @@ class TestLifeNewDocsEndToEnd(unittest.TestCase):
         )
 
 
+# --------------------------------------------------------------------------
+# Selective generation — a caller names the artifacts it wants, the engine
+# builds only those (plus the compliance log for a business), and nothing
+# else in the output directory is touched. No selection = full suite,
+# pruning and all.
+# --------------------------------------------------------------------------
+
+TEMPLATE_SRC = os.path.join(
+    os.path.dirname(_ENGINE_DIR),
+    os.pardir,
+    "skills",
+    ".rok",
+    "startup_os",
+    "templates",
+)
+
+
+def _selective_workspace(test, instance_type, name, seed, include_full=True):
+    """Workspace with shipped templates and a provisioned profile."""
+    import shutil
+
+    if not os.path.isdir(TEMPLATE_SRC):
+        test.skipTest("templates not present")
+    workspace = TempWorkspace()
+    root = workspace.__enter__()
+    test.addCleanup(workspace.__exit__, None, None, None)
+    shutil.copytree(TEMPLATE_SRC, os.path.join(root, "templates"))
+    write(
+        os.path.join(root, "instances", instance_type, name, "questions.md"),
+        schemas.render_questions_md(
+            instance_type, name, seed, include_full=include_full
+        ),
+    )
+    out = os.path.join(root, "instances", instance_type, name, "output")
+    return root, out
+
+
+def _files_under(directory):
+    found = []
+    for current, _subdirs, filenames in os.walk(directory):
+        for filename in filenames:
+            relative = os.path.relpath(os.path.join(current, filename), directory)
+            found.append(relative.replace(os.sep, "/"))
+    return sorted(found)
+
+
+BUSINESS_SEED = {
+    "trading_name": "Acme",
+    "jurisdiction": "ZA",
+    "primary_base": "Cape Town, South Africa",
+    "industry": "Retail",
+    "vision_statement": "A store on every corner.",
+}
+
+# Everything the health plan needs, and nothing more — the "ready" case.
+READY_HEALTH_SEED = {
+    "full_name": "Nia Adler",
+    "pronouns": "she/her",
+    "wellness_focus": "Strength and mobility",
+    "training_routine": "Three lifting sessions a week",
+    "sleep_target": "8 hours",
+    "health_metrics": "Resting heart rate 55",
+    "nutrition_approach": "High protein, home cooked",
+}
+
+
+class TestSelectiveGeneration(unittest.TestCase):
+    def test_selection_writes_only_requested_plus_compliance_log(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            only=["investor_pitch_deck"],
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual(
+            sorted(result.written),
+            ["annexures/investor_pitch_deck.md", "compliance_log.md"],
+        )
+        self.assertEqual(
+            _files_under(out),
+            ["annexures/investor_pitch_deck.md", "compliance_log.md"],
+        )
+
+    def test_selection_never_prunes_preexisting_files(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        # A folder that already holds unrelated work and a stale document —
+        # exactly what studio/TenderAssist point the engine at.
+        write(os.path.join(out, "manual_notes.txt"), "hands off")
+        write(os.path.join(out, "01_executive_summary.md"), "stale but mine")
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            only=["business_profile"],
+        )
+        self.assertEqual(result.removed, [])
+        survivors = _files_under(out)
+        self.assertIn("manual_notes.txt", survivors)
+        self.assertIn("01_executive_summary.md", survivors)
+        self.assertIn("business_profile.md", survivors)
+        with open(os.path.join(out, "01_executive_summary.md")) as handle:
+            self.assertEqual(handle.read(), "stale but mine")
+
+    def test_full_suite_without_selection_still_prunes(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        write(os.path.join(out, "stale_orphan.md"), "from a deleted template")
+        result = compiler.compile_instance(
+            "business", "Acme", workspace_root=root, quiet=True
+        )
+        self.assertIn("stale_orphan.md", result.removed)
+        self.assertNotIn("stale_orphan.md", _files_under(out))
+        # Every template plus the generated compliance log was written.
+        template_count = len(
+            compiler._artifact_map(os.path.join(root, "templates", "business"))
+        )
+        self.assertEqual(len(result.written), template_count + 1)
+
+    def test_unknown_artifact_error_lists_valid_names(self):
+        from core.errors import UnknownArtifactError
+
+        root, _out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        with self.assertRaises(UnknownArtifactError) as caught:
+            compiler.compile_instance(
+                "business",
+                "Acme",
+                workspace_root=root,
+                quiet=True,
+                only=["pitch_deck"],
+            )
+        message = str(caught.exception)
+        self.assertIn("'pitch_deck'", message)
+        self.assertIn("investor_pitch_deck", message)
+        self.assertIn("compliance_log", message)
+        self.assertIn("business_profile", message)
+
+    def test_empty_selection_is_an_error_not_a_full_compile(self):
+        from core.errors import UnknownArtifactError
+
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        with self.assertRaises(UnknownArtifactError):
+            compiler.compile_instance(
+                "business", "Acme", workspace_root=root, quiet=True, only=[]
+            )
+        self.assertEqual(_files_under(out), [])
+
+    def test_compliance_log_alone_is_a_valid_selection(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            only=["compliance_log"],
+        )
+        self.assertEqual(result.written, ["compliance_log.md"])
+        self.assertEqual(_files_under(out), ["compliance_log.md"])
+
+    def test_life_selection_has_no_compliance_log(self):
+        root, out = _selective_workspace(
+            self, "life", "Nia", {"full_name": "Nia", "pronouns": "she/her"}
+        )
+        result = compiler.compile_instance(
+            "life",
+            "Nia",
+            workspace_root=root,
+            quiet=True,
+            only=["last_will_and_testament"],
+        )
+        self.assertEqual(result.written, ["last_will_and_testament.md"])
+        self.assertEqual(_files_under(out), ["last_will_and_testament.md"])
+
+    def test_compliance_log_is_not_a_life_artifact(self):
+        from core.errors import UnknownArtifactError
+
+        root, _out = _selective_workspace(self, "life", "Nia", {"full_name": "Nia"})
+        with self.assertRaises(UnknownArtifactError):
+            compiler.compile_instance(
+                "life",
+                "Nia",
+                workspace_root=root,
+                quiet=True,
+                only=["compliance_log"],
+            )
+
+    def test_selection_tolerates_md_suffix_and_path_prefix(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            only=["annexures/investor_pitch_deck.md", "business_profile.md"],
+        )
+        self.assertEqual(
+            sorted(result.written),
+            [
+                "annexures/investor_pitch_deck.md",
+                "business_profile.md",
+                "compliance_log.md",
+            ],
+        )
+        self.assertEqual(len(_files_under(out)), 3)
+
+    def test_selective_render_only_renders_the_selected_binary(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            render=True,
+            only=["investor_pitch_deck"],
+        )
+        self.assertIn("investor_pitch_deck.pptx", result.written)
+        files = _files_under(out)
+        self.assertIn("investor_pitch_deck.pptx", files)
+        self.assertNotIn("financial_model.xlsx", files)
+
+    def test_selective_render_warns_when_no_selected_binary(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        result = compiler.compile_instance(
+            "business",
+            "Acme",
+            workspace_root=root,
+            quiet=True,
+            render=True,
+            only=["business_profile"],
+        )
+        self.assertNotIn("investor_pitch_deck.pptx", _files_under(out))
+        self.assertTrue(
+            any("--render with a selection" in warning for warning in result.warnings)
+        )
+
+    def test_list_artifacts_names_every_stem_plus_log(self):
+        root, _out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        names = compiler.list_artifacts(root, "business")
+        self.assertIn("investor_pitch_deck", names)
+        self.assertIn("compliance_log", names)
+        self.assertIn("01_executive_summary", names)
+        life = compiler.list_artifacts(root, "life")
+        self.assertIn("last_will_and_testament", life)
+        self.assertNotIn("compliance_log", life)
+
+
+class TestArtifactGapCheck(unittest.TestCase):
+    def _data(self, instance_type="business", name="Acme", seed=None, root=None):
+        if root is None:
+            root, _out = _selective_workspace(
+                self, instance_type, name, seed or BUSINESS_SEED
+            )
+        return (
+            compiler.load_instance_data(instance_type, name, workspace_root=root),
+            root,
+        )
+
+    def test_gaps_include_direct_derived_and_evidence_needs(self):
+        data, _root = self._data()
+        report = compiler.missing_for_artifacts(data, ["investor_pitch_deck"])
+        entry = report["investor_pitch_deck"]
+        # Direct placeholder: the deck substitutes {{problem_statement}}.
+        self.assertIn("problem_statement", entry["unanswered"])
+        # Derived: the deck renders {{fin_unit_economics}}, which is computed
+        # from (among others) Average Revenue Per Customer.
+        self.assertIn("average_revenue_per_customer", entry["unanswered"])
+        self.assertEqual(
+            entry["unanswered"]["average_revenue_per_customer"],
+            "Average Revenue Per Customer",
+        )
+        # Evidence: a ZA profile with no certificates has ungated fields.
+        self.assertIn("bee_level", entry["evidence"])
+        self.assertIn("BEE.pdf", entry["evidence"]["bee_level"])
+        # A question the deck never touches is not reported for it.
+        self.assertNotIn("quality_standards", entry["unanswered"])
+
+    def test_answered_question_leaves_the_gap_report(self):
+        seed = dict(BUSINESS_SEED, problem_statement="Shopping wastes hours.")
+        data, _root = self._data(seed=seed)
+        report = compiler.missing_for_artifacts(data, ["investor_pitch_deck"])
+        self.assertNotIn(
+            "problem_statement", report["investor_pitch_deck"]["unanswered"]
+        )
+
+    def test_operator_asserted_evidence_leaves_the_gap_report(self):
+        root, _out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        write(
+            os.path.join(
+                root,
+                "instances",
+                "business",
+                "Acme",
+                "compliance",
+                "compliance_overrides.json",
+            ),
+            '{"bee_level": "Level 2"}',
+        )
+        data, _root = self._data(root=root)
+        entry = compiler.missing_for_artifacts(data, ["investor_pitch_deck"])[
+            "investor_pitch_deck"
+        ]
+        self.assertNotIn("bee_level", entry["evidence"])
+        self.assertIn("reg_number", entry["evidence"])
+
+    def test_inapplicable_evidence_is_not_reported(self):
+        seed = dict(BUSINESS_SEED, jurisdiction="US", primary_base="Austin, USA")
+        data, _root = self._data(seed=seed)
+        entry = compiler.missing_for_artifacts(data, ["investor_pitch_deck"])[
+            "investor_pitch_deck"
+        ]
+        # No B-BBEE regime outside South Africa: never a gap, never a prompt.
+        self.assertNotIn("bee_level", entry["evidence"])
+
+    def test_compliance_log_needs_evidence_and_no_questions(self):
+        data, _root = self._data()
+        entry = compiler.missing_for_artifacts(data, ["compliance_log"])[
+            "compliance_log"
+        ]
+        self.assertEqual(entry["unanswered"], {})
+        self.assertIn("tax_pin", entry["evidence"])
+
+    def test_life_gaps_report_derived_inputs_and_no_evidence(self):
+        data, _root = self._data(
+            "life", "Nia", {"full_name": "Nia", "pronouns": "she/her"}
+        )
+        report = compiler.missing_for_artifacts(data, ["last_will_and_testament"])
+        entry = report["last_will_and_testament"]
+        # The will gates its execution stamp on {{will_execution_status}},
+        # derived from the Will Executed answer.
+        self.assertIn("will_executed", entry["unanswered"])
+        self.assertEqual(entry["evidence"], {})
+
+    def test_unknown_artifact_fails_the_gap_check(self):
+        from core.errors import UnknownArtifactError
+
+        data, _root = self._data()
+        with self.assertRaises(UnknownArtifactError):
+            compiler.missing_for_artifacts(data, ["nonsense"])
+
+    def test_ready_artifact_reports_no_gaps(self):
+        data, _root = self._data("life", "Nia", READY_HEALTH_SEED)
+        entry = compiler.missing_for_artifacts(data, ["health_plan_on_a_page"])[
+            "health_plan_on_a_page"
+        ]
+        self.assertEqual(entry["unanswered"], {})
+        self.assertEqual(entry["evidence"], {})
+
+
+class TestGapMapDrift(unittest.TestCase):
+    """The maintained input maps must track the shipped templates.
+
+    Same discipline as `startupos lint`: a placeholder no map or schema
+    explains means the gap check would silently under-report, so it fails
+    here instead.
+    """
+
+    def _referenced(self, instance_type):
+        root = os.path.join(TEMPLATE_SRC, instance_type)
+        if not os.path.isdir(root):
+            self.skipTest("templates not present")
+        referenced = set()
+        for current, _subdirs, filenames in os.walk(root):
+            for filename in filenames:
+                if not filename.endswith(".md"):
+                    continue
+                with open(os.path.join(current, filename), encoding="utf-8") as f:
+                    body = f.read()
+                referenced |= template_engine.find_placeholders(body)
+                referenced |= template_engine.find_condition_names(body)
+        return referenced
+
+    def test_every_template_placeholder_is_classified(self):
+        for instance_type in ("business", "life"):
+            unclassified = (
+                self._referenced(instance_type)
+                - schemas.schema_keys(instance_type)
+                - compliance.field_keys()
+                - set(compiler.DERIVED_PLACEHOLDER_INPUTS)
+                - set(compiler.EVIDENCE_PLACEHOLDER_INPUTS)
+                - compiler.GAP_EXEMPT_PLACEHOLDERS
+            )
+            self.assertEqual(
+                unclassified,
+                set(),
+                f"{instance_type}: template placeholders with no gap "
+                "classification — add them to DERIVED_PLACEHOLDER_INPUTS, "
+                "EVIDENCE_PLACEHOLDER_INPUTS or GAP_EXEMPT_PLACEHOLDERS "
+                f"in compiler.py: {sorted(unclassified)}",
+            )
+
+    def test_derived_inputs_are_real_schema_keys(self):
+        collected = schemas.schema_keys("business") | schemas.schema_keys("life")
+        for placeholder, keys in compiler.DERIVED_PLACEHOLDER_INPUTS.items():
+            for key in keys:
+                self.assertIn(key, collected, f"{placeholder} -> {key}")
+
+    def test_evidence_inputs_are_real_field_keys(self):
+        for placeholder, keys in compiler.EVIDENCE_PLACEHOLDER_INPUTS.items():
+            for key in keys:
+                self.assertIn(key, compliance.field_keys(), f"{placeholder} -> {key}")
+
+    def test_artifact_stems_are_unique_per_suite(self):
+        for instance_type in ("business", "life"):
+            root = os.path.join(TEMPLATE_SRC, instance_type)
+            if not os.path.isdir(root):
+                self.skipTest("templates not present")
+            templates = [
+                filename
+                for _current, _subdirs, filenames in os.walk(root)
+                for filename in filenames
+                if filename.endswith(".md")
+            ]
+            self.assertEqual(
+                len(compiler._artifact_map(root)),
+                len(templates),
+                f"{instance_type}: duplicate template stems would make "
+                "artifact names ambiguous",
+            )
+
+
+class TestSelectiveCLI(unittest.TestCase):
+    def _run(self, argv):
+        import contextlib
+        import io
+
+        from core import main as main_mod
+
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            code = main_mod.main(argv)
+        return code, stdout.getvalue()
+
+    def test_compile_only_flag_splits_commas(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        code, _output = self._run(
+            [
+                "compile",
+                "--type",
+                "business",
+                "--name",
+                "Acme",
+                "--root",
+                root,
+                "--quiet",
+                "--only",
+                "investor_pitch_deck,business_profile",
+            ]
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            _files_under(out),
+            [
+                "annexures/investor_pitch_deck.md",
+                "business_profile.md",
+                "compliance_log.md",
+            ],
+        )
+
+    def test_check_for_reports_gaps_writes_nothing_and_exits_1(self):
+        root, out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        code, output = self._run(
+            [
+                "check",
+                "--type",
+                "business",
+                "--name",
+                "Acme",
+                "--root",
+                root,
+                "--for",
+                "investor_pitch_deck",
+            ]
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("[Gaps] business/Acme -> investor_pitch_deck", output)
+        self.assertIn("unanswered: problem_statement", output)
+        self.assertIn("evidence  : bee_level", output)
+        self.assertFalse(os.path.isdir(out), "gap check must write nothing")
+
+    def test_check_for_json_is_machine_readable(self):
+        import json
+
+        root, _out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        code, output = self._run(
+            [
+                "check",
+                "--type",
+                "business",
+                "--name",
+                "Acme",
+                "--root",
+                root,
+                "--for",
+                "investor_pitch_deck",
+                "--json",
+            ]
+        )
+        self.assertEqual(code, 1)
+        payload = json.loads(output)
+        entry = payload["artifacts"]["investor_pitch_deck"]
+        self.assertFalse(entry["ready"])
+        self.assertIn(
+            "problem_statement", [item["key"] for item in entry["unanswered"]]
+        )
+        self.assertIn("bee_level", [item["key"] for item in entry["evidence"]])
+
+    def test_check_json_without_for_is_an_error(self):
+        root, _out = _selective_workspace(self, "business", "Acme", BUSINESS_SEED)
+        code, _output = self._run(
+            ["check", "--type", "business", "--name", "Acme", "--root", root, "--json"]
+        )
+        self.assertEqual(code, 2)
+
+    def test_check_for_ready_artifact_exits_0(self):
+        root, _out = _selective_workspace(self, "life", "Nia", READY_HEALTH_SEED)
+        code, output = self._run(
+            [
+                "check",
+                "--type",
+                "life",
+                "--name",
+                "Nia",
+                "--root",
+                root,
+                "--for",
+                "health_plan_on_a_page",
+            ]
+        )
+        self.assertEqual(code, 0)
+        self.assertIn("[Ready]", output)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

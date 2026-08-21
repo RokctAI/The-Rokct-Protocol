@@ -49,6 +49,15 @@ class QuestionNotFoundError(StartupOSError):
     """A question label could not be located in questions.md."""
 
 
+class UnknownArtifactError(StartupOSError):
+    """A selective compile or gap check named an artifact that does not exist.
+
+    The message always lists every valid artifact name, so a caller (studio,
+    TenderAssist, a human at the CLI) can correct the request without digging
+    through the template folder.
+    """
+
+
 class BrandingError(StartupOSError):
     """A brand/ asset (design system file, logo, image) is malformed.
 
