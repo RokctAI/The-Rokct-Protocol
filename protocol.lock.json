@@ -1,5 +1,5 @@
 {
-  "ref": "762cda0f97bc326512c64f2cece645ac0bb569d1",
+  "ref": "65ba3e7498be31e16fdb895b573425c313f385b8",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -45,21 +45,21 @@
     "core/utils/startup_os/__init__.py": "404dea2780d59f692f904fab2f61e12ecbf1902a2f33760fe78cbf3ea9abc91e",
     "core/utils/startup_os/agent_bridge.py": "dab383c8c825c04673bb89e94d81debdd033637cc498ecd0a447cb8f8724f7eb",
     "core/utils/startup_os/branding.py": "9882941100ded2e6c1fb9bc90e63f602feca71ace9ce88d078a243ae25c079be",
-    "core/utils/startup_os/compiler.py": "08fcc32bc27af64593ff28de7970801be1a37b9e4d81ff8794bdca5e2328a08d",
+    "core/utils/startup_os/compiler.py": "4b8bd0b7561f89bf407f50c26b2549c7ffa6b2fea071ab0eaff0de82e675f68c",
     "core/utils/startup_os/compliance.py": "fa110ad645c490ea97aa73046ed68fcb9cfb7c2d136c1e5f14f32119ec9f82ed",
     "core/utils/startup_os/documents.py": "260bf33718b1e5fe7f6175256a0f653469d33d13746bd184bfbf3d23e63fde7e",
     "core/utils/startup_os/errors.py": "f219052181385984a895ca13dec51fb2ac83b05c52abccbf6fd67c4b27f5fed6",
     "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
     "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
     "core/utils/startup_os/paths.py": "c6c338241688678152155d98569fd69a7e2d52724577fee3ea0306e9ab849cf8",
-    "core/utils/startup_os/polish.py": "3ef73ae98ff896da6b8ba88059b80cb164f0245a76b1849c4491ec7ea6799aa3",
+    "core/utils/startup_os/polish.py": "9b82985763305db6f9ef82941fbd5dbf76fd5c9c73280a368a3631f0714f2559",
     "core/utils/startup_os/render_pptx.py": "7399034c2dca4d45eb59798bb90d7893c145c2e3733a7f084920564d9aef3f93",
     "core/utils/startup_os/render_xlsx.py": "82da8d239f2cf7e868c57bdec40107a8ff855ddc10b32c53e1fdead2324508aa",
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
-    "core/utils/startup_os/schemas.py": "a7ded624f78b505fd61fd79852f2f8a7d12d86362be64249625e44d50e744b80",
+    "core/utils/startup_os/schemas.py": "e591ec82487c2c0efbfb44e7b92f3eefcf5ee7cc051decef7f04593f2f70abc0",
     "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
-    "profiles/local/initiate.py": "78cc429c32aae16eca654326de468764ef76a76c49489bdc5a09108811f68022",
-    "profiles/web/initiate.py": "d973395754fd7a317ea2da205770d79e2c93d946399e165dab8e787b8e36fdb6",
+    "profiles/local/initiate.py": "e02f0e9ec69d9f098293b7ad8ac9eb6ed1098d1534270f822bbb7f5fd41362fb",
+    "profiles/web/initiate.py": "c52a2994af9112f7cc615120598f174b1c466d196f759e6e1e7d5440aef58dac",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
