@@ -5,7 +5,7 @@ on:
 
 jobs:
   size:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-size.yml@2c7f49674dc9c14ca390f3342ad514cff59f64f5 # shared-workflows main @ 2026-08-21
+    uses: RokctAI/shared-workflows/.github/workflows/universal-size.yml@35c8f0677c1b2b3b73d3c6883bf102f192ca2bcd # shared-workflows main @ 2026-08-21
     permissions: write-all
     secrets:
       COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
