@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "65ba3e7498be31e16fdb895b573425c313f385b8"
+PROTOCOL_REF = "f6b885f9302621d03c35e5568e47c42368d19a4d"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -86,16 +86,16 @@ ENGINE_MODULES = (
 # repo-relative path. Pinned by tools/gen_protocol_lock.py.
 EXPECTED_SHA256 = {
     "core/utils/startup_os/__init__.py": "404dea2780d59f692f904fab2f61e12ecbf1902a2f33760fe78cbf3ea9abc91e",
-    "core/utils/startup_os/errors.py": "f219052181385984a895ca13dec51fb2ac83b05c52abccbf6fd67c4b27f5fed6",
+    "core/utils/startup_os/errors.py": "3d6eea4e42314187d729d78e392a2ac98ab42f9cc49c6c1eb30ce2bca073312e",
     "core/utils/startup_os/paths.py": "c6c338241688678152155d98569fd69a7e2d52724577fee3ea0306e9ab849cf8",
     "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
     "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
-    "core/utils/startup_os/compliance.py": "fa110ad645c490ea97aa73046ed68fcb9cfb7c2d136c1e5f14f32119ec9f82ed",
-    "core/utils/startup_os/template_engine.py": "dbb6592acbfc87c53872e1cfda50cb855b3303624a8a84fe21cadb86b5ae105b",
+    "core/utils/startup_os/compliance.py": "1b96ce46a710d262c7dee5f33a776da1261ac6711ba48cf2192115d43541f3b5",
+    "core/utils/startup_os/template_engine.py": "a18d87283211d2a2cf764b69e21e10f539b3b462e39cc6aca4c6c0ceae193b0d",
     "core/utils/startup_os/documents.py": "260bf33718b1e5fe7f6175256a0f653469d33d13746bd184bfbf3d23e63fde7e",
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "e591ec82487c2c0efbfb44e7b92f3eefcf5ee7cc051decef7f04593f2f70abc0",
-    "core/utils/startup_os/compiler.py": "4b8bd0b7561f89bf407f50c26b2549c7ffa6b2fea071ab0eaff0de82e675f68c",
+    "core/utils/startup_os/compiler.py": "23b6710495ae6361a6c22494a740f49f730f4bdd6d2695c1f0df89a9347591d7",
     "core/utils/startup_os/agent_bridge.py": "dab383c8c825c04673bb89e94d81debdd033637cc498ecd0a447cb8f8724f7eb",
     "core/utils/startup_os/polish.py": "9b82985763305db6f9ef82941fbd5dbf76fd5c9c73280a368a3631f0714f2559",
     "core/utils/startup_os/branding.py": "9882941100ded2e6c1fb9bc90e63f602feca71ace9ce88d078a243ae25c079be",

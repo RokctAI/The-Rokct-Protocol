@@ -322,3 +322,18 @@ def find_placeholders(template_text):
     )
     stripped = _ELSE_RE.sub("", stripped)
     return set(_VARIABLE_RE.findall(stripped))
+
+
+_CONDITION_RE = re.compile(r"\{\{#(?:if|unless)\s+([a-zA-Z0-9_]+)\s*\}\}")
+
+
+def find_condition_names(template_text):
+    """Every value name tested by an `{{#if}}` or `{{#unless}}` block.
+
+    These are dependencies a plain placeholder scan misses: a template that
+    only *gates* a section on `{{#if funding_requirement}}` never substitutes
+    the value, yet the section stays hidden until the question is answered.
+    The per-artifact gap check needs both kinds. Jurisdiction and feature
+    blocks are excluded — they test the profile's jurisdiction, not an answer.
+    """
+    return set(_CONDITION_RE.findall(template_text))

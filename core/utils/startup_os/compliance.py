@@ -96,6 +96,17 @@ _FIELD_GROUPS = {
     ),
 }
 
+
+def field_keys():
+    """Every compliance field key the evidence pipeline can populate.
+
+    The per-artifact gap check uses this to tell an evidence placeholder in a
+    template (prove it with a certificate) apart from a question placeholder
+    (answer it in questions.md).
+    """
+    return frozenset(key for keys in _FIELD_GROUPS.values() for key in keys)
+
+
 # Human guidance rendered when a field is applicable but has no document.
 _PENDING_HINTS = {
     "company_name": "registered name not verified — add {registry_document}.pdf",

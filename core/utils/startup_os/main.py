@@ -124,6 +124,17 @@ def build_parser():
         help="Also regenerate the derived binary artifacts "
         "(investor_pitch_deck.pptx, financial_model.xlsx)",
     )
+    compile_parser.add_argument(
+        "--only",
+        action="append",
+        default=None,
+        metavar="ARTIFACTS",
+        help="Selective generation: compile only these artifacts "
+        "(comma-separated template stems, e.g. "
+        "investor_pitch_deck,compliance_log; repeatable). The compliance "
+        "log is always included for a business instance, and nothing else "
+        "in the output directory is touched or pruned.",
+    )
     compile_parser.add_argument("--quiet", action="store_true")
     _add_common(compile_parser)
 
@@ -167,13 +178,32 @@ def build_parser():
     _add_common(answer_parser)
 
     check_parser = subparsers.add_parser(
-        "check", help="Compliance gate for CI: exit 0 ok, 1 pending, 2 expired"
+        "check",
+        help="Compliance gate for CI: exit 0 ok, 1 pending, 2 expired. With "
+        "--for ARTIFACT, instead report what that artifact still needs "
+        "(unanswered questions, unverified evidence) without writing "
+        "anything: exit 0 when it is ready, 1 when gaps remain.",
     )
     check_parser.add_argument(
         "--type", choices=path_utils.INSTANCE_TYPES, default="business"
     )
     check_parser.add_argument("--name", required=True)
     check_parser.add_argument("--compliance-root", default=None)
+    check_parser.add_argument(
+        "--for",
+        dest="for_artifacts",
+        action="append",
+        default=None,
+        metavar="ARTIFACTS",
+        help="Report the gaps blocking these artifacts (comma-separated "
+        "template stems, e.g. investor_pitch_deck; repeatable) instead of "
+        "running the compliance gate. Writes nothing.",
+    )
+    check_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="With --for: emit the gap report as JSON",
+    )
     _add_common(check_parser)
 
     lint_parser = subparsers.add_parser(
@@ -285,6 +315,14 @@ def build_parser():
     return parser
 
 
+def _split_artifact_args(raw_values):
+    """Flatten repeatable, comma-separated artifact flags into one list."""
+    names = []
+    for raw in raw_values or ():
+        names.extend(part.strip() for part in raw.split(",") if part.strip())
+    return names
+
+
 def cmd_compile(args):
     result = compile_instance(
         instance_type=args.type,
@@ -294,6 +332,7 @@ def cmd_compile(args):
         compliance_root=args.compliance_root,
         quiet=args.quiet,
         render=args.render,
+        only=_split_artifact_args(args.only) if args.only is not None else None,
     )
     return 0 if result.ok else 1
 
@@ -429,7 +468,71 @@ def cmd_answer(args):
     return 0
 
 
+def _check_artifact_gaps(args):
+    """The per-artifact gap report behind `check --for`. Writes nothing."""
+    import json as json_mod
+
+    from . import compiler as compiler_mod
+
+    data = compiler_mod.load_instance_data(
+        instance_type=args.type,
+        instance_name=args.name,
+        workspace_root=args.root,
+        compliance_root=args.compliance_root,
+    )
+    report = compiler_mod.missing_for_artifacts(
+        data, _split_artifact_args(args.for_artifacts)
+    )
+    has_gaps = any(
+        entry["unanswered"] or entry["evidence"] for entry in report.values()
+    )
+
+    if args.json:
+        payload = {
+            "instance_type": data.instance_type,
+            "instance_name": data.instance_name,
+            "jurisdiction": data.jurisdiction.code,
+            "artifacts": {
+                name: {
+                    "ready": not (entry["unanswered"] or entry["evidence"]),
+                    "unanswered": [
+                        {"key": key, "label": label}
+                        for key, label in entry["unanswered"].items()
+                    ],
+                    "evidence": [
+                        {"key": key, "status": hint}
+                        for key, hint in entry["evidence"].items()
+                    ],
+                }
+                for name, entry in report.items()
+            },
+        }
+        print(json_mod.dumps(payload, indent=2))
+        return 1 if has_gaps else 0
+
+    for name, entry in report.items():
+        unanswered = entry["unanswered"]
+        evidence = entry["evidence"]
+        if not unanswered and not evidence:
+            print(
+                f"[Ready] {args.type}/{args.name} -> {name}: every question "
+                "answered and evidence in place"
+            )
+            continue
+        print(f"[Gaps] {args.type}/{args.name} -> {name}")
+        for key, label in unanswered.items():
+            print(f"  unanswered: {key} — {label}")
+        for key, hint in evidence.items():
+            print(f"  evidence  : {key} — {hint}")
+    return 1 if has_gaps else 0
+
+
 def cmd_check(args):
+    if args.json and not args.for_artifacts:
+        print("[Error] --json requires --for", file=sys.stderr)
+        return 2
+    if args.for_artifacts:
+        return _check_artifact_gaps(args)
     result = compile_instance(
         instance_type=args.type,
         instance_name=args.name,

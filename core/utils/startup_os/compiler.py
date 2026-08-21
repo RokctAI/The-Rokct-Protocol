@@ -41,7 +41,7 @@ from . import paths as path_utils
 from . import safe_io
 from . import schemas
 from . import template_engine
-from .errors import ProfileNotFoundError, TemplateError
+from .errors import ProfileNotFoundError, TemplateError, UnknownArtifactError
 from .parser import parse_questions_md
 
 COMPLIANCE_ROOT_ENV_VAR = "STARTUPOS_COMPLIANCE_ROOT"
@@ -636,6 +636,279 @@ FOOTER_MAPS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Selective generation.
+#
+# Documents in this engine do not depend on each other as files: every one
+# compiles from the same parsed `questions.md` answers and the same compliance
+# evidence, and the footer links between documents are navigation, not build
+# inputs. A selective compile therefore never materialises intermediates —
+# it renders exactly the requested templates and writes nothing else.
+# ---------------------------------------------------------------------------
+
+# The generated compliance log is selectable by name even though it has no
+# template. Per the selective-generation contract, every selective *business*
+# compile writes it alongside the requested artifacts regardless.
+COMPLIANCE_LOG_ARTIFACT = "compliance_log"
+COMPLIANCE_LOG_FILENAME = "compliance_log.md"
+
+# Engine-computed placeholders mapped to the questions that feed them. The
+# templates reference the derived name (`fin_unit_economics`); the gap check
+# must prompt for the *inputs*. Maintained by hand beside the computations
+# below; the test suite cross-checks every placeholder the shipped templates
+# reference against these maps, so a new derived placeholder cannot ship
+# without declaring what it needs.
+DERIVED_PLACEHOLDER_INPUTS = {
+    "fin_summary": frozenset(
+        {"projected_year_1", "projected_year_2", "projected_year_3"}
+    ),
+    "fin_grid_rev": frozenset(
+        {"projected_year_1", "projected_year_2", "projected_year_3"}
+    ),
+    "fin_projection_table": frozenset(
+        {
+            "projected_year_1",
+            "projected_year_2",
+            "projected_year_3",
+            "gross_margin_target",
+        }
+    ),
+    "fin_unit_economics": frozenset(
+        {
+            "average_revenue_per_customer",
+            "gross_margin_target",
+            "customer_acquisition_cost",
+            "customer_churn_rate",
+            "monthly_operating_costs",
+            "cash_on_hand",
+        }
+    ),
+    "fin_consistency": frozenset(
+        {
+            "projected_year_1",
+            "projected_year_2",
+            "projected_year_3",
+            "customer_count_year_1",
+            "average_revenue_per_customer",
+        }
+    ),
+    "market_funnel_table": frozenset(
+        {"market_size_tam", "market_size_sam", "market_size_som"}
+    ),
+    "market_sizing_flags": frozenset(
+        {"market_size_tam", "market_size_sam", "market_size_som"}
+    ),
+    "competitor_table": frozenset({"competitive_positioning", "key_competitors"}),
+    "competitor_pricing_table": frozenset({"competitor_pricing"}),
+    "fin_cac_by_channel_table": frozenset(
+        {"cac_by_channel", "customer_acquisition_cost"}
+    ),
+    "fin_cohort_analysis": frozenset({"retention_cohorts", "customer_churn_rate"}),
+    "cap_table_ownership_table": frozenset({"shareholder_distribution"}),
+    "cap_table_ownership_check": frozenset({"shareholder_distribution"}),
+    "life_financial_summary": frozenset(
+        {
+            "assets",
+            "liabilities",
+            "life_cover_policies",
+            "monthly_savings",
+            "monthly_income",
+        }
+    ),
+    "will_bequests_list": frozenset({"specific_bequests"}),
+    "has_minor_children": frozenset({"children"}),
+    "will_execution_status": frozenset({"will_executed"}),
+    "living_will_execution_status": frozenset({"living_will_executed"}),
+    "poa_execution_status": frozenset({"poa_executed"}),
+    "budget_cash_flow_table": frozenset(
+        {"monthly_income", "monthly_expenses", "monthly_savings", "liquid_savings"}
+    ),
+    "budget_flags": frozenset(
+        {"monthly_income", "monthly_expenses", "monthly_savings"}
+    ),
+    "he_she": frozenset({"pronouns"}),
+    "he_she_lower": frozenset({"pronouns"}),
+    "his_her": frozenset({"pronouns"}),
+    "his_her_capital": frozenset({"pronouns"}),
+    "him_her": frozenset({"pronouns"}),
+    "himself_herself": frozenset({"pronouns"}),
+}
+
+# Derived placeholders whose inputs are evidence documents rather than
+# questions: the data-room table summarises the certificate-backed fields.
+EVIDENCE_PLACEHOLDER_INPUTS = {
+    "dd_evidence_table": frozenset(
+        {"company_name", "reg_number", "tax_number", "tax_pin", "bee_level"}
+    ),
+}
+
+# Placeholders a template may reference that need neither an answer nor a
+# certificate: identity strings, jurisdiction constants resolved from the
+# profile, and the milestone ledgers (fed by `startupos milestone`, always
+# rendered — empty ledgers coach rather than block).
+GAP_EXEMPT_PLACEHOLDERS = frozenset(
+    {
+        "trading_name",
+        "instance_name",
+        "company_name_status",
+        "entity_type_hint",
+        "jurisdiction_code",
+        "jurisdiction_name",
+        "currency",
+        "currency_symbol",
+        "currency_note",
+        "privacy_law",
+        "standards_body",
+        "registry_name",
+        "tax_authority",
+        "trademarks_details",
+        "business_milestone_ledger",
+        "living_ledger_cv",
+        "living_ledger_obituary",
+        "milestone_count",
+    }
+)
+
+
+def _artifact_map(template_root):
+    """Map artifact stem (`investor_pitch_deck`) -> template name
+    (`annexures/investor_pitch_deck.md`). Stems are unique across each suite;
+    the test suite enforces that, so a stem is an unambiguous artifact name.
+    """
+    return {
+        relative.rsplit("/", 1)[-1][: -len(".md")]: relative
+        for _absolute, relative in _iter_templates(template_root)
+    }
+
+
+def list_artifacts(root, instance_type):
+    """Every valid artifact name for a selective compile or gap check."""
+    template_root = path_utils.templates_dir(root, instance_type)
+    names = set(_artifact_map(template_root))
+    if instance_type == "business":
+        names.add(COMPLIANCE_LOG_ARTIFACT)
+    return sorted(names)
+
+
+def resolve_artifact_selection(names, template_root, instance_type):
+    """Normalise a requested artifact selection.
+
+    Accepts template stems (`investor_pitch_deck`, `business_profile`) and
+    tolerates a trailing `.md` or a directory prefix. Returns
+    `(stems, template_names)` — the stems in request order, deduplicated, and
+    the set of output-relative template names to render (the generated
+    compliance log has no template and is not in the set). An unknown name
+    raises `UnknownArtifactError` listing every valid artifact; an empty
+    selection is an error, never a silent full-suite compile.
+    """
+    mapping = _artifact_map(template_root)
+    valid = set(mapping)
+    if instance_type == "business":
+        valid.add(COMPLIANCE_LOG_ARTIFACT)
+    listed = ", ".join(sorted(valid))
+
+    stems = []
+    for raw in names:
+        stem = str(raw).strip().replace("\\", "/")
+        if stem.endswith(".md"):
+            stem = stem[: -len(".md")]
+        stem = stem.rsplit("/", 1)[-1]
+        if stem not in valid:
+            raise UnknownArtifactError(
+                f"Unknown {instance_type} artifact {str(raw).strip()!r}. "
+                f"Valid artifacts: {listed}"
+            )
+        if stem not in stems:
+            stems.append(stem)
+
+    if not stems:
+        raise UnknownArtifactError(
+            f"Empty artifact selection. Name at least one of: {listed} — or "
+            "omit the selection to compile the full suite."
+        )
+
+    template_names = {
+        mapping[stem] for stem in stems if stem != COMPLIANCE_LOG_ARTIFACT
+    }
+    return stems, template_names
+
+
+def artifact_requirements(instance_type, template_text):
+    """`(question_keys, evidence_keys)` one template needs.
+
+    Derived from the template itself — its `{{name}}` placeholders and its
+    `{{#if}}`/`{{#unless}}` condition names — plus the maintained input maps
+    for engine-computed placeholders. The scan is jurisdiction-agnostic:
+    keys inside gated blocks are included, and the evidence report filters
+    out fields the profile's jurisdiction marks not applicable.
+    """
+    referenced = template_engine.find_placeholders(
+        template_text
+    ) | template_engine.find_condition_names(template_text)
+
+    collected = schemas.schema_keys(instance_type)
+    question_keys = set(referenced & collected)
+    evidence_keys = set(referenced & compliance_mod.field_keys())
+    for name in referenced:
+        question_keys |= DERIVED_PLACEHOLDER_INPUTS.get(name, frozenset())
+        evidence_keys |= EVIDENCE_PLACEHOLDER_INPUTS.get(name, frozenset())
+    return question_keys & collected, evidence_keys
+
+
+def missing_for_artifacts(data, names):
+    """What blocks each requested artifact, without writing anything.
+
+    Returns `{artifact: {"unanswered": {key: label}, "evidence": {key: hint}}}`
+    in request order. "Unanswered" means the question is pending or absent
+    from `questions.md`. "Evidence" lists the compliance fields the artifact
+    renders that are applicable in this jurisdiction but backed by neither a
+    parsed certificate nor an operator override — each with the exact next
+    step. The generated compliance log needs every evidence field and no
+    questions.
+    """
+    template_root = path_utils.templates_dir(data.root, data.instance_type)
+    if not os.path.isdir(template_root):
+        raise TemplateError(f"Missing template folder: {template_root}")
+
+    stems, _template_names = resolve_artifact_selection(
+        names, template_root, data.instance_type
+    )
+    mapping = _artifact_map(template_root)
+    schema_labels = {
+        key: question.label
+        for key, question in schemas.questions_by_key(data.instance_type).items()
+    }
+
+    report = {}
+    for stem in stems:
+        if stem == COMPLIANCE_LOG_ARTIFACT:
+            question_keys = frozenset()
+            evidence_keys = compliance_mod.field_keys()
+        else:
+            template_path = os.path.join(template_root, *mapping[stem].split("/"))
+            with open(template_path, "r", encoding="utf-8") as handle:
+                question_keys, evidence_keys = artifact_requirements(
+                    data.instance_type, handle.read()
+                )
+
+        unanswered = {
+            key: data.profile.labels.get(key) or schema_labels.get(key, key)
+            for key in sorted(question_keys)
+            if key not in data.profile.answers
+        }
+
+        evidence = {}
+        if data.record is not None:
+            for key in sorted(evidence_keys):
+                field = data.record.get(key)
+                if field is None or not field.is_applicable or field.is_verified:
+                    continue
+                evidence[key] = data.record.render(key)
+
+        report[stem] = {"unanswered": unanswered, "evidence": evidence}
+    return report
+
+
 class CompileResult:
     """Outcome of one compilation."""
 
@@ -838,23 +1111,33 @@ def load_instance_data(
     )
 
 
-def render_binary_artifacts(data, quiet=False):
+def render_binary_artifacts(data, quiet=False, only_markdown=None):
     """Render the derived .pptx and .xlsx artifacts for a business instance.
 
     The markdown stays canonical: both files are regenerated from the same
     `InstanceData` that fills the templates, and a plain recompile without
     `--render` prunes them rather than leaving stale binaries that look
     current. Returns the output-relative filenames written.
+
+    `only_markdown` — the template names of a selective compile — restricts
+    rendering to the binaries derived from a selected document: the deck from
+    `annexures/investor_pitch_deck.md`, the model from `07_financial_model.md`.
     """
     # Imported lazily: a skill install with a cached pre-renderer engine can
     # still compile markdown; only rendering needs the new modules.
     from . import render_pptx, render_xlsx
 
     written = []
-    for module, filename in (
-        (render_pptx, render_pptx.PITCH_DECK_FILENAME),
-        (render_xlsx, render_xlsx.FINANCIAL_MODEL_FILENAME),
+    for module, filename, source in (
+        (
+            render_pptx,
+            render_pptx.PITCH_DECK_FILENAME,
+            "annexures/investor_pitch_deck.md",
+        ),
+        (render_xlsx, render_xlsx.FINANCIAL_MODEL_FILENAME, "07_financial_model.md"),
     ):
+        if only_markdown is not None and source not in only_markdown:
+            continue
         destination = os.path.join(data.out_dir, filename)
         path_utils.assert_contained(data.out_dir, destination)
         module.render(data, destination)
@@ -872,6 +1155,7 @@ def compile_instance(
     compliance_root=None,
     quiet=False,
     render=False,
+    only=None,
 ):
     """Compile the template suite for one instance.
 
@@ -879,6 +1163,17 @@ def compile_instance(
     `compliance_root`'s parent. With `render=True` the derived binary
     artifacts (investor deck .pptx, financial model .xlsx) are regenerated
     alongside the markdown for business instances.
+
+    `only` — an iterable of artifact names (template stems such as
+    `investor_pitch_deck`; see `list_artifacts`) — switches to selective
+    generation: exactly the requested documents are written, plus the
+    compliance log for a business instance, and **nothing else in the output
+    directory is touched or pruned** — safe to point at a folder that already
+    holds a full suite or unrelated files. With `render=True` only the
+    binaries whose source document was selected are rendered. `only=None`
+    keeps the full-suite behaviour unchanged, pruning included; an empty or
+    unknown selection raises `UnknownArtifactError` naming the valid
+    artifacts.
     """
     data = load_instance_data(
         instance_type=instance_type,
@@ -916,6 +1211,17 @@ def compile_instance(
     if not template_files:
         raise TemplateError(f"No .md templates found in {template_root}")
 
+    selected_names = None
+    if only is not None:
+        _stems, selected_names = resolve_artifact_selection(
+            only, template_root, instance_type
+        )
+        template_files = [
+            (template_path, relative_name)
+            for template_path, relative_name in template_files
+            if relative_name in selected_names
+        ]
+
     os.makedirs(out_dir, exist_ok=True)
     generated_on = date.today()
     written_names = set()
@@ -951,17 +1257,27 @@ def compile_instance(
         log_text = compliance_mod.build_compliance_log(
             record, instance_name, generated_on
         )
-        safe_io.atomic_write(os.path.join(out_dir, "compliance_log.md"), log_text)
-        written_names.add("compliance_log.md")
-        result.written.append("compliance_log.md")
+        safe_io.atomic_write(os.path.join(out_dir, COMPLIANCE_LOG_FILENAME), log_text)
+        written_names.add(COMPLIANCE_LOG_FILENAME)
+        result.written.append(COMPLIANCE_LOG_FILENAME)
         status, _messages = compliance_mod.compliance_exit_status(record, generated_on)
         result.compliance_status = status
 
     if render:
         if instance_type == "business":
-            for name in render_binary_artifacts(data, quiet=quiet):
+            rendered_names = render_binary_artifacts(
+                data, quiet=quiet, only_markdown=selected_names
+            )
+            for name in rendered_names:
                 written_names.add(name)
                 result.written.append(name)
+            if selected_names is not None and not rendered_names:
+                warnings.append(
+                    "--render with a selection only regenerates the binaries "
+                    "whose source document was requested "
+                    "(investor_pitch_deck -> .pptx, 07_financial_model -> "
+                    ".xlsx); neither was selected, so none was rendered."
+                )
         else:
             warnings.append(
                 "--render produces business artifacts (investor deck, "
@@ -969,8 +1285,11 @@ def compile_instance(
             )
 
     # Prune only after everything this run produces is known, or the compliance
-    # log would be deleted moments after being written.
-    result.removed = safe_io.prune_directory(out_dir, written_names | {".history"})
+    # log would be deleted moments after being written. A selective compile
+    # never prunes: it must be safe to request one artifact into a directory
+    # that already holds a full suite — or anything else.
+    if only is None:
+        result.removed = safe_io.prune_directory(out_dir, written_names | {".history"})
 
     result.missing_fields = {
         key: profile.labels.get(key, key) for key in sorted(profile.pending)
