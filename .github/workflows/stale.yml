@@ -5,7 +5,7 @@ on:
 
 jobs:
   stale:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-stale.yml@6c22598ecd6a654f40d83ebb704763da5190b9a0 # shared-workflows main @ 2026-08-20
+    uses: RokctAI/shared-workflows/.github/workflows/universal-stale.yml@2c7f49674dc9c14ca390f3342ad514cff59f64f5 # shared-workflows main @ 2026-08-21
     permissions: write-all
     secrets:
       COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
