@@ -97,6 +97,15 @@
       "ref": "main"
     },
     {
+      "name": "weather_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../zones/weather/dart",
+      "git": "https://github.com/RokctAI/zones",
+      "ref": "main",
+      "_comment": "Activates the severe-weather banner shipped dormant in zones PR #44: weather 1.4.0's app_type.driver block installs the courier locationResolver wiring plus the weather-driver-configure-location boot hook, and delivery_sdk's home sheet already renders the warnings banner fail-closed. Declaration mirrors manager.json/pos.json."
+    },
+    {
       "name": "agent_sdk",
       "enabled": false,
       "source": "git",
