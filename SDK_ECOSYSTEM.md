@@ -436,6 +436,19 @@ This repo's runtime-fetched-and-executed files are pinned. See
    every consuming app (or ships a compatibility path — aliases, default
    params). Shells compose SDKs at `ref: "main"`, so a breaking merge silently
    breaks every consumer at its next compose.
+8. **Demo-visible change ⇒ same-PR tour fragment + demo seeds** (standing
+   rule, Ray 2026-08-22 — Supacharge decisions log #59 in the `agent` repo,
+   `replay/docs/supacharge-open-decisions-log.md`). Any PR that changes a
+   demo-visible surface in an SDK — a screen, flow, route, demo data, or
+   role/mode behaviour — must update the owning SDK's tour fragment
+   (`templates/tour/*.tour.yaml`) and its demo seeds in the SAME PR. If a
+   fragment changes, the app shell's committed
+   `integration_test/tour_steps.g.dart` is regenerated in a follow-up
+   app-shell PR held draft until the SDK PR merges (the merge needs the
+   merged fragment). The guided tour is how the owner sees every screen and
+   it feeds the marketing screenshots, Play-Store stills, and chapter videos
+   committed to the app-shell repo; a screen change that skips it silently
+   rots those outputs.
 
 ## Introducing a new SDK — checklist
 
