@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "f6b885f9302621d03c35e5568e47c42368d19a4d"
+PROTOCOL_REF = "576ba1567e395d8ea5a90683bfcfb6e485d00dc6"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -95,7 +95,7 @@ EXPECTED_SHA256 = {
     "core/utils/startup_os/documents.py": "260bf33718b1e5fe7f6175256a0f653469d33d13746bd184bfbf3d23e63fde7e",
     "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
     "core/utils/startup_os/schemas.py": "e591ec82487c2c0efbfb44e7b92f3eefcf5ee7cc051decef7f04593f2f70abc0",
-    "core/utils/startup_os/compiler.py": "23b6710495ae6361a6c22494a740f49f730f4bdd6d2695c1f0df89a9347591d7",
+    "core/utils/startup_os/compiler.py": "3df04fdfa3ed45e0a893de79568ec6cae00899f16d980d11a22f8d9658a27f90",
     "core/utils/startup_os/agent_bridge.py": "dab383c8c825c04673bb89e94d81debdd033637cc498ecd0a447cb8f8724f7eb",
     "core/utils/startup_os/polish.py": "9b82985763305db6f9ef82941fbd5dbf76fd5c9c73280a368a3631f0714f2559",
     "core/utils/startup_os/branding.py": "9882941100ded2e6c1fb9bc90e63f602feca71ace9ce88d078a243ae25c079be",
