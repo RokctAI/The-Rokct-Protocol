@@ -400,6 +400,18 @@ FOOTER_MAPS = {
             ),
             ("07_financial_model.md", "Margin and cost basis", "Financial Model"),
         ],
+        "annexures/fees_handbook.md": [
+            (
+                "annexures/product_pricing_list.md",
+                "Internal price list behind these fees",
+                "Price List",
+            ),
+            (
+                "annexures/sales_terms_and_conditions.md",
+                "Full terms of sale",
+                "Terms of Sale",
+            ),
+        ],
         "annexures/quality_management_system.md": [
             (
                 "operational_plan_on_a_page.md",
