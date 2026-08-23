@@ -11,13 +11,12 @@ Recommended future additions.
 - [x] **flutter-architect**: Enforced Clean Architecture (Flutter).
 - [x] **web-architect**: Enforced Feature Verticals (Next.js/Web).
 
+## Completed (2026-08-23)
+- [x] **project-management**: Breakdown of tasks and estimation. (Built 2026-08-23)
+- [x] **data-analysis**: Python Pandas/Matplotlib workflows. (Built 2026-08-23)
+- [x] **communication**: Email and Slack status update templates. (Built 2026-08-23)
+- [x] **flutter-dev**: Best practices for mobile. (Built 2026-08-23)
+
 ## High Priority
-- [ ] **project-management**: Breakdown of tasks and estimation.
-
-## Medium Priority
-- [ ] **data-analysis**: Python Pandas/Matplotlib workflows.
-- [ ] **communication**: Email and Slack status update templates.
-
-## Specialized
-- [ ] **flutter-dev**: Best practices for mobile.
+*(empty — add new candidates here)*
 
