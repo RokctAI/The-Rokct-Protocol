@@ -189,6 +189,16 @@
       "path": "../zones/zones/dart",
       "ref": "main",
       "_comment": "Manager merchant delivery-zone page, declared under app_type.manager. Shared with driver.json, which takes the app_type.driver page from the same manifest."
+    },
+    {
+      "name": "hms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hms/dart",
+      "ref": "main",
+      "sha256": "197261eff5adae8a5bcbb42ce2dd1f7b16ad15716c4ff4268f9b9a77b3e9517c",
+      "_comment": "Huawei Mobile Services support, built like desktop_sdk (SDK module, not productFlavors). Dart-side: DeviceServices ({gms, hms, neither} detection, cached, fail-open to gms) and an order-30 boot hook that, ONLY on GMS-free HMS-capable devices, boots Push Kit and registers the HMS push token through the same api.user.register_device_token gateway cmd the FCM token uses (provider 'hms'). No installs - the BUILD_HMS-gated AGConnect Gradle wiring lives statically in core's android template, default-off. Strict no-op in every plain GMS build."
     }
   ],
   "host_routes": [],
