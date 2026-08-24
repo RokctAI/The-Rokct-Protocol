@@ -126,6 +126,51 @@ def copy_doctype_tree_resolving(src, dst, app_name, module_name):
         shutil.copy2(s, d)
 
 
+def merge_global_templates_tree(src, dst, app_name, module_label, module_name, rel=""):
+    """Merge a module's src/templates/ tree into the app-level templates/ dir.
+
+    Frappe resolves portal pages from {app}/templates/pages/<route>.html (with
+    an optional sibling <route>.py context controller), so an SDK module ships
+    portal pages under a top-level src/templates/ carve-out — exactly like
+    src/www/ and src/patches/, it composes into the APP shell rather than the
+    module package, and composes for every persona (top-level src/ entries are
+    never persona-stripped; do not nest templates under a persona folder).
+
+    Unlike the flat www/ merge above, templates trees are nested
+    (templates/pages/, templates/includes/, ...), so this merges recursively:
+    directories UNION across modules and the shell, while a duplicate
+    destination FILE path is a hard error — the same collision policy as the
+    www/ and patches/ merges. Substitutable extensions get token resolution;
+    everything else is byte-copied. No __init__.py is scaffolded, matching the
+    www/ redirect: Python 3 imports {app}.templates.pages.<route> controllers
+    through implicit namespace subpackages of the regular app package.
+    """
+    os.makedirs(dst, exist_ok=True)
+    for item in sorted(os.listdir(src)):
+        s_path = os.path.join(src, item)
+        d_path = os.path.join(dst, item)
+        rel_item = f"{rel}{item}"
+        if os.path.isdir(s_path):
+            merge_global_templates_tree(
+                s_path, d_path, app_name, module_label, module_name, rel=f"{rel_item}/"
+            )
+            continue
+        if os.path.exists(d_path):
+            raise ValueError(
+                f"CRITICAL ERROR: Duplicate global templates file '{rel_item}' "
+                f"detected! (Attempted by: '{module_name}'). Failing build."
+            )
+        if item.endswith(SUBSTITUTABLE_EXTENSIONS):
+            with open(s_path, "r", encoding="utf-8") as sf:
+                content = sf.read()
+            content = resolve_tokens(content, app_name, module_label)
+            with open(d_path, "w", encoding="utf-8") as df:
+                df.write(content)
+        else:
+            shutil.copy2(s_path, d_path)
+        COMPOSED_PATHS.append(d_path)
+
+
 def rewrite_src_nested_doctype_modules(dest_dir, module_label, module_name):
     """Rewrite the "module" key of DocType JSONs nested under a src/ tree.
 
@@ -262,8 +307,8 @@ def relocate_persona_doctypes(
 def lint_composed_tokens(paths, project_root):
     """Post-compose token lint over everything this run wrote.
 
-    Scans the composed output (module trees, app-level www/ and patches/
-    files) for the composer's two literal tokens in substitutable-extension
+    Scans the composed output (module trees, app-level www/, templates/ and
+    patches/ files) for the composer's two literal tokens in substitutable-extension
     files. Only the exact literals {app_name} and {module_name} are flagged —
     generic {...} braces (Python format strings, Jinja templates) are
     legitimate and ignored. Any hit is a loud warning naming every offending
@@ -1032,6 +1077,17 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                         shutil.copy2(s_file, d_file)
                     COMPOSED_PATHS.append(d_file)
                 print(f"[+] Merged global www files from: {module_name}")
+                continue
+
+            if f == "templates":
+                # Portal page templates (templates/pages/, templates/includes/,
+                # ...) belong at the APP level, where Frappe's website router
+                # actually resolves them — not inside the module package.
+                dest_templates = os.path.join(target_app_path, "templates")
+                merge_global_templates_tree(
+                    src_file_path, dest_templates, app_name, module_label, module_name
+                )
+                print(f"[+] Merged global templates files from: {module_name}")
                 continue
 
             if f == "patches":

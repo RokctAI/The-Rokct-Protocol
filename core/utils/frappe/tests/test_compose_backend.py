@@ -36,6 +36,11 @@ Pins the literal-token gap fixes and the shell scaffold:
     with module-root semantics: hard-error duplicates and the "module"-key
     injection from the manifest name. Excluded personas' doctypes never
     compose; a role-less compose relocates every persona's doctypes.
+  * a top-level src/templates/ tree (templates/pages/ portal pages included)
+    redirects to the APP-level templates/ dir — where Frappe's website router
+    resolves portal pages — with the www/-style collision policy: directories
+    union across modules, duplicate destination files hard-error. The
+    carve-out is persona-neutral: it composes for every role, like src/www/.
   * scaffold mode lays the tokenized shell skeleton into a fresh repo and
     never overwrites a file an existing shell already has.
   * the post-compose token lint warns on unresolved {app_name}/{module_name}
@@ -410,6 +415,115 @@ class PersonaDoctypeRelocationTest(ComposeBackendTestBase):
         with self.assertRaises(ValueError) as ctx:
             self.run_main(composer)
         self.assertIn("Duplicate DocType 'clash'", str(ctx.exception))
+
+
+class GlobalTemplatesRedirectTest(ComposeBackendTestBase):
+    """A module's top-level src/templates/ tree (portal pages under
+    templates/pages/ included) must land at the APP-level templates/ dir —
+    the only place Frappe's website router resolves portal pages — not under
+    the composed module package. Same collision policy as the www/ merge:
+    directories union, duplicate destination files hard-error."""
+
+    def setUp(self):
+        super().setUp()
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk()
+
+    def test_templates_pages_redirect_to_app_level(self):
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/templates/pages/portal.html",
+            "<h1>{app_name} portal ({module_name})</h1>\n",
+        )
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/templates/pages/portal.py",
+            'import frappe\nAPP = "{app_name}"\n\n\ndef get_context(context):\n    pass\n',
+        )
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/templates/includes/nav.html",
+            "<nav>{app_name}</nav>\n",
+        )
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertIn(f"Merged global templates files from: {self.MODULE}", out)
+        # App-level destination, tokens resolved.
+        html = self.read(f"{self.APP}/templates/pages/portal.html")
+        self.assertEqual(html, f"<h1>{self.APP} portal ({self.MODULE})</h1>\n")
+        controller = self.read(f"{self.APP}/templates/pages/portal.py")
+        self.assertIn(f'APP = "{self.APP}"', controller)
+        self.assertNotIn("{app_name}", controller)
+        self.assertEqual(
+            self.read(f"{self.APP}/templates/includes/nav.html"),
+            f"<nav>{self.APP}</nav>\n",
+        )
+        # NOT composed into the module package.
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/templates"))
+
+    def test_distinct_files_union_across_modules(self):
+        self.make_composer_json(
+            modules=[
+                {
+                    "name": self.MODULE,
+                    "enabled": True,
+                    "path": f"sdk/{self.MODULE}/frappe",
+                },
+                {"name": "othermod", "enabled": True, "path": "sdk/othermod/frappe"},
+            ]
+        )
+        self.make_sdk("othermod")
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/templates/pages/alpha.html", "<p>a</p>\n"
+        )
+        self.write("sdk/othermod/frappe/src/templates/pages/beta.html", "<p>b</p>\n")
+        composer = self.load_composer()
+        self.run_main(composer)
+        self.assertTrue(self.exists(f"{self.APP}/templates/pages/alpha.html"))
+        self.assertTrue(self.exists(f"{self.APP}/templates/pages/beta.html"))
+
+    def test_duplicate_template_file_hard_errors(self):
+        self.make_composer_json(
+            modules=[
+                {
+                    "name": self.MODULE,
+                    "enabled": True,
+                    "path": f"sdk/{self.MODULE}/frappe",
+                },
+                {"name": "othermod", "enabled": True, "path": "sdk/othermod/frappe"},
+            ]
+        )
+        self.make_sdk("othermod")
+        for mod in (self.MODULE, "othermod"):
+            self.write(
+                f"sdk/{mod}/frappe/src/templates/pages/clash.html", f"<p>{mod}</p>\n"
+            )
+        composer = self.load_composer()
+        with self.assertRaises(ValueError) as ctx:
+            self.run_main(composer)
+        self.assertIn("Duplicate global templates file 'pages/clash.html'", str(ctx.exception))
+
+    def test_templates_carveout_is_persona_neutral(self):
+        # src/templates/ is a top-level carve-out like src/www/: it composes
+        # regardless of the shell's role marker and is never persona-stripped.
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "app_type": {"tenant": {}, "control": {}},
+            }
+        )
+        self.write(".rokct/config/app_type", "tenant\n")
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/templates/pages/portal.html",
+            "<h1>{app_name}</h1>\n",
+        )
+        self.write(f"sdk/{self.MODULE}/frappe/src/control/api.py", "X = 1\n")
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertIn("Skipped unused role folder src/control/", out)
+        self.assertEqual(
+            self.read(f"{self.APP}/templates/pages/portal.html"),
+            f"<h1>{self.APP}</h1>\n",
+        )
 
 
 class ScaffoldTest(ComposeBackendTestBase):
