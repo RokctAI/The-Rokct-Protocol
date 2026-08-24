@@ -499,7 +499,9 @@ class GlobalTemplatesRedirectTest(ComposeBackendTestBase):
         composer = self.load_composer()
         with self.assertRaises(ValueError) as ctx:
             self.run_main(composer)
-        self.assertIn("Duplicate global templates file 'pages/clash.html'", str(ctx.exception))
+        self.assertIn(
+            "Duplicate global templates file 'pages/clash.html'", str(ctx.exception)
+        )
 
     def test_templates_carveout_is_persona_neutral(self):
         # src/templates/ is a top-level carve-out like src/www/: it composes
