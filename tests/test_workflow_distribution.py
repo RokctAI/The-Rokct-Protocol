@@ -246,6 +246,7 @@ class TestDeployment(unittest.TestCase):
                         [
                             "agent.yml",
                             "branch-cleanup.yml",
+                            "guided-tour.yml",
                             "play-deploy.yml",
                             "rokct_pr_merged.yml",
                         ],
