@@ -34,7 +34,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
+      "ref": "4ea4ba40769ad0e45d759707fc25771f3ae72391"
     },
     {
       "name": "agent",
@@ -42,7 +42,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/frappe",
-      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
+      "ref": "4ea4ba40769ad0e45d759707fc25771f3ae72391"
     },
     {
       "name": "polaris",
