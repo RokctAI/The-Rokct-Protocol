@@ -366,6 +366,9 @@ def lint_composed_tokens(paths, project_root):
 #   - "event": a doc_event / scheduler bucket name (word chars)
 #   - "cron": a cron expression key inside scheduler_events["cron"]
 #     (croniter syntax: digits, *, /, ",", "-", spaces, month/day names)
+#   - "js_path": a doctype_js / doctype_list_js file path — slash-separated
+#     word/hyphen segments ending in ".js". Segments admit no dots, so a
+#     manifest can never smuggle "../" traversal into the emitted hooks.py.
 _HOOK_VALUE_PATTERNS = {
     "dotted": re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"),
     "gateway_key": re.compile(
@@ -374,7 +377,48 @@ _HOOK_VALUE_PATTERNS = {
     "doctype": re.compile(r"^(\*|[\w \-]+)$"),
     "event": re.compile(r"^\w+$"),
     "cron": re.compile(r"^[\w*/,\- ]+$"),
+    "js_path": re.compile(r"^[\w\-]+(/[\w\-]+)*\.js$"),
 }
+
+# Manifest hook keys that map a DocType name to desk JS file path(s):
+# doctype_js (form scripts) and doctype_list_js (list-view scripts).
+DOCTYPE_JS_HOOK_KEYS = ("doctype_js", "doctype_list_js")
+
+
+def rewrite_doctype_js_hook_paths(manifest, module_name):
+    """Prefix manifest doctype_js / doctype_list_js paths with the composed
+    module folder name.
+
+    Frappe resolves each doctype_js / doctype_list_js hook value with
+    frappe.get_app_path(app, *path.split("/")) and inlines the file
+    server-side, so the registered path must be relative to the APP package
+    dir. A module manifest cannot know which shell it will compose into, so
+    it declares each path relative to its OWN src/ tree — mirroring where the
+    file lands inside the composed module, e.g.
+    "control/public/js/company_subscription_list.js" for a file shipped at
+    src/control/public/js/. This pass rewrites every entry to
+    "<module_dir>/<path>" once the composed module folder name is known, so
+    merge_hooks can emit the values verbatim. It runs over the top-level
+    hooks block AND every app_type persona block (harmless for personas that
+    do not merge — their blocks are never emitted), and normalizes a single
+    path string to a one-element list. NOTE: form JS shipped INSIDE a
+    doctype/<dt>/ tree (<dt>.js / <dt>_list.js) needs no declaration at all —
+    Frappe auto-loads those from the doctype directory."""
+    blocks = [manifest.get("hooks") or {}]
+    for flavor in (manifest.get("app_type") or {}).values():
+        blocks.append((flavor or {}).get("hooks") or {})
+    for hooks_block in blocks:
+        for key in DOCTYPE_JS_HOOK_KEYS:
+            mapping = hooks_block.get(key)
+            if not isinstance(mapping, dict):
+                continue
+            hooks_block[key] = {
+                dt: [
+                    f"{module_name}/{p}"
+                    for p in ([paths] if isinstance(paths, str) else list(paths))
+                ]
+                for dt, paths in mapping.items()
+            }
 
 
 def _validate_hook_value(value, kind, module_name, key):
@@ -1218,6 +1262,13 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
             f.write(f"{module_name}\n")
         print(f"[+] Injected module registration: '{module_name}' -> root modules.txt")
 
+    # Doctype JS hook paths (doctype_js / doctype_list_js) are declared
+    # module-relative in the manifest; rewrite them app-package-relative now
+    # that the composed module folder name is known, so merge_hooks (which
+    # also sees persona flavor blocks detached from their manifest) can emit
+    # and existence-check them verbatim.
+    rewrite_doctype_js_hook_paths(manifest, module_name)
+
     print(f"[+] Module {module_name} registration files written.")
     return manifest
 
@@ -1419,6 +1470,64 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 append_blocks.append(
                     f"if {ai!r} not in after_install: after_install.append({ai!r})"
                 )
+
+        # 9. Merge on_login hooks. Frappe's LoginManager.run_trigger calls
+        #    EVERY handler frappe.get_hooks("on_login") returns, and
+        #    get_hooks coerces a bare string to a list — so on_login is a
+        #    list hook and modules' handlers accumulate deduped. The shell's
+        #    own hooks.py normally declares on_login as a bare string
+        #    (standard Frappe style), so the emitted block coerces it to a
+        #    list first — the exact after_install treatment above.
+        on_logins = hooks.get("on_login", [])
+        if isinstance(on_logins, str):
+            on_logins = [on_logins]
+        if on_logins:
+            append_blocks.append(f"on_login = globals().get('on_login', [])")
+            append_blocks.append(
+                "if isinstance(on_login, str): on_login = [on_login]"
+            )
+            for ol in on_logins:
+                _validate_hook_value(ol, "dotted", module_name, "on_login")
+                append_blocks.append(
+                    f"if {ol!r} not in on_login: on_login.append({ol!r})"
+                )
+
+        # 10. Merge desk doctype JS registrations (doctype_js form scripts /
+        #    doctype_list_js list-view scripts). Frappe resolves each value
+        #    via frappe.get_app_path(app, *path.split("/")) and inlines the
+        #    file server-side, and add_code_via_hook accepts a LIST of files
+        #    per doctype — so entries accumulate as a deduped list per
+        #    doctype, the doc_events idiom. Paths arrive here already
+        #    rewritten app-package-relative by rewrite_doctype_js_hook_paths
+        #    at compose time; each is existence-checked against the composed
+        #    output so a typo'd path (or one pointing into a stripped persona
+        #    folder) warns loudly at compose time instead of 404ing on the
+        #    desk at runtime.
+        for js_key in DOCTYPE_JS_HOOK_KEYS:
+            js_map = hooks.get(js_key, {})
+            if not js_map:
+                continue
+            append_blocks.append(f"{js_key} = globals().get({js_key!r}, {{}})")
+            for doc_type, js_paths in js_map.items():
+                _validate_hook_value(doc_type, "doctype", module_name, js_key)
+                path_list = [js_paths] if isinstance(js_paths, str) else list(js_paths)
+                for p in path_list:
+                    _validate_hook_value(p, "js_path", module_name, js_key)
+                    if not os.path.exists(
+                        os.path.join(target_app_path, *p.split("/"))
+                    ):
+                        compose_warning(
+                            f"{js_key} entry for '{doc_type}' in module "
+                            f"'{module_name}' points at '{p}', which was not "
+                            f"composed into the app."
+                        )
+                append_blocks.append(f"_js = {js_key}.get({doc_type!r}) or []")
+                append_blocks.append(
+                    f"_js = [_js] if isinstance(_js, str) else list(_js)"
+                )
+                append_blocks.append(f"for _p in {path_list!r}:")
+                append_blocks.append(f"    if _p not in _js: _js.append(_p)")
+                append_blocks.append(f"{js_key}[{doc_type!r}] = _js")
 
     if append_blocks:
         new_content = (

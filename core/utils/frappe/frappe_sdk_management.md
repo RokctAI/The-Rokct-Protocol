@@ -132,8 +132,8 @@ The matching flavor block flows through the exact same
 top-level manifest (it appears in `hooks.py` under a
 `# --- Module: <name> (<role>) ---` comment), so every hooks key those support
 (`whitelisted_methods`, `doc_events`, `scheduler_events`, `fixtures`,
-`auth_hooks`, `before_uninstall`, `after_install`, `commands`, ...) can be
-role-scoped.
+`auth_hooks`, `before_uninstall`, `after_install`, `on_login`, `commands`,
+`doctype_js`, `doctype_list_js`, ...) can be role-scoped.
 
 **Persona source folders** — persona-specific Python lives in sibling folders
 directly under the SDK's `src/` (`src/manager/`, `src/customer/`, ...),
@@ -193,6 +193,39 @@ its own `{app_name}.*` alias names — no cross-shell prefixes are synthesized.
 Keys may additionally carry a single gateway prefix
 (e.g. `"control:claim_tender"`), the shape frappe's cmd registry accepts for
 gateway-scoped commands; values must always remain plain dotted paths.
+
+### Login hooks (`on_login`)
+
+A manifest (top-level or persona block) may declare `hooks.on_login` as a
+single dotted path or a list. Frappe's `LoginManager.run_trigger` calls
+**every** handler `frappe.get_hooks("on_login")` returns, so the composer
+accumulates handlers from all modules into a deduped list — and coerces a
+shell `hooks.py` that declared `on_login = "app.path"` as a bare string
+(standard Frappe style) to a list first, the same treatment as
+`after_install`.
+
+### Desk doctype JS (`doctype_js` / `doctype_list_js`)
+
+A manifest (top-level or persona block) may register desk form scripts
+(`doctype_js`) and list-view scripts (`doctype_list_js`) as a map of DocType
+name to one path or a list of paths. Declare each path **relative to the
+module's own `src/` tree** — mirroring where the file lands inside the
+composed module, e.g. a file shipped at
+`src/control/public/js/company_subscription_list.js` is declared as:
+
+```json
+"doctype_list_js": { "Company Subscription": "control/public/js/company_subscription_list.js" }
+```
+
+At compose time the path is rewritten to `<module_dir>/<path>` (Frappe
+resolves these hooks via `frappe.get_app_path(...)`, i.e. relative to the app
+package dir, and inlines the file server-side), entries accumulate as a
+deduped list per DocType across modules, and each registered path is
+existence-checked against the composed output — a missing file (typo, or a
+path into a stripped persona folder) is a loud compose warning, escalating
+under `ROKCT_COMPOSE_STRICT=1`. Form JS shipped **inside** a
+`doctype/<dt>/` tree (`<dt>.js` / `<dt>_list.js`) needs no declaration:
+Frappe auto-loads those from the doctype directory.
 
 ### Semantics of the git-clone fallback
 
