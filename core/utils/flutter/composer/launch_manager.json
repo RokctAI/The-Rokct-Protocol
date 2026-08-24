@@ -179,6 +179,16 @@
       "_comment": "Merchant delivery-zone page from the zones library (now populated), mirrored from manager.json. Role-specific pages are selected by the app_type blocks in the zones SDK manifest."
     },
     {
+      "name": "desktop_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/desktop/dart",
+      "ref": "main",
+      "sha256": "188774abbcb8de7dee95dba1444f2c1913a37241826453a987b283646ba756de",
+      "_comment": "TEMPORARY (desktop testing convenience, revert candidate): added to every app profile so all composed apps pull desktop support and can be viewed/tested on desktop. Pin = sha256 of hardware desktop/dart/install.py at main head 84aa6ed, same value as supacharge.json's entry."
+    },
+    {
       "name": "hms_sdk",
       "enabled": true,
       "source": "git",
