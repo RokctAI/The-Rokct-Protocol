@@ -4,6 +4,7 @@
     "full_trigger_repos": ["factory", "opportunities", "the-rokct-protocol"]
   },
   "branch-cleanup.yml": {},
+  "guided-tour.yml": {},
   "play-deploy.yml": {},
   "rokct_pr_merged.yml": {}
 }
