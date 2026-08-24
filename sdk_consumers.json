@@ -197,6 +197,7 @@
     "weather_sdk": {
       "repo": "RokctAI/zones",
       "consumers": [
+        "paas_driver",
         "paas_manager"
       ]
     },

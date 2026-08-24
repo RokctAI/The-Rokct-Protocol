@@ -47,5 +47,5 @@ Disabled entries (`"enabled": false`) are not composed and not indexed.
 | `subscriptions_sdk` | `RokctAI/agent` | `paas_manager`, `supacharge` |
 | `users_sdk` | `RokctAI/Users` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
 | `wallet_sdk` | `RokctAI/pay` | `supacharge` |
-| `weather_sdk` | `RokctAI/zones` | `paas_manager` |
+| `weather_sdk` | `RokctAI/zones` | `paas_driver`, `paas_manager` |
 | `zones_sdk` | `RokctAI/zones` | `paas_driver`, `paas_manager` |
