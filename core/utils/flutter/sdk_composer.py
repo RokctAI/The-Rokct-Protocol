@@ -503,19 +503,26 @@ def record_sdk_cache_state(decisions):
 # --- SDK compliance docs ------------------------------------------------------
 # SDK repos generate per-stack compliance docs INSIDE each stack directory:
 # <module>/<stack>/docs/api/*.md for stack in {dart,frappe,nextjs} (filenames
-# stay flattened-from-repo-root, e.g. fav_dart_lib_src_di_fav_di.md). Only the
-# <module>/dart subtree is extracted into the per-SDK cache, so frappe/nextjs
-# docs would be lost after the shallow clone is deleted - compose therefore
-# stages a normalized per-stack copy of EVERY stack's docs into
-# .rokct/cache/_docs/<repo_name>/<stack>/ while the clone is still on disk,
-# then ensure_docs() merges every staged repo's docs into
-# <shell_root>/<stack>/docs/api/ - so app shells carry the compliance docs
-# without ever running the compliance scanner themselves.
+# stay flattened-from-repo-root, e.g. fav_dart_lib_src_di_fav_di.md). This is
+# the flutter composer, so the host shell's flavor is always the dart stack:
+# compose stages ONLY the dart docs into .rokct/cache/_docs/<repo_name>/dart/
+# while the clone is still on disk (only the <module>/dart subtree survives
+# into the per-SDK cache), then ensure_docs() merges every staged repo's docs
+# into <shell_root>/docs/api/ - so app shells carry their own flavor's
+# compliance docs without ever running the compliance scanner themselves.
+# frappe/nextjs docs are NOT taken: they belong to the shells those stacks'
+# own composers produce. (An earlier composer staged every stack and wrote
+# them to <shell_root>/<stack>/docs/api/; ensure_docs migrates shells off
+# that layout via the ownership manifest.)
 # Staged under cache/ deliberately, same rationale as install_state.json: it
 # shares the cache's cleanup whitelist and git-tracking policy.
 
 DOCS_STAGE_DIRNAME = "_docs"
 DOC_STACKS = ("dart", "frappe", "nextjs")
+# The flavor whose docs this composer takes. The flutter composer only ever
+# composes flutter shells, so this is a constant - no marker file needed
+# (and .rokct/config/app_type is a persona/role marker, NOT a stack name).
+HOST_STACK = "dart"
 # Manifest lives INSIDE .rokct/cache/ for the same reason as
 # install_state.json: cache/ is on end_protocol.py's keep-whitelist, so the
 # ownership record survives session cleanup and shares the cache's
@@ -526,13 +533,17 @@ LEGACY_DOCS_MANIFEST_NAME = ".composed_docs.json"  # old <shell_root>/docs/api/
 
 def stage_repo_docs(repo_source_dir, repo_name, cache_base):
     """Stage one SDK repo's compliance docs into
-    .rokct/cache/_docs/<repo_name>/<stack>/*.md (normalized per-stack layout).
+    .rokct/cache/_docs/<repo_name>/dart/*.md - ONLY the host flavor's
+    (HOST_STACK, dart) docs; frappe/nextjs docs belong to those stacks' own
+    shells and are left behind with the clone.
 
     Three source layouts are recognized, newest first:
-      1. current: <module>/<stack>/docs/api/*.md for every top-level module
-      2. previous: repo-root docs/api/<stack>/*.md (unmigrated repos)
+      1. current: <module>/dart/docs/api/*.md for every top-level module
+      2. previous: repo-root docs/api/dart/*.md (unmigrated repos)
       3. legacy:   repo-root FLAT docs/api/*.md, mapped to a stack by
-         filename token (see _stack_for_legacy_doc)
+         filename token (see _stack_for_legacy_doc); only files mapping to
+         dart are taken - other stacks' files are skipped silently, files
+         with no recognizable token are reported and left out
     All three are unioned so mid-migration repos keep working; a within-repo
     duplicate warns and the later layout in the list above wins.
 
@@ -556,32 +567,31 @@ def stage_repo_docs(repo_source_dir, repo_name, cache_base):
                 )
             found[rel] = path
 
-        # 1. Current layout: <module>/<stack>/docs/api/*.md
+        # 1. Current layout: <module>/dart/docs/api/*.md (host flavor only)
         for module in sorted(os.listdir(repo_source_dir)):
             module_dir = os.path.join(repo_source_dir, module)
             if module.startswith(".") or not os.path.isdir(module_dir):
                 continue
-            for stack in DOC_STACKS:
-                api_dir = os.path.join(module_dir, stack, "docs", "api")
-                if not os.path.isdir(api_dir):
-                    continue
-                for name in sorted(os.listdir(api_dir)):
-                    path = os.path.join(api_dir, name)
-                    if name.endswith(".md") and os.path.isfile(path):
-                        collect(stack, name, path)
+            api_dir = os.path.join(module_dir, HOST_STACK, "docs", "api")
+            if not os.path.isdir(api_dir):
+                continue
+            for name in sorted(os.listdir(api_dir)):
+                path = os.path.join(api_dir, name)
+                if name.endswith(".md") and os.path.isfile(path):
+                    collect(HOST_STACK, name, path)
 
         root_api = os.path.join(repo_source_dir, "docs", "api")
         if os.path.isdir(root_api):
-            # 2. Previous layout: repo-root docs/api/<stack>/*.md
-            for stack in DOC_STACKS:
-                stack_dir = os.path.join(root_api, stack)
-                if not os.path.isdir(stack_dir):
-                    continue
+            # 2. Previous layout: repo-root docs/api/dart/*.md (host flavor only)
+            stack_dir = os.path.join(root_api, HOST_STACK)
+            if os.path.isdir(stack_dir):
                 for name in sorted(os.listdir(stack_dir)):
                     path = os.path.join(stack_dir, name)
                     if name.endswith(".md") and os.path.isfile(path):
-                        collect(stack, name, path)
-            # 3. Legacy FLAT docs/api/*.md, mapped by filename token.
+                        collect(HOST_STACK, name, path)
+            # 3. Legacy FLAT docs/api/*.md, mapped by filename token. Files
+            # mapping to another stack are simply not this shell's docs -
+            # skip them without noise; only an unmappable file is reported.
             for name in sorted(os.listdir(root_api)):
                 path = os.path.join(root_api, name)
                 if not os.path.isfile(path) or not name.endswith(".md"):
@@ -591,6 +601,8 @@ def stage_repo_docs(repo_source_dir, repo_name, cache_base):
                     print(
                         f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out."
                     )
+                    continue
+                if stack != HOST_STACK:
                     continue
                 collect(stack, name, path)
 
@@ -643,8 +655,8 @@ def _cleanup_legacy_composed_docs():
     the old layout wrote docs to <shell_root>/docs/api/<stack>/ with the
     manifest at docs/api/.composed_docs.json. Delete exactly the files that
     old manifest owns (never anything else), drop the old manifest, and prune
-    the directories it emptied - the new compose then writes the same docs to
-    <shell_root>/<stack>/docs/api/."""
+    the directories it emptied - the new compose then writes the host
+    flavor's docs to <shell_root>/docs/api/."""
     old_root = os.path.join(PROJECT_ROOT, "docs", "api")
     old_manifest = os.path.join(old_root, LEGACY_DOCS_MANIFEST_NAME)
     if not os.path.exists(old_manifest):
@@ -670,9 +682,9 @@ def _cleanup_legacy_composed_docs():
 
 
 def ensure_docs():
-    """Merge every staged SDK repo's compliance docs (see stage_repo_docs)
-    into <shell_root>/<stack>/docs/api/ - i.e. top-level dart/, frappe/ and
-    nextjs/ directories in the shell holding only docs.
+    """Merge every staged SDK repo's host-flavor compliance docs (see
+    stage_repo_docs) into <shell_root>/docs/api/ - the shell root's own docs
+    tree, with no per-stack nesting: a flutter shell carries only dart docs.
 
     Same ownership idiom as ensure_host_readme()'s marker block, in manifest
     form: <shell_root>/.rokct/cache/composed_docs.json lists exactly the
@@ -680,8 +692,12 @@ def ensure_docs():
     each run owned files no longer produced are deleted before the new set is
     written - so a doc removed upstream disappears from the shell on the next
     compose. Files the manifest does not list are the host's own and are
-    never touched. Shells composed before this layout are migrated first
-    (see _cleanup_legacy_composed_docs); an interim manifest at
+    never touched. That same stale-removal migrates shells composed by the
+    interim per-stack composer (owned <stack>/docs/api/*.md entries are no
+    longer produced, so they are deleted and their emptied dart/, frappe/
+    and nextjs/ directories pruned). Older shells still on the original
+    docs/api/<stack>/ layout are migrated first (see
+    _cleanup_legacy_composed_docs); an interim manifest at
     .rokct/composed_docs.json (same shell-root-relative format, briefly the
     manifest home before landing on cache/) is folded into the owned set and
     deleted. Union across repos; the flattened filenames are module-prefixed
@@ -694,32 +710,32 @@ def ensure_docs():
     try:
         _cleanup_legacy_composed_docs()
 
-        # Collect the incoming doc set:
-        # {"<stack>/docs/api/<file>.md": staged source}. stage_repo_docs
-        # normalizes every repo layout to <stack>/*.md at staging time; the
-        # flat fallback below only covers stage trees left behind by the
-        # previous composer version.
+        # Collect the incoming doc set: {"docs/api/<file>.md": staged
+        # source}. stage_repo_docs stages only HOST_STACK docs (under a
+        # <repo>/dart/ stage dir); stage trees written by earlier composer
+        # versions may also hold frappe/ and nextjs/ dirs - those are not
+        # this shell's flavor and are ignored. The flat fallback below only
+        # covers stage trees left behind by the pre-normalization composer.
         incoming = {}
         if os.path.isdir(stage_root):
             for repo_name in sorted(os.listdir(stage_root)):
                 repo_dir = os.path.join(stage_root, repo_name)
                 if not os.path.isdir(repo_dir):
                     continue
-                for stack in DOC_STACKS:
-                    stack_dir = os.path.join(repo_dir, stack)
-                    if not os.path.isdir(stack_dir):
-                        continue
+                stack_dir = os.path.join(repo_dir, HOST_STACK)
+                if os.path.isdir(stack_dir):
                     for name in sorted(os.listdir(stack_dir)):
                         if not name.endswith(".md"):
                             continue
-                        rel = "%s/docs/api/%s" % (stack, name)
+                        rel = "docs/api/%s" % name
                         if rel in incoming:
                             print(
                                 f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write)."
                             )
                         incoming[rel] = os.path.join(stack_dir, name)
                 # Fallback for stale FLAT stage trees (pre-normalization),
-                # mapped to a stack by filename token.
+                # mapped to a stack by filename token; only host-flavor
+                # files are taken.
                 for name in sorted(os.listdir(repo_dir)):
                     path = os.path.join(repo_dir, name)
                     if not os.path.isfile(path) or not name.endswith(".md"):
@@ -730,7 +746,9 @@ def ensure_docs():
                             f"[*] {repo_name}: legacy doc {name} has no recognizable stack token - leaving it out."
                         )
                         continue
-                    rel = "%s/docs/api/%s" % (stack, name)
+                    if stack != HOST_STACK:
+                        continue
+                    rel = "docs/api/%s" % name
                     if rel in incoming:
                         print(
                             f"[!] WARNING: docs collision on {rel} - {repo_name}'s copy wins (last write)."
@@ -786,7 +804,7 @@ def ensure_docs():
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump({"files": sorted(incoming.keys())}, f, indent=2)
             f.write(NL)
-        summary = f"[*] Composed {written} SDK compliance doc(s) into <stack>/docs/api/"
+        summary = f"[*] Composed {written} SDK compliance doc(s) into docs/api/"
         if removed:
             summary += f", removed {removed} stale"
         print(summary)
@@ -855,7 +873,7 @@ def resolve_and_cache_sdks(sdks):
                 print(f"[!] Failed to clone {git_url}: {e}")
                 sys.exit(1)
 
-        # Stage this repo's compliance docs (per-stack <module>/<stack>/docs/
+        # Stage this repo's host-flavor compliance docs (<module>/dart/docs/
         # api/, plus legacy layouts) while the repo is on disk - once per
         # unique repo, never fatal on failure.
         stage_repo_docs(repo_source_dir, repo_name, cache_base)
