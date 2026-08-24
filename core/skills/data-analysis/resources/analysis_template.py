@@ -42,7 +42,7 @@ def load(path: Path) -> pd.DataFrame:
     """Load and normalize the export (Frappe CSV conventions)."""
     df = pd.read_csv(path, dtype=str)  # pin dtypes; cast columns explicitly below
     df = df.replace("", pd.NA)
-    # TODO: parse_dates / cast Check (0/1) fields to bool / cast numerics
+    # FILL IN: parse_dates / cast Check (0/1) fields to bool / cast numerics
     return df
 
 
@@ -50,20 +50,20 @@ def validate(df: pd.DataFrame) -> None:
     """Fail loudly on data that would silently corrupt the analysis."""
     if df.empty:
         sys.exit("Input has no rows.")
-    # TODO: duplicate-key check, null counts, date-range sanity
+    # FILL IN: duplicate-key check, null counts, date-range sanity
     print(f"Rows: {len(df)}")
     print(df.isna().sum().to_string())
 
 
 def analyze(df: pd.DataFrame) -> pd.DataFrame:
     """Vectorized Pandas only; state assumptions in comments here."""
-    # TODO: groupby / pivot_table / resample
+    # FILL IN: groupby / pivot_table / resample
     return df
 
 
 def plot(result: pd.DataFrame, out_dir: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    # TODO: one chart, one question; title states the finding
+    # FILL IN: one chart, one question; title states the finding
     ax.set_title("TODO: finding, not chart type")
     ax.set_xlabel("TODO (units)")
     ax.set_ylabel("TODO (units)")
