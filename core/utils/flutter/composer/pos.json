@@ -78,7 +78,8 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/desktop/dart",
       "ref": "main",
-      "_comment": "Native desktop runners/config - POS-only, not referenced by any composer template before this."
+      "sha256": "188774abbcb8de7dee95dba1444f2c1913a37241826453a987b283646ba756de",
+      "_comment": "Native desktop runners/config - POS-only, not referenced by any composer template before this. sha256 pin added 2026-08-24 (compose hard-fails on unpinned mutable refs); value = hardware desktop/dart/install.py at main head 84aa6ed, same as supacharge.json's entry."
     },
     {
       "name": "payments_sdk",
