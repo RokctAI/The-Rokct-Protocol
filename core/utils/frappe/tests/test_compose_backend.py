@@ -41,6 +41,14 @@ Pins the literal-token gap fixes and the shell scaffold:
     resolves portal pages — with the www/-style collision policy: directories
     union across modules, duplicate destination files hard-error. The
     carve-out is persona-neutral: it composes for every role, like src/www/.
+  * manifest hooks.on_login entries (top-level or persona-scoped) merge into
+    the composed hooks.py as a deduped LIST — frappe's LoginManager runs
+    every registered handler — coercing a bare-string shell on_login first,
+    like after_install. They used to be silently dropped at compose time.
+  * manifest doctype_js / doctype_list_js entries (declared relative to the
+    module's src/ tree) register in the composed hooks.py rewritten to the
+    composed module folder, accumulate as a deduped list per DocType across
+    modules, and are existence-checked against the composed output.
   * scaffold mode lays the tokenized shell skeleton into a fresh repo and
     never overwrites a file an existing shell already has.
   * the post-compose token lint warns on unresolved {app_name}/{module_name}
@@ -744,6 +752,295 @@ class AfterInstallShellCoercionTest(ComposeBackendTestBase):
         self.assertEqual(
             ns["after_install"], [f"{self.APP}.mymod.install.after_install"]
         )
+
+
+class OnLoginMergeTest(ComposeBackendTestBase):
+    """on_login is a list hook: frappe's LoginManager.run_trigger calls every
+    handler get_hooks("on_login") returns, and get_hooks coerces a bare
+    string. Module handlers must accumulate as a deduped list, coercing a
+    shell hooks.py bare-string on_login (standard Frappe style) to a list
+    first — the after_install treatment. Before this lane existed, manifest
+    hooks.on_login entries were silently dropped at compose time."""
+
+    SHELL_HOOK = "testshell.auth.on_login"
+
+    def _make_shell_with_hooks(self, shell_hooks_content):
+        self.write(f"{self.APP}/__init__.py", "__version__ = '0.0.1'\n")
+        self.write(f"{self.APP}/hooks.py", shell_hooks_content)
+        self.write(f"{self.APP}/modules.txt", f"{self.APP}\n")
+
+    def _exec_hooks(self):
+        namespace = {}
+        exec(
+            compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace
+        )
+        return namespace
+
+    def test_string_shell_on_login_coerced_and_extended(self):
+        self.make_composer_json()
+        self._make_shell_with_hooks(
+            f'app_name = "{self.APP}"\non_login = "{self.SHELL_HOOK}"\n'
+        )
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"on_login": "{app_name}.mymod.auth.sync_roles"},
+            }
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["on_login"], [self.SHELL_HOOK, f"{self.APP}.mymod.auth.sync_roles"]
+        )
+
+    def test_multi_module_on_login_accumulates_deduped(self):
+        self.make_composer_json(
+            modules=[
+                {
+                    "name": self.MODULE,
+                    "enabled": True,
+                    "path": f"sdk/{self.MODULE}/frappe",
+                },
+                {"name": "othermod", "enabled": True, "path": "sdk/othermod/frappe"},
+            ]
+        )
+        self._make_shell_with_hooks(f'app_name = "{self.APP}"\n')
+        shared = "{app_name}.shared.auth.sync_roles"
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"on_login": shared},
+            }
+        )
+        self.make_sdk(
+            "othermod",
+            manifest={
+                "name": "othermod",
+                "description": "test sdk",
+                # A list form, carrying a duplicate of the first module's
+                # handler plus its own: the duplicate must land only once.
+                "hooks": {"on_login": [shared, "{app_name}.othermod.auth.extra"]},
+            },
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["on_login"],
+            [
+                f"{self.APP}.shared.auth.sync_roles",
+                f"{self.APP}.othermod.auth.extra",
+            ],
+        )
+
+    def test_tenant_persona_on_login_merges_only_for_matching_role(self):
+        # The agent#162 shape: on_login declared under app_type.tenant.hooks.
+        self.make_composer_json()
+        self._make_shell_with_hooks(f'app_name = "{self.APP}"\n')
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "app_type": {
+                    "tenant": {
+                        "hooks": {
+                            "on_login": "{app_name}.mymod.tenant.permissions.sync_user_roles_on_login"
+                        }
+                    },
+                    "control": {},
+                },
+            }
+        )
+        self.write(".rokct/config/app_type", "tenant\n")
+        composer = self.load_composer()
+        self.run_main(composer)
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["on_login"],
+            [f"{self.APP}.mymod.tenant.permissions.sync_user_roles_on_login"],
+        )
+
+    def test_tenant_persona_on_login_stripped_for_other_role(self):
+        # Role marker "hub" (a plain role: matches no registry template, so
+        # resolve_composer_config stays a no-op) excludes the tenant block.
+        self.make_composer_json()
+        self._make_shell_with_hooks(f'app_name = "{self.APP}"\n')
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "app_type": {
+                    "tenant": {
+                        "hooks": {"on_login": "{app_name}.mymod.tenant.sync_roles"}
+                    },
+                    "hub": {},
+                },
+            }
+        )
+        self.write(".rokct/config/app_type", "hub\n")
+        composer = self.load_composer()
+        self.run_main(composer)
+        self.assertNotIn("on_login", self.read(f"{self.APP}/hooks.py"))
+
+    def test_malformed_on_login_aborts(self):
+        self.make_composer_json()
+        self._make_shell_with_hooks(f'app_name = "{self.APP}"\n')
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"on_login": "x'; import os #"},
+            }
+        )
+        composer = self.load_composer()
+        with self.assertRaises(SystemExit):
+            self.run_main(composer)
+
+
+class DoctypeJsLaneTest(ComposeBackendTestBase):
+    """doctype_js / doctype_list_js manifest entries: declared relative to
+    the module's own src/ tree, rewritten to the composed module folder
+    (frappe resolves these hooks with get_app_path, i.e. app-package
+    relative), accumulated as a deduped list per DocType across modules, and
+    existence-checked against the composed output. Before this lane existed,
+    desk list/form JS shipped under a module's public/js/ composed as dead
+    files — nothing registered them in hooks.py."""
+
+    # Persona name "hub" stands in for the agent SDK's "control" persona:
+    # a test role marker of "control" would match the registry template
+    # control.json and materialize a real composer.json.
+    LIST_JS_REL = "hub/public/js/company_subscription_list.js"
+
+    def _exec_hooks(self):
+        namespace = {}
+        exec(
+            compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace
+        )
+        return namespace
+
+    def test_persona_list_js_registers_for_matching_role(self):
+        # The agent#162 shape: src/<persona>/public/js/... declared under
+        # that persona's hooks.doctype_list_js.
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "app_type": {
+                    "tenant": {},
+                    "hub": {
+                        "hooks": {
+                            "doctype_list_js": {
+                                "Company Subscription": self.LIST_JS_REL
+                            }
+                        }
+                    },
+                },
+            }
+        )
+        self.write(
+            f"sdk/{self.MODULE}/frappe/src/{self.LIST_JS_REL}",
+            "frappe.listview_settings['Company Subscription'] = {};\n",
+        )
+        self.write(".rokct/config/app_type", "hub\n")
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        # The file composed into the module tree...
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/{self.LIST_JS_REL}"))
+        # ...and hooks.py registers it app-package-relative, as a list.
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["doctype_list_js"],
+            {"Company Subscription": [f"{self.MODULE}/{self.LIST_JS_REL}"]},
+        )
+        self.assertNotIn("WARNING", out)
+
+    def test_form_js_accumulates_across_modules_onto_shell_string(self):
+        # A shell that already registers form JS in bare-string frappe style
+        # keeps its entry, coerced to a list, and both modules' entries for
+        # the SAME DocType accumulate after it (deduped).
+        self.make_composer_json(
+            modules=[
+                {
+                    "name": self.MODULE,
+                    "enabled": True,
+                    "path": f"sdk/{self.MODULE}/frappe",
+                },
+                {"name": "othermod", "enabled": True, "path": "sdk/othermod/frappe"},
+            ]
+        )
+        self.write(f"{self.APP}/__init__.py", "__version__ = '0.0.1'\n")
+        self.write(
+            f"{self.APP}/hooks.py",
+            f'app_name = "{self.APP}"\n'
+            'doctype_js = {"Widget": "public/js/widget.js"}\n',
+        )
+        self.write(f"{self.APP}/modules.txt", f"{self.APP}\n")
+        for mod in (self.MODULE, "othermod"):
+            self.make_sdk(
+                mod,
+                manifest={
+                    "name": mod,
+                    "description": "test sdk",
+                    "hooks": {"doctype_js": {"Widget": "public/js/widget.js"}},
+                },
+            )
+            self.write(
+                f"sdk/{mod}/frappe/src/public/js/widget.js",
+                "frappe.ui.form.on('Widget', {});\n",
+            )
+        composer = self.load_composer()
+        self.run_main(composer)
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["doctype_js"],
+            {
+                "Widget": [
+                    "public/js/widget.js",
+                    f"{self.MODULE}/public/js/widget.js",
+                    "othermod/public/js/widget.js",
+                ]
+            },
+        )
+
+    def test_missing_registered_js_warns(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"doctype_list_js": {"Widget": "public/js/nope_list.js"}},
+            }
+        )
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertIn("WARNING", out)
+        self.assertIn("not composed into the app", out)
+        # The registration is still emitted (warn-and-continue by default).
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["doctype_list_js"],
+            {"Widget": [f"{self.MODULE}/public/js/nope_list.js"]},
+        )
+
+    def test_traversal_js_path_aborts(self):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {"doctype_list_js": {"Widget": "../../evil.js"}},
+            }
+        )
+        composer = self.load_composer()
+        with self.assertRaises(SystemExit):
+            self.run_main(composer)
 
 
 class ShellTemplateSyncTest(ComposeBackendTestBase):
