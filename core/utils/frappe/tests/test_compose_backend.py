@@ -507,7 +507,9 @@ class GlobalTemplatesRedirectTest(ComposeBackendTestBase):
         composer = self.load_composer()
         with self.assertRaises(ValueError) as ctx:
             self.run_main(composer)
-        self.assertIn("Duplicate global templates file 'pages/clash.html'", str(ctx.exception))
+        self.assertIn(
+            "Duplicate global templates file 'pages/clash.html'", str(ctx.exception)
+        )
 
     def test_templates_carveout_is_persona_neutral(self):
         # src/templates/ is a top-level carve-out like src/www/: it composes
@@ -771,9 +773,7 @@ class OnLoginMergeTest(ComposeBackendTestBase):
 
     def _exec_hooks(self):
         namespace = {}
-        exec(
-            compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace
-        )
+        exec(compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace)
         return namespace
 
     def test_string_shell_on_login_coerced_and_extended(self):
@@ -916,9 +916,7 @@ class DoctypeJsLaneTest(ComposeBackendTestBase):
 
     def _exec_hooks(self):
         namespace = {}
-        exec(
-            compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace
-        )
+        exec(compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace)
         return namespace
 
     def test_persona_list_js_registers_for_matching_role(self):
