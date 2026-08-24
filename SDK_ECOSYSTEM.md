@@ -179,6 +179,54 @@ Hook/route entries may carry an `imports` list of FULL import lines
 (`${package}` substituted) that land in `main.dart`'s
 `@generated-wiring-imports` block (`update_wiring_imports()`).
 
+## Registration terms + opt-in birth date (auth_sdk contract)
+
+Registration records terms acceptance universally; date-of-birth capture is a
+per-app opt-in. Shipped 2026-08-24 in the `Users` repo's `auth`/`users` SDKs
+(Users #45) with the reference consumer in `agent` `lms` (agent #165).
+
+- **Terms acceptance is universal.** auth_sdk's register form shows an inline
+  "By creating an account you agree to the Terms and Privacy Policy" line
+  (linking the same embedded policy pages as the login footer); submitting
+  registration passes `terms_accepted` (+ optional `birth_date`, ISO
+  `YYYY-MM-DD`) to the `api.user.register_user` gateway cmd. The backend
+  (`Users/users/frappe`) records it in the `User Terms Acceptance` DocType
+  (fields: `user`, `terms_version`, `accepted_on`, `accepted_by`,
+  `acceptance_source`, `reference`) against the `TERMS_VERSION` constant in
+  `users/frappe/src/tenant/api/user/user.py`. Pre-existing accounts catch up
+  via the gateway cmds `api.user.accept_terms` (idempotent Self acceptance,
+  optional `birth_date`) and `api.user.my_terms_status` (returns `accepted`,
+  `version`, `partner_granted`, `full_name_display`, `full_name_reason`).
+  Cmds are prefix-free through the gateway as always; the aliases live in
+  `users/frappe/manifest.json`.
+- **Birth-date capture is OPT-IN per app.** auth_sdk ships
+  `AuthRegistrationConfig` — every flag defaults off, so an app whose
+  manifests contribute nothing keeps the exact pre-terms form and
+  `register_user` payload — plus a `// @auth-registration-config`
+  placeholder in its installed `auth/dart/templates/routes/auth_route_pages.dart`
+  shell. The app's **home SDK** opts in through the ordinary manifest
+  `integrations` channel (key table above), targeting that placeholder:
+
+  ```json
+  {
+    "integrations": [
+      {
+        "target": "lib/presentation/routes/auth_route_pages.dart",
+        "placeholder": "// @auth-registration-config",
+        "replacement": "AuthRegistrationConfig.collectsBirthDate = true;"
+      }
+    ]
+  }
+  ```
+
+  Reference implementation: the `integrations` entry in the `agent` repo's
+  `lms/dart/manifest.json`.
+- **Consumer example (lms / Supacharge):** partner (teacher/sponsor) flows
+  auto-grant acceptance records, and the weekly-league display-name gate
+  shows a full name only for a partner-granted acceptance (any age) or a
+  Self acceptance made at 18+, measured at acceptance time from core
+  `User.birth_date`.
+
 ## App composition
 
 An app repo commits exactly three composition inputs:
