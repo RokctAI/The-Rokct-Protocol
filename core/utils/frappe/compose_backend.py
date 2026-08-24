@@ -1483,9 +1483,7 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
             on_logins = [on_logins]
         if on_logins:
             append_blocks.append(f"on_login = globals().get('on_login', [])")
-            append_blocks.append(
-                "if isinstance(on_login, str): on_login = [on_login]"
-            )
+            append_blocks.append("if isinstance(on_login, str): on_login = [on_login]")
             for ol in on_logins:
                 _validate_hook_value(ol, "dotted", module_name, "on_login")
                 append_blocks.append(
@@ -1513,9 +1511,7 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 path_list = [js_paths] if isinstance(js_paths, str) else list(js_paths)
                 for p in path_list:
                     _validate_hook_value(p, "js_path", module_name, js_key)
-                    if not os.path.exists(
-                        os.path.join(target_app_path, *p.split("/"))
-                    ):
+                    if not os.path.exists(os.path.join(target_app_path, *p.split("/"))):
                         compose_warning(
                             f"{js_key} entry for '{doc_type}' in module "
                             f"'{module_name}' points at '{p}', which was not "
