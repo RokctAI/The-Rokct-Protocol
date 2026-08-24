@@ -1,6 +1,6 @@
 # Composer Templates
 
-The `.json` files in this folder (`betassist.json`, `customer.json`, `driver.json`,
+The `.json` files in this folder (`betassist.json`, `customer.json`, `driver.json`, `forex.json`,
 `launch_deliver.json`, `launch_manager.json`, `launcher.json`, `manager.json`, `polaris.json`,
 `pos.json`, `radio.json`, `supacharge.json`) are **templates**, not active configuration.
 
