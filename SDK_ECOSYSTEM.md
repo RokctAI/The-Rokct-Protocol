@@ -505,6 +505,24 @@ This repo's runtime-fetched-and-executed files are pinned. See
    it feeds the marketing screenshots, Play-Store stills, and chapter videos
    committed to the app-shell repo; a screen change that skips it silently
    rots those outputs.
+9. **`telemetry_sdk` is mandatory in every dart `composer.json` and every
+   Next.js `composer.json`** (standing rule, Ray 2026-08-25). Like `base_sdk`,
+   it is part of the floor of every client composition: `base_sdk` owns the one
+   `TelemetryClient` every SDK may import; `telemetry_sdk` owns the seam —
+   when/how events leave the device (ADR-005/ADR-006). All 12 flutter registry
+   templates already list its dart half (`core/telemetry/dart`); Next.js
+   compositions (a committed `composer.json` or a registry template's `sdks`
+   array) must list its nextjs half (`core/telemetry/nextjs`) the same way.
+   Frappe is structurally different — one composed backend per role, module
+   lists resolved through the shared registry
+   (`core/utils/frappe/composer/`), not N shells — and the same floor holds
+   there in module form: every frappe compose template must list the
+   `telemetry` module (`core/telemetry/frappe`, the backend half:
+   `api_error_log` + the whitelisted logging methods). All current templates —
+   the tenant/product templates and `control.json` — already comply
+   (SHA-pinned in `rcore.json`); a new frappe template without the `telemetry`
+   module is invalid, and the rule extends to control's own composition as its
+   SDK-ification lands.
 
 ## Introducing a new SDK — checklist
 
