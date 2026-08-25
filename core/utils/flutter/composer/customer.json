@@ -129,6 +129,17 @@
       "_sha256_comment": "SHA-256 of comms/dart/install.py at core@7facace; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/dart",
+      "ref": "main",
+      "sha256": "5a0870e7697f1ac57fc0169561eab979e7e6ea5d478a4510a97ac7321f90ab34",
+      "_sha256_comment": "SHA-256 of telemetry/dart/install.py at core as bootstrapped (same value as radio.json's entry); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam."
+    },
+    {
       "name": "corporate_sdk",
       "enabled": true,
       "source": "git",
