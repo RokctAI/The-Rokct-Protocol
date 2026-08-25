@@ -34,12 +34,13 @@
     },
     {
       "name": "telemetry_sdk",
-      "enabled": false,
+      "enabled": true,
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/dart",
       "ref": "main",
-      "_comment": "Listener counts: how many are tuned in via the app. Disabled until the dart side exists -- core/telemetry/dart is an empty placeholder today, while its frappe side already has src/telemetry and an api_error_log doctype."
+      "sha256": "5a0870e7697f1ac57fc0169561eab979e7e6ea5d478a4510a97ac7321f90ab34",
+      "_comment": "Listener counts: how many are tuned in via the app. The dart side exists now (core/telemetry/dart, telemetry_sdk 1.0.0): counts flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam; the frappe side keeps src/telemetry and the api_error_log doctype. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same pattern as desktop_sdk's entry."
     },
     {
       "name": "promotions_sdk",
