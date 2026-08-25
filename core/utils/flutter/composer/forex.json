@@ -12,6 +12,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
+      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
+      "_sha256_comment": "SHA-256 of base/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": false,
       "_comment": "Shared kernel; provides the app shell templates, the Dio client and the theme tokens. The only SDK forex_sdk imports directly (ADR-005)."
     },
@@ -32,6 +34,8 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/forex/dart",
       "ref": "main",
+      "sha256": "6d60ca7257ea62c5856fd2b592c3360bea5a0f9c51a9096974025cf57db56874",
+      "_sha256_comment": "SHA-256 of forex/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true,
       "_comment": "Forex domain SDK — strategy catalog, risk presets, broker-account dashboard. The home SDK: its manifest's app_routes entry overrides replaceMainRoute to the strategy catalog."
     },
@@ -42,6 +46,8 @@
       "git": "https://github.com/RokctAI/Users",
       "path": "../Users/auth/dart",
       "ref": "main",
+      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea",
+      "_sha256_comment": "SHA-256 of auth/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Login/register/reset routes, installed automatically by its own manifest."
     },
     {
@@ -51,6 +57,8 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
+      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688",
+      "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Policy/terms pages reached from auth's login footer. Any composition including auth_sdk needs it."
     },
     {
@@ -59,7 +67,9 @@
       "source": "git",
       "git": "https://github.com/RokctAI/Users",
       "path": "../Users/users/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d",
+      "_sha256_comment": "SHA-256 of users/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "wallet_sdk",
@@ -68,6 +78,8 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/dart",
       "ref": "main",
+      "sha256": "f41f54c24761af8e1bad01de5b8dc6c2d30bcc8a19a7cb0a2ad01d8a2901137f",
+      "_sha256_comment": "SHA-256 of wallet/dart/install.py at pay@59bd4f8; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Present so the host's ForexWalletBalanceSource adapter has something to read. forex_sdk does NOT import it — it declares a one-method read-only interface instead, deliberately not depending on WalletRepositoryFacade, which bundles two money-moving writes."
     },
     {
@@ -77,6 +89,8 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/dart",
       "ref": "main",
+      "sha256": "74f7299ca0beb740ed7c84d9dd176d0204390a6fa2e4a15c57cc22bbda9250ea",
+      "_sha256_comment": "SHA-256 of subscriptions/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Backs the host's ForexAccessStatusSource and ForexSubscriptionStatusSource adapters. Not imported by forex_sdk."
     },
     {
@@ -86,6 +100,8 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/payments/dart",
       "ref": "main",
+      "sha256": "537b6c25cf48c2c9c64c7ab3df30ea857f3ad22d11857b0b0819a39bd24e32cb",
+      "_sha256_comment": "SHA-256 of payments/dart/install.py at pay@59bd4f8; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Backs the host's ForexPlanCatalog adapter, including startCheckout. Not imported by forex_sdk."
     },
     {
@@ -95,6 +111,8 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/dart",
       "ref": "main",
+      "sha256": "5468d4030bb8e71b3e4745d983ec30a05134510043d4c0951912c3ee615c5983",
+      "_sha256_comment": "SHA-256 of products/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Transitive dependency of users_sdk; not used directly by any forex feature."
     },
     {
@@ -104,6 +122,8 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/merchants/dart",
       "ref": "main",
+      "sha256": "7ea45bdbad67b97effc2239599ebd8d6584aca7bac14cd83e5e9117b0f0f62a1",
+      "_sha256_comment": "SHA-256 of merchants/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Mutual dependency of products_sdk; not used directly by any forex feature."
     },
     {

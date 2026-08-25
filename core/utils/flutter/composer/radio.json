@@ -11,6 +11,8 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/radio/dart",
       "ref": "main",
+      "sha256": "1c1e3446025d6d99e250b07edcb97c08606a41257fb456a467b4782d33a72b2b",
+      "_sha256_comment": "SHA-256 of radio/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true,
       "_comment": "A radio app's home IS the player, so this SDK provides the entry page. Declares StationsTable at schema version 17; one row for a single-station app, many for a multi-station one."
     },
@@ -21,6 +23,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
+      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
+      "_sha256_comment": "SHA-256 of base/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates, AppStyle, the splash and no-connection pages, and the AppDatabase radio_sdk registers StationsTable into."
     },
     {
@@ -30,6 +34,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
+      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9",
+      "_sha256_comment": "SHA-256 of comms/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Push notifications. The lineage this app came from used OneSignal directly; comms_sdk replaces that."
     },
     {
@@ -49,6 +55,8 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/promotions/dart",
       "ref": "main",
+      "sha256": "74986f2c877596181c14ecf901a316be90ff4141c5e79b23d62ce81f4d196b15",
+      "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Ad mediation. Disabled by default: the station this was built for runs with ads off (showADS false), so enable per app rather than per template."
     },
     {

@@ -11,6 +11,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
+      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
+      "_sha256_comment": "SHA-256 of base/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
     {
@@ -19,7 +21,9 @@
       "source": "git",
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea",
+      "_sha256_comment": "SHA-256 of auth/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "users_sdk",
@@ -27,7 +31,9 @@
       "source": "git",
       "path": "../Users/users/dart",
       "git": "https://github.com/RokctAI/Users",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d",
+      "_sha256_comment": "SHA-256 of users/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "launch_sdk",
@@ -36,6 +42,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/launch/dart",
       "ref": "main",
+      "sha256": "75d3f0bb5e55199db521da9e3f6e5bb6b6f9f39580e9ec3966481308de080b2f",
+      "_sha256_comment": "SHA-256 of launch/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true
     },
     {
@@ -44,7 +52,9 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9",
+      "_sha256_comment": "SHA-256 of comms/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "telemetry_sdk",
@@ -62,7 +72,9 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "677d3dac3ce3c1f31b8cfdc23152eaab95599c0df620585bc20068bce29123d2",
+      "_sha256_comment": "SHA-256 of processing/dart/install.py at productivity@2b2eb33; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "productivity_sdk",
@@ -71,6 +83,8 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/productivity/dart",
       "ref": "main",
+      "sha256": "b120b6aad382eec86713b2c46fdc2c29ddc90c6624d75d58a815e1a189347019",
+      "_sha256_comment": "SHA-256 of productivity/dart/install.py at productivity@2b2eb33; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Owns tasks (tasks_table, task_service, TasksRoute). The launcher's home is tasks-first, so this is the source for that screen and for productivity glance signals."
     },
     {
@@ -79,7 +93,9 @@
       "source": "git",
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688",
+      "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "agent_sdk",
@@ -88,6 +104,8 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/dart",
       "ref": "main",
+      "sha256": "ea30e6fa45f6042e22e15d262f88eb5d02165adf6ef5365c93e3d656ee71a91e",
+      "_sha256_comment": "SHA-256 of agent/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Disabled as per requirements"
     },
     {
