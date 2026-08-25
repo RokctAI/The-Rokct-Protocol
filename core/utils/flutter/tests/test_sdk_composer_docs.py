@@ -293,9 +293,7 @@ class EnsureDocsTests(ComposerDocsTestBase):
 
         self.run_quiet(self.mod.ensure_docs)
 
-        self.assertFalse(
-            os.path.exists(os.path.join(self.project_root, "docs", "api"))
-        )
+        self.assertFalse(os.path.exists(os.path.join(self.project_root, "docs", "api")))
         self.assertIsNone(self.manifest())
 
 
