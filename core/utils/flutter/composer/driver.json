@@ -56,6 +56,16 @@
       "ref": "main"
     },
     {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/dart",
+      "ref": "main",
+      "sha256": "5a0870e7697f1ac57fc0169561eab979e7e6ea5d478a4510a97ac7321f90ab34",
+      "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same value as radio.json's entry."
+    },
+    {
       "name": "processing_sdk",
       "enabled": true,
       "source": "git",
