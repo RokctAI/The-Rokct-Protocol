@@ -173,5 +173,18 @@
       "ref": "main",
       "_comment": "Flutter build pipeline composed under its contract paths ({app_name}.builder.tasks._generate_flutter_app, {app_name}/builder/source_code). Source mirrors the rcore shell's committed composer.json, where builder replaced the 'dev' entry (../corporate/dev/frappe); the two cannot coexist — both ship the flutter_app_configuration / flutter_build_settings doctypes and the composer hard-fails on duplicate DocTypes."
     }
+  ],
+  "sdks": [
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/nextjs",
+      "ref": "main",
+      "sha256": "e5b23d1e8ee80b8c9bd964a0aa02049e75ecbd7a90d8a66ddd5b3eb6d54e5c6f",
+      "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    }
   ]
 }
