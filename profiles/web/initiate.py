@@ -502,6 +502,20 @@ def main():
         # Ensure no Protocol-only workflows exist in non-RokctAI repos
         pass
 
+    # Self-heal consumers initiated by older versions of this script (and by
+    # profiles/local/initiate.py before its matching fix), which staged the
+    # fetched workflows/.rok inside the tracked .rokct/workflows/ and could
+    # die before cleaning it up. Every distributed file's real home is
+    # .github/workflows/ (deployed above), so a .rokct/workflows/.rok tree is
+    # always residue - remove it.
+    stale_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
+    if os.path.isdir(stale_rok_workflows):
+        shutil.rmtree(stale_rok_workflows)
+        print(
+            "[init] Removed stale .rokct/workflows/.rok "
+            "(Protocol workflows deploy to .github/workflows/)"
+        )
+
     # Fleet standard, mirroring ensure_rokct_gitignore(): force LF for
     # Python files so composer.json sha256 pins (computed from the committed
     # LF blobs) verify on Windows runners, where autocrlf checkouts otherwise
