@@ -11,6 +11,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
+      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
     {
@@ -20,6 +21,7 @@
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
+      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea",
       "_comment": "Fully installed (skip_install lifted, plan M3, mirrors manager.json): auth_sdk is the source of truth for auth. Its route shells generate LoginRoute/RegisterRoute/etc. - the host's own auth pages are deleted in the same commit, so there is no duplicate-route collision. delivery_sdk's app_type.driver session_policy (deliveryman -> /home, '*' fallback -> /become-driver keeping the session) gates login via the installed auth_session_policy.dart shell."
     },
     {
@@ -28,7 +30,8 @@
       "source": "git",
       "path": "../Users/users/dart",
       "git": "https://github.com/RokctAI/Users",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d"
     },
     {
       "name": "orders_sdk",
@@ -36,7 +39,8 @@
       "source": "git",
       "path": "../commerce/orders/dart",
       "git": "https://github.com/RokctAI/commerce",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "693b01c79ab8b2ee09cf14fefff14f22e0ff61ccb6559e6ea3abf0af62b52074"
     },
     {
       "name": "delivery_sdk",
@@ -45,7 +49,8 @@
       "path": "../zones/delivery/dart",
       "home_sdk": true,
       "git": "https://github.com/RokctAI/zones",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "67474b198bb30a17c563cac6e1faa3c1db7506c47d654c2e74510c1d8bd3c474"
     },
     {
       "name": "comms_sdk",
@@ -53,7 +58,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9"
     },
     {
       "name": "telemetry_sdk",
@@ -71,7 +77,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "677d3dac3ce3c1f31b8cfdc23152eaab95599c0df620585bc20068bce29123d2"
     },
     {
       "name": "calc_sdk",
@@ -80,6 +87,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/calc/dart",
       "ref": "main",
+      "sha256": "e2d3566e42e6e296a64020be110a3889ab9500a075489f0c1f560819eeb0b023",
       "_comment": "Standalone calculator (productivity PR #4); un-gated /calc route, shared by manager and driver."
     },
     {
@@ -88,7 +96,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688"
     },
     {
       "name": "map_sdk",
@@ -96,7 +105,8 @@
       "source": "git",
       "path": "../zones/map/dart",
       "git": "https://github.com/RokctAI/zones",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "5baf3850d414fb529eebb86098f895e04d25f6130d52bb80cb73edb01c7c43a7"
     },
     {
       "name": "zones_sdk",
@@ -104,7 +114,8 @@
       "source": "git",
       "path": "../zones/zones/dart",
       "git": "https://github.com/RokctAI/zones",
-      "ref": "main"
+      "ref": "main",
+      "sha256": "a0c780047bf533245666c2885807d4ad6e53b7ae712ad754c54a9157b74fc920"
     },
     {
       "name": "weather_sdk",
@@ -113,6 +124,7 @@
       "path": "../zones/weather/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
+      "sha256": "0c03f5eeef196967302c2032183b57bcc52a8fe1bee8707ffb192e2829259eb9",
       "_comment": "Activates the severe-weather banner shipped dormant in zones PR #44: weather 1.4.0's app_type.driver block installs the courier locationResolver wiring plus the weather-driver-configure-location boot hook, and delivery_sdk's home sheet already renders the warnings banner fail-closed. Declaration mirrors manager.json/pos.json."
     },
     {
@@ -131,6 +143,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/revenue/dart",
       "ref": "main",
+      "sha256": "2e34e1fdafdf6bea9cc4ca1b193146a9141e74426596f7f9a3e4f8c7ca42003b",
       "_comment": "Driver income/statistics pages, under a driver/ role folder with an app_type.driver manifest block. Shared with manager.json, which takes the manager variant from the same SDK."
     },
     {
@@ -140,6 +153,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/merchants/dart",
       "ref": "main",
+      "sha256": "7ea45bdbad67b97effc2239599ebd8d6584aca7bac14cd83e5e9117b0f0f62a1",
       "_comment": "Story UI the driver app shows; base_sdk already owns story_data/story_request, so only the presentation needed a home."
     },
     {
@@ -149,6 +163,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/dart",
       "ref": "main",
+      "sha256": "5468d4030bb8e71b3e4745d983ec30a05134510043d4c0951912c3ee615c5983",
       "_comment": "restaurant_item / product_item / maps_list widgets used by the driver app."
     },
     {
