@@ -45,7 +45,7 @@ while not (BASE_DIR / ".rokct").exists():
 
 # Ensure common imports
 sys.path.append(str(BASE_DIR / ".rokct" / "scripts" / "equity"))
-from funder_manager import FunderManager
+from funder_manager import FunderManager, is_junk_heading
 
 
 def _get_with_retries(url, headers, attempts=3, timeout=15):
@@ -138,7 +138,15 @@ def find_candidates(url):
         unique_new = []
         for name in list(set(candidates)):
             name = name.split("|")[0].strip()  # Clean up pipe suffixes
-            if not manager.is_duplicate(name) and len(name) > 2 and len(name) < 60:
+            if not (len(name) > 2 and len(name) < 60):
+                continue
+            # Navigation/FAQ/promo headings ("Contents", "See also",
+            # "What is a venture capital firm?", "60% off") are not funders;
+            # the consumer repo's denylist blocks known junk slugs for good.
+            if is_junk_heading(name) or manager.is_denylisted(name):
+                print(f"Skipping non-funder heading from {url}: {name!r}")
+                continue
+            if not manager.is_duplicate(name):
                 unique_new.append(name)
 
         return unique_new
