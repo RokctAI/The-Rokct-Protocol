@@ -51,7 +51,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `supacharge.json` | `lms`, `agent` |
 | `startupos.json` | `studio`, `productivity`, `agent` |
 | `telephony.json` | — (telephony module pending extraction from control) |
-| `rokctapp.json` | `crm` (erp SDK joins when the erpnext fork lands) |
+| `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
 | `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
 | `control.json` | `tender` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; the `control` module itself joins when the control repo's SDK-ification lands) |
