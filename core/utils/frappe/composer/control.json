@@ -70,6 +70,15 @@
       "ref": "main"
     },
     {
+      "name": "weather",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/weather/frappe",
+      "ref": "67e3c804d2ee377eeec35ea03ddb11371b1d91ea",
+      "_comment": "Hub side of the role-split weather module (zones#54/#55): the severe-weather warnings engine, the weatherapi.com fetcher and the tenant-facing get_weather endpoint live in the module's src/control/ persona tree and compose only here; tenant products get the thin cached proxy from src/tenant/ via their own templates. Registry prep for control's compose switch — nothing composes this template until the control repo gains a composer.json/app_type marker. Pinned to zones main HEAD at time of entry (full-SHA pin per the composer's SHA-only clone rule)."
+    },
+    {
       "name": "tender",
       "enabled": true,
       "source": "git",
