@@ -25,17 +25,123 @@
 # Nothing here is committed under .rokct/ in this repo (that path is
 # gitignored) - this IS the checked-in source, at its permanent,
 # allowed location.
+import json
 import os
 import re
 import sys
 from datetime import date
 from pathlib import Path
 
+# --- Non-funder heading filter -------------------------------------------
+#
+# The equity sync scrapes listicle/directory pages whose <h2>/<h3> headings
+# are mostly firm names — but also navigation and FAQ section labels
+# ("Contents", "See also", "60% off", "What is a venture capital firm?").
+# Those must never become funder cards. The heuristics below are deliberately
+# conservative: when in doubt a card IS created (a human can delete it), but
+# obvious section/FAQ/promo headings are rejected at parse and creation time.
+
+# Question-word starts: "What is...", "How do I...", "Can I raise...".
+# Matched against the first whole word only, so "Canaan Partners" passes.
+_INTERROGATIVE_STARTS = {
+    "what",
+    "why",
+    "how",
+    "who",
+    "where",
+    "when",
+    "can",
+    "is",
+    "do",
+}
+
+# Well-known page-section labels. Matched exactly, or as a leading phrase
+# followed by a separator or a space ("Methodology — how we keep this list
+# current", "Quick facts about US startup investment").
+_SECTION_HEADINGS = (
+    "contents",
+    "table of contents",
+    "references",
+    "see also",
+    "related posts",
+    "methodology",
+    "quick facts",
+    "useful resources",
+    "faq",
+    "frequently asked questions",
+)
+
+
+def is_junk_heading(name):
+    """True when a scraped heading is clearly NOT a funder name.
+
+    Conservative on purpose: only patterns that no real firm name uses
+    (questions, section labels, percent-off promos, dollar amounts) are
+    rejected; anything plausible is allowed through.
+    """
+    raw = str(name).strip()
+    if not raw:
+        return True
+
+    # Questions are FAQ entries, never firm names.
+    if raw.rstrip().endswith("?"):
+        return True
+
+    norm = re.sub(r"\s+", " ", raw.lower()).strip(" .!—–-:")
+
+    words = norm.split(" ", 1)
+    if words and words[0] in _INTERROGATIVE_STARTS:
+        return True
+
+    for section in _SECTION_HEADINGS:
+        if norm == section or norm.startswith(section + " "):
+            return True
+
+    # Promo/stat headings: "60% off", "$1B raised", "raised $1+ billion".
+    if re.match(r"^\d+\s*%", raw):
+        return True
+    if "$" in raw:
+        return True
+
+    return False
+
+
+def load_denylist(base_dir):
+    """Slugs (card filenames without .md) that must never be (re)created.
+
+    Reads the optional consumer-repo file .rokct/agent/equity_denylist.json:
+    a JSON list of slugs, or an object with a "slugs" list. Missing or
+    malformed files yield an empty denylist — the sync must never crash on
+    an optional config file.
+    """
+    path = Path(base_dir) / ".rokct" / "agent" / "equity_denylist.json"
+    try:
+        if not path.is_file():
+            return set()
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    if isinstance(data, dict):
+        data = data.get("slugs", [])
+    if not isinstance(data, list):
+        return set()
+    slugs = set()
+    for entry in data:
+        slug = str(entry).strip().lower()
+        if slug.endswith(".md"):
+            slug = slug[:-3]
+        if slug:
+            slugs.add(slug)
+    return slugs
+
 
 class FunderManager:
     def __init__(self, registry_path="01_equity/"):
         self.registry_path = Path(registry_path)
         self.existing_orgs = self._load_existing_orgs()
+        # Consumer-repo denylist lives next to the registry, at
+        # <repo-root>/.rokct/agent/equity_denylist.json.
+        self.denylist = load_denylist(self.registry_path.resolve().parent)
         self.template = """---
 # Equity Opportunity: {Organization}
 
@@ -100,6 +206,14 @@ class FunderManager:
 
         return False
 
+    def slug_for(self, name):
+        """The card slug for a name: its generated filename without .md."""
+        return self.generate_filename(name)[: -len(".md")]
+
+    def is_denylisted(self, name):
+        """True when the name's slug is in the consumer repo's denylist."""
+        return self.slug_for(name) in self.denylist
+
     def generate_filename(self, name):
         # Convert to snake_case, remove special chars
         fname = name.lower()
@@ -123,6 +237,16 @@ class FunderManager:
         return fname
 
     def create_funder_file(self, data):
+        # Hard denylist guard: slugs listed in the consumer repo's
+        # .rokct/agent/equity_denylist.json are never (re)created, no matter
+        # which code path asked for the card.
+        org_name = str(data.get("Organization", ""))
+        if self.is_denylisted(org_name):
+            raise ValueError(
+                f"Refusing to create denylisted funder card: {org_name!r} "
+                f"(slug {self.slug_for(org_name)!r})"
+            )
+
         if "Last Verified" not in data:
             data["Last Verified"] = str(date.today())
         if "Status" not in data:

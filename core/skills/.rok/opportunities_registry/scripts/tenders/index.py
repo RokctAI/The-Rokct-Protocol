@@ -40,7 +40,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "acd33b89520c1cedde1d8200b65aa68959e47649"
+PROTOCOL_REF = "48bac4e33877de630148876f6f3e88c34ce208d7"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -54,9 +54,10 @@ EXPECTED_SHA256 = {
     "core/utils/opportunities/ci/check_links.py": "021da6d43f94c1dbc5974eded6e0a0e790945f7edb3c66e3ff8ce6cb63440516",
     "core/utils/opportunities/eeip/discover_eeip.py": "cef800250a8ac174694948d7b4765879973b9cd7f7b84bd9a93232d7487b85b3",
     "core/utils/opportunities/equity/discover_sources.py": "be3dec053301d61298e8d6feabd8dc341aff4e6bb5b198b4580a7395937c37b4",
-    "core/utils/opportunities/equity/equity_sync.py": "2766c359e48d88bffad8340b82a5c4b6fef8a38e63368218194c62b89d47dd13",
-    "core/utils/opportunities/equity/funder_finder.py": "2edfbd505a518d120168a67b3d3c68eaf1b2e2beeb5d84a3d9f7d93cf0659faf",
-    "core/utils/opportunities/equity/funder_manager.py": "d182c2b7785be644098896131358cdb96c9a7cccc19884bcdef564e4a0c8d55d",
+    "core/utils/opportunities/equity/equity_sync.py": "b8cb44d5082057fc8017c4ed0fc936236a9f9f7f978e52090044a56c0f1aa92a",
+    "core/utils/opportunities/equity/funder_finder.py": "38a7305ff9814bf1648a5ac7b50024ee90787dfd374ef243b546ced36a85ca83",
+    "core/utils/opportunities/equity/funder_manager.py": "bac772edd13a68a00524d50cf79d19d27d56ea3d9a24d33c39fd2be0909e5966",
+    "core/utils/opportunities/equity/test_funder_filtering.py": "37c2c7ba5797184458a44b0d54b6c9308d457083ee0fe3791675ec4f35d265eb",
     "core/utils/opportunities/equity/verify_sources.py": "b6602aedc5d33f55fde27d68bb10fd6c4cbd486a98e9b83085dda7383fa7bcce",
     "core/utils/opportunities/grants/scrapers/f4c.py": "7b80d8160d4371e3c438bbd99e7b85e331eddfd7c95e06cb4a972889bba32ea4",
     "core/utils/opportunities/maintenance/index.py": "110517d30cb4e7ccbda16df09b16c428f7d0354ff4d10587a62c8000a1f8cdaf",

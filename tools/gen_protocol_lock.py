@@ -95,6 +95,7 @@ OPPORTUNITIES_FILES = (
     "equity/equity_sync.py",
     "equity/funder_finder.py",
     "equity/funder_manager.py",
+    "equity/test_funder_filtering.py",
     "equity/verify_sources.py",
     "grants/scrapers/f4c.py",
     "maintenance/index.py",
@@ -253,6 +254,7 @@ CONSUMERS.update(
 _OPP_TARGETS = tuple(f"{_OPPORTUNITIES}/{p}" for p in OPPORTUNITIES_FILES)
 for _p in OPPORTUNITIES_FILES:
     if _p in (
+        "equity/test_funder_filtering.py",
         "tenders/scrapers/test_musina_dates.py",
         "tenders/enrichment/test_extract_requirements.py",
     ):
