@@ -2,7 +2,7 @@
   "name": "rcore_app",
   "version": "1.0.0",
   "description": "Frappe compose template for the rokctapp docker product (composes an app named rcore)",
-  "_comment": "The erpnext fork has landed: the erp SDK's frappe module lives at pay/erp/frappe and its nextjs half at pay/erp/nextjs (composed via the 'sdks' key below). Adding the erp frappe module to 'modules' here is a deliberate follow-up (dependency and doctype-collision review), not automatic.",
+  "_comment": "The erp and hrms frappe modules are wired below: the doctype-collision review is done (pay#35) \u2014 the erp fork excludes its five fleet-colliding doctypes (Branch, Brand, Delivery Settings, Subscription, Subscription Settings, plus the dependent Process Subscription and Subscription Invoice; exclusion over rename, crm-excision precedent, reversible via the port script's EXCLUDE_FLEET_DOCTYPES) so erp composes cleanly beside base and subscriptions. Both entries are pinned to the pay head that carries the exclusion; strict-compose verified at that SHA against this template's full module set.",
   "modules": [
     {
       "name": "base",
@@ -42,8 +42,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/gateways/frappe",
-      "ref": "main",
-      "_comment": "Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "Same pay pin as erp/hrms/wallet below: the composer clones one ref per repo, so every pay module entry must share it. Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
     },
     {
       "name": "telemetry",
@@ -67,7 +67,25 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "main"
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f"
+    },
+    {
+      "name": "erp",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "ERPNext v16 fork flattened into one composed module (fork of frappe/erpnext via Frappenize/erpnext@rokct-hotfix). Upstream crm/projects/support modules are excluded and resolve to the productivity repo's SDK modules; the five fleet-colliding doctypes (Branch, Brand, Delivery Settings, Subscription, Subscription Settings + dependents) are excluded per pay#35's collision review, so erp composes beside base/subscriptions/products/delivery. A site composed with this module must NOT also have upstream erpnext installed. Pinned at the pay head carrying the fleet-collision exclusion; strict-compose verified at this SHA."
+    },
+    {
+      "name": "hrms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/hrms/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "Frappe HR fork (via Frappenize/hrms@rokct-hotfix). Composes ONLY alongside the erp module above \u2014 the Employee master and accounting doctypes live in erp, and every upstream erpnext reference resolves to {app_name}.erp. Never add hrms to a template without erp. Same pay pin as erp."
     },
     {
       "name": "crm",
