@@ -36,9 +36,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "0ad5de7353bf3997cde17cb0cec70736b8bd4a49"
+PROTOCOL_REF = "acd33b89520c1cedde1d8200b65aa68959e47649"
 EXPECTED_SHA256 = {
-    "profiles/web/initiate.py": "df582d290428e8ab03b4ea51b9c284de2f0947c64f57eba8c85f18ddfcdf933f",
+    "profiles/web/initiate.py": "b38f9218022c1fb238cdfd3a63266029c6db101489b4a29d3462b75b71845b61",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_ZIP_BASE = (
@@ -501,6 +501,20 @@ def main():
     else:
         # Ensure no Protocol-only workflows exist in non-RokctAI repos
         pass
+
+    # Self-heal consumers initiated by older versions of this script (and by
+    # profiles/local/initiate.py before its matching fix), which staged the
+    # fetched workflows/.rok inside the tracked .rokct/workflows/ and could
+    # die before cleaning it up. Every distributed file's real home is
+    # .github/workflows/ (deployed above), so a .rokct/workflows/.rok tree is
+    # always residue - remove it.
+    stale_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
+    if os.path.isdir(stale_rok_workflows):
+        shutil.rmtree(stale_rok_workflows)
+        print(
+            "[init] Removed stale .rokct/workflows/.rok "
+            "(Protocol workflows deploy to .github/workflows/)"
+        )
 
     # Fleet standard, mirroring ensure_rokct_gitignore(): force LF for
     # Python files so composer.json sha256 pins (computed from the committed

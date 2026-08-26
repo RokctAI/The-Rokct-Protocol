@@ -120,6 +120,9 @@ jobs:
           # is populated both by closing keywords in the pull request body and
           # by issues linked by hand from the Development sidebar, and it
           # already understands every keyword spelling GitHub accepts.
+          # The single quotes around the GraphQL query are deliberate: $owner,
+          # $name and $pr are GraphQL variables, not shell expansions.
+          # shellcheck disable=SC2016
           issue_number="$(
             gh api graphql \
               -f query='query($owner: String!, $name: String!, $pr: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $pr) { closingIssuesReferences(first: 10) { nodes { number } } } } }' \

@@ -37,9 +37,9 @@ import zipfile
 # Every fetch below is pinned to this commit, so what this script downloads is
 # immutable; the executable targets are additionally SHA-256 verified against
 # EXPECTED_SHA256 before they are written anywhere.
-PROTOCOL_REF = "0ad5de7353bf3997cde17cb0cec70736b8bd4a49"
+PROTOCOL_REF = "acd33b89520c1cedde1d8200b65aa68959e47649"
 EXPECTED_SHA256 = {
-    "profiles/local/initiate.py": "e9d1e352535db58ddc6277165c05080a54d53cc756ec21c42bb62adc7d1d2f08",
+    "profiles/local/initiate.py": "f8921d1642b6b857a48c1310f3d0e3865c9e949c824ed559186d2c0b38197cbf",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d",
 }
 GITHUB_RAW_BASE = (
@@ -369,27 +369,50 @@ def main():
     # remote-rejected by GitHub.
     if "RokctAI/" in origin_url and not os.environ.get("CI"):
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
-        temp_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
-        if not os.path.isdir(rok_workflows_src):
-            fetch_dir_from_github("workflows/.rok", temp_rok_workflows)
-            src_dir = temp_rok_workflows
-        else:
-            src_dir = rok_workflows_src
+        # Staged under the git-ignored .rokct/tmp/ rather than
+        # .rokct/workflows/.rok: the latter sits in a tracked directory, so a
+        # run that died before the cleanup left org-only workflow sources
+        # committable in consumer repos instead of deployed to
+        # .github/workflows/. Same staging as profiles/web/initiate.py.
+        temp_rok_workflows = os.path.join(ROKCT_DIR, "tmp", "rok_workflows")
+        staged_rok = not os.path.isdir(rok_workflows_src)
+        try:
+            if staged_rok:
+                fetch_dir_from_github("workflows/.rok", temp_rok_workflows)
+                src_dir = temp_rok_workflows
+            else:
+                src_dir = rok_workflows_src
 
-        if os.path.isdir(src_dir):
-            dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
-            os.makedirs(dst_workflows, exist_ok=True)
-            repo_name = origin_url.split("RokctAI/")[-1].replace(".git", "")
-            for src_name, dst_name in select_rok_workflows(src_dir, repo_name):
-                shutil.copy2(
-                    os.path.join(src_dir, src_name),
-                    os.path.join(dst_workflows, dst_name),
-                )
-                suffix = f" (from {src_name})" if src_name != dst_name else ""
-                print(f"[init] Deployed Protocol workflow: {dst_name}{suffix}")
-            if src_dir == temp_rok_workflows and os.path.isdir(temp_rok_workflows):
+            if os.path.isdir(src_dir):
+                dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
+                os.makedirs(dst_workflows, exist_ok=True)
+                repo_name = origin_url.split("RokctAI/")[-1].replace(".git", "")
+                for src_name, dst_name in select_rok_workflows(src_dir, repo_name):
+                    shutil.copy2(
+                        os.path.join(src_dir, src_name),
+                        os.path.join(dst_workflows, dst_name),
+                    )
+                    suffix = f" (from {src_name})" if src_name != dst_name else ""
+                    print(f"[init] Deployed Protocol workflow: {dst_name}{suffix}")
+        finally:
+            # finally, not a trailing statement: an aborted fetch or a failed
+            # copy must not leave the staging tree behind.
+            if staged_rok and os.path.isdir(temp_rok_workflows):
                 shutil.rmtree(temp_rok_workflows)
                 print("[init] Cleaned up temporary workflows/.rok directory")
+
+    # Self-heal consumers initiated by older versions of this script, which
+    # staged the fetched workflows/.rok inside the tracked .rokct/workflows/
+    # and could die (or historically just stop) before cleaning it up. Every
+    # distributed file's real home is .github/workflows/ (deployed above), so
+    # a .rokct/workflows/.rok tree is always residue - remove it.
+    stale_rok_workflows = os.path.join(ROKCT_DIR, "workflows", ".rok")
+    if os.path.isdir(stale_rok_workflows):
+        shutil.rmtree(stale_rok_workflows)
+        print(
+            "[init] Removed stale .rokct/workflows/.rok "
+            "(Protocol workflows deploy to .github/workflows/)"
+        )
 
     ensure_file("profiles/local/rules.md", os.path.join(ROKCT_DIR, "profiles.md"))
 
