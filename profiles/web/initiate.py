@@ -58,12 +58,33 @@ GITHUB_RAW_BASE = (
 )
 
 
+# The profile file this copy self-updates from. Stays in lockstep with the
+# profile directory this file lives in.
+SELF_UPDATE_REL = "profiles/web/initiate.py"
+
+
 def check_for_update():
-    """Data-only update check. The old self-update fetched initiate.py from
-    the mutable main branch and execv'd it - executing unpinned future code,
-    which the PROTOCOL_REF pinning exists to prevent. Now we only fetch the
-    lockfile from main AS DATA, compare its pinned ref to ours, and tell the
-    user to re-run the installer. Nothing fetched here is ever executed."""
+    """Self-updating version check - STANDING RULE, DO NOT WEAKEN.
+
+    Ray's explicit order (2026-08-26, recorded in the RokctAI/agent decision
+    log): when a run finds that main's protocol.lock.json pins a newer ref
+    than this copy, it must NOT wait for a future run - it fetches the
+    current profile initiate.py, installs it at .rokct/initiate.py, and
+    re-execs it IN THE SAME RUN so the work continues at latest.
+    PROTOCOL_REF is a record of the last-applied version, not a freeze.
+    Nobody reverts this to the old notice-only behavior without Ray's
+    explicit word.
+
+    Safety rails (keep all of them):
+    - CI always runs the committed copy deterministically (no self-update).
+    - main is resolved to a commit sha first, and the new copy is fetched at
+      that immutable sha - the code fetched and the lock checked are one tree.
+    - Loop protection is belt and braces: the freshly installed copy's pin
+      matches the lock so the check terminates naturally, and
+      ROKCT_INITIATE_REEXECED caps re-exec at one hop regardless.
+    - Any download failure falls back to continuing at the pinned version
+      with a loud warning - a stale run beats a dead one.
+    """
     if os.environ.get("CI"):
         # CI must run the committed copy deterministically.
         return
@@ -75,12 +96,63 @@ def check_for_update():
         )
         with urllib.request.urlopen(req, timeout=10) as r:
             latest_ref = json.loads(r.read().decode()).get("ref", "")
-        if latest_ref and latest_ref != PROTOCOL_REF:
-            print(
-                "[init] A newer protocol version is available - re-run the installer to update."
-            )
     except Exception as e:
         print(f"[init] Update check failed: {e}", file=sys.stderr)
+        return
+    if not latest_ref or latest_ref == PROTOCOL_REF:
+        return
+    if os.environ.get("ROKCT_INITIATE_REEXECED"):
+        print(
+            "[init] WARNING: still behind the lock ref after one self-update "
+            f"re-exec - continuing at the pinned version {PROTOCOL_REF[:12]}. "
+            "Re-run the installer if this persists.",
+            file=sys.stderr,
+        )
+        return
+    print(
+        f"[init] Newer protocol pinned on main ({latest_ref[:12]}) - "
+        "self-updating and re-running in this same session."
+    )
+    try:
+        api = "https://api.github.com/repos/RokctAI/The-Rokct-Protocol/commits/main"
+        req = urllib.request.Request(
+            api,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/vnd.github.sha",
+                "X-Trace-Id": "initiate-selfupdate",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            main_sha = r.read().decode().strip()
+        raw = (
+            "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/"
+            f"{main_sha}/{SELF_UPDATE_REL}"
+        )
+        req = urllib.request.Request(
+            raw,
+            headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "initiate-selfupdate"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = r.read()
+        os.makedirs(ROKCT_DIR, exist_ok=True)
+        dest = os.path.join(ROKCT_DIR, "initiate.py")
+        with open(dest, "wb") as f:
+            f.write(data)
+        print(f"[init] Installed latest {SELF_UPDATE_REL} (@{main_sha[:12]}) -> {dest}")
+    except Exception as e:
+        print(
+            f"[init] WARNING: self-update failed ({e}) - continuing at the "
+            f"pinned version {PROTOCOL_REF[:12]}.",
+            file=sys.stderr,
+        )
+        return
+    os.environ["ROKCT_INITIATE_REEXECED"] = "1"
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # Same interpreter, same argv tail, same cwd - the new copy picks the
+    # run up from the top at the latest pinned version.
+    os.execv(sys.executable, [sys.executable, dest] + sys.argv[1:])
 
 
 def verify_pinned(rel_posix, data):
