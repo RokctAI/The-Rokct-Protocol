@@ -48,7 +48,7 @@ while not (BASE_DIR / ".rokct").exists():
 # Ensure the equity scripts directory is in path so we can import funder_manager/finder
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from funder_manager import FunderManager
+from funder_manager import FunderManager, is_junk_heading
 from funder_finder import find_candidates
 
 # Setup Logging
@@ -141,6 +141,16 @@ def run():
 
                 new_count = 0
                 for name in candidates:
+                    # Never card a navigation/FAQ/promo heading or a slug
+                    # the consumer repo denylisted (.rokct/agent/
+                    # equity_denylist.json). find_candidates filters these
+                    # too; this keeps every candidate path covered and
+                    # logs what was skipped.
+                    if is_junk_heading(name) or manager.is_denylisted(name):
+                        logger.info(
+                            f"Skipped non-funder/denylisted candidate: {name!r}"
+                        )
+                        continue
                     if not manager.is_duplicate(name):
                         data = {
                             "Organization": name,
