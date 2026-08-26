@@ -185,6 +185,16 @@
       "sha256": "e5b23d1e8ee80b8c9bd964a0aa02049e75ecbd7a90d8a66ddd5b3eb6d54e5c6f",
       "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    },
+    {
+      "name": "products_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/nextjs",
+      "ref": "main",
+      "sha256": "b6375965c2c9731e596538a765dd3cca6dd48cdc25e3d3cf58567bdd3ca67f84",
+      "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     }
   ]
 }
