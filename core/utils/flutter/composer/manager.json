@@ -11,7 +11,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
-      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
+      "sha256": "0b16224307d995101bef3eb4fd327f35aa3d9b39fbb8086acdec614a2858d26b",
       "_sha256_comment": "SHA-256 of base/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
@@ -22,7 +22,7 @@
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
-      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea",
+      "sha256": "d3ce4549ed0b3b0fdb3669f79b1bd18e105e5e9e8f0c39602a23359ffb5ca333",
       "_sha256_comment": "SHA-256 of auth/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Fully installed (skip_install lifted, plan M3): auth_sdk is the source of truth for auth. Its route shells generate LoginRoute/RegisterRoute/etc. - the host's own auth pages are deleted in the same commit, so there is no duplicate-route collision. merchants_sdk's app_type.manager session_policy (seller-only -> /main) gates login via the installed auth_session_policy.dart shell."
     },
@@ -33,7 +33,7 @@
       "path": "../Users/users/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
-      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d",
+      "sha256": "d672879e19b4b87a14fdc6cba98a62b4c475cb296bd3d5d8bd3156a5dac692f4",
       "_sha256_comment": "SHA-256 of users/dart/install.py at Users@15d625c; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -44,7 +44,7 @@
       "home_sdk": true,
       "git": "https://github.com/RokctAI/commerce",
       "ref": "main",
-      "sha256": "7ea45bdbad67b97effc2239599ebd8d6584aca7bac14cd83e5e9117b0f0f62a1",
+      "sha256": "12206c71a9ed6a49910f949ab379f3a0547a9c0c52c9b3da281583f12cca4855",
       "_sha256_comment": "SHA-256 of merchants/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -54,7 +54,7 @@
       "path": "../commerce/products/dart",
       "git": "https://github.com/RokctAI/commerce",
       "ref": "main",
-      "sha256": "5468d4030bb8e71b3e4745d983ec30a05134510043d4c0951912c3ee615c5983",
+      "sha256": "2d2a799c2147be5e664e2810dde5fa71be4d39816cb0456cde3b419d0f6702c5",
       "_sha256_comment": "SHA-256 of products/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -64,7 +64,7 @@
       "path": "../commerce/orders/dart",
       "git": "https://github.com/RokctAI/commerce",
       "ref": "main",
-      "sha256": "693b01c79ab8b2ee09cf14fefff14f22e0ff61ccb6559e6ea3abf0af62b52074",
+      "sha256": "6a3f376587fbc9f0b8f67c78de6e6e1ffac7be09a2d5f6367b6bf5bd798f1949",
       "_sha256_comment": "SHA-256 of orders/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -74,7 +74,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/kitchen/dart",
       "ref": "main",
-      "sha256": "a1aac7ff99cd20304707729ed0278e409759c5a43a7306ff94c8de87372fb8b5",
+      "sha256": "d7725ef071d5593ec4b002f87e517403fbf36ecd6e893852bf2ee0b873239b88",
       "_sha256_comment": "SHA-256 of kitchen/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -84,7 +84,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/hardware/dart",
       "ref": "main",
-      "sha256": "3e08328b47d385a35530d0a667121455e89bb70a0d5df5f14e8153e552dbf002",
+      "sha256": "e27697df5484e45e628b63723e2780ac887cdfb4bbc4521bf67a8e439becf10a",
       "_sha256_comment": "SHA-256 of hardware/dart/install.py at hardware@3514596; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -94,7 +94,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/desktop/dart",
       "ref": "main",
-      "sha256": "188774abbcb8de7dee95dba1444f2c1913a37241826453a987b283646ba756de",
+      "sha256": "c7a03710610e9e27d57a762894befff57dcda7ae46153973f7ded129eef5e1c9",
       "_comment": "Native desktop runner scaffolding. Manager inherits pos's desktop role (fold plan): the SDK's app_type.manager block installs windows/ into the host with ${package}-parameterized CMake naming; the build_windows CI flag stays host-side in paas_manager (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors pos.json's entry."
     },
     {
@@ -104,7 +104,7 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/payments/dart",
       "ref": "main",
-      "sha256": "537b6c25cf48c2c9c64c7ab3df30ea857f3ad22d11857b0b0819a39bd24e32cb",
+      "sha256": "73874a98d1213e30a04e974dec68043392e813e1bd8b868a7035715e23d3e611",
       "_sha256_comment": "SHA-256 of payments/dart/install.py at pay@59bd4f8; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -114,7 +114,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/dart",
       "ref": "main",
-      "sha256": "74f7299ca0beb740ed7c84d9dd176d0204390a6fa2e4a15c57cc22bbda9250ea",
+      "sha256": "da026acc5668f8c7cbe4567bc90aefa3d91506ac5a996ea0367096461602eb59",
       "_sha256_comment": "SHA-256 of subscriptions/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -124,7 +124,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
-      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9",
+      "sha256": "45416a9f9a1bfe311cb069bf83452d1fec60ac6b6d41244d86d9e596dda6989a",
       "_sha256_comment": "SHA-256 of comms/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -134,7 +134,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/dart",
       "ref": "main",
-      "sha256": "5a0870e7697f1ac57fc0169561eab979e7e6ea5d478a4510a97ac7321f90ab34",
+      "sha256": "d2b80744cdc9f24c7d49fcac40647a035b4d78ae4f1045102cf22b0ce810451e",
       "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same value as radio.json's entry."
     },
     {
@@ -144,7 +144,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
       "ref": "main",
-      "sha256": "677d3dac3ce3c1f31b8cfdc23152eaab95599c0df620585bc20068bce29123d2",
+      "sha256": "fffccc36caf5e299de551f1f70a49366f0baf49331261687672efb3c112acd31",
       "_sha256_comment": "SHA-256 of processing/dart/install.py at productivity@2b2eb33; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -154,7 +154,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/productivity/dart",
       "ref": "main",
-      "sha256": "b120b6aad382eec86713b2c46fdc2c29ddc90c6624d75d58a815e1a189347019",
+      "sha256": "c70da18f2b5194b71330e2b51dbfabffd5bf6c4f997ced2480c9d8deff9ddba2",
       "_sha256_comment": "SHA-256 of productivity/dart/install.py at productivity@2b2eb33; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Included but not present in original apps"
     },
@@ -165,7 +165,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/calc/dart",
       "ref": "main",
-      "sha256": "e2d3566e42e6e296a64020be110a3889ab9500a075489f0c1f560819eeb0b023",
+      "sha256": "b78927dc25222cc31edeeb8d2af924126d6c23d63ab0ae2d064b0d618ea60fb2",
       "_sha256_comment": "SHA-256 of calc/dart/install.py at productivity@2b2eb33; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Standalone calculator (productivity PR #4); un-gated /calc route, shared by manager and driver."
     },
@@ -176,7 +176,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688",
+      "sha256": "73ea3a6a57759307bf1c7a56d1bdad4ab3a90e8dd911f8378fee0fab7af046fc",
       "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -186,7 +186,7 @@
       "path": "../commerce/promotions/dart",
       "git": "https://github.com/RokctAI/commerce",
       "ref": "main",
-      "sha256": "74986f2c877596181c14ecf901a316be90ff4141c5e79b23d62ce81f4d196b15",
+      "sha256": "97e6891c52042c6fd40d7d59faa6c7a3488ba836a025622bc302f68c044ede36",
       "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -196,7 +196,7 @@
       "path": "../zones/map/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "5baf3850d414fb529eebb86098f895e04d25f6130d52bb80cb73edb01c7c43a7",
+      "sha256": "71bc5e68f7ec83dbe72c00ae9d58483a3e4fb22aa5f8cee9c08d9d4e67ae1893",
       "_sha256_comment": "SHA-256 of map/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -206,7 +206,7 @@
       "path": "../zones/weather/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "0c03f5eeef196967302c2032183b57bcc52a8fe1bee8707ffb192e2829259eb9",
+      "sha256": "e642a3cab85956145d657a959556b59312c4e3ca0178b6b6cf649fdeeb89e371",
       "_sha256_comment": "SHA-256 of weather/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Rebuilt at 1.1.0 (zones PR #4) with adaptive layout: minimal widget on phones, interactive view on large screens. Mirrors launch_manager.json."
     },
@@ -217,7 +217,7 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/agent/dart",
       "ref": "main",
-      "sha256": "ea30e6fa45f6042e22e15d262f88eb5d02165adf6ef5365c93e3d656ee71a91e",
+      "sha256": "82f5c40091185617fa4e1b5a1c39558786db5cabe9938d515fcb89bd492d9d55",
       "_sha256_comment": "SHA-256 of agent/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Disabled as per requirements"
     },
@@ -228,7 +228,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/revenue/dart",
       "ref": "main",
-      "sha256": "2e34e1fdafdf6bea9cc4ca1b193146a9141e74426596f7f9a3e4f8c7ca42003b",
+      "sha256": "fa6d6943b52648ffb8c0e389ec67c42c57fb93cd904bb965d42c31dd1999c42e",
       "_sha256_comment": "SHA-256 of revenue/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Owns the manager income/statistics pages. Its manager templates predate the lib/src/common/ wrap and the core/ install drop, so they need rewriting before they compile; and its role-specific code belongs under a manager/ folder with an app_type.manager manifest block, not at lib/src/ root."
     },
@@ -239,7 +239,7 @@
       "git": "https://github.com/RokctAI/zones",
       "path": "../zones/zones/dart",
       "ref": "main",
-      "sha256": "a0c780047bf533245666c2885807d4ad6e53b7ae712ad754c54a9157b74fc920",
+      "sha256": "c8fbd974b13a82cc6ac08cbc3c8bda60d6621e15c9bd122a3fdcd5f97c66a6ad",
       "_sha256_comment": "SHA-256 of zones/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Manager merchant delivery-zone page, declared under app_type.manager. Shared with driver.json, which takes the app_type.driver page from the same manifest."
     },
@@ -250,7 +250,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/hms/dart",
       "ref": "main",
-      "sha256": "197261eff5adae8a5bcbb42ce2dd1f7b16ad15716c4ff4268f9b9a77b3e9517c",
+      "sha256": "44af110d348016f4f334f06ede0903273f0b67af43973e644103e709a5cff556",
       "_comment": "Huawei Mobile Services support, built like desktop_sdk (SDK module, not productFlavors). Dart-side: DeviceServices ({gms, hms, neither} detection, cached, fail-open to gms) and an order-30 boot hook that, ONLY on GMS-free HMS-capable devices, boots Push Kit and registers the HMS push token through the same api.user.register_device_token gateway cmd the FCM token uses (provider 'hms'). No installs - the BUILD_HMS-gated AGConnect Gradle wiring lives statically in core's android template, default-off. Strict no-op in every plain GMS build."
     }
   ],
