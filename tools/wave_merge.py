@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 RokctAI
+# Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 # Licensed under the MIT License.
-# Copyright 2026 RokctAI
+# Copyright 2026 ROKCT INTELLIGENCE (PTY) LTD
 """Wave-merge every open non-draft PR across the RokctAI org in one command.
 
 Org convention: an OPEN non-draft PR is the instruction to merge it; a DRAFT

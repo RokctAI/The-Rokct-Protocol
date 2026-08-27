@@ -1,4 +1,4 @@
-# Copyright (c) 2026 RokctAI
+# Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
 # SOFTWARE.
 
 # Licensed under the MIT License.
-# Copyright 2024 RokctAI
+# Copyright 2024 ROKCT INTELLIGENCE (PTY) LTD
 # Table-driven tests for extract_requirements.py deterministic text
 # extraction (CIDB grading, compulsory briefing, functionality threshold,
 # gate-1 registration keywords).

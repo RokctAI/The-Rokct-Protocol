@@ -1,4 +1,4 @@
-# Copyright (c) 2026 RokctAI
+# Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
 # SOFTWARE.
 
 # Licensed under the MIT License.
-# Copyright 2026 RokctAI
+# Copyright 2026 ROKCT INTELLIGENCE (PTY) LTD
 # compliance-ignore-file: structural-special-dirs
 # These scripts live under .rokct/ ONLY at runtime: initiate.py fetches
 # this canonical copy from The-Rokct-Protocol into .rokct/skills/ at the
