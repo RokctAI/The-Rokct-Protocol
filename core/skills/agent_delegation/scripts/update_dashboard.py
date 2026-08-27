@@ -29,9 +29,9 @@ SHA-256, then executes it with the dashboard subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1be6cb906a5eb582e43f26b26cbecc9dde91f44f"
+PROTOCOL_REF = "2e579d592d6d09211bb14fae917169fc09d0a157"
 DELEGATE_PATH = "core/utils/agent_delegation/reporter.py"
-DELEGATE_SHA256 = "fb0da889eed2344b17e2d40bb2ebc286416b4649e2717431a12792f1c1f0f72f"
+DELEGATE_SHA256 = "27542e8bf2a34c98c667f0de96603081adb22b9627c7e55d482b0005b7f8c364"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )

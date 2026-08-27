@@ -51,7 +51,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1be6cb906a5eb582e43f26b26cbecc9dde91f44f"
+PROTOCOL_REF = "2e579d592d6d09211bb14fae917169fc09d0a157"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -85,22 +85,22 @@ ENGINE_MODULES = (
 # Expected SHA-256 of every engine module at PROTOCOL_REF, keyed by
 # repo-relative path. Pinned by tools/gen_protocol_lock.py.
 EXPECTED_SHA256 = {
-    "core/utils/startup_os/__init__.py": "404dea2780d59f692f904fab2f61e12ecbf1902a2f33760fe78cbf3ea9abc91e",
-    "core/utils/startup_os/errors.py": "3d6eea4e42314187d729d78e392a2ac98ab42f9cc49c6c1eb30ce2bca073312e",
-    "core/utils/startup_os/paths.py": "c6c338241688678152155d98569fd69a7e2d52724577fee3ea0306e9ab849cf8",
-    "core/utils/startup_os/parser.py": "83b8e2236b5306f4282a496877c11dbeae6f8f186302749519de424372dc1c2c",
-    "core/utils/startup_os/jurisdictions.py": "1c71a636d88252579b98dda2b3b4fc2a4d93933828400753aa0ba5957e32288e",
-    "core/utils/startup_os/compliance.py": "1b96ce46a710d262c7dee5f33a776da1261ac6711ba48cf2192115d43541f3b5",
-    "core/utils/startup_os/template_engine.py": "a18d87283211d2a2cf764b69e21e10f539b3b462e39cc6aca4c6c0ceae193b0d",
-    "core/utils/startup_os/documents.py": "260bf33718b1e5fe7f6175256a0f653469d33d13746bd184bfbf3d23e63fde7e",
-    "core/utils/startup_os/safe_io.py": "21e67fd6a6982e128a059a56edc25e3de2261a56697117a21128e73eeb02ad20",
-    "core/utils/startup_os/schemas.py": "e591ec82487c2c0efbfb44e7b92f3eefcf5ee7cc051decef7f04593f2f70abc0",
-    "core/utils/startup_os/compiler.py": "3df04fdfa3ed45e0a893de79568ec6cae00899f16d980d11a22f8d9658a27f90",
-    "core/utils/startup_os/agent_bridge.py": "dab383c8c825c04673bb89e94d81debdd033637cc498ecd0a447cb8f8724f7eb",
-    "core/utils/startup_os/polish.py": "9b82985763305db6f9ef82941fbd5dbf76fd5c9c73280a368a3631f0714f2559",
-    "core/utils/startup_os/branding.py": "9882941100ded2e6c1fb9bc90e63f602feca71ace9ce88d078a243ae25c079be",
-    "core/utils/startup_os/render_pptx.py": "7399034c2dca4d45eb59798bb90d7893c145c2e3733a7f084920564d9aef3f93",
-    "core/utils/startup_os/render_xlsx.py": "82da8d239f2cf7e868c57bdec40107a8ff855ddc10b32c53e1fdead2324508aa",
+    "core/utils/startup_os/__init__.py": "4b6a2672a5d5fff9d78ba52fe02e46db22f7535ea2265e857e1aa227237e6172",
+    "core/utils/startup_os/errors.py": "bb744c5a25d8d01a502a699294c4d8760cfcd902e48cb1de761f6e1f59962af8",
+    "core/utils/startup_os/paths.py": "53b9504d791434d5eca89992bb6d28b5856bc6b13c43db3bf41eaff028e21227",
+    "core/utils/startup_os/parser.py": "b6b7995fdd2deb123586ef1dd6b985b4ca406d56c450f5062c4062d6e92ed154",
+    "core/utils/startup_os/jurisdictions.py": "59f28197ecae817bbf7500e7fa54f685b8e07ea60b06c84670b789d3263fd316",
+    "core/utils/startup_os/compliance.py": "64c74962189f912975a536218cdf2f9748626f3e8424afa96549123fc47c6864",
+    "core/utils/startup_os/template_engine.py": "144398de91a40dc3e124fa9c19ec1c1fa2305ad5758fc40fc37de663e3783059",
+    "core/utils/startup_os/documents.py": "8ffa360491a2229589ffcd263e85020c663b92694cae2d632c99f2423f1bc44c",
+    "core/utils/startup_os/safe_io.py": "64549576ce36c0c09f3ad735787978f6b121687e7d9dbe6fd1b888ba04ce7cfb",
+    "core/utils/startup_os/schemas.py": "7fe37b706899e8382c89df5619a050f318aeecfcb9c5647defc32405b434019a",
+    "core/utils/startup_os/compiler.py": "e476b30e3b9522130d8614d8adc6a8d95de557adf86ef7b2f6aac8cd0f597c63",
+    "core/utils/startup_os/agent_bridge.py": "702d480c48e9c7b35c7186ef97fb5510c1d5fcf22e77afda1eefb01b33c2ddd4",
+    "core/utils/startup_os/polish.py": "ab2b6c926baab872d9a7259dd902fe8b8318b9ad0df28572b36df8fc0d29b660",
+    "core/utils/startup_os/branding.py": "b49097da5103093f9a5a5f26c1addd014eb429c9f4eacb92236d531a63a2e819",
+    "core/utils/startup_os/render_pptx.py": "efa2adba301e541c52cac67413bc3d9759a3fd337d6bc88fd0a957e2d27dc97c",
+    "core/utils/startup_os/render_xlsx.py": "a151f6e0fd3650caf4ad1c9b30a47992feac9bb0e3b34ff22bdf9187dcc75c8a",
 }
 
 LOCKFILE_NAME = "engine.lock.json"

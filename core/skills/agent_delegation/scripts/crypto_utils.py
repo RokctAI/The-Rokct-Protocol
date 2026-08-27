@@ -29,9 +29,9 @@ fetched pinned to PROTOCOL_REF and SHA-256 verified before it is executed.
 import hashlib, os, sys, urllib.request, importlib.util
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "1be6cb906a5eb582e43f26b26cbecc9dde91f44f"
+PROTOCOL_REF = "2e579d592d6d09211bb14fae917169fc09d0a157"
 DELEGATE_PATH = "core/utils/agent_delegation/privacy.py"
-DELEGATE_SHA256 = "33a75837ece5c153f2e56e310eca05ca6a5deeaf4dc56c69403fb845d7dc9798"
+DELEGATE_SHA256 = "5f12567a353016d170d438c89f9ea881136dd8bc8cc99f12f7668eb1f1417669"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
