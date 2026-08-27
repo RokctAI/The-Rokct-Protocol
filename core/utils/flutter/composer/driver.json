@@ -11,7 +11,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
-      "sha256": "f2278305c3df1bbf65124c334f2b05270d54069e61b52ab1502848d36f62e946",
+      "sha256": "0b16224307d995101bef3eb4fd327f35aa3d9b39fbb8086acdec614a2858d26b",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
     {
@@ -21,7 +21,7 @@
       "path": "../Users/auth/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
-      "sha256": "638ff6a945cdf8ab8713b6f7d3627dc6834cfa4400b473e801d8793a0e9038ea",
+      "sha256": "d3ce4549ed0b3b0fdb3669f79b1bd18e105e5e9e8f0c39602a23359ffb5ca333",
       "_comment": "Fully installed (skip_install lifted, plan M3, mirrors manager.json): auth_sdk is the source of truth for auth. Its route shells generate LoginRoute/RegisterRoute/etc. - the host's own auth pages are deleted in the same commit, so there is no duplicate-route collision. delivery_sdk's app_type.driver session_policy (deliveryman -> /home, '*' fallback -> /become-driver keeping the session) gates login via the installed auth_session_policy.dart shell."
     },
     {
@@ -31,7 +31,7 @@
       "path": "../Users/users/dart",
       "git": "https://github.com/RokctAI/Users",
       "ref": "main",
-      "sha256": "c8d07afa7d8a526f3fb5570f639f89adbfe8cb0ff32c106ff5696a1f1e9dd38d"
+      "sha256": "d672879e19b4b87a14fdc6cba98a62b4c475cb296bd3d5d8bd3156a5dac692f4"
     },
     {
       "name": "orders_sdk",
@@ -40,7 +40,7 @@
       "path": "../commerce/orders/dart",
       "git": "https://github.com/RokctAI/commerce",
       "ref": "main",
-      "sha256": "693b01c79ab8b2ee09cf14fefff14f22e0ff61ccb6559e6ea3abf0af62b52074"
+      "sha256": "6a3f376587fbc9f0b8f67c78de6e6e1ffac7be09a2d5f6367b6bf5bd798f1949"
     },
     {
       "name": "delivery_sdk",
@@ -50,7 +50,7 @@
       "home_sdk": true,
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "67474b198bb30a17c563cac6e1faa3c1db7506c47d654c2e74510c1d8bd3c474"
+      "sha256": "06947c2d01b0269ff4e8338d13fefd7c69dd2b3e8cb0bec925ba62f8eff44e06"
     },
     {
       "name": "comms_sdk",
@@ -59,7 +59,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
-      "sha256": "387afceb37a60acd984cf19571a183c1a31c19696e57de1b387dd202209fb9f9"
+      "sha256": "45416a9f9a1bfe311cb069bf83452d1fec60ac6b6d41244d86d9e596dda6989a"
     },
     {
       "name": "telemetry_sdk",
@@ -68,7 +68,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/dart",
       "ref": "main",
-      "sha256": "5a0870e7697f1ac57fc0169561eab979e7e6ea5d478a4510a97ac7321f90ab34",
+      "sha256": "d2b80744cdc9f24c7d49fcac40647a035b4d78ae4f1045102cf22b0ce810451e",
       "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same value as radio.json's entry."
     },
     {
@@ -78,7 +78,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/processing/dart",
       "ref": "main",
-      "sha256": "677d3dac3ce3c1f31b8cfdc23152eaab95599c0df620585bc20068bce29123d2"
+      "sha256": "fffccc36caf5e299de551f1f70a49366f0baf49331261687672efb3c112acd31"
     },
     {
       "name": "calc_sdk",
@@ -87,7 +87,7 @@
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/calc/dart",
       "ref": "main",
-      "sha256": "e2d3566e42e6e296a64020be110a3889ab9500a075489f0c1f560819eeb0b023",
+      "sha256": "b78927dc25222cc31edeeb8d2af924126d6c23d63ab0ae2d064b0d618ea60fb2",
       "_comment": "Standalone calculator (productivity PR #4); un-gated /calc route, shared by manager and driver."
     },
     {
@@ -97,7 +97,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "27bbd0cac87c38bfac5663e622e442c16bb43eebd02a65f559d33149a3478688"
+      "sha256": "73ea3a6a57759307bf1c7a56d1bdad4ab3a90e8dd911f8378fee0fab7af046fc"
     },
     {
       "name": "map_sdk",
@@ -106,7 +106,7 @@
       "path": "../zones/map/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "5baf3850d414fb529eebb86098f895e04d25f6130d52bb80cb73edb01c7c43a7"
+      "sha256": "71bc5e68f7ec83dbe72c00ae9d58483a3e4fb22aa5f8cee9c08d9d4e67ae1893"
     },
     {
       "name": "zones_sdk",
@@ -115,7 +115,7 @@
       "path": "../zones/zones/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "a0c780047bf533245666c2885807d4ad6e53b7ae712ad754c54a9157b74fc920"
+      "sha256": "c8fbd974b13a82cc6ac08cbc3c8bda60d6621e15c9bd122a3fdcd5f97c66a6ad"
     },
     {
       "name": "weather_sdk",
@@ -124,7 +124,7 @@
       "path": "../zones/weather/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "0c03f5eeef196967302c2032183b57bcc52a8fe1bee8707ffb192e2829259eb9",
+      "sha256": "e642a3cab85956145d657a959556b59312c4e3ca0178b6b6cf649fdeeb89e371",
       "_comment": "Activates the severe-weather banner shipped dormant in zones PR #44: weather 1.4.0's app_type.driver block installs the courier locationResolver wiring plus the weather-driver-configure-location boot hook, and delivery_sdk's home sheet already renders the warnings banner fail-closed. Declaration mirrors manager.json/pos.json."
     },
     {
@@ -143,7 +143,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/revenue/dart",
       "ref": "main",
-      "sha256": "2e34e1fdafdf6bea9cc4ca1b193146a9141e74426596f7f9a3e4f8c7ca42003b",
+      "sha256": "fa6d6943b52648ffb8c0e389ec67c42c57fb93cd904bb965d42c31dd1999c42e",
       "_comment": "Driver income/statistics pages, under a driver/ role folder with an app_type.driver manifest block. Shared with manager.json, which takes the manager variant from the same SDK."
     },
     {
@@ -153,7 +153,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/merchants/dart",
       "ref": "main",
-      "sha256": "7ea45bdbad67b97effc2239599ebd8d6584aca7bac14cd83e5e9117b0f0f62a1",
+      "sha256": "12206c71a9ed6a49910f949ab379f3a0547a9c0c52c9b3da281583f12cca4855",
       "_comment": "Story UI the driver app shows; base_sdk already owns story_data/story_request, so only the presentation needed a home."
     },
     {
@@ -163,7 +163,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/dart",
       "ref": "main",
-      "sha256": "5468d4030bb8e71b3e4745d983ec30a05134510043d4c0951912c3ee615c5983",
+      "sha256": "2d2a799c2147be5e664e2810dde5fa71be4d39816cb0456cde3b419d0f6702c5",
       "_comment": "restaurant_item / product_item / maps_list widgets used by the driver app."
     },
     {
@@ -173,7 +173,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/desktop/dart",
       "ref": "main",
-      "sha256": "188774abbcb8de7dee95dba1444f2c1913a37241826453a987b283646ba756de",
+      "sha256": "c7a03710610e9e27d57a762894befff57dcda7ae46153973f7ded129eef5e1c9",
       "_comment": "TEMPORARY (desktop testing convenience, revert candidate): added to every app profile so all composed apps pull desktop support and can be viewed/tested on desktop. Pin = sha256 of hardware desktop/dart/install.py at main head 84aa6ed, same value as supacharge.json's entry."
     },
     {
@@ -183,7 +183,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/hms/dart",
       "ref": "main",
-      "sha256": "197261eff5adae8a5bcbb42ce2dd1f7b16ad15716c4ff4268f9b9a77b3e9517c",
+      "sha256": "44af110d348016f4f334f06ede0903273f0b67af43973e644103e709a5cff556",
       "_comment": "Huawei Mobile Services support, built like desktop_sdk (SDK module, not productFlavors). Dart-side: DeviceServices ({gms, hms, neither} detection, cached, fail-open to gms) and an order-30 boot hook that, ONLY on GMS-free HMS-capable devices, boots Push Kit and registers the HMS push token through the same api.user.register_device_token gateway cmd the FCM token uses (provider 'hms'). No installs - the BUILD_HMS-gated AGConnect Gradle wiring lives statically in core's android template, default-off. Strict no-op in every plain GMS build."
     }
   ],

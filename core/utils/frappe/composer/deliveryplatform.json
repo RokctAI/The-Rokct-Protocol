@@ -182,7 +182,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/nextjs",
       "ref": "main",
-      "sha256": "2326db050c4d84f3dddc4245e9e7eadd6520e88bf5045189e4bca9eb6f327633",
+      "sha256": "fdba41c141d044c13e4160249636f9183261858ea13dfa23a8095973f160dfc0",
       "_sha256_comment": "SHA-256 of base/nextjs/install.py at core as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -192,7 +192,7 @@
       "git": "https://github.com/RokctAI/users",
       "path": "../users/auth/nextjs",
       "ref": "main",
-      "sha256": "37a92ba94e6b261816ad9d8d576b621b28b17622ee1fb3b63cfb3fef860373ad",
+      "sha256": "4a231ed611c8b98350b2b9c12ad771fa96ad953243c3b11a67e14ce1b00c1f6e",
       "_sha256_comment": "SHA-256 of auth/nextjs/install.py at users as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -202,7 +202,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/nextjs",
       "ref": "main",
-      "sha256": "e5b23d1e8ee80b8c9bd964a0aa02049e75ecbd7a90d8a66ddd5b3eb6d54e5c6f",
+      "sha256": "d94e2abd2f8d3626374486da73c3bb243c84588b12a72b7d25808fd3729e6da3",
       "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
     },
@@ -213,7 +213,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/nextjs",
       "ref": "main",
-      "sha256": "b6375965c2c9731e596538a765dd3cca6dd48cdc25e3d3cf58567bdd3ca67f84",
+      "sha256": "9f7a11fe31d7f980594d60490125bffbeead4e3c31d06150080d7a0dc5af3159",
       "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     }
   ]
