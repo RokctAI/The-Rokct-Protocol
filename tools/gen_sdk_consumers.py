@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 RokctAI
+# Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 # Licensed under the MIT License.
-# Copyright 2024 RokctAI
+# Copyright 2024 ROKCT INTELLIGENCE (PTY) LTD
 """Generate the SDK -> consuming-app-shells reverse index.
 
 An app shell is a repository whose ROOT composer.json declares an `sdks`
