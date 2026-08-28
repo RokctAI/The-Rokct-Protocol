@@ -46,7 +46,7 @@
       "path": "../core/telemetry/dart",
       "ref": "main",
       "sha256": "d2b80744cdc9f24c7d49fcac40647a035b4d78ae4f1045102cf22b0ce810451e",
-      "_comment": "Listener counts: how many are tuned in via the app. The dart side exists now (core/telemetry/dart, telemetry_sdk 1.0.0): counts flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam; the frappe side keeps src/telemetry and the api_error_log doctype. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same pattern as desktop_sdk's entry."
+      "_comment": "Listenership telemetry. The telemetry CLIENT lives in base_sdk (TelemetryClient.track / logError, gateway cmds tenant.api.track_event / tenant.api.log_frontend_error); telemetry_sdk (core/telemetry/dart) ships no client of its own — it composes on top and injects delivery policy through the TelemetryClient.configure transport seam. Radio listening is accumulated locally in the app's Drift database (radio_sdk's listen_daily_totals aggregates) and flushed on cold start as one radio_listen_daily summary per station-day, so listener figures are daily aggregates, not live tune-in counts; the frappe side keeps src/telemetry with the api_error_log and client_usage_event doctypes. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same pattern as desktop_sdk's entry."
     },
     {
       "name": "promotions_sdk",
