@@ -49,6 +49,11 @@ Pins the literal-token gap fixes and the shell scaffold:
     module's src/ tree) register in the composed hooks.py rewritten to the
     composed module folder, accumulate as a deduped list per DocType across
     modules, and are existence-checked against the composed output.
+  * an SDK's top-level frappe/fixtures/ tree redirects to the APP-level
+    fixtures/ dir — the only place frappe's import_fixtures() looks — with
+    the www/-style collision policy: duplicate destination files hard-error.
+    It used to not be copied at all, so seven SDKs' fixture records shipped
+    to the built app and never applied.
   * scaffold mode lays the tokenized shell skeleton into a fresh repo and
     never overwrites a file an existing shell already has.
   * the post-compose token lint warns on unresolved {app_name}/{module_name}
@@ -534,6 +539,97 @@ class GlobalTemplatesRedirectTest(ComposeBackendTestBase):
             self.read(f"{self.APP}/templates/pages/portal.html"),
             f"<h1>{self.APP}</h1>\n",
         )
+
+
+class FixturesCompositionTest(ComposeBackendTestBase):
+    """An SDK's frappe/fixtures/ must land at the APP root, not the module.
+
+    frappe/utils/fixtures.py::import_fixtures walks <app>/fixtures/*.json
+    (flat, app-level) on every migrate; a fixtures/ dir left inside the
+    composed module folder is never read, so SDK fixture records used to
+    ship to the built app and silently never apply.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk()
+
+    def test_sdk_fixtures_land_at_app_root(self):
+        self.write(
+            f"sdk/{self.MODULE}/frappe/fixtures/custom_field_widget.json",
+            json.dumps({"doctype": "Custom Field", "dt": "Widget",
+                        "fieldname": "colour"}),
+        )
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertTrue(
+            self.exists(f"{self.APP}/fixtures/custom_field_widget.json"),
+            "SDK fixture did not reach <app>/fixtures/",
+        )
+        # and NOT inside the composed module folder, where nothing reads it
+        self.assertFalse(
+            self.exists(f"{self.APP}/{self.MODULE}/fixtures/"
+                        "custom_field_widget.json")
+        )
+        self.assertIn("Merged fixtures from", out)
+        data = json.loads(self.read(f"{self.APP}/fixtures/"
+                                    "custom_field_widget.json"))
+        self.assertEqual(data["fieldname"], "colour")
+
+    def test_fixture_tokens_resolve(self):
+        self.write(
+            f"sdk/{self.MODULE}/frappe/fixtures/tokened.json",
+            json.dumps({"doctype": "Server Script",
+                        "script": "import {app_name}.{module_name}"}),
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        data = json.loads(self.read(f"{self.APP}/fixtures/tokened.json"))
+        self.assertEqual(data["script"], f"import {self.APP}.{self.MODULE}")
+
+    def test_tokenless_fixture_stays_byte_identical(self):
+        raw = '{\n  "doctype": "Role",\n  "role_name": "Seller"\n}\n'
+        self.write(f"sdk/{self.MODULE}/frappe/fixtures/role.json", raw)
+        composer = self.load_composer()
+        self.run_main(composer)
+        self.assertEqual(self.read(f"{self.APP}/fixtures/role.json"), raw)
+
+    def test_fixture_subdirectories_are_copied(self):
+        self.write(
+            f"sdk/{self.MODULE}/frappe/fixtures/Subscription_Plan/Free.json",
+            json.dumps({"doctype": "Subscription Plan", "name": "Free"}),
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        self.assertTrue(
+            self.exists(f"{self.APP}/fixtures/Subscription_Plan/Free.json")
+        )
+
+    def test_duplicate_fixture_filename_across_modules_hard_errors(self):
+        self.make_composer_json(
+            modules=[
+                {"name": "moda", "enabled": True, "path": "sdk/moda/frappe"},
+                {"name": "modb", "enabled": True, "path": "sdk/modb/frappe"},
+            ]
+        )
+        for m in ("moda", "modb"):
+            self.make_sdk(module=m)
+            self.write(
+                f"sdk/{m}/frappe/fixtures/shared.json",
+                json.dumps({"doctype": "Role", "role_name": m}),
+            )
+        composer = self.load_composer()
+        with self.assertRaises(ValueError) as ctx:
+            self.run_main(composer)
+        self.assertIn("Duplicate fixture", str(ctx.exception))
+
+    def test_sdk_without_fixtures_dir_is_a_noop(self):
+        composer = self.load_composer()
+        out, _ = self.run_main(composer)
+        self.assertFalse(self.exists(f"{self.APP}/fixtures"))
+        self.assertNotIn("Merged fixtures from", out)
 
 
 class ScaffoldTest(ComposeBackendTestBase):

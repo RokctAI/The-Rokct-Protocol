@@ -114,16 +114,26 @@ def copy_doctype_tree_resolving(src, dst, app_name, module_name):
         if os.path.isdir(s):
             copy_doctype_tree_resolving(s, d, app_name, module_name)
             continue
-        if s.endswith(SUBSTITUTABLE_EXTENSIONS):
-            with open(s, "rb") as sf:
-                raw = sf.read()
-            if TOKEN_APP_NAME.encode() in raw or TOKEN_MODULE_NAME.encode() in raw:
-                text = resolve_tokens(raw.decode("utf-8"), app_name, module_name)
-                # newline="" keeps the source file's own line endings intact.
-                with open(d, "w", encoding="utf-8", newline="") as df:
-                    df.write(text)
-                continue
-        shutil.copy2(s, d)
+        copy_file_resolving(s, d, app_name, module_name)
+
+
+def copy_file_resolving(s, d, app_name, module_name):
+    """Copy ONE file, substituting template tokens only where present.
+
+    A substitutable file whose content actually carries a token is
+    rewritten; every other file is byte-copied with shutil.copy2, so
+    tokenless files stay byte-identical to a plain copy.
+    """
+    if s.endswith(SUBSTITUTABLE_EXTENSIONS):
+        with open(s, "rb") as sf:
+            raw = sf.read()
+        if TOKEN_APP_NAME.encode() in raw or TOKEN_MODULE_NAME.encode() in raw:
+            text = resolve_tokens(raw.decode("utf-8"), app_name, module_name)
+            # newline="" keeps the source file's own line endings intact.
+            with open(d, "w", encoding="utf-8", newline="") as df:
+                df.write(text)
+            return
+    shutil.copy2(s, d)
 
 
 def merge_global_templates_tree(src, dst, app_name, module_label, module_name, rel=""):
@@ -1244,7 +1254,39 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                     )
                 print(f"[+] Copied Source Directory: {f} -> {module_name}")
 
-    # 3. Create Frappe Module Package registration markers
+    # 3. Copy Fixtures
+    # Frappe imports fixtures from ONE place only: the app package's own
+    # <app>/fixtures/*.json, walked by import_fixtures() (frappe/utils/
+    # fixtures.py) on every `bench migrate`. It is a flat, app-level scan --
+    # module-level fixtures/ dirs are never read, and hooks.fixtures governs
+    # only the EXPORT side (bench export-fixtures), not the import. So an
+    # SDK's fixtures/ tree has to land at the app root to apply at all;
+    # copied into the module folder alongside doctype/ and src/ it would be
+    # inert. Merged like www/ and patches/: app-level destination, exact
+    # duplicate filenames are a hard build error rather than a silent
+    # last-writer-wins overwrite of another SDK's records.
+    src_fixtures = os.path.join(src_sdk_path, "fixtures")
+    if os.path.isdir(src_fixtures):
+        dest_fixtures = os.path.join(target_app_path, "fixtures")
+        os.makedirs(dest_fixtures, exist_ok=True)
+        for item in os.listdir(src_fixtures):
+            s_path = os.path.join(src_fixtures, item)
+            d_path = os.path.join(dest_fixtures, item)
+            if os.path.exists(d_path):
+                raise ValueError(
+                    f"CRITICAL ERROR: Duplicate fixture '{item}' detected! "
+                    f"(Attempted by: '{module_name}'). Failing build."
+                )
+            if os.path.isdir(s_path):
+                copy_doctype_tree_resolving(
+                    s_path, d_path, app_name, module_label
+                )
+            else:
+                copy_file_resolving(s_path, d_path, app_name, module_label)
+            COMPOSED_PATHS.append(d_path)
+        print(f"[+] Merged fixtures from: {module_name}")
+
+    # 4. Create Frappe Module Package registration markers
     with open(
         os.path.join(dest_module_path, "__init__.py"), "w", encoding="utf-8"
     ) as f:
