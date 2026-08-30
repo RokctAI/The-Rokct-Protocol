@@ -1278,9 +1278,7 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
                     f"(Attempted by: '{module_name}'). Failing build."
                 )
             if os.path.isdir(s_path):
-                copy_doctype_tree_resolving(
-                    s_path, d_path, app_name, module_label
-                )
+                copy_doctype_tree_resolving(s_path, d_path, app_name, module_label)
             else:
                 copy_file_resolving(s_path, d_path, app_name, module_label)
             COMPOSED_PATHS.append(d_path)

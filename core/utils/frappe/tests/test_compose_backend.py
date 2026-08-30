@@ -559,8 +559,9 @@ class FixturesCompositionTest(ComposeBackendTestBase):
     def test_sdk_fixtures_land_at_app_root(self):
         self.write(
             f"sdk/{self.MODULE}/frappe/fixtures/custom_field_widget.json",
-            json.dumps({"doctype": "Custom Field", "dt": "Widget",
-                        "fieldname": "colour"}),
+            json.dumps(
+                {"doctype": "Custom Field", "dt": "Widget", "fieldname": "colour"}
+            ),
         )
         composer = self.load_composer()
         out, _ = self.run_main(composer)
@@ -570,19 +571,21 @@ class FixturesCompositionTest(ComposeBackendTestBase):
         )
         # and NOT inside the composed module folder, where nothing reads it
         self.assertFalse(
-            self.exists(f"{self.APP}/{self.MODULE}/fixtures/"
-                        "custom_field_widget.json")
+            self.exists(f"{self.APP}/{self.MODULE}/fixtures/custom_field_widget.json")
         )
         self.assertIn("Merged fixtures from", out)
-        data = json.loads(self.read(f"{self.APP}/fixtures/"
-                                    "custom_field_widget.json"))
+        data = json.loads(self.read(f"{self.APP}/fixtures/custom_field_widget.json"))
         self.assertEqual(data["fieldname"], "colour")
 
     def test_fixture_tokens_resolve(self):
         self.write(
             f"sdk/{self.MODULE}/frappe/fixtures/tokened.json",
-            json.dumps({"doctype": "Server Script",
-                        "script": "import {app_name}.{module_name}"}),
+            json.dumps(
+                {
+                    "doctype": "Server Script",
+                    "script": "import {app_name}.{module_name}",
+                }
+            ),
         )
         composer = self.load_composer()
         self.run_main(composer)
@@ -603,9 +606,7 @@ class FixturesCompositionTest(ComposeBackendTestBase):
         )
         composer = self.load_composer()
         self.run_main(composer)
-        self.assertTrue(
-            self.exists(f"{self.APP}/fixtures/Subscription_Plan/Free.json")
-        )
+        self.assertTrue(self.exists(f"{self.APP}/fixtures/Subscription_Plan/Free.json"))
 
     def test_duplicate_fixture_filename_across_modules_hard_errors(self):
         self.make_composer_json(
