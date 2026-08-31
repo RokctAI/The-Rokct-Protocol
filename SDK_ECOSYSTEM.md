@@ -167,7 +167,7 @@ docstrings in `core/utils/flutter/sdk_installer_base.py`.
 | `di_hooks` | DI registration statements injected into `main.dart` (e.g. role dependency + ADR-005 adapter wiring). |
 | `embedded_widgets` | Widget-provider methods injected into the host; **duplicate method name = first SDK wins, loud warning** (`update_embedded_widgets()`). |
 | `brand_hook` | The app's brand/theming boot call. **At most ONE declarer — the installer raises a hard error on conflict** (`update_brand_hook()`). |
-| `database` | `{tables, migration}` — Drift table registration + schema migration steps injected into the central `AppDatabase`. |
+| `database` | `{tables, migration}` — Drift table registration + schema migration steps injected into the central `AppDatabase`. Anything the server must query gets a typed column, not a row's JSON blob (see "Hard invariants — do not break"). |
 | `integrations` | Marker/placeholder text injections into other SDKs' installed files (plain substring replace on a `// @marker` line). |
 | `registration_steps` | RegistrationStep entries injected into auth_sdk's registration-steps shell. |
 | `onboarding_slides` | OnboardingSlide entries injected into onboarding_sdk's shell (unique `id`, integer `order`). |
@@ -524,6 +524,32 @@ This repo's runtime-fetched-and-executed files are pinned. See
    module is invalid, and the rule extends to control's own composition as its
    SDK-ification lands.
 
+10. **If the server must act on a value, it is a typed field — never a blob
+    key** (standing rule, Ray 2026-08-31). An untyped `data` JSON column on a
+    Drift table is for state the device alone reads. The test, applied per
+    field: does anything outside this device need to find, filter, sort or
+    act on this value? If yes it is a real column, and a real field on the
+    DocType it syncs to — reminders, due dates, recurrence, status,
+    ownership, anything a scheduler, a query, a filter or a server-side job
+    must reach. Blobs stay legitimate for device-only state, genuinely
+    freeform payloads, and values no query will ever touch. The trap: a
+    local-only feature accumulates fields in a blob precisely because nothing
+    is reading them yet, and the cost only lands when the feature has to sync
+    — by which point the schema change is far more expensive than declaring
+    the column would have been. Live example — `productivity`'s tasks table
+    (`productivity/dart/lib/src/common/infrastructure/database/tasks_table.dart`)
+    types `id, title, description, isCompleted, dueDate, createdAt,
+    updatedAt, createdBy` and packs `reminder`, `recurrence`, `priority`,
+    `category`, `subtasks` and `notifId` into one `data` column, so a server
+    holding that row knows a task exists but cannot query for the ones due
+    Saturday that repeat monthly, and could never run the scheduler that
+    fires them. Sync does not rescue it: `base_sdk`'s sync engine
+    (`core/base/dart/lib/src/sync/`) is a push-only outbox whose handlers
+    hand-craft their RPC payload, so a handler *can* unpack a blob — but the
+    receiving DocType still needs real fields for anything it must query. A
+    feature may ship local-only; it may not ship values the server will later
+    need buried where no query can reach them.
+
 ## Introducing a new SDK — checklist
 
 1. Pick the domain monorepo it belongs in (`core`, `zones`, `commerce`,
@@ -594,6 +620,10 @@ This repo's runtime-fetched-and-executed files are pinned. See
 - Don't edit an app's committed `composer.json` as the source of truth — the
   protocol template `core/utils/flutter/composer/<app_type>.json` is canonical.
 - Don't add a second `session_policy` or `brand_hook` declarer.
+- Don't park a server-queryable value — a reminder, a due date, a
+  recurrence, a status, an owner — inside a table's `data` JSON blob; if
+  anything off-device must find, filter, sort or act on it, it is a typed
+  column and a DocType field.
 - Don't pin an SDK to a branch other than `main` in composer templates.
 - Don't add narrow `permissions:` blocks to CI caller workflows.
 - Don't give PlatformStack any SDK or composer knowledge.
