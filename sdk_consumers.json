@@ -11,6 +11,7 @@
       "repo": "RokctAI/Users",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -20,8 +21,10 @@
       "repo": "RokctAI/core",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
+        "radio",
         "supacharge"
       ]
     },
@@ -36,8 +39,10 @@
       "repo": "RokctAI/core",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
+        "radio",
         "supacharge"
       ]
     },
@@ -45,6 +50,7 @@
       "repo": "RokctAI/corporate",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -53,19 +59,25 @@
     "delivery_sdk": {
       "repo": "RokctAI/zones",
       "consumers": [
+        "paas_customer",
         "paas_driver"
       ]
     },
     "desktop_sdk": {
       "repo": "RokctAI/hardware",
       "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
         "paas_manager",
+        "radio",
         "supacharge"
       ]
     },
     "fav_sdk": {
       "repo": "RokctAI/agent",
       "consumers": [
+        "paas_customer",
         "supacharge"
       ]
     },
@@ -73,6 +85,17 @@
       "repo": "RokctAI/hardware",
       "consumers": [
         "paas_manager"
+      ]
+    },
+    "hms_sdk": {
+      "repo": "RokctAI/hardware",
+      "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "radio",
+        "supacharge"
       ]
     },
     "kitchen_sdk": {
@@ -93,16 +116,30 @@
         "supacharge"
       ]
     },
+    "loyalty_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_customer"
+      ]
+    },
     "map_sdk": {
       "repo": "RokctAI/zones",
       "consumers": [
+        "paas_customer",
         "paas_driver",
         "paas_manager"
+      ]
+    },
+    "marketplace_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_customer"
       ]
     },
     "merchants_sdk": {
       "repo": "RokctAI/commerce",
       "consumers": [
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -117,6 +154,7 @@
     "orders_sdk": {
       "repo": "RokctAI/commerce",
       "consumers": [
+        "paas_customer",
         "paas_driver",
         "paas_manager"
       ]
@@ -124,6 +162,7 @@
     "payments_sdk": {
       "repo": "RokctAI/pay",
       "consumers": [
+        "paas_customer",
         "paas_manager",
         "supacharge"
       ]
@@ -132,6 +171,7 @@
       "repo": "RokctAI/productivity",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -148,6 +188,7 @@
     "products_sdk": {
       "repo": "RokctAI/commerce",
       "consumers": [
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -156,7 +197,14 @@
     "promotions_sdk": {
       "repo": "RokctAI/commerce",
       "consumers": [
+        "paas_customer",
         "paas_manager"
+      ]
+    },
+    "radio_sdk": {
+      "repo": "RokctAI/agent",
+      "consumers": [
+        "radio"
       ]
     },
     "replay_sdk": {
@@ -179,10 +227,26 @@
         "supacharge"
       ]
     },
+    "telemetry_sdk": {
+      "repo": "RokctAI/core",
+      "consumers": [
+        "delivery-frontend",
+        "hosting",
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "radio",
+        "supacharge",
+        "supacharge-web",
+        "telephony-frontend"
+      ]
+    },
     "users_sdk": {
       "repo": "RokctAI/Users",
       "consumers": [
         "minilauncher",
+        "paas_customer",
         "paas_driver",
         "paas_manager",
         "supacharge"
@@ -191,6 +255,7 @@
     "wallet_sdk": {
       "repo": "RokctAI/pay",
       "consumers": [
+        "paas_customer",
         "supacharge"
       ]
     },

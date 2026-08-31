@@ -21,31 +21,36 @@ Disabled entries (`"enabled": false`) are not composed and not indexed.
 | SDK | Source repo | Consuming shells |
 |---|---|---|
 | `agent_sdk` | `RokctAI/agent` | `supacharge` |
-| `auth_sdk` | `RokctAI/Users` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
-| `base_sdk` | `RokctAI/core` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
+| `auth_sdk` | `RokctAI/Users` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
+| `base_sdk` | `RokctAI/core` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `calc_sdk` | `RokctAI/productivity` | `paas_driver`, `paas_manager` |
-| `comms_sdk` | `RokctAI/core` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
-| `corporate_sdk` | `RokctAI/corporate` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
-| `delivery_sdk` | `RokctAI/zones` | `paas_driver` |
-| `desktop_sdk` | `RokctAI/hardware` | `paas_manager`, `supacharge` |
-| `fav_sdk` | `RokctAI/agent` | `supacharge` |
+| `comms_sdk` | `RokctAI/core` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
+| `corporate_sdk` | `RokctAI/corporate` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
+| `delivery_sdk` | `RokctAI/zones` | `paas_customer`, `paas_driver` |
+| `desktop_sdk` | `RokctAI/hardware` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
+| `fav_sdk` | `RokctAI/agent` | `paas_customer`, `supacharge` |
 | `hardware_sdk` | `RokctAI/hardware` | `paas_manager` |
+| `hms_sdk` | `RokctAI/hardware` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `kitchen_sdk` | `RokctAI/commerce` | `paas_manager` |
 | `launch_sdk` | `RokctAI/core` | `minilauncher` |
 | `lms_sdk` | `RokctAI/agent` | `supacharge` |
-| `map_sdk` | `RokctAI/zones` | `paas_driver`, `paas_manager` |
-| `merchants_sdk` | `RokctAI/commerce` | `paas_driver`, `paas_manager`, `supacharge` |
+| `loyalty_sdk` | `RokctAI/commerce` | `paas_customer` |
+| `map_sdk` | `RokctAI/zones` | `paas_customer`, `paas_driver`, `paas_manager` |
+| `marketplace_sdk` | `RokctAI/commerce` | `paas_customer` |
+| `merchants_sdk` | `RokctAI/commerce` | `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
 | `onboarding_sdk` | `RokctAI/Users` | `supacharge` |
-| `orders_sdk` | `RokctAI/commerce` | `paas_driver`, `paas_manager` |
-| `payments_sdk` | `RokctAI/pay` | `paas_manager`, `supacharge` |
-| `processing_sdk` | `RokctAI/productivity` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
+| `orders_sdk` | `RokctAI/commerce` | `paas_customer`, `paas_driver`, `paas_manager` |
+| `payments_sdk` | `RokctAI/pay` | `paas_customer`, `paas_manager`, `supacharge` |
+| `processing_sdk` | `RokctAI/productivity` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
 | `productivity_sdk` | `RokctAI/productivity` | `minilauncher`, `paas_manager`, `supacharge` |
-| `products_sdk` | `RokctAI/commerce` | `paas_driver`, `paas_manager`, `supacharge` |
-| `promotions_sdk` | `RokctAI/commerce` | `paas_manager` |
+| `products_sdk` | `RokctAI/commerce` | `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
+| `promotions_sdk` | `RokctAI/commerce` | `paas_customer`, `paas_manager` |
+| `radio_sdk` | `RokctAI/agent` | `radio` |
 | `replay_sdk` | `RokctAI/agent` | `supacharge` |
 | `revenue_sdk` | `RokctAI/corporate` | `paas_driver`, `paas_manager` |
 | `subscriptions_sdk` | `RokctAI/agent` | `paas_manager`, `supacharge` |
-| `users_sdk` | `RokctAI/Users` | `minilauncher`, `paas_driver`, `paas_manager`, `supacharge` |
-| `wallet_sdk` | `RokctAI/pay` | `supacharge` |
+| `telemetry_sdk` | `RokctAI/core` | `delivery-frontend`, `hosting`, `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge`, `supacharge-web`, `telephony-frontend` |
+| `users_sdk` | `RokctAI/Users` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
+| `wallet_sdk` | `RokctAI/pay` | `paas_customer`, `supacharge` |
 | `weather_sdk` | `RokctAI/zones` | `paas_driver`, `paas_manager` |
 | `zones_sdk` | `RokctAI/zones` | `paas_driver`, `paas_manager` |

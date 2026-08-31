@@ -76,9 +76,9 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `base` | `core` | yes | yes | yes |
 | `comms` | `core` | yes | yes | — |
 | `launch` | `core` | yes | — | — |
-| `telemetry` | `core` | — | yes | — |
-| `auth` | `Users` | yes | yes | — |
-| `onboarding` | `Users` | yes | — | — |
+| `telemetry` | `core` | yes | yes | yes |
+| `auth` | `Users` | yes | yes | yes |
+| `onboarding` | `Users` | yes | yes | — |
 | `users` | `Users` | yes | yes | — |
 | `agent` | `agent` | yes | yes | yes |
 | `fav` | `agent` | yes | yes | yes |
@@ -91,10 +91,10 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `forex` | `commerce` | yes | yes | — |
 | `kitchen` | `commerce` | yes | yes | — |
 | `loyalty` | `commerce` | yes | yes | — |
-| `marketplace` | `commerce` | yes | — | — |
+| `marketplace` | `commerce` | yes | yes | — |
 | `merchants` | `commerce` | yes | yes | — |
 | `orders` | `commerce` | yes | yes | — |
-| `products` | `commerce` | yes | yes | — |
+| `products` | `commerce` | yes | yes | yes |
 | `promotions` | `commerce` | yes | yes | — |
 | `erp` | `pay` | — | yes | yes |
 | `gateways` | `pay` | — | yes | — |
@@ -113,7 +113,8 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `support` | `productivity` | — | yes | — |
 | `desktop` | `hardware` | yes | — | — |
 | `hardware` | `hardware` | yes | yes | — |
-| `telephony` | `hardware` | yes | — | — |
+| `hms` | `hardware` | yes | — | — |
+| `telephony` | `hardware` | yes | yes | yes |
 | `builder` | `corporate` | — | yes | — |
 | `corporate` | `corporate` | yes | — | — |
 | `dev` | `corporate` | — | yes | — |
