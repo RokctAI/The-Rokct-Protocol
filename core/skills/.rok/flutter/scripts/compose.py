@@ -1,23 +1,17 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, version 3.
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
 The-Rokct-Protocol: compose.py wrapper for Flutter
@@ -28,15 +22,15 @@ PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "5d8b5b3ad224199e636fae2257f00ce67fcddb6e"
+PROTOCOL_REF = "9e4d350f09fd2c7123178f94a0f723e49f96b7b8"
 COMPOSER_PATH = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
 EXPECTED_SHA256 = {
-    "core/utils/flutter/sdk_composer.py": "e0377eb01ce9b98b500570b0370c53e780dee581d9f475de61c9bf5f77afe805",
-    "core/utils/flutter/sdk_installer_base.py": "b790671cc752e3e0595d72e8f9e171539284c1d7e672a736e8fedef1c9f31ec9",
+    "core/utils/flutter/sdk_composer.py": "adccf4ab3af70ef40bd7e107ca7322102cb8340bc7a5f39b71560237d7baf285",
+    "core/utils/flutter/sdk_installer_base.py": "21491bc91d15f3abf3cde1e15e3062161145f7997d9a57cf21654dfb29799860",
 }
 
 
