@@ -24,7 +24,10 @@ jobs:
           parent_branch="main"
           working_files=""
 
-          if [ -f .rokct/active_session.txt ]; then
+          # active_session.txt is committed in every repo and holds the
+          # placeholder [NO_SESSION_ACTIVE] when idle, so existence alone is
+          # not a signal - only a real session marker should skip the sync.
+          if [ -f .rokct/active_session.txt ] && ! grep -q 'NO_SESSION_ACTIVE' .rokct/active_session.txt; then
             echo "Active session in progress, skipping sync."
             skip="true"
           elif [ ! -f .rokct/.workspace_config.json ]; then
