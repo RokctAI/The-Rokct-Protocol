@@ -124,7 +124,12 @@ def main():
         # install_state.json now lives at .rokct/cache/install_state.json
         # (cache/ is keep-whitelisted below); a legacy copy at .rokct/'s own
         # root is kept explicitly until the composer migrates it there.
-        if item in ("active_session.txt", "initiate.py", "install_state.json"):
+        if item in (
+            "active_session.txt",
+            "initiate.py",
+            "install_state.json",
+            ".markdownlint.json",
+        ):
             print(f"[end] Kept {item} (protocol tool)")
             continue
         if item == ".sync_ready":
