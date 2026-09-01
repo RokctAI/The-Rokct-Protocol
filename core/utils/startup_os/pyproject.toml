@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 name = "startupos"
 description = "StartupOS strategic compiler - business and life planning document suites."
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-only" }
 authors = [{ name = "RokctAI" }]
 dynamic = ["version"]
 

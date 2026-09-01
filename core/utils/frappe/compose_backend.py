@@ -891,7 +891,7 @@ app_title = "{app_name}"
 app_publisher = "ROKCT INTELLIGENCE (PTY) LTD"
 app_description = "Composed Frappe app shell"
 app_email = "admin@rokct.ai"
-app_license = "mit"
+app_license = "AGPL-3.0-only"
 
 # Installation
 # ------------
