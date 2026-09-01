@@ -122,6 +122,7 @@ def main():
             "active_session.txt",
             "initiate.py",
             "install_state.json",
+            ".markdownlint.json",
         ):
             print(f"[end] Kept {item_path.name} (protocol tool)")
             continue
