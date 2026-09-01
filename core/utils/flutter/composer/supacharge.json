@@ -42,7 +42,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "73ea3a6a57759307bf1c7a56d1bdad4ab3a90e8dd911f8378fee0fab7af046fc",
+      "sha256": "88ac3c9d07789e5e5e81d3090402e3a595c79d88f7924b79c15109dd5292988b",
       "_comment": "Policy/terms pages (auth's login footer links reach them via EmbeddedWidgets) - any composition that includes auth_sdk needs corporate_sdk."
     },
     {

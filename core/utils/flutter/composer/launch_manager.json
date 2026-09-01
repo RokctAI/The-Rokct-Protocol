@@ -153,8 +153,8 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "73ea3a6a57759307bf1c7a56d1bdad4ab3a90e8dd911f8378fee0fab7af046fc",
-      "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+      "sha256": "88ac3c9d07789e5e5e81d3090402e3a595c79d88f7924b79c15109dd5292988b",
+      "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@a3a9eb05; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "promotions_sdk",
@@ -215,8 +215,8 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/revenue/dart",
       "ref": "main",
-      "sha256": "fa6d6943b52648ffb8c0e389ec67c42c57fb93cd904bb965d42c31dd1999c42e",
-      "_sha256_comment": "SHA-256 of revenue/dart/install.py at corporate@aa23ff0; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "6f9d02a157b690427e5038e75a58c2d38bcc6c213ccff4945009b3dfad3e08ac",
+      "_sha256_comment": "SHA-256 of revenue/dart/install.py at corporate@a3a9eb05; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Owns the manager income/statistics pages, mirrored from manager.json. Its manager templates predate the lib/src/common/ wrap and the core/ install drop, so they need rewriting before they compile; and its role-specific code belongs under a manager/ folder with an app_type.manager manifest block, not at lib/src/ root."
     },
     {
