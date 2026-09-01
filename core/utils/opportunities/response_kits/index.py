@@ -12,7 +12,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-# Licensed under the MIT License.
 # compliance-ignore-file: structural-special-dirs
 # These scripts live under .rokct/ ONLY at runtime: initiate.py fetches
 # this canonical copy from The-Rokct-Protocol into .rokct/skills/ at the

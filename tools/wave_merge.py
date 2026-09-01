@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-# Licensed under the MIT License.
 # Copyright 2026 ROKCT INTELLIGENCE (PTY) LTD
 """Wave-merge every open non-draft PR across the RokctAI org in one command.
 
