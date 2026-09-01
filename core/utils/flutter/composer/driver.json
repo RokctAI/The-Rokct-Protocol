@@ -11,7 +11,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
-      "sha256": "0b16224307d995101bef3eb4fd327f35aa3d9b39fbb8086acdec614a2858d26b",
+      "sha256": "909d60c5455993693ad4169653e961e99f683ecfa1c8f8f714f787fc2d39c740",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
     {
@@ -50,7 +50,7 @@
       "home_sdk": true,
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "06947c2d01b0269ff4e8338d13fefd7c69dd2b3e8cb0bec925ba62f8eff44e06"
+      "sha256": "15fdab97d2d65eb5893d83c5c7a5bb06cf38386303610b4ccc38170a267c74d6"
     },
     {
       "name": "comms_sdk",
@@ -59,7 +59,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
-      "sha256": "45416a9f9a1bfe311cb069bf83452d1fec60ac6b6d41244d86d9e596dda6989a"
+      "sha256": "02b841bed985380ade9885a4c61b150db9e6c6eb635183018ac21b02e30126fb"
     },
     {
       "name": "telemetry_sdk",
@@ -68,7 +68,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/dart",
       "ref": "main",
-      "sha256": "d2b80744cdc9f24c7d49fcac40647a035b4d78ae4f1045102cf22b0ce810451e",
+      "sha256": "f4ebf13b33b28b668332407790e2aa6f5a0d79283a845200188b77f7f8035ba6",
       "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same value as radio.json's entry."
     },
     {
@@ -106,7 +106,7 @@
       "path": "../zones/map/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "71bc5e68f7ec83dbe72c00ae9d58483a3e4fb22aa5f8cee9c08d9d4e67ae1893"
+      "sha256": "ff3ad0528ba51bc7fb4f5dd8da5e0225ee0f110c7fb0443ee5e46035739371d6"
     },
     {
       "name": "zones_sdk",
@@ -115,7 +115,7 @@
       "path": "../zones/zones/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "c8fbd974b13a82cc6ac08cbc3c8bda60d6621e15c9bd122a3fdcd5f97c66a6ad"
+      "sha256": "b93a62716df1d06619dbe847b6cdbb0333f0e38f0f8ab207ba8d6c1bf6aaaf74"
     },
     {
       "name": "weather_sdk",
@@ -124,7 +124,7 @@
       "path": "../zones/weather/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "e642a3cab85956145d657a959556b59312c4e3ca0178b6b6cf649fdeeb89e371",
+      "sha256": "01c9a6473238f581f5286e3d0ab2be1acac6d9623201c67dfa7437a53c05c2ab",
       "_comment": "Activates the severe-weather banner shipped dormant in zones PR #44: weather 1.4.0's app_type.driver block installs the courier locationResolver wiring plus the weather-driver-configure-location boot hook, and delivery_sdk's home sheet already renders the warnings banner fail-closed. Declaration mirrors manager.json/pos.json."
     },
     {

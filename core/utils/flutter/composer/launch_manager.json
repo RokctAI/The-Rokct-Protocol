@@ -11,8 +11,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/dart",
       "ref": "main",
-      "sha256": "0b16224307d995101bef3eb4fd327f35aa3d9b39fbb8086acdec614a2858d26b",
-      "_sha256_comment": "SHA-256 of base/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "909d60c5455993693ad4169653e961e99f683ecfa1c8f8f714f787fc2d39c740",
+      "_sha256_comment": "SHA-256 of base/dart/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Shared kernel (replaces retired core_sdk); provides the app shell templates."
     },
     {
@@ -112,8 +112,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/dart",
       "ref": "main",
-      "sha256": "45416a9f9a1bfe311cb069bf83452d1fec60ac6b6d41244d86d9e596dda6989a",
-      "_sha256_comment": "SHA-256 of comms/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+      "sha256": "02b841bed985380ade9885a4c61b150db9e6c6eb635183018ac21b02e30126fb",
+      "_sha256_comment": "SHA-256 of comms/dart/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "telemetry_sdk",
@@ -122,7 +122,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/dart",
       "ref": "main",
-      "sha256": "d2b80744cdc9f24c7d49fcac40647a035b4d78ae4f1045102cf22b0ce810451e",
+      "sha256": "f4ebf13b33b28b668332407790e2aa6f5a0d79283a845200188b77f7f8035ba6",
       "_comment": "App telemetry: events flow through base_sdk's TelemetryClient.track gateway cmd, with telemetry_sdk owning delivery policy via the TelemetryClient.configure transport seam. Pin = sha256 of core telemetry/dart/install.py as bootstrapped, same value as radio.json's entry."
     },
     {
@@ -173,8 +173,8 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/launch/dart",
       "ref": "main",
-      "sha256": "92c240252ad0650791c8acb86f4e3fcbaf0e0a5c3c5ed595e6e710ed5580d177",
-      "_sha256_comment": "SHA-256 of launch/dart/install.py at core@4793dfa; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "96d2d56d1ad5a1a0e92b0647f2c6c8ff6afeb088895611bc0c25c4d0b2417753",
+      "_sha256_comment": "SHA-256 of launch/dart/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true
     },
     {
@@ -184,8 +184,8 @@
       "path": "../zones/map/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "71bc5e68f7ec83dbe72c00ae9d58483a3e4fb22aa5f8cee9c08d9d4e67ae1893",
-      "_sha256_comment": "SHA-256 of map/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+      "sha256": "ff3ad0528ba51bc7fb4f5dd8da5e0225ee0f110c7fb0443ee5e46035739371d6",
+      "_sha256_comment": "SHA-256 of map/dart/install.py at zones@a8df800; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "weather_sdk",
@@ -194,8 +194,8 @@
       "path": "../zones/weather/dart",
       "git": "https://github.com/RokctAI/zones",
       "ref": "main",
-      "sha256": "e642a3cab85956145d657a959556b59312c4e3ca0178b6b6cf649fdeeb89e371",
-      "_sha256_comment": "SHA-256 of weather/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+      "sha256": "01c9a6473238f581f5286e3d0ab2be1acac6d9623201c67dfa7437a53c05c2ab",
+      "_sha256_comment": "SHA-256 of weather/dart/install.py at zones@a8df800; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "agent_sdk",
@@ -226,8 +226,8 @@
       "git": "https://github.com/RokctAI/zones",
       "path": "../zones/zones/dart",
       "ref": "main",
-      "sha256": "c8fbd974b13a82cc6ac08cbc3c8bda60d6621e15c9bd122a3fdcd5f97c66a6ad",
-      "_sha256_comment": "SHA-256 of zones/dart/install.py at zones@083dd8f; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "b93a62716df1d06619dbe847b6cdbb0333f0e38f0f8ab207ba8d6c1bf6aaaf74",
+      "_sha256_comment": "SHA-256 of zones/dart/install.py at zones@a8df800; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Merchant delivery-zone page from the zones library (now populated), mirrored from manager.json. Role-specific pages are selected by the app_type blocks in the zones SDK manifest."
     },
     {
