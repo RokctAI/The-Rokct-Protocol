@@ -5,7 +5,7 @@
 # SDK_ECOSYSTEM.md. Discovers repos dynamically across every owner in
 # DISCOVERY_OWNERS: app shells are every active repo whose root
 # composer.json declares a non-empty sdks[] list (paas_pos is never
-# indexed, owner rule); SDK monorepos are every remaining repo with a
+# indexed: retired, pos merged into manager); SDK monorepos are every remaining repo with a
 # top-level <sdk>/dart/manifest.json or <sdk>/frappe/manifest.json. Both sets are shallow-cloned as siblings
 # into a throwaway workspace, tools/gen_sdk_consumers.py reruns against
 # it, and the changed files are committed back to the default branch only
@@ -107,7 +107,7 @@ jobs:
           SHELLS=""
           SOURCES=""
           while IFS=$'\t' read -r OWNER REPO_NAME DEFAULT_BRANCH; do
-            [ "$REPO_NAME" = "paas_pos" ] && continue   # never indexed (owner rule)
+            [ "$REPO_NAME" = "paas_pos" ] && continue   # never indexed (retired: pos merged into manager)
             [ "$REPO_NAME" = "$SELF_REPO" ] && continue # this protocol repo is neither
             if [ -e "$WORKSPACE/$REPO_NAME" ]; then
               echo "::warning::Repo name $REPO_NAME appears under more than one owner; keeping the first clone and skipping $OWNER/$REPO_NAME."
