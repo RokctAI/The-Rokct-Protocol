@@ -66,9 +66,11 @@ the `sdk-consumers-refresh.yml` workflow). A half is
 marked present when it has real content: `dart` = `dart/manifest.json` exists,
 `frappe` = `frappe/manifest.json` exists, `nextjs` = files beyond a
 `.gitignore` placeholder. Repos scanned with no SDK directories are omitted
-(`engram`, `opportunities`, `betassist`, `gravity`, `orbit`; `minilauncher` is
-an app shell). Note the `betassist` SDK lives in `commerce`, not in the
-`betassist` repo.
+(`engram`, `opportunities`, `gravity`, `orbit`; `minilauncher` is an app
+shell). The `betassist` SDK lives in `RokctAI/commerce` (`betassist/`); the
+`BetAssist` repo still carries a second `betassist/frappe` copy that is
+pending retirement, which is why it shows in the census until it is removed.
+The `RokctAI/SDKs` monorepo is retired and is not censused.
 
 <!-- @generated-sdk-census-start -->
 | SDK | Repo | dart | frappe | nextjs |
@@ -123,23 +125,6 @@ an app shell). Note the `betassist` SDK lives in `commerce`, not in the
 | `tender` | `corporate` | — | yes | yes |
 | `studio` | `designer` | — | yes | — |
 | `betassist` | `BetAssist` | — | yes | — |
-| `agent` | `SDKs` | yes | yes | — |
-| `betassist` | `SDKs` | yes | yes | — |
-| `comms` | `SDKs` | yes | yes | — |
-| `core` | `SDKs` | yes | yes | — |
-| `corporate` | `SDKs` | yes | — | — |
-| `dev` | `SDKs` | — | yes | — |
-| `fav` | `SDKs` | yes | — | — |
-| `launch` | `SDKs` | yes | — | — |
-| `legal` | `SDKs` | yes | — | — |
-| `payments` | `SDKs` | yes | yes | — |
-| `polaris` | `SDKs` | yes | yes | — |
-| `productivity` | `SDKs` | yes | yes | — |
-| `replay` | `SDKs` | yes | yes | — |
-| `revenue` | `SDKs` | yes | — | — |
-| `subscriptions` | `SDKs` | yes | yes | — |
-| `telemetry` | `SDKs` | — | yes | — |
-| `wallet` | `SDKs` | yes | yes | — |
 <!-- @generated-sdk-census-end -->
 
 The reverse index — which app shells compose each SDK — lives in
@@ -550,6 +535,49 @@ This repo's runtime-fetched-and-executed files are pinned. See
     receiving DocType still needs real fields for anything it must query. A
     feature may ship local-only; it may not ship values the server will later
     need buried where no query can reach them.
+
+## Gateway `cmd` co-location — an SDK calls only its own backend
+
+Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
+Next.js half) may only send gateway `cmd`s — the `api.<module>.<method>`
+strings that go through `PlatformGateway` / `rokct.platform.api` — that its
+OWN `<sdk>/frappe/manifest.json` whitelists under `hooks.whitelisted_methods`.
+The three halves of one SDK directory are one unit: the client of `booking`
+talks to the backend of `booking`, and nothing else, by default.
+
+Any cross-SDK need is a DECLARED dependency in the Dart (or Next.js)
+manifest, naming the SDK whose whitelist the caller may also use. Two are
+expected to be near-universal and are the template for the rest: `base` (the
+gateway itself, global settings, the session token) and `users` (any
+profile-shaped page). A dependency that is declared but not composed into
+the app is not a runtime surprise: the composer refuses the compose, or the
+SDK degrades legibly — the feature stays off, the failure goes to telemetry
+(`telemetry_sdk`), and no diagnostic text reaches the screen.
+
+Enforcement is a validator check in `scripts/sdk_validator.py`
+(`shared-workflows`), alongside the ADR-005 import check: for every SDK,
+the set of `cmd`s its client code sends must be a subset of its own
+whitelist unioned with the whitelists of its declared dependencies. It
+lands warn-first, so existing violations surface without breaking builds,
+and switches to failing once the 2026-09-02 fix wave has brought every SDK
+into line. Until then, treat a warning as a defect to fix in the SDK that
+owns the call, not as noise.
+
+## Next.js twins — every Dart half has a web half
+
+Standing rule, Ray 2026-09-02 ("yes to twins"). Every SDK that ships a Dart
+half also ships a Next.js half under `<sdk>/nextjs/` carrying the SAME
+routes, pages and facades, so each app has a web equivalent composed from
+the same SDKs without building Flutter for the web. The two halves are
+validated against one shared declaration — the routes, pages and facades
+the Dart manifest declares are what the Next.js half must provide — so a
+route added on one side without its twin is a validator finding, not a
+silent gap. The existing precedent is `lms` in the `agent` repo, whose
+admin mode is served by its Next.js half against the same declaration its
+Dart half uses; new SDKs and new routes on existing SDKs follow it. The
+`nextjs` column of the census above is therefore a to-do list, not a
+description of optional extras: a `—` beside a `yes` in `dart` is a missing
+twin.
 
 ## Introducing a new SDK — checklist
 
