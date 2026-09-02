@@ -185,7 +185,7 @@
       "path": "../hardware/desktop/dart",
       "ref": "main",
       "sha256": "d9adf68c4c9da75ad3e7b8164253f09acb82ed3a68595687d5f138f99caf1057",
-      "_comment": "Native desktop runner scaffolding for Windows builds. The SDK's app_type.supacharge block installs windows/ into the host with ${package}-parameterized naming (supacharge.exe, CMake project name, window title, exe metadata). Supacharge's repo already carries its own windows/ tree - the historical source of these templates - which the installer's host-file guard leaves untouched. The build_windows CI flag stays host-side in supacharge (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors manager.json/pos.json."
+      "_comment": "Native desktop runner scaffolding for Windows builds. The SDK's app_type.supacharge block installs windows/ into the host with ${package}-parameterized naming (supacharge.exe, CMake project name, window title, exe metadata). Supacharge's repo already carries its own windows/ tree - the historical source of these templates - which the installer's host-file guard leaves untouched. The build_windows CI flag stays host-side in supacharge (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors manager.json."
     },
     {
       "name": "hms_sdk",

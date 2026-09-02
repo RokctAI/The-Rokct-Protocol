@@ -95,7 +95,7 @@
       "path": "../hardware/desktop/dart",
       "ref": "main",
       "sha256": "d9adf68c4c9da75ad3e7b8164253f09acb82ed3a68595687d5f138f99caf1057",
-      "_comment": "Native desktop runner scaffolding. Manager inherits pos's desktop role (fold plan): the SDK's app_type.manager block installs windows/ into the host with ${package}-parameterized CMake naming; the build_windows CI flag stays host-side in paas_manager (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors pos.json's entry."
+      "_comment": "Native desktop runner scaffolding. Manager inherits pos's desktop role (fold plan): the SDK's app_type.manager block installs windows/ into the host with ${package}-parameterized CMake naming; the build_windows CI flag stays host-side in paas_manager (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Carried over from the retired pos.json (pos merged into manager)."
     },
     {
       "name": "payments_sdk",

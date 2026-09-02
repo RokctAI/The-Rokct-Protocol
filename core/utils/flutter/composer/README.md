@@ -2,7 +2,11 @@
 
 The `.json` files in this folder (`betassist.json`, `customer.json`, `driver.json`, `forex.json`,
 `launch_deliver.json`, `launch_manager.json`, `launcher.json`, `manager.json`, `polaris.json`,
-`pos.json`, `radio.json`, `supacharge.json`) are **templates**, not active configuration.
+`radio.json`, `supacharge.json`) are **templates**, not active configuration.
+
+There is no `pos.json`: pos became manager, so the pos and manager profiles were merged and
+`manager.json` is the only template for that role (owner ruling: "delete pos.json" / "pos became
+manager. we drop pos/ by merging pos and manager").
 
 To build a given app variant:
 
@@ -16,8 +20,9 @@ To build a given app variant:
 **An app with no `composer.json` at its root cannot compose, and nothing says so.** CI gates the whole
 compose step on the file existing (`universal-flutter-build.yml`, `if [ -f "composer.json" ]`), so a
 missing one means compose is skipped silently and the build proceeds against whatever is already in
-the repo. As of 2026-08-02 `minilauncher` and `paas_pos` both have a template here and no
-`composer.json` — they are not wired, and this is how that happens unnoticed.
+the repo. As of 2026-08-02 `minilauncher` had a template here and no `composer.json` — it is not
+wired, and this is how that happens unnoticed. (`paas_pos` was in the same state until its
+profile was folded into `manager.json`.)
 
 **Check the `package_name` before copying.** Compose calls `update_pubspec_name()`, so the value in
 the template REWRITES the app's `pubspec.yaml` name. If they disagree the app's Dart package is
