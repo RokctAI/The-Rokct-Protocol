@@ -8,9 +8,11 @@
       "name": "betassist_sdk",
       "enabled": true,
       "source": "git",
-      "git": "https://github.com/RokctAI/BetAssist",
-      "path": "../BetAssist/betassist_sdk/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/betassist/dart",
       "ref": "main",
+      "sha256": "dd77b8becf1e8a32a4508279ba03782e3c333b2b933532faaea66263c1629e35",
+      "_sha256_comment": "SHA-256 of betassist/dart/install.py at commerce@71394ca8; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true
     },
     {
