@@ -199,9 +199,9 @@ the pre-role behavior.
   `../<repo>/`) must be verifiable before its `install.py` runs: `enforce_sdk_pin()` aborts the compose
   unless the entry's `ref` is a full 40-char commit SHA, or the entry carries a `"sha256"` of the SDK's
   `install.py`, or `ROKCT_ALLOW_UNPINNED_SDKS=1` is set as an explicit, loud opt-out (the installer then
-  runs UNVERIFIED). The registry templates' `sdks` entries currently ride `ref: "main"` with no `sha256`
-  — the flutter composer templates do the same — so a CI compose with no sibling checkouts needs
-  `ROKCT_ALLOW_UNPINNED_SDKS=1` until entries are pinned. Sibling-checkout composes never hit the gate
+  runs UNVERIFIED). Every `sdks[]` entry in the composer profiles carries a `sha256` pin of its
+  installer, enforced by `enforce_sdk_pin()` — the flutter composer profiles do the same — so `ref`
+  alone is not the integrity mechanism. Sibling-checkout composes never hit the gate
   (local content is not network-fetched). Same gate as the flutter composer's `enforce_sdk_pin()` and
   the frappe engine's unpinned-module check in `compose_backend.py`.
 - Each SDK's own `install.py` (same pattern as `agent/lms/dart/install.py`):

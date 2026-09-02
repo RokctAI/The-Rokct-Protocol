@@ -11,8 +11,8 @@
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/radio/dart",
       "ref": "main",
-      "sha256": "36bd9ce08a5273b9e4241ea63189e1d7ebddd029d87c8e20e70d1694af555015",
-      "_sha256_comment": "SHA-256 of radio/dart/install.py at agent@7c3dddb; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "8250d154072120cf0672c0447d0b24b44359cff1cbdd33af8317249401f2ec25",
+      "_sha256_comment": "SHA-256 of radio/dart/install.py at agent@798de2da; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "home_sdk": true,
       "_comment": "A radio app's home IS the player, so this SDK provides the entry page. Declares StationsTable at schema version 17; one row for a single-station app, many for a multi-station one."
     },
@@ -55,8 +55,8 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/promotions/dart",
       "ref": "main",
-      "sha256": "97e6891c52042c6fd40d7d59faa6c7a3488ba836a025622bc302f68c044ede36",
-      "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@07427e3; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "sha256": "0477b9efef1e82b3391ab92d638881a4113a0a11b1debd3a64715f606007264d",
+      "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@71394ca8; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Ad mediation. Disabled by default: the station this was built for runs with ads off (showADS false), so enable per app rather than per template."
     },
     {
@@ -66,7 +66,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/desktop/dart",
       "ref": "main",
-      "sha256": "c7a03710610e9e27d57a762894befff57dcda7ae46153973f7ded129eef5e1c9",
+      "sha256": "d9adf68c4c9da75ad3e7b8164253f09acb82ed3a68595687d5f138f99caf1057",
       "_comment": "TEMPORARY (desktop testing convenience, revert candidate): added to every app profile so all composed apps pull desktop support and can be viewed/tested on desktop. Pin = sha256 of hardware desktop/dart/install.py at main head 84aa6ed, same value as supacharge.json's entry."
     },
     {
@@ -76,7 +76,7 @@
       "git": "https://github.com/RokctAI/hardware",
       "path": "../hardware/hms/dart",
       "ref": "main",
-      "sha256": "44af110d348016f4f334f06ede0903273f0b67af43973e644103e709a5cff556",
+      "sha256": "91468daf800bb0a348019c491605f25ad2d37f44682fd61211fd471a60b2d57b",
       "_comment": "Huawei Mobile Services support, built like desktop_sdk (SDK module, not productFlavors). Dart-side: DeviceServices ({gms, hms, neither} detection, cached, fail-open to gms) and an order-30 boot hook that, ONLY on GMS-free HMS-capable devices, boots Push Kit and registers the HMS push token through the same api.user.register_device_token gateway cmd the FCM token uses (provider 'hms'). No installs - the BUILD_HMS-gated AGConnect Gradle wiring lives statically in core's android template, default-off. Strict no-op in every plain GMS build."
     }
   ]

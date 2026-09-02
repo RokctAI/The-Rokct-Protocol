@@ -192,7 +192,7 @@
       "git": "https://github.com/RokctAI/users",
       "path": "../users/auth/nextjs",
       "ref": "main",
-      "sha256": "4a231ed611c8b98350b2b9c12ad771fa96ad953243c3b11a67e14ce1b00c1f6e",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
       "_sha256_comment": "SHA-256 of auth/nextjs/install.py at users as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
@@ -213,7 +213,7 @@
       "git": "https://github.com/RokctAI/commerce",
       "path": "../commerce/products/nextjs",
       "ref": "main",
-      "sha256": "9f7a11fe31d7f980594d60490125bffbeead4e3c31d06150080d7a0dc5af3159",
+      "sha256": "8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c",
       "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     }
   ]
