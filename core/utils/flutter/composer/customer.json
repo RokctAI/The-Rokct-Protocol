@@ -190,6 +190,16 @@
       "_sha256_comment": "SHA-256 of loyalty/dart/install.py at commerce@71394ca8; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
+      "name": "booking_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/booking/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main",
+      "sha256": "aff13291fc1bba7ee8808b7296c980063d92b920e5e0b690b2102f2f639b2fad",
+      "_sha256_comment": "SHA-256 of booking/dart/install.py at commerce@71394ca8 (unchanged by commerce#101, which recovers the reservation flow into booking_sdk 1.1.0 without touching install.py); required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+    },
+    {
       "name": "agent_sdk",
       "enabled": false,
       "source": "git",
