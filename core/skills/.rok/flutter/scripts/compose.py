@@ -22,7 +22,7 @@ PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "9e4d350f09fd2c7123178f94a0f723e49f96b7b8"
+PROTOCOL_REF = "f335b2a5791f82d4e18e9a818e16fe27067d75b7"
 COMPOSER_PATH = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
 GITHUB_RAW_BASE = (
@@ -30,7 +30,7 @@ GITHUB_RAW_BASE = (
 )
 EXPECTED_SHA256 = {
     "core/utils/flutter/sdk_composer.py": "adccf4ab3af70ef40bd7e107ca7322102cb8340bc7a5f39b71560237d7baf285",
-    "core/utils/flutter/sdk_installer_base.py": "21491bc91d15f3abf3cde1e15e3062161145f7997d9a57cf21654dfb29799860",
+    "core/utils/flutter/sdk_installer_base.py": "be16664b9822de95b733faa528a7079ad5b9ad3aed6a73af3fd85362b730547b",
 }
 
 
