@@ -103,9 +103,7 @@ class TemplateShapeTest(unittest.TestCase):
                 )
                 for entry in sdks:
                     missing = [k for k in PIN_FIELDS if not entry.get(k)]
-                    self.assertFalse(
-                        missing, f"{entry['name']} lacks {missing}"
-                    )
+                    self.assertFalse(missing, f"{entry['name']} lacks {missing}")
                     self.assertRegex(entry["sha256"], r"^[0-9a-f]{64}$")
 
     def test_template_set_matches_readme_list(self):
