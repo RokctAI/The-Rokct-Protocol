@@ -561,7 +561,18 @@ whitelist unioned with the whitelists of its declared dependencies. It
 lands warn-first, so existing violations surface without breaking builds,
 and switches to failing once the 2026-09-02 fix wave has brought every SDK
 into line. Until then, treat a warning as a defect to fix in the SDK that
-owns the call, not as noise.
+owns the call, not as noise. A rule only bites where its check actually
+runs: as of 2026-09-02 the `lint / Flutter Analyze` job is skipped on
+corporate PRs, which is how a compile error shipped inside revenue_sdk
+1.10.0 and surfaced only when the manager shell tried to build; the
+validator check for this rule must run on every SDK repo's PR, not be
+conditional on a path filter.
+
+Scope note (Ray, 2026-09-02): this rule is enforced for the frappe and dart
+halves first — the 2026-09-02 fix wave and the validator check cover those
+two halves. The Next.js half follows later, once the Next.js decision
+recorded under the twins rule below is made; until then a Next.js half is
+not measured against this rule.
 
 ## Next.js twins — every Dart half has a web half
 
@@ -578,6 +589,14 @@ Dart half uses; new SDKs and new routes on existing SDKs follow it. The
 `nextjs` column of the census above is therefore a to-do list, not a
 description of optional extras: a `—` beside a `yes` in `dart` is a missing
 twin.
+
+**Status: DEFERRED (2026-09-02).** Ray's ruling, in plain words: leave
+Next.js for now and do frappe and dart, then decide on Next.js. The original
+Next.js repo (`rokctai_frontend`) served two dockers, control and tenant.
+Tenants now get their own app shell, so control still has its control site,
+and the open question is what Next.js remains for control. No Next.js twin
+is started until that decision is made; the rule text above stands
+unchanged and the census `nextjs` column stays as a record of the gap.
 
 ## Introducing a new SDK — checklist
 
