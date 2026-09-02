@@ -788,6 +788,126 @@ class WhitelistedMethodsKeyValidationTest(ComposeBackendTestBase):
             self.run_main(composer)
 
 
+class DuplicateGatewayKeyWarningTest(ComposeBackendTestBase):
+    """Two modules declaring the same whitelisted_methods key both land in
+    hooks.py in module order and the plain re-assignment means the LAST
+    module's target dispatches. The composer must say so loudly (a compose
+    warning naming the key, both modules and the winner) without changing
+    the winner or hard-failing the compose."""
+
+    KEY = "{app_name}.api.payout.request_payout"
+    FIRST = "alpha"
+    LAST = "beta"
+
+    def _manifest(self, module, target):
+        return {
+            "name": module,
+            "description": "test sdk",
+            "hooks": {"whitelisted_methods": {self.KEY: target}},
+        }
+
+    def _exec_hooks(self):
+        namespace = {}
+        exec(compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace)
+        return namespace
+
+    def setUp(self):
+        super().setUp()
+        self.make_composer_json(
+            modules=[
+                {"name": m, "enabled": True, "path": f"sdk/{m}/frappe"}
+                for m in (self.FIRST, self.LAST)
+            ]
+        )
+        self.make_shell()
+
+    def test_duplicate_key_warns_and_last_module_wins(self):
+        self.make_sdk(
+            module=self.FIRST,
+            manifest=self._manifest(
+                self.FIRST, "{app_name}.merchants.tenant.api.payout.request_payout"
+            ),
+        )
+        self.make_sdk(
+            module=self.LAST,
+            manifest=self._manifest(
+                self.LAST, "{app_name}.wallet.tenant.api.payout.request_payout"
+            ),
+        )
+        composer = self.load_composer()
+        out, err = self.run_main(composer)
+
+        key = self.KEY.replace("{app_name}", self.APP)
+        first_target = f"{self.APP}.merchants.tenant.api.payout.request_payout"
+        last_target = f"{self.APP}.wallet.tenant.api.payout.request_payout"
+        expected = (
+            f"[!] WARNING: gateway key {key!r} is declared by both "
+            f"{self.FIRST!r} and {self.LAST!r} in "
+            f"whitelisted_methods / override_whitelisted_methods; "
+            f"the last module composed ({self.LAST!r}) wins and "
+            f"its target {last_target!r} is what dispatches"
+        )
+        self.assertIn(expected, out)
+        self.assertIn(expected, err)
+        self.assertEqual(out.count("[!] WARNING: gateway key"), 1)
+
+        # Both assignments are still emitted in module order (no hard fail,
+        # winner unchanged) and the last module's target is the one that
+        # survives when hooks.py is executed.
+        hooks = self.read(f"{self.APP}/hooks.py")
+        first_line = f"whitelisted_methods[{key!r}] = {first_target!r}"
+        last_line = f"whitelisted_methods[{key!r}] = {last_target!r}"
+        self.assertIn(first_line, hooks)
+        self.assertIn(last_line, hooks)
+        self.assertLess(hooks.index(first_line), hooks.index(last_line))
+        namespace = self._exec_hooks()
+        self.assertEqual(namespace["whitelisted_methods"][key], last_target)
+        self.assertEqual(namespace["override_whitelisted_methods"][key], last_target)
+
+    def test_distinct_keys_do_not_warn(self):
+        self.make_sdk(
+            module=self.FIRST,
+            manifest=self._manifest(
+                self.FIRST, "{app_name}.merchants.tenant.api.payout.request_payout"
+            ),
+        )
+        self.make_sdk(
+            module=self.LAST,
+            manifest={
+                "name": self.LAST,
+                "description": "test sdk",
+                "hooks": {
+                    "whitelisted_methods": {
+                        "{app_name}.api.wallet.get_balance": (
+                            "{app_name}.wallet.tenant.api.wallet.get_balance"
+                        )
+                    }
+                },
+            },
+        )
+        composer = self.load_composer()
+        out, _err = self.run_main(composer)
+        self.assertNotIn("[!] WARNING: gateway key", out)
+
+    def test_duplicate_key_hard_fails_under_strict(self):
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        self.make_sdk(
+            module=self.FIRST,
+            manifest=self._manifest(
+                self.FIRST, "{app_name}.merchants.tenant.api.payout.request_payout"
+            ),
+        )
+        self.make_sdk(
+            module=self.LAST,
+            manifest=self._manifest(
+                self.LAST, "{app_name}.wallet.tenant.api.payout.request_payout"
+            ),
+        )
+        composer = self.load_composer()
+        with self.assertRaises((RuntimeError, SystemExit)):
+            self.run_main(composer)
+
+
 class AfterInstallShellCoercionTest(ComposeBackendTestBase):
     """A shell hooks.py may declare after_install as a bare string (standard
     Frappe style, and what the scaffold template emits). The emitted merge
