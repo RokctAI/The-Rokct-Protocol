@@ -90,11 +90,15 @@ class OrderSdksForInstallTest(unittest.TestCase):
 
     def test_no_flag_is_unchanged(self):
         sdks = [_sdk("base_sdk"), _sdk("auth_sdk"), _sdk("users_sdk")]
-        self.assertEqual(self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks))
+        self.assertEqual(
+            self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks)
+        )
 
     def test_flag_already_first_is_unchanged(self):
         sdks = [_sdk("radio_sdk", home_sdk=True), _sdk("base_sdk"), _sdk("auth_sdk")]
-        self.assertEqual(self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks))
+        self.assertEqual(
+            self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks)
+        )
 
     def test_only_first_flagged_entry_moves(self):
         sdks = [
@@ -116,7 +120,9 @@ class OrderSdksForInstallTest(unittest.TestCase):
 
     def test_core_sdk_is_not_special(self):
         sdks = [_sdk("base_sdk"), _sdk("core_sdk"), _sdk("auth_sdk")]
-        self.assertEqual(self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks))
+        self.assertEqual(
+            self.names(self.mod.order_sdks_for_install(sdks)), self.names(sdks)
+        )
 
     def test_input_list_is_not_mutated(self):
         sdks = [_sdk("base_sdk"), _sdk("launch_sdk", home_sdk=True)]
