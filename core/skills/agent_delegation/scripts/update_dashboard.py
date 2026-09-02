@@ -23,7 +23,7 @@ SHA-256, then executes it with the dashboard subcommand.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "6d7269eee93078c4a0b6e9d7ce304f488519d717"
+PROTOCOL_REF = "9058cc1138ca66a3bbe658372cce66cc8765ee1b"
 DELEGATE_PATH = "core/utils/agent_delegation/reporter.py"
 DELEGATE_SHA256 = "53bf800992b6e416bc1b86d39fbf76d2bf4901fbac098791e3e5bad58b07e597"
 GITHUB_RAW_BASE = (
