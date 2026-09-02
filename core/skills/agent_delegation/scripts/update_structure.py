@@ -23,7 +23,7 @@ SHA-256, then executes it.
 import os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "f335b2a5791f82d4e18e9a818e16fe27067d75b7"
+PROTOCOL_REF = "6d7269eee93078c4a0b6e9d7ce304f488519d717"
 DELEGATE_PATH = "core/utils/agent_delegation/update_structure.py"
 DELEGATE_SHA256 = "bc736f306f6067ca19887d15c4df54d6b67581db835684a2f92a040c5c1f95c0"
 GITHUB_RAW_BASE = (
