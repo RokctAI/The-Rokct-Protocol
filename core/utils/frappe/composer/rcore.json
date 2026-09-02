@@ -66,7 +66,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/productivity/frappe",
-      "ref": "d8333db5e8472ed427bbb6cf9ebfd559892a85b4"
+      "ref": "6b09379eeed399c568f4a8edcbba32634cf027dd"
     },
     {
       "name": "weather",
@@ -108,7 +108,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "59bd4f891b1dd7232e261546abf9f954de444562"
+      "ref": "c09e5fd122c8aab2fc175c6934272ded7e880e3a"
     },
     {
       "name": "gateways",
@@ -116,8 +116,17 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/gateways/frappe",
-      "ref": "59bd4f891b1dd7232e261546abf9f954de444562",
+      "ref": "c09e5fd122c8aab2fc175c6934272ded7e880e3a",
       "_comment": "Full frappe/payments port (Payment Gateway + Braintree/GoCardless/Mpesa/Paymob/PayPal/Paytm/Razorpay/Stripe settings) plus Rokct's own PayFast/Paystack gateways and paystack_checkout page, which moved here from pay's payments/frappe when the 'pay' module entry was retired. Composing this module replaces installing the standalone payments app - a site must NOT have Frappenize/payments installed alongside rcore, since the doctype names are intentionally identical and would double-define (same rule as the crm entry below)."
+    },
+    {
+      "name": "erp",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/frappe",
+      "ref": "c09e5fd122c8aab2fc175c6934272ded7e880e3a",
+      "_comment": "ERPNext v16 fork flattened into one composed module (fork of frappe/erpnext via Frappenize/erpnext@rokct-hotfix); upstream crm/projects/support are excluded and resolve to the productivity repo's SDK modules. Composed here because the 'projects' entry below REQUIRES it (projects/frappe/manifest.json: Task extends the ERPNext Task doctype and imports erp helpers; erp calls back into {app_name}.projects.*) and compose_backend.py composes exactly the listed modules with no dependency pull-in - compose both or neither. A site composed with this module must NOT also have upstream erpnext installed. Pinned at the pay head alongside wallet/gateways (one ref per source repo: the composer clones each git URL once, at the first listed entry's ref); strict-compose verified at this SHA."
     },
     {
       "name": "delivery",
@@ -222,8 +231,17 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/crm/frappe",
-      "ref": "d8333db5e8472ed427bbb6cf9ebfd559892a85b4",
+      "ref": "6b09379eeed399c568f4a8edcbba32634cf027dd",
       "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    },
+    {
+      "name": "projects",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/projects/frappe",
+      "ref": "6b09379eeed399c568f4a8edcbba32634cf027dd",
+      "_comment": "Server home of the productivity_sdk Tasks screen: the six api.projects.* gateway cmds (sync_personal_task, list_personal_tasks, snooze_task_reminder, delete_personal_task, propose_task_breakdown, apply_task_breakdown) plus the Task reminder cron. Tasks are local-first on every device and sync whenever this backend is reachable, so every tenant that serves an app composing productivity_sdk composes this module the same way. Requires the erp entry above; the erp-tenant-tree import fix (productivity#32) is needed for the pair to install. Pinned at the productivity head that carries that fix, alongside productivity/crm (one ref per source repo)."
     }
   ]
 }

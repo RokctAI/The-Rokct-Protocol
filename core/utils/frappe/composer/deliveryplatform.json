@@ -77,6 +77,15 @@
       "ref": "main"
     },
     {
+      "name": "erp",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/frappe",
+      "ref": "main",
+      "_comment": "ERPNext v16 fork flattened into one composed module (fork of frappe/erpnext via Frappenize/erpnext@rokct-hotfix); upstream crm/projects/support are excluded and resolve to the productivity repo's SDK modules. Composed here because the 'projects' entry below REQUIRES it (projects/frappe/manifest.json: Task extends the ERPNext Task doctype and imports erp helpers; erp calls back into {app_name}.projects.*) and compose_backend.py composes exactly the listed modules with no dependency pull-in - compose both or neither. A site composed with this module must NOT also have upstream erpnext installed."
+    },
+    {
       "name": "delivery",
       "enabled": true,
       "source": "git",
@@ -172,6 +181,15 @@
       "path": "../corporate/builder/frappe",
       "ref": "main",
       "_comment": "Flutter build pipeline composed under its contract paths ({app_name}.builder.tasks._generate_flutter_app, {app_name}/builder/source_code). Source mirrors the rcore shell's committed composer.json, where builder replaced the 'dev' entry (../corporate/dev/frappe); the two cannot coexist — both ship the flutter_app_configuration / flutter_build_settings doctypes and the composer hard-fails on duplicate DocTypes."
+    },
+    {
+      "name": "projects",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/projects/frappe",
+      "ref": "main",
+      "_comment": "Server home of the productivity_sdk Tasks screen: the six api.projects.* gateway cmds (sync_personal_task, list_personal_tasks, snooze_task_reminder, delete_personal_task, propose_task_breakdown, apply_task_breakdown) plus the Task reminder cron. Tasks are local-first on every device and sync whenever this backend is reachable, so every tenant that serves an app composing productivity_sdk composes this module the same way. Requires the erp entry above; the erp-tenant-tree import fix (productivity#32) is needed for the pair to install."
     }
   ],
   "sdks": [
