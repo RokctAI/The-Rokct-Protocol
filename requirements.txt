@@ -2,7 +2,7 @@
 # (delegation utilities, opportunities/tenders tooling, crypto helpers,
 # scrapers). Pinned so installs are reproducible; bump deliberately.
 beautifulsoup4==4.15.0
-cryptography==44.0.0
+cryptography==50.0.1
 pdfplumber==0.11.10
 python-dotenv==1.2.2
 PyYAML==6.0.3
