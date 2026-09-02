@@ -277,7 +277,7 @@ def _resolve_home_sdk_uncached():
                 f"{len(claimants)} composed SDKs declare home_sdk in their "
                 f"manifests ({', '.join(claimants)}) and composer.json flags "
                 f"none of them; using {claimants[0]} (first in compose order). "
-                f"Set \"home_sdk\": true on the intended sdks[] entry."
+                f'Set "home_sdk": true on the intended sdks[] entry.'
             )
         return claimants[0]
 

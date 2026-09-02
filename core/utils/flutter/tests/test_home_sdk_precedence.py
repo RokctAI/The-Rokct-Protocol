@@ -256,7 +256,9 @@ class TestHomeTakesOverEarlierInstalls(HomeSdkTestBase):
     def test_developer_modified_copy_is_never_overwritten(self):
         self.compose(["alpha_sdk"])
         edited = self.read(HOME_REL) + "// local edit\n"
-        with open(os.path.join(self.project_root, HOME_REL), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.project_root, HOME_REL), "w", encoding="utf-8"
+        ) as f:
             f.write(edited)
         outputs = self.compose(["alpha_sdk", "beta_sdk"], home="beta_sdk")
         self.assertEqual(self.read(HOME_REL), edited)
