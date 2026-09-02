@@ -147,7 +147,7 @@ docstrings in `core/utils/flutter/sdk_installer_base.py`.
 | `routes` | `[{path, page, type, import}]` — auto_route entries injected into the generated `app_router.dart`; `import` uses the `${package}` placeholder. |
 | `app_routes` | `[{method, body, imports}]` — `AppRoutes.I` method implementations injected into `main.dart`'s `_HostAppRoutes` block; `body` is Dart **statements** (e.g. `"context.router.replace(LauncherHomeRoute());"`). Duplicate methods: first SDK wins, others skipped with a warning. |
 | `home_sdk` | This SDK provides the app's entry widget/home page (one per app). |
-| `app_type` | Per-persona flavor blocks (`customer`/`driver`/`manager`/`pos`/...) mirroring the top-level keys; selected by the host's `.rokct/config/app_type`; flavor block wins over top level. |
+| `app_type` | Per-persona flavor blocks (`customer`/`driver`/`manager`/...) mirroring the top-level keys; selected by the host's `.rokct/config/app_type`; flavor block wins over top level. |
 | `session_policy` | `{allowed_roles: [{role, landing_route}], rejection_route, rejection_message_tr_key}` — post-login role gating consumed by auth_sdk's installed shell. Role `"*"` admits any authenticated account as fallback. **At most ONE installed SDK may declare it — two declarers is a hard error** (`update_session_policy()`). |
 | `boot_hooks` | Dart statements injected at the top of `main()` (may `await`), e.g. Firebase/FCM boot. |
 | `di_hooks` | DI registration statements injected into `main.dart` (e.g. role dependency + ADR-005 adapter wiring). |

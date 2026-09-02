@@ -1582,6 +1582,36 @@ def run_code_generation():
         )
 
 
+def order_sdks_for_install(sdks):
+    """Return the enabled sdks[] entries in the order they are cached and
+    installed: the entry flagged "home_sdk": true first, everything else in
+    composer.json order.
+
+    The install-side collision rule (sdk_installer_base.install_sdk_files_
+    and_routes: the home SDK overwrites an unmodified copy another SDK
+    installed, a non-home SDK never overwrites the home's) already makes
+    the home win regardless of order, so this is not what decides which
+    home files land. It keeps the cache and install passes predictable -
+    the home SDK is extracted, installed and logged first on every profile
+    instead of wherever the profile happens to list it - and it replaces the
+    earlier "core_sdk first" reorder, which was dead code: core_sdk is
+    retired and no profile lists it (base_sdk is the shared kernel and is
+    listed first everywhere by hand).
+
+    Only the composer.json flag is consulted, the same source
+    resolve_home_sdk() reads first; when several entries carry the flag the
+    first in composer order moves (resolve_home_sdk() answers that one
+    too), and an SDK whose own manifest says home_sdk is left where it is.
+    """
+    ordered = list(sdks)
+    for idx, entry in enumerate(ordered):
+        if isinstance(entry, dict) and entry.get("home_sdk") is True:
+            if idx:
+                ordered.insert(0, ordered.pop(idx))
+            break
+    return ordered
+
+
 def main():
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
     package_name = None
@@ -1618,15 +1648,7 @@ def main():
         requested_names = sys.argv[1:]
         sdks_to_install = [s for s in sdks_to_install if s["name"] in requested_names]
 
-    if "core_sdk" in [s["name"] if isinstance(s, dict) else s for s in sdks_to_install]:
-        core_idx = -1
-        for i, s in enumerate(sdks_to_install):
-            if (isinstance(s, dict) and s["name"] == "core_sdk") or s == "core_sdk":
-                core_idx = i
-                break
-        if core_idx != -1:
-            core_sdk = sdks_to_install.pop(core_idx)
-            sdks_to_install.insert(0, core_sdk)
+    sdks_to_install = order_sdks_for_install(sdks_to_install)
 
     # Cache all SDKs in one consolidated fetch pass (version-aware: an SDK
     # whose cached copy is current is left in place, see should_extract).

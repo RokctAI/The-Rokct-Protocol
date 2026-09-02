@@ -602,7 +602,7 @@ def resolve_composer_config(project_root=None):
 
 
 def resolve_app_type(project_root=None):
-    """This shell's own role marker (e.g. 'manager', 'customer', 'pos'), read
+    """This shell's own role marker (e.g. 'manager', 'customer'), read
     from .rokct/config/app_type - a plain one-line text file checked into the
     shell's own repo, relative to the same root the shell's composer.json is
     read from. Mirrors core/utils/flutter/sdk_installer_base.py's
@@ -1787,7 +1787,7 @@ def main():
     # flavor_block handling in core/utils/flutter/sdk_installer_base.py):
     # everything at a manifest's top level always composes regardless of role
     # ("common gets installed regardless"). A manifest can additionally
-    # declare an "app_type" block keyed by persona (manager/customer/pos/...)
+    # declare an "app_type" block keyed by persona (manager/customer/...)
     # whose value mirrors the manifest top-level schema - its "hooks"
     # (whitelisted_methods, doc_events, scheduler_events, fixtures,
     # after_install, commands, ...) and "dependencies" are merged in ONLY

@@ -44,7 +44,8 @@ everything outside the markers is untouched.
 Output is deterministic: sorted keys, LF line endings, trailing newline, no
 timestamps — regenerating against an unchanged workspace produces zero diff.
 Entries with `"enabled": false` are not composed into the shell and are
-therefore not indexed. `paas_pos` is not indexed (owner rule).
+therefore not indexed. `paas_pos` is not indexed (retired: pos merged into
+manager, there is no pos composer profile).
 """
 
 import argparse
@@ -59,7 +60,7 @@ MARKDOWN_NAME = "SDK_CONSUMERS.md"
 ECOSYSTEM_NAME = "SDK_ECOSYSTEM.md"
 
 # Shell repos deliberately left out of the index. One-line note only.
-EXCLUDED_SHELLS = {"paas_pos"}  # not indexed (owner rule)
+EXCLUDED_SHELLS = {"paas_pos"}  # retired shell (pos merged into manager)
 
 # "Existing SDKs" census block markers in SDK_ECOSYSTEM.md. Only the text
 # between them is generated; the surrounding prose is hand-maintained.

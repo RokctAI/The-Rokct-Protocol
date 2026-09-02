@@ -153,7 +153,7 @@ def file_hash(path):
 
 def resolve_app_type():
     """Reads this host app's own flavor marker (e.g. 'customer', 'driver',
-    'manager', 'pos') from .rokct/config/app_type - a plain one-line text
+    'manager') from .rokct/config/app_type - a plain one-line text
     file checked into each host app's own repo (distinct from
     production.env, which is shared across all flavors and lists every
     flavor's package name at once, so it can't self-identify which one a
@@ -626,7 +626,7 @@ def install_sdk_files_and_routes(sdk_name):
     # Everything at the manifest's top level always installs regardless of
     # flavor ("common get installed regardless"). A manifest can additionally
     # declare an "app_type" block keyed by flavor name (customer/driver/
-    # manager/pos/...) whose own installs/routes/app_routes/database/
+    # manager/...) whose own installs/routes/app_routes/database/
     # tr_keys/constants get merged in ONLY when they match this host app's
     # own .rokct/app_type marker - same file-selection idea as the
     # tenant/control split on the Frappe composer side, applied here via
