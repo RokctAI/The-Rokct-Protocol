@@ -1318,6 +1318,11 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
         content = content.split(split_marker)[0].strip()
 
     append_blocks = []
+    # Gateway key -> the module that last declared it. Two modules declaring
+    # the same whitelisted_methods key both land in hooks.py in module order
+    # and the plain re-assignment means the LAST one wins at dispatch time;
+    # warn so the collision is visible instead of silently shadowing a def.
+    declared_gateway_keys = {}
 
     for module_name, manifest in compiled_manifests.items():
         hooks = manifest.get("hooks", {})
@@ -1416,6 +1421,16 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                 _validate_hook_value(
                     api_val, "dotted", module_name, "whitelisted_methods"
                 )
+                previous_module = declared_gateway_keys.get(api_key)
+                if previous_module is not None and previous_module != module_name:
+                    compose_warning(
+                        f"gateway key {api_key!r} is declared by both "
+                        f"{previous_module!r} and {module_name!r} in "
+                        f"whitelisted_methods / override_whitelisted_methods; "
+                        f"the last module composed ({module_name!r}) wins and "
+                        f"its target {api_val!r} is what dispatches"
+                    )
+                declared_gateway_keys[api_key] = module_name
                 append_blocks.append(f"whitelisted_methods[{api_key!r}] = {api_val!r}")
                 append_blocks.append(
                     f"override_whitelisted_methods[{api_key!r}] = {api_val!r}"
