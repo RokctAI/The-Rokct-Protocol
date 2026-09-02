@@ -95,7 +95,7 @@
       "path": "../hardware/desktop/dart",
       "ref": "main",
       "sha256": "d9adf68c4c9da75ad3e7b8164253f09acb82ed3a68595687d5f138f99caf1057",
-      "_comment": "Native desktop runner scaffolding. Manager inherits pos's desktop role (fold plan): the SDK's app_type.manager block installs windows/ into the host with ${package}-parameterized CMake naming; the build_windows CI flag stays host-side in paas_manager (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Mirrors pos.json's entry."
+      "_comment": "Native desktop runner scaffolding. Manager inherits pos's desktop role (fold plan): the SDK's app_type.manager block installs windows/ into the host with ${package}-parameterized CMake naming; the build_windows CI flag stays host-side in paas_manager (workflows cannot be SDK-installed - the CI guard blocks workflow deploys). Carried over from the retired pos.json (pos merged into manager)."
     },
     {
       "name": "payments_sdk",
@@ -188,6 +188,16 @@
       "ref": "main",
       "sha256": "0477b9efef1e82b3391ab92d638881a4113a0a11b1debd3a64715f606007264d",
       "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@71394ca8; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+    },
+    {
+      "name": "booking_sdk",
+      "enabled": true,
+      "source": "git",
+      "path": "../commerce/booking/dart",
+      "git": "https://github.com/RokctAI/commerce",
+      "ref": "main",
+      "sha256": "aff13291fc1bba7ee8808b7296c980063d92b920e5e0b690b2102f2f639b2fad",
+      "_sha256_comment": "SHA-256 of booking/dart/install.py at commerce@71394ca8 (unchanged by commerce#101, which recovers the reservation flow into booking_sdk 1.1.0 without touching install.py); required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
       "name": "map_sdk",

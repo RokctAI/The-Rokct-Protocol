@@ -171,7 +171,116 @@ def resolve_app_type():
     return None
 
 
+# Per-process memo for resolve_home_sdk(): the answer cannot change while
+# one installer runs, and load_state() (which consults it) is called by every
+# update_* pass, so re-reading composer.json and every cached manifest each
+# time is pure waste.
+_HOME_SDK_UNSET = object()
+_HOME_SDK = _HOME_SDK_UNSET
+# rel_dest paths the home SDK's manifest installs, keyed by home SDK name.
+_HOME_OWNED_FILES = {}
+
+
+def _read_composer_sdks():
+    """Enabled sdks[] entries of the host's composer.json (the composer
+    profile the shell was composed from), in compose order. [] when the
+    file is absent or unreadable."""
+    composer_path = os.path.join(PROJECT_ROOT, "composer.json")
+    if not os.path.exists(composer_path):
+        return []
+    try:
+        with open(composer_path, "r", encoding="utf-8-sig") as f:
+            config = json.load(f)
+    except Exception as e:
+        compose_warning(
+            f"unreadable composer.json {composer_path} ({e}); it cannot be "
+            f"used to resolve the home SDK"
+        )
+        return []
+    return [
+        s
+        for s in config.get("sdks", []) or []
+        if isinstance(s, dict) and s.get("name") and s.get("enabled", True)
+    ]
+
+
+def _read_manifest(sdk_name):
+    """This SDK's manifest.json (resolved like the installer resolves the
+    SDK itself: pub package config, sdk/, then .rokct/cache/), or None."""
+    sdk_path = resolve_sdk_path(sdk_name)
+    if not sdk_path:
+        return None
+    manifest_path = os.path.join(sdk_path, "manifest.json")
+    if not os.path.exists(manifest_path):
+        return None
+    try:
+        with open(manifest_path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except Exception as e:
+        compose_warning(
+            f"unreadable manifest {manifest_path} for SDK {sdk_name} "
+            f"({e}); it cannot be considered as the home SDK"
+        )
+        return None
+
+
 def resolve_home_sdk():
+    """Name of the SDK that owns this app's home (entry widget, home pages,
+    shared assets it ships): the one sdks[] entry flagged "home_sdk": true
+    in the host's composer.json.
+
+    The flag used to be inert. This resolver only scanned PROJECT_ROOT/sdk/
+    - a monorepo-development layout the composer never populates (it
+    extracts every SDK under .rokct/cache/) - so on every composed shell it
+    fell through to "core_sdk", and which SDK's home actually landed was
+    decided by compose order alone: install_sdk_files_and_routes() lets the
+    FIRST installer that writes a path keep it. driver.json lists two SDKs
+    whose manifests both say home_sdk (delivery_sdk, merchants_sdk) and both
+    install templates/assets -> assets; only delivery_sdk carries the
+    composer flag, and it won that collision purely because it happened to
+    be listed first - reordering the list would silently have swapped the
+    winner, and base_sdk (listed first everywhere, never the home) beats the
+    flagged home on every path both install.
+
+    Resolution order:
+      1. composer.json sdks[] entry with "home_sdk": true (the profile is
+         authoritative - it is where the flag is set per app);
+      2. otherwise the composer.json entries whose own manifest.json says
+         "home_sdk": true (first in compose order; a loud warning if several
+         claim it, since that is exactly the ambiguity the flag exists to
+         settle);
+      3. otherwise the legacy sdk/<name>/manifest.json scan, unchanged;
+      4. otherwise "core_sdk", unchanged - a shell with no home_sdk anywhere
+         behaves exactly as before.
+    """
+    global _HOME_SDK
+    if _HOME_SDK is not _HOME_SDK_UNSET:
+        return _HOME_SDK
+    _HOME_SDK = _resolve_home_sdk_uncached()
+    return _HOME_SDK
+
+
+def _resolve_home_sdk_uncached():
+    composer_sdks = _read_composer_sdks()
+    for entry in composer_sdks:
+        if entry.get("home_sdk") is True:
+            return entry["name"]
+
+    claimants = []
+    for entry in composer_sdks:
+        manifest = _read_manifest(entry["name"])
+        if manifest and manifest.get("home_sdk") is True:
+            claimants.append(entry["name"])
+    if claimants:
+        if len(claimants) > 1:
+            compose_warning(
+                f"{len(claimants)} composed SDKs declare home_sdk in their "
+                f"manifests ({', '.join(claimants)}) and composer.json flags "
+                f"none of them; using {claimants[0]} (first in compose order). "
+                f"Set \"home_sdk\": true on the intended sdks[] entry."
+            )
+        return claimants[0]
+
     sdk_root = os.path.join(PROJECT_ROOT, "sdk")
     if os.path.isdir(sdk_root):
         for sdk_name in os.listdir(sdk_root):
@@ -188,6 +297,66 @@ def resolve_home_sdk():
                         f"({e}); it cannot be considered as the home SDK"
                     )
     return "core_sdk"
+
+
+def _manifest_install_targets(manifest, sdk_path):
+    """Every host-relative file path the given manifest's installs (top
+    level plus this host's app_type flavor block) would write, with
+    directory entries expanded exactly as install_sdk_files_and_routes()
+    expands them."""
+    current_app_type = resolve_app_type()
+    flavor_block = (
+        (manifest.get("app_type") or {}).get(current_app_type, {})
+        if current_app_type
+        else {}
+    )
+    targets = set()
+    for entry in manifest.get("installs", []) + flavor_block.get("installs", []):
+        from_rel = entry.get("from") if isinstance(entry, dict) else None
+        to_rel = entry.get("to") if isinstance(entry, dict) else None
+        if not from_rel or not to_rel:
+            continue
+        src_path = os.path.join(sdk_path, from_rel)
+        if os.path.isdir(src_path):
+            for root, _, filenames in os.walk(src_path):
+                for filename in filenames:
+                    rel_to_src = os.path.relpath(os.path.join(root, filename), src_path)
+                    targets.add(
+                        os.path.normpath(os.path.join(to_rel, rel_to_src)).replace(
+                            "\\", "/"
+                        )
+                    )
+        elif os.path.exists(src_path):
+            targets.add(to_rel.replace("\\", "/"))
+    return targets
+
+
+def home_sdk_owned_files(home_sdk_name):
+    """Host-relative paths the home SDK installs - the files it owns. Other
+    SDKs never write these, whatever the compose order; an empty set when
+    the home SDK cannot be resolved (nothing is protected, as before)."""
+    if home_sdk_name not in _HOME_OWNED_FILES:
+        owned = set()
+        sdk_path = resolve_sdk_path(home_sdk_name) if home_sdk_name else None
+        if sdk_path:
+            manifest = _read_manifest(home_sdk_name)
+            if manifest:
+                owned = _manifest_install_targets(manifest, sdk_path)
+        _HOME_OWNED_FILES[home_sdk_name] = owned
+    return _HOME_OWNED_FILES[home_sdk_name]
+
+
+def _installed_file_owner(state, rel_dest, current_hash, exclude):
+    """Name of the OTHER installed SDK whose recorded hash for rel_dest
+    matches the file's current content - i.e. the file is verifiably that
+    SDK's untouched install output, not host work - or None."""
+    for other_name, other_state in (state.get("packages") or {}).items():
+        if other_name == exclude:
+            continue
+        recorded = (other_state.get("files") or {}).get(rel_dest)
+        if recorded is not None and recorded == current_hash:
+            return other_name
+    return None
 
 
 # Set when this run scaffolded the app itself via `flutter create`. Those files
@@ -527,6 +696,15 @@ def install_sdk_files_and_routes(sdk_name):
 
     print(f"\n[*] Installing SDK: {sdk_name} (v{version})")
 
+    # The home SDK owns every path its manifest installs. Other SDKs skip
+    # those paths outright and, when the home SDK itself runs, it takes over
+    # an unmodified copy another SDK installed earlier (this run or a
+    # previous compose) - so the flagged home lands whatever the compose
+    # order. A developer-modified copy is still never overwritten.
+    home_sdk_name = resolve_home_sdk()
+    is_home_sdk = sdk_name == home_sdk_name
+    home_owned = set() if is_home_sdk else home_sdk_owned_files(home_sdk_name)
+
     # 1. Sync Files
     for entry in installs:
         from_rel = entry.get("from")
@@ -564,12 +742,28 @@ def install_sdk_files_and_routes(sdk_name):
             files_to_sync.append((src_path, dest_path, rel_dest))
 
         for file_src, file_dest, rel_dest in files_to_sync:
+            if rel_dest in home_owned:
+                print(
+                    f"  [i] SKIP: {rel_dest} is owned by the home SDK {home_sdk_name}; {sdk_name}'s copy is not installed."
+                )
+                continue
+
             upstream_hash = file_hash(file_src)
 
             # Check if file already exists in host and check for modifications
             if os.path.exists(file_dest):
                 current_dest_hash = file_hash(file_dest)
                 last_known_hash = package_state.get("files", {}).get(rel_dest)
+                if last_known_hash is None and is_home_sdk:
+                    previous_owner = _installed_file_owner(
+                        state, rel_dest, current_dest_hash, exclude=sdk_name
+                    )
+                    if previous_owner is not None:
+                        state["packages"][previous_owner]["files"].pop(rel_dest, None)
+                        print(
+                            f"  [*] {rel_dest}: installed earlier by {previous_owner}; the home SDK {sdk_name} takes it over."
+                        )
+                        last_known_hash = current_dest_hash
                 if last_known_hash is None and not FRESH_SCAFFOLD:
                     # The file is already here but this installer has never
                     # written it, so it is the host app's own - not a stale
