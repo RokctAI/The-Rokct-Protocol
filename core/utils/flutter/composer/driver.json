@@ -97,7 +97,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/corporate/dart",
       "ref": "main",
-      "sha256": "73ea3a6a57759307bf1c7a56d1bdad4ab3a90e8dd911f8378fee0fab7af046fc"
+      "sha256": "88ac3c9d07789e5e5e81d3090402e3a595c79d88f7924b79c15109dd5292988b"
     },
     {
       "name": "map_sdk",
@@ -143,7 +143,7 @@
       "git": "https://github.com/RokctAI/corporate",
       "path": "../corporate/revenue/dart",
       "ref": "main",
-      "sha256": "fa6d6943b52648ffb8c0e389ec67c42c57fb93cd904bb965d42c31dd1999c42e",
+      "sha256": "6f9d02a157b690427e5038e75a58c2d38bcc6c213ccff4945009b3dfad3e08ac",
       "_comment": "Driver income/statistics pages, under a driver/ role folder with an app_type.driver manifest block. Shared with manager.json, which takes the manager variant from the same SDK."
     },
     {
