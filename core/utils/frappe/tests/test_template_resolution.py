@@ -447,6 +447,14 @@ class RealRegistryTest(unittest.TestCase):
         # crm_sdk's manifest "requires" names accounting files erp_sdk
         # installs; keep erp_sdk ahead of crm_sdk in the compose order.
         self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("crm_sdk"))
+        # agent_sdk (owner ruling 2026-09-03) owns the chat root page and the
+        # AI-first flag; its "requires" also names erp_sdk-installed accounting
+        # and hrms action files, so erp_sdk stays ahead of it too.
+        self.assertIn("agent_sdk", sdk_names)
+        agent = data["sdks"][sdk_names.index("agent_sdk")]
+        self.assertEqual(agent["path"], "../agent/agent/nextjs")
+        self.assertTrue(agent.get("sha256"), "agent_sdk must carry an install.py sha256 pin")
+        self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("agent_sdk"))
 
 
 if __name__ == "__main__":
