@@ -470,9 +470,7 @@ class RealRegistryTest(unittest.TestCase):
             r"^[0-9a-f]{64}$",
             "productivity_sdk must carry an install.py sha256 pin",
         )
-        self.assertLess(
-            sdk_names.index("erp_sdk"), sdk_names.index("productivity_sdk")
-        )
+        self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("productivity_sdk"))
         self.assertLess(
             sdk_names.index("auth_sdk"), sdk_names.index("productivity_sdk")
         )
