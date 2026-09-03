@@ -110,6 +110,160 @@
       "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
     },
     {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@2a097568 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway), the base admin content/settings/system actions and admin/manager settings, content and system pages, plus the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile pieces. Listed directly after telemetry_sdk because most halves below 'require' files it installs (app/actions/base/admin/*, app/services/base/platform-gateway.ts, components/ui/date-range-picker.tsx). Its own 'requires' names merchants_sdk's shop action and merchant-nav (a base<->merchants cycle, so this is the one forward reference in this list) and telemetry_sdk's dashboard actions — warn-only via check_requires(), not an auto-install."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@f0deb59d (git blob 0ab330a0, 1098 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) tree (auth.ts, actions.ts, login/register), session helper, paas-login/auth-form components, db/ + lib/drizzle schema and middleware.ts. Listed after base_sdk (requires its platform-gateway service); erp_sdk, merchants_sdk, orders_sdk, comms_sdk and agent_sdk all 'require' the app/(auth)/*, db/* and paas-login files it installs."
+    },
+    {
+      "name": "users_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/nextjs",
+      "ref": "main",
+      "sha256": "3a1855f895916342fe2e421bdf54e4201e0c97490e4eba68259a3b653af597e2",
+      "_sha256_comment": "SHA-256 of users/nextjs/install.py at Users@f0deb59d (git blob c8ff3734, 1099 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The users SDK's nextjs half (Users#83/#84): users/customers admin actions and the admin users, roles and permissions pages. Requires base_sdk's settings action; gateways_sdk, wallet_sdk, merchants_sdk and promotions_sdk 'require' the customers actions it installs."
+    },
+    {
+      "name": "merchants_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/nextjs",
+      "ref": "main",
+      "sha256": "1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e",
+      "_sha256_comment": "SHA-256 of merchants/nextjs/install.py at commerce@40d2bd9b (git blob d8d2636e, 1103 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The merchants SDK's nextjs half (commerce#116/#117): shops admin actions/pages, the merchant shop/business/branches/staff/invites/working-hours actions and manager pages, plus components/custom/nav/merchant-nav.tsx. Requires auth_sdk's app/(auth)/actions.ts and users_sdk's customers action; base_sdk, products_sdk and promotions_sdk 'require' the shop/business/shops actions it installs."
+    },
+    {
+      "name": "support_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/support/nextjs",
+      "ref": "main",
+      "sha256": "c15a3f67a1e1c15c6b7d6d9ef934cd334979a9ec63d42c2a2c429c8133103c53",
+      "_sha256_comment": "SHA-256 of support/nextjs/install.py at productivity@312566cc (git blob 99adc060, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The support SDK's nextjs half (productivity#35): the support admin action and tickets page. No cross-SDK requires; orders_sdk and comms_sdk 'require' app/actions/support/admin/support.ts, which it installs."
+    },
+    {
+      "name": "comms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/nextjs",
+      "ref": "main",
+      "sha256": "c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3",
+      "_sha256_comment": "SHA-256 of comms/nextjs/install.py at core@2a097568 (git blob 1a63ae7a, 1075 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The comms SDK's nextjs half (core#160): admin notifications/email/whatsapp settings pages and the whatsapp action. Requires auth_sdk's auth.ts, base_sdk's content/settings actions and support_sdk's support action — all installed above."
+    },
+    {
+      "name": "gateways_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/gateways/nextjs",
+      "ref": "main",
+      "sha256": "278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc",
+      "_sha256_comment": "SHA-256 of gateways/nextjs/install.py at pay@5f17146d (git blob 9dda4376, 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The gateways SDK's nextjs half (pay#55/#56): payment-gateway admin finance/transactions actions, admin finance (payouts, sales, subscriptions, transactions, payment settings) pages and the manager finance pages. Requires base_sdk's settings action and users_sdk's customers action; wallet_sdk 'requires' the finance actions it installs. Same ref as erp_sdk/wallet_sdk below — the composer clones one ref per repo."
+    },
+    {
+      "name": "wallet_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/nextjs",
+      "ref": "main",
+      "sha256": "1329aba62272bff52ef92369cf494a28743badc73f79a39c4588b057f66b3109",
+      "_sha256_comment": "SHA-256 of wallet/nextjs/install.py at pay@5f17146d (git blob 6144bb8d, 1100 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The wallet SDK's nextjs half (pay#55/#56): admin business/customers/finance wallet pages and the manager wallet page. Listed after gateways_sdk because its 'requires' names the gateways finance actions gateways_sdk installs (plus users_sdk's customers action). Same pay ref as gateways_sdk/erp_sdk."
+    },
+    {
+      "name": "products_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/nextjs",
+      "ref": "main",
+      "sha256": "8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c",
+      "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce@40d2bd9b (git blob 398de435, 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The products SDK's nextjs half (commerce#116/#117): products/categories/brands/extras/gallery/receipts actions and admin+manager pages, the product reports, the upload action and components/custom/image-upload.tsx. Requires base_sdk's content action, merchants_sdk's shops action and telemetry_sdk's GenericReport; kitchen_sdk, orders_sdk and promotions_sdk 'require' files it installs."
+    },
+    {
+      "name": "kitchen_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/nextjs",
+      "ref": "main",
+      "sha256": "f5711bccc5a13eca47052e411400cc0d922bbbbbb3fa5b8559ec86b06fd52fb1",
+      "_sha256_comment": "SHA-256 of kitchen/nextjs/install.py at commerce@40d2bd9b (git blob 431a91f8, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The kitchen SDK's nextjs half (commerce#116/#117): the manager kitchens page. Listed after products_sdk because its 'requires' names app/actions/products/operations.ts, which products_sdk installs."
+    },
+    {
+      "name": "orders_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/orders/nextjs",
+      "ref": "main",
+      "sha256": "906fdcf11b99d5c220ab6f8921adf2b936a8529d94f4214aa165cd1dd4a95a80",
+      "_sha256_comment": "SHA-256 of orders/nextjs/install.py at commerce@40d2bd9b (git blob 21ca558c, 1100 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The orders SDK's nextjs half (commerce#116/#117): orders/parcel/refunds/pos actions, admin orders + POS + order/revenue report pages, manager orders/parcels/refunds/POS pages and the platform orders form/validator. Requires auth_sdk's actions.ts, products_sdk's products action and image-upload, support_sdk's support action, telemetry_sdk's reports action/GenericReport and base_sdk's date-range-picker — all installed above."
+    },
+    {
+      "name": "booking_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/booking/nextjs",
+      "ref": "main",
+      "sha256": "2ec597df755f4a1c0056f2bdbefd2e174a6014bbfa52ed13cf9641c70a0256e5",
+      "_sha256_comment": "SHA-256 of booking/nextjs/install.py at commerce@40d2bd9b (git blob fad30a3f, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The booking SDK's nextjs half (commerce#116/#117): the booking action, admin bookings page and manager reservations/tables/bookings pages. Listed after orders_sdk because its 'requires' names app/actions/orders/admin/orders.ts, which orders_sdk installs."
+    },
+    {
+      "name": "promotions_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/promotions/nextjs",
+      "ref": "main",
+      "sha256": "40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c",
+      "_sha256_comment": "SHA-256 of promotions/nextjs/install.py at commerce@40d2bd9b (git blob 6d6480bf, 1104 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The promotions SDK's nextjs half (commerce#116/#117): marketing/stories actions, admin banners/stories/ads/subscribers pages and manager ads/stories/coupons pages. Requires base_sdk's content action, merchants_sdk's business action, users_sdk's customers action and products_sdk's image-upload — all installed above."
+    },
+    {
+      "name": "loyalty_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/loyalty/nextjs",
+      "ref": "main",
+      "sha256": "f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec",
+      "_sha256_comment": "SHA-256 of loyalty/nextjs/install.py at commerce@40d2bd9b (git blob 6d710f7b, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The loyalty SDK's nextjs half (commerce#116/#117): admin bonuses/cashback/referrals pages and the manager bonuses page. Listed after promotions_sdk because its 'requires' names the promotions marketing actions promotions_sdk installs."
+    },
+    {
       "name": "erp_sdk",
       "enabled": true,
       "source": "git",
@@ -143,5 +297,5 @@
       "_comment": "The agent SDK's nextjs half (owner ruling 2026-09-03: 'agent sdk to rokctapp yes'). Owns the chat root page app/(chat)/page.tsx, the AI action/service/api trees, the chat components, the Memory sidebar nav entry (integration into app/handson/sidebar-client.tsx) and the 'agent: true' AI-first flag (integration into app/config/compose.ts). Listed last: its manifest 'requires' names accounting/hrms action files erp_sdk installs plus host-owned files (auth, db, config, ui components, projects actions/services) — warn-only via check_requires(), not an auto-install."
     }
   ],
-  "_sdks_comment": "agent_sdk is composed here as of 2026-09-03 (previously described as a future tier). Its manifest's 'requires' names host paths installed by erp_sdk (app/actions/handson/all/accounting/*, .../hrms/*) — hence erp_sdk stays ahead of it — plus app/actions/handson/all/projects/* and app/services/all/projects/*, which no SDK in this list installs (they are shell-owned or come from productivity_sdk, which rokctapp does not compose). check_requires() only warns about missing prerequisites; nothing pulls an SDK in automatically."
+  "_sdks_comment": "Compose order is providers-before-consumers (requires is a warn-only prerequisite check in sdk_installer_base.py's check_requires(), not an auto-install): telemetry_sdk first (hard invariant), then base_sdk (the kernel most halves require), auth_sdk, users_sdk, merchants_sdk, support_sdk, comms_sdk, gateways_sdk, wallet_sdk, products_sdk, kitchen_sdk, orders_sdk, booking_sdk, promotions_sdk, loyalty_sdk, then erp_sdk, crm_sdk and agent_sdk. The fourteen halves between telemetry_sdk and erp_sdk were added 2026-09-03 when the paas admin/manager pages were consolidated into per-SDK nextjs halves (pay #55/#56, commerce #116/#117, Users #83/#84, productivity #35, core #160) and the rokctapp shell (RokctAI_frontend) composes this list at CI build. The one intentional forward reference is base_sdk requiring merchants_sdk's shop action/merchant-nav (base<->merchants cycle). With every half above composed, the only prerequisites nothing in this list installs are agent_sdk's app/actions/handson/all/projects/* and app/services/all/projects/* (shell-owned or productivity_sdk, which rokctapp does not compose). erp_sdk stays ahead of crm_sdk and agent_sdk because their requires name accounting/hrms action files erp_sdk installs."
 }
