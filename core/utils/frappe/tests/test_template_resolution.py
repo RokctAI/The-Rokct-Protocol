@@ -453,7 +453,9 @@ class RealRegistryTest(unittest.TestCase):
         self.assertIn("agent_sdk", sdk_names)
         agent = data["sdks"][sdk_names.index("agent_sdk")]
         self.assertEqual(agent["path"], "../agent/agent/nextjs")
-        self.assertTrue(agent.get("sha256"), "agent_sdk must carry an install.py sha256 pin")
+        self.assertTrue(
+            agent.get("sha256"), "agent_sdk must carry an install.py sha256 pin"
+        )
         self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("agent_sdk"))
 
 
