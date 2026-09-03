@@ -457,6 +457,66 @@ class RealRegistryTest(unittest.TestCase):
             agent.get("sha256"), "agent_sdk must carry an install.py sha256 pin"
         )
         self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("agent_sdk"))
+        # The paas admin/manager pages were consolidated into per-SDK nextjs
+        # halves (pay #55/#56, commerce #116/#117, Users #83/#84,
+        # productivity #35, core #160); every one of them is composed here,
+        # each pinned to its install.py sha256, providers ahead of consumers.
+        expected_halves = {
+            "base_sdk": "../core/base/nextjs",
+            "auth_sdk": "../Users/auth/nextjs",
+            "users_sdk": "../Users/users/nextjs",
+            "merchants_sdk": "../commerce/merchants/nextjs",
+            "support_sdk": "../productivity/support/nextjs",
+            "comms_sdk": "../core/comms/nextjs",
+            "gateways_sdk": "../pay/gateways/nextjs",
+            "wallet_sdk": "../pay/wallet/nextjs",
+            "products_sdk": "../commerce/products/nextjs",
+            "kitchen_sdk": "../commerce/kitchen/nextjs",
+            "orders_sdk": "../commerce/orders/nextjs",
+            "booking_sdk": "../commerce/booking/nextjs",
+            "promotions_sdk": "../commerce/promotions/nextjs",
+            "loyalty_sdk": "../commerce/loyalty/nextjs",
+        }
+        for name, path in expected_halves.items():
+            self.assertIn(name, sdk_names)
+            entry = data["sdks"][sdk_names.index(name)]
+            self.assertEqual(entry["path"], path)
+            self.assertTrue(entry.get("enabled"), f"{name} must be enabled")
+            self.assertRegex(
+                entry.get("sha256", ""),
+                r"^[0-9a-f]{64}$",
+                f"{name} must carry an install.py sha256 pin",
+            )
+        self.assertEqual(len(sdk_names), len(set(sdk_names)), "duplicate sdk names")
+        # telemetry_sdk stays first (SDK_ECOSYSTEM.md hard invariant 9).
+        self.assertEqual(sdk_names[0], "telemetry_sdk")
+        # Providers ahead of the halves whose manifest "requires" name files
+        # they install (check_requires() is warn-only, so this is about a
+        # warning-free compose, not correctness of the copy).
+        for provider, consumer in [
+            ("base_sdk", "auth_sdk"),
+            ("base_sdk", "users_sdk"),
+            ("auth_sdk", "merchants_sdk"),
+            ("users_sdk", "merchants_sdk"),
+            ("support_sdk", "comms_sdk"),
+            ("gateways_sdk", "wallet_sdk"),
+            ("merchants_sdk", "products_sdk"),
+            ("products_sdk", "kitchen_sdk"),
+            ("products_sdk", "orders_sdk"),
+            ("orders_sdk", "booking_sdk"),
+            ("products_sdk", "promotions_sdk"),
+            ("promotions_sdk", "loyalty_sdk"),
+            ("auth_sdk", "erp_sdk"),
+            ("auth_sdk", "agent_sdk"),
+        ]:
+            self.assertLess(sdk_names.index(provider), sdk_names.index(consumer))
+        # The composer clones one ref per repo: every entry of a repo must
+        # share its ref.
+        refs_by_repo = {}
+        for s in data["sdks"]:
+            refs_by_repo.setdefault(s["git"], set()).add(s["ref"])
+        for repo, refs in refs_by_repo.items():
+            self.assertEqual(len(refs), 1, f"{repo} entries must share one ref")
 
 
 if __name__ == "__main__":
