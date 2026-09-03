@@ -130,7 +130,18 @@
       "sha256": "0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500",
       "_sha256_comment": "SHA-256 of crm/nextjs/install.py at productivity@84f6495c; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The crm SDK's nextjs half (leads, deals, contacts, organizations, dashboard — the frontend of the crm frappe module above). Listed after erp_sdk because its manifest 'requires' names accounting action files erp_sdk installs (requires is a warn-only prerequisite check in sdk_installer_base.py's check_requires(), not an auto-install)."
+    },
+    {
+      "name": "agent_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/nextjs",
+      "ref": "main",
+      "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
+      "_sha256_comment": "SHA-256 of agent/nextjs/install.py at agent@3e168ea8 (git blob 9a6d974d, 1099 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The agent SDK's nextjs half (owner ruling 2026-09-03: 'agent sdk to rokctapp yes'). Owns the chat root page app/(chat)/page.tsx, the AI action/service/api trees, the chat components, the Memory sidebar nav entry (integration into app/handson/sidebar-client.tsx) and the 'agent: true' AI-first flag (integration into app/config/compose.ts). Listed last: its manifest 'requires' names accounting/hrms action files erp_sdk installs plus host-owned files (auth, db, config, ui components, projects actions/services) — warn-only via check_requires(), not an auto-install."
     }
   ],
-  "_sdks_comment": "A future agent tier means adding agent_sdk (../agent/agent/nextjs) here — its manifest's 'requires' names host paths installed by erp_sdk (app/actions/handson/all/accounting/*, .../hrms/*) and by productivity_sdk (app/actions/handson/all/projects/*), so an agent-tier compose needs BOTH of those SDKs in this list as well. check_requires() only warns about missing prerequisites; nothing pulls an SDK in automatically."
+  "_sdks_comment": "agent_sdk is composed here as of 2026-09-03 (previously described as a future tier). Its manifest's 'requires' names host paths installed by erp_sdk (app/actions/handson/all/accounting/*, .../hrms/*) — hence erp_sdk stays ahead of it — plus app/actions/handson/all/projects/* and app/services/all/projects/*, which no SDK in this list installs (they are shell-owned or come from productivity_sdk, which rokctapp does not compose). check_requires() only warns about missing prerequisites; nothing pulls an SDK in automatically."
 }
