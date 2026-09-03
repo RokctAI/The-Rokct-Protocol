@@ -457,6 +457,28 @@ class RealRegistryTest(unittest.TestCase):
             agent.get("sha256"), "agent_sdk must carry an install.py sha256 pin"
         )
         self.assertLess(sdk_names.index("erp_sdk"), sdk_names.index("agent_sdk"))
+        # productivity_sdk owns app/actions/handson/all/projects/* and
+        # app/services/all/projects/*, which agent_sdk's "requires" (and its
+        # components/tasks/project-task.tsx import) name; its own "requires"
+        # names erp_sdk's accounting selling/quotation action and auth_sdk's
+        # app/(auth)/auth.ts.
+        self.assertIn("productivity_sdk", sdk_names)
+        productivity = data["sdks"][sdk_names.index("productivity_sdk")]
+        self.assertEqual(productivity["path"], "../productivity/productivity/nextjs")
+        self.assertRegex(
+            productivity.get("sha256", ""),
+            r"^[0-9a-f]{64}$",
+            "productivity_sdk must carry an install.py sha256 pin",
+        )
+        self.assertLess(
+            sdk_names.index("erp_sdk"), sdk_names.index("productivity_sdk")
+        )
+        self.assertLess(
+            sdk_names.index("auth_sdk"), sdk_names.index("productivity_sdk")
+        )
+        self.assertLess(
+            sdk_names.index("productivity_sdk"), sdk_names.index("agent_sdk")
+        )
         # The paas admin/manager pages were consolidated into per-SDK nextjs
         # halves (pay #55/#56, commerce #116/#117, Users #83/#84,
         # productivity #35, core #160); every one of them is composed here,
