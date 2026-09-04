@@ -536,6 +536,21 @@ This repo's runtime-fetched-and-executed files are pinned. See
     feature may ship local-only; it may not ship values the server will later
     need buried where no query can reach them.
 
+11. **The tour runs on the demo build, but the app never announces itself as
+    a demo** (standing rule, Ray 2026-09-04 — "tour is demo but i should
+    never anounce itself as a demo"; logged in the `agent` repo's
+    `decision_log.md`, entry dated 2026-09-04). The guided tour runs on the
+    IS_DEMO build (no backend, seeded fixtures), but the app must never
+    announce itself as a demo. Nothing rendered may say
+    Demo/DEMO-/Sample/Example/Placeholder/Fictional or use
+    example.com/placeholder hosts: names, addresses, emails, order numbers,
+    SKUs, products, policy text, captions, guide, README and store text read
+    like real South African data. Offline, maintenance, sync-paused and
+    error pages are not guide chapters. Identifiers never rendered (uuids,
+    handles, keys) are exempt. Every SDK that reasonably can ships demo
+    fixtures and a tour fragment, and a change to a demo-visible screen
+    updates both in the same PR (invariant 8).
+
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
 Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
