@@ -513,7 +513,7 @@ def main():
             print(f"[init] Registered safe identity: {safe_id}")
 
     ignore = os.path.join(ROKCT_DIR, ".gitignore")
-    required_ignores = ("skills/", "tmp/", ".parent_clone/")
+    required_ignores = ("skills/", "tmp/")
     if not os.path.exists(ignore):
         with open(ignore, "w", encoding="utf-8") as f:
             f.write("\n".join(required_ignores) + "\n")

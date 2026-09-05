@@ -424,11 +424,9 @@ def ensure_rokct_gitignore():
     never be committed. This used to run at the end of main(), which left a
     window on a first-ever run where those directories existed on disk while
     still untracked-and-not-ignored - long enough for a `git add -A` to stage
-    them. `.parent_clone/` is the parent workspace checkout made by
-    sync_workspace.py; its .git/config holds an access token, so it must never
-    be committable either."""
+    them."""
     gitignore_path = os.path.join(ROKCT_DIR, ".gitignore")
-    required_ignores = ("skills/", "tmp/", ".parent_clone/")
+    required_ignores = ("skills/", "tmp/")
     if not os.path.exists(gitignore_path):
         with open(gitignore_path, "w", encoding="utf-8") as f:
             f.write("\n".join(required_ignores) + "\n")
