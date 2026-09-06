@@ -62,6 +62,10 @@ jobs:
         if: ${{ !contains(steps.guard.outputs.skip, 'true') }}
         env:
           WORKING_FILES: ${{ steps.guard.outputs.working_files }}
+          # sync_workspace.py clones the private parent workspace repo itself;
+          # the ambient GITHUB_TOKEN cannot reach it, so pass the same org
+          # secret the parent checkout above uses.
+          PARENT_REPO_TOKEN: ${{ secrets.MONOREPO_PAT }}
         run: |
           PARENT_DIR="parent-repo"
           cd "$GITHUB_WORKSPACE"
