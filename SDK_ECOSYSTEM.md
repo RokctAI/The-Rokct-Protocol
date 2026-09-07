@@ -76,12 +76,12 @@ The `RokctAI/SDKs` monorepo is retired and is not censused.
 | SDK | Repo | dart | frappe | nextjs |
 |---|---|---|---|---|
 | `base` | `core` | yes | yes | yes |
-| `comms` | `core` | yes | yes | — |
+| `comms` | `core` | yes | yes | yes |
 | `launch` | `core` | yes | — | — |
 | `telemetry` | `core` | yes | yes | yes |
 | `auth` | `Users` | yes | yes | yes |
 | `onboarding` | `Users` | yes | yes | — |
-| `users` | `Users` | yes | yes | — |
+| `users` | `Users` | yes | yes | yes |
 | `agent` | `agent` | yes | yes | yes |
 | `fav` | `agent` | yes | yes | yes |
 | `lms` | `agent` | yes | yes | yes |
@@ -89,20 +89,21 @@ The `RokctAI/SDKs` monorepo is retired and is not censused.
 | `replay` | `agent` | yes | yes | yes |
 | `subscriptions` | `agent` | yes | yes | yes |
 | `betassist` | `commerce` | yes | yes | — |
-| `booking` | `commerce` | yes | yes | — |
+| `booking` | `commerce` | yes | yes | yes |
 | `forex` | `commerce` | yes | yes | — |
-| `kitchen` | `commerce` | yes | yes | — |
-| `loyalty` | `commerce` | yes | yes | — |
+| `kitchen` | `commerce` | yes | yes | yes |
+| `loyalty` | `commerce` | yes | yes | yes |
 | `marketplace` | `commerce` | yes | yes | — |
-| `merchants` | `commerce` | yes | yes | — |
-| `orders` | `commerce` | yes | yes | — |
+| `merchants` | `commerce` | yes | yes | yes |
+| `orders` | `commerce` | yes | yes | yes |
 | `products` | `commerce` | yes | yes | yes |
-| `promotions` | `commerce` | yes | yes | — |
+| `promotions` | `commerce` | yes | yes | yes |
+| `water` | `commerce` | — | yes | — |
 | `erp` | `pay` | — | yes | yes |
-| `gateways` | `pay` | — | yes | — |
+| `gateways` | `pay` | — | yes | yes |
 | `hrms` | `pay` | — | yes | — |
 | `payments` | `pay` | yes | — | — |
-| `wallet` | `pay` | yes | yes | — |
+| `wallet` | `pay` | yes | yes | yes |
 | `delivery` | `zones` | yes | yes | — |
 | `map` | `zones` | yes | yes | — |
 | `weather` | `zones` | yes | yes | — |
@@ -112,7 +113,7 @@ The `RokctAI/SDKs` monorepo is retired and is not censused.
 | `processing` | `productivity` | yes | — | — |
 | `productivity` | `productivity` | yes | yes | yes |
 | `projects` | `productivity` | — | yes | — |
-| `support` | `productivity` | — | yes | — |
+| `support` | `productivity` | — | yes | yes |
 | `desktop` | `hardware` | yes | — | — |
 | `hardware` | `hardware` | yes | yes | — |
 | `hms` | `hardware` | yes | — | — |
@@ -125,6 +126,23 @@ The `RokctAI/SDKs` monorepo is retired and is not censused.
 | `tender` | `corporate` | — | yes | yes |
 | `studio` | `designer` | — | yes | — |
 | `betassist` | `BetAssist` | — | yes | — |
+| `agent` | `SDKs` | yes | yes | — |
+| `betassist` | `SDKs` | yes | yes | — |
+| `comms` | `SDKs` | yes | yes | — |
+| `core` | `SDKs` | yes | yes | — |
+| `corporate` | `SDKs` | yes | — | — |
+| `dev` | `SDKs` | — | yes | — |
+| `fav` | `SDKs` | yes | — | — |
+| `launch` | `SDKs` | yes | — | — |
+| `legal` | `SDKs` | yes | — | — |
+| `payments` | `SDKs` | yes | yes | — |
+| `polaris` | `SDKs` | yes | yes | — |
+| `productivity` | `SDKs` | yes | yes | — |
+| `replay` | `SDKs` | yes | yes | — |
+| `revenue` | `SDKs` | yes | — | — |
+| `subscriptions` | `SDKs` | yes | yes | — |
+| `telemetry` | `SDKs` | — | yes | — |
+| `wallet` | `SDKs` | yes | yes | — |
 <!-- @generated-sdk-census-end -->
 
 The reverse index — which app shells compose each SDK — lives in

@@ -24,6 +24,7 @@ composer profile). This index auto-refreshes weekly via the
 | `agent_sdk` | `RokctAI/agent` | `supacharge` |
 | `auth_sdk` | `RokctAI/Users` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
 | `base_sdk` | `RokctAI/core` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
+| `booking_sdk` | `RokctAI/commerce` | `paas_customer`, `paas_manager` |
 | `calc_sdk` | `RokctAI/productivity` | `paas_driver`, `paas_manager` |
 | `comms_sdk` | `RokctAI/core` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `corporate_sdk` | `RokctAI/corporate` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |

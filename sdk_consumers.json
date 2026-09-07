@@ -28,6 +28,13 @@
         "supacharge"
       ]
     },
+    "booking_sdk": {
+      "repo": "RokctAI/commerce",
+      "consumers": [
+        "paas_customer",
+        "paas_manager"
+      ]
+    },
     "calc_sdk": {
       "repo": "RokctAI/productivity",
       "consumers": [
