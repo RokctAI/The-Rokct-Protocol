@@ -457,6 +457,7 @@ def collect_post_install_checklist(sdks_to_install):
         ):
             target_rel = integration.get("target")
             placeholder = integration.get("placeholder")
+            replacement = integration.get("replacement")
             if not target_rel or not placeholder:
                 continue
             target_abs = os.path.join(PROJECT_ROOT, target_rel)
@@ -467,6 +468,14 @@ def collect_post_install_checklist(sdks_to_install):
                 continue
             with open(target_abs, "r", encoding="utf-8") as f:
                 content = f.read()
+            # Same idempotence rule as update_integrations(): a host that
+            # already carries the replacement text (committed by hand, or
+            # wired in by an earlier run) is satisfied even when the
+            # placeholder it would have been anchored to is absent - e.g.
+            # a shell whose package.json has no "lint" script but commits
+            # auth_sdk's db:migrate / migrate:generate scripts directly.
+            if replacement and replacement in content:
+                continue
             if placeholder not in content:
                 integration_issues.append(
                     f'{sdk_name}: placeholder "{placeholder}" not found in {target_rel} '

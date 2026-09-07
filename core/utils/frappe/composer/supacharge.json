@@ -117,6 +117,17 @@
       "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
       "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs: without it the supacharge-web composed build cannot resolve @/app/services/base/platform-gateway. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the supacharge-web shell provides the host-owned half."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@db78a963 (git blob 0ab330a0, 1098 bytes; same digest rokctapp.json pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the supacharge-web shell provides the host-owned half."
     }
   ]
 }
