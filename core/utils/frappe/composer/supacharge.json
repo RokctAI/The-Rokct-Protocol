@@ -128,6 +128,17 @@
       "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
       "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@db78a963 (git blob 0ab330a0, 1098 bytes; same digest rokctapp.json pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the supacharge-web shell provides the host-owned half."
+    },
+    {
+      "name": "lms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/lms/nextjs",
+      "ref": "main",
+      "sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741",
+      "_sha256_comment": "SHA-256 of lms/nextjs/install.py at agent@a0544677 (git blob 7de40f08, 1097 bytes; the agent#242 head de0df52b does not touch install.py, so the digest is the same there); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The lms SDK's nextjs half (agent#242, lms_sdk 1.2.0): Supacharge's home SDK, the Next.js counterpart of core/utils/flutter/composer/supacharge.json flagging lms_sdk home_sdk: true. Owns the app/handson/all/lms page/action/service trees, the app/page.tsx that serves `/` (anonymous visitors redirect to /landing, signed-in users to the lms home; reads the session through base_sdk's kernel seam), components/custom/landing/lms-landing-config.ts and the landing sections (floating nav, sessions, subjects, tutors, features, partners, pricing, faq, testimonials, footer) it registers into base_sdk's components/custom/landing/page-sections.ts at the // @rokct-sdk-page-sections-start marker, plus its Learning / My Profile / My Batches entries at the sidebar's // @rokct-sdk-nav-start marker. Listed after auth_sdk because the composer installs in array order and its 'requires' names files the two halves above install: base_sdk's app/services/base/session.ts, app/actions/base/landing.ts, landing-config.ts and page-sections.ts (the markers its integrations anchor to) and auth_sdk's app/(auth)/actions.ts. Its own 'requires' also names host-owned files (app/lib/roles.ts, app/lib/format.ts, app/services/common/base.ts, components/custom/branding.tsx, the components/ui primitives, lib/utils.ts) - warn-only via check_requires(), not an auto-install; the supacharge-web shell provides the host-owned half."
     }
   ]
 }
