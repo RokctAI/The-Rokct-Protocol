@@ -201,7 +201,10 @@ the pre-role behavior.
   another SDK's line there is skipped with `[~] skipped <marker> from <pkg>: registry owned by home SDK
   <name>`, never a failure; `hero-copy` and `page-sections` stay multi-contributor), and the name is
   recorded as `"home_sdk"` in `.rokct/cache/install_state.json`. Without the flag the composer behaves
-  as before: lines append in order, with a warning at a contested marker. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
+  as before: lines append in order, with a warning at a contested marker. When `composer.json` is absent
+  (a shell's `scripts/compose.sh` composing OFFLINE from its committed cache, the profile discarded after
+  the refresh), the installer base reads the same `sdks[]` entries - `name` and `home_sdk` - from the
+  shell lock `.rokct/lock.json` instead; a lock without the flag composes as before. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
   shallow `git clone -b <ref> --depth 1` path; a SHA (which `git clone -b` rejects) makes `clone_ref()`
   fall back to a full clone + `git checkout <ref>` — same semantics as the Flutter and Frappe composers.
 - **Ref pinning for network clones.** An SDK vendored through a *network clone* (no sibling checkout at

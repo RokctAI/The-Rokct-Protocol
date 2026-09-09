@@ -36,6 +36,10 @@ answered whichever SDK's line was injected first. These tests pin:
     without a home SDK the lines append in order with a warning, and
     multi-contributor markers (hero-copy) stay open to everyone
   * the composer records "home_sdk" in .rokct/cache/install_state.json
+  * without composer.json (an offline compose from the committed cache) the
+    installer base reads the flag from the shell lock's .rokct/lock.json
+    sdks[] entries instead, with the same one-flag rule; composer.json wins
+    when both exist, and a lock without the flag composes as before
 
 Run:  python -m pytest core/utils/nextjs/tests -q
   or: python core/utils/nextjs/tests/test_nextjs_home_sdk.py
@@ -188,6 +192,30 @@ class HomeSdkTestBase(unittest.TestCase):
         ) as f:
             json.dump({"sdks": self.composer_sdks(order, home, extra_home)}, f)
 
+    def lock_sdks(self, order, home=None, extra_home=()):
+        """sdks[] entries the way a shell's scripts/compose.sh build_lock()
+        writes them: no "enabled" key (only enabled entries are locked),
+        "home_sdk" copied from the composer profile."""
+        return [
+            {
+                "name": name,
+                "home_sdk": name == home or name in extra_home,
+                "cache": f".rokct/cache/{name[:-4]}",
+                "version": "1.0.0",
+            }
+            for name in order
+        ]
+
+    def write_lock(self, order, home=None, extra_home=(), with_flag=True):
+        sdks = self.lock_sdks(order, home, extra_home)
+        if not with_flag:
+            for entry in sdks:
+                del entry["home_sdk"]
+        with open(
+            os.path.join(self.rokct_dir, "lock.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump({"generated_from": "scripts/compose.sh refresh", "sdks": sdks}, f)
+
     def install(self, sdk_name):
         installer = self.import_installer()
         out, err = io.StringIO(), io.StringIO()
@@ -270,6 +298,97 @@ class TestResolveHomeSdkInstaller(HomeSdkTestBase):
         sdks[1]["enabled"] = False
         with redirect_stdout(io.StringIO()):
             self.assertIsNone(self.import_installer().resolve_home_sdk(sdks))
+
+
+class TestResolveHomeSdkFromLock(HomeSdkTestBase):
+    """An offline compose (a Next.js shell's scripts/compose.sh at Vercel)
+    runs the cached installers with composer.json gone - it was a
+    refresh-time scratch copy of the registry template - so the installer
+    base falls back to the flag the shell lock copied from it."""
+
+    def test_lock_is_read_when_composer_json_is_absent(self):
+        self.write_lock(["alpha_sdk", "beta_sdk"], home="beta_sdk")
+        self.assertEqual(self.import_installer().resolve_home_sdk(), "beta_sdk")
+
+    def test_composer_json_wins_over_the_lock(self):
+        self.write_composer(["alpha_sdk", "beta_sdk"], home="alpha_sdk")
+        self.write_lock(["alpha_sdk", "beta_sdk"], home="beta_sdk")
+        self.assertEqual(self.import_installer().resolve_home_sdk(), "alpha_sdk")
+
+    def test_lock_without_the_flag_is_none_with_an_info_line(self):
+        self.write_lock(["alpha_sdk", "beta_sdk"], with_flag=False)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            resolved = self.import_installer().resolve_home_sdk()
+        self.assertIsNone(resolved)
+        self.assertIn("[i] no home SDK", out.getvalue())
+
+    def test_lock_with_every_flag_false_is_none(self):
+        self.write_lock(["alpha_sdk", "beta_sdk"])
+        with redirect_stdout(io.StringIO()):
+            self.assertIsNone(self.import_installer().resolve_home_sdk())
+
+    def test_two_flagged_lock_entries_raise(self):
+        self.write_lock(
+            ["alpha_sdk", "beta_sdk"], home="alpha_sdk", extra_home=("beta_sdk",)
+        )
+        installer = self.import_installer()
+        with self.assertRaises(installer.HomeSdkConflict) as ctx:
+            installer.resolve_home_sdk()
+        self.assertIn("alpha_sdk, beta_sdk", str(ctx.exception))
+
+    def test_unreadable_lock_warns_and_is_none(self):
+        with open(
+            os.path.join(self.rokct_dir, "lock.json"), "w", encoding="utf-8"
+        ) as f:
+            f.write("{not json")
+        out = io.StringIO()
+        with redirect_stdout(out):
+            resolved = self.import_installer().resolve_home_sdk()
+        self.assertIsNone(resolved)
+        self.assertIn("[!] WARNING: unreadable lock.json", out.getvalue())
+        self.assertIn("[i] no home SDK", out.getvalue())
+
+    def test_lock_that_is_not_an_object_is_none(self):
+        with open(
+            os.path.join(self.rokct_dir, "lock.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(["alpha_sdk"], f)
+        with redirect_stdout(io.StringIO()):
+            self.assertIsNone(self.import_installer().resolve_home_sdk())
+
+    def compose_from_lock(self, order, home=None):
+        self.assertFalse(
+            os.path.exists(os.path.join(self.project_root, "composer.json"))
+        )
+        self.write_lock(order, home)
+        return {name: self.install(name) for name in order}
+
+    def test_flagged_home_wins_from_the_lock_when_listed_first(self):
+        logs = self.compose_from_lock(["beta_sdk", "alpha_sdk"], home="beta_sdk")
+        self.assert_home_is("beta_sdk")
+        self.assertIn(
+            "[~] skipped app/page.tsx (owned by home SDK beta_sdk)", logs["alpha_sdk"]
+        )
+        self.assertIn('{ id: "beta-header-menu" }', self.read(HEADER_MENU_REL))
+        self.assertNotIn('{ id: "alpha-header-menu" }', self.read(HEADER_MENU_REL))
+        self.assertIn('{ id: "alpha-hero-copy" }', self.read(HERO_COPY_REL))
+
+    def test_flagged_home_wins_from_the_lock_when_listed_last(self):
+        self.compose_from_lock(["alpha_sdk", "beta_sdk"], home="beta_sdk")
+        self.assert_home_is("beta_sdk")
+        self.assertIn('{ id: "beta-header-menu" }', self.read(HEADER_MENU_REL))
+        self.assertNotIn('{ id: "alpha-header-menu" }', self.read(HEADER_MENU_REL))
+
+    def test_lock_without_the_flag_keeps_last_writer_wins(self):
+        self.write_lock(["alpha_sdk", "beta_sdk"], with_flag=False)
+        logs = {name: self.install(name) for name in ["alpha_sdk", "beta_sdk"]}
+        self.assertIn("// beta_sdk home", self.read(HOME_REL))
+        self.assertEqual(self.file_owners(HOME_REL), ["alpha_sdk", "beta_sdk"])
+        self.assertNotIn("[~] skipped", logs["alpha_sdk"] + logs["beta_sdk"])
+        self.assertIn('{ id: "alpha-header-menu" }', self.read(HEADER_MENU_REL))
+        self.assertIn('{ id: "beta-header-menu" }', self.read(HEADER_MENU_REL))
+        self.assertIn("[!]", logs["beta_sdk"])
 
 
 class TestResolveHomeSdkComposer(HomeSdkTestBase):
