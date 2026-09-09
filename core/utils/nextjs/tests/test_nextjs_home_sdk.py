@@ -37,7 +37,7 @@ answered whichever SDK's line was injected first. These tests pin:
   * the composer records "home_sdk" in .rokct/cache/install_state.json
 
 Run:  python -m pytest core/utils/nextjs/tests -q
-  or: python core/utils/nextjs/tests/test_home_sdk_precedence.py
+  or: python core/utils/nextjs/tests/test_nextjs_home_sdk.py
 """
 
 import importlib.util

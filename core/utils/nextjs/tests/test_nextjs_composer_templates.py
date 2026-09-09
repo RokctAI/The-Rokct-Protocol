@@ -26,7 +26,7 @@ core/utils/flutter/tests/test_composer_templates.py.
     the last kernel entry (telemetry_sdk, base_sdk) listed ahead of it
 
 Run:  python -m pytest core/utils/nextjs/tests -q
-  or: python core/utils/nextjs/tests/test_composer_templates.py
+  or: python core/utils/nextjs/tests/test_nextjs_composer_templates.py
 """
 
 import importlib.util
