@@ -51,7 +51,7 @@ EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
     "deliveryplatform.json": "delivery_sdk",
-    "telephony.json": None,
+    "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",
 }
 

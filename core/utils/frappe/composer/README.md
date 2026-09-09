@@ -48,9 +48,11 @@ never a failure), and the resolved name is recorded as `"home_sdk"` in
 `rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `delivery_sdk` (zones
 `delivery/nextjs`, the storefront that sells the delivery platform and the door
 to the tenant portal; `products_sdk`, which carried the flag provisionally, is a
-portal part), `telephony.json` → none
-(kernel seam only), `hosting.json` → `hosting_sdk` (hardware `hosting/nextjs`, the
-storefront on the control site; no `agent_sdk`). A template without the key still composes as before: lines
+portal part), `hosting.json` → `hosting_sdk` (hardware `hosting/nextjs`, the
+storefront on the control site; no `agent_sdk`), `telephony.json` →
+`telephony_sdk` (hardware `telephony/nextjs`, its `app_type.telephony` block: the
+same storefront shape selling the Telephony plan category; no `agent_sdk`). A
+template without the key still composes as before: lines
 append in order at a contested marker, with a warning.
 
 ## Per-product templates
@@ -71,7 +73,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | --- | --- |
 | `supacharge.json` | `lms`, `agent` |
 | `startupos.json` | `studio`, `productivity`, `agent` |
-| `telephony.json` | — (telephony module pending extraction from control) |
+| `telephony.json` | — (telephony module pending extraction from control; `hardware/telephony/frappe` carries a control-persona `manifest.json` and the four Telephony plan fixtures, not a tenant module) |
 | `hosting.json` | — (hosting module pending extraction from rpanel; `hardware/hosting/frappe` is fixtures-only, no `manifest.json` yet) |
 | `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |

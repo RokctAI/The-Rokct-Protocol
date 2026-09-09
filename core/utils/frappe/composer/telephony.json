@@ -2,7 +2,7 @@
   "name": "rcore_app",
   "version": "1.0.0",
   "description": "Frappe compose template for the telephony docker product (composes an app named rcore)",
-  "_comment": "Common modules only for now. The telephony module joins this template once it is extracted from control — hardware/telephony/frappe is an empty placeholder today.",
+  "_comment": "Common modules only for now on the Frappe side: the telephony module joins this template once it is extracted from control - hardware/telephony/frappe already carries manifest.json (app_type control: the PortaBilling client, the five telephony doctypes, the portal and provisioning APIs) and the four Telephony Subscription Plan seed records with their Items under src/fixtures/, but it is a control-hub persona tree, not a tenant module, so it is not listed in modules[] yet. The Next.js half is composed today: sdks[] below is the telephony shell (RokctAI/telephony-frontend, app_type telephony) - Ray, 2026-09-09: \"For telephony I suggest the hosting shape: a telephony_sdk landing half selling the Telephony plan category on control, telephony-frontend composed like hosting #6\"; a storefront on the control site and nothing more, exactly as hosting.json. telephony_sdk is its home SDK (home_sdk: true) beside the three kernel SDKs; NO agent_sdk, whose integrations are unconditional (the agent: true flag at // @rokct-sdk-flags-start flips the shell AI-first) and whose plans query is the exclusion this shell's query mirrors. Merge order: hardware telephony_sdk 1.1.0 first, this template second, the telephony-frontend compose PR third.",
   "modules": [
     {
       "name": "base",
@@ -82,6 +82,42 @@
       "home_sdk": false,
       "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs: without it the supacharge-web composed build cannot resolve @/app/services/base/platform-gateway. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the telephony shell provides the host-owned half."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@db78a963 (git blob 0ab330a0, 1098 bytes; same digest rokctapp.json pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the telephony shell provides the host-owned half."
+    },
+    {
+      "name": "telephony_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/telephony/nextjs",
+      "ref": "main",
+      "sha256": "5e4182ace62450b9feb6689aae032b8d4434e4ef368d071ab344ade58c1bf691",
+      "home_sdk": true,
+      "_sha256_comment": "SHA-256 of telephony/nextjs/install.py at hardware@4aa9839 (unchanged by the telephony_sdk 1.1.0 PR; the generic installer with sdk_name 'telephony_sdk', 1103 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The telephony SDK's nextjs half (hardware telephony_sdk 1.1.0): the telephony shell's home SDK, the Next.js counterpart of the Dart templates' home_sdk flag. The SDK carries two app_type blocks and the host's .rokct/config/app_type marker picks one: 'control' (1.0.0, the control site's own /handson/control/telephony and /portal/telephony pages) or 'telephony' (1.1.0, this shell's storefront half), so the telephony shell's marker must read 'telephony' - the same one-line file that names this template. The telephony block mirrors hosting_sdk 1.0.0 file for file: it owns app/page.tsx (every visitor is redirected to base_sdk's composed landing at /landing; the signed-in portal is the control block's, on the control site) and fills every seam base_sdk's landing host offers with one registered module each: hero copy and hero form (two calls to action, no input), a features section and a pricing section at // @rokct-sdk-page-sections-start, a header menu of two anchors, the site metadata (no icon, so base_sdk >= 1.17.0's generated letter favicon applies) and the plans query - base's default with [\"plan_category\", \"=\", \"Telephony\"] laid over its payload, the inclusive mirror of agent_sdk's exclusion and of hosting_sdk's Hosting filter. Listed after auth_sdk because the composer installs in array order and its 'requires' names files base_sdk installs (app/actions/base/landing.ts, the landing registries) and the landing's sign-up and login links are auth_sdk's routes; the home_sdk composer (#390) moves it directly behind base_sdk at install time regardless. base_sdk floor 1.20.0."
     }
   ]
 }
