@@ -106,6 +106,7 @@
       "path": "../core/telemetry/nextjs",
       "ref": "main",
       "sha256": "318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
     },
@@ -117,6 +118,7 @@
       "path": "../core/base/nextjs",
       "ref": "main",
       "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@2a097568 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway), the base admin content/settings/system actions and admin/manager settings, content and system pages, plus the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile pieces. Listed directly after telemetry_sdk because most halves below 'require' files it installs (app/actions/base/admin/*, app/services/base/platform-gateway.ts, components/ui/date-range-picker.tsx). Its own 'requires' names merchants_sdk's shop action and merchant-nav (a base<->merchants cycle, so this is the one forward reference in this list) and telemetry_sdk's dashboard actions — warn-only via check_requires(), not an auto-install."
     },
@@ -128,6 +130,7 @@
       "path": "../Users/auth/nextjs",
       "ref": "main",
       "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@f0deb59d (git blob 0ab330a0, 1098 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) tree (auth.ts, actions.ts, login/register), session helper, paas-login/auth-form components, db/ + lib/drizzle schema and middleware.ts. Listed after base_sdk (requires its platform-gateway service); erp_sdk, merchants_sdk, orders_sdk, comms_sdk and agent_sdk all 'require' the app/(auth)/*, db/* and paas-login files it installs."
     },
@@ -139,6 +142,7 @@
       "path": "../Users/users/nextjs",
       "ref": "main",
       "sha256": "3a1855f895916342fe2e421bdf54e4201e0c97490e4eba68259a3b653af597e2",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of users/nextjs/install.py at Users@f0deb59d (git blob c8ff3734, 1099 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The users SDK's nextjs half (Users#83/#84): users/customers admin actions and the admin users, roles and permissions pages. Requires base_sdk's settings action; gateways_sdk, wallet_sdk, merchants_sdk and promotions_sdk 'require' the customers actions it installs."
     },
@@ -150,6 +154,7 @@
       "path": "../commerce/merchants/nextjs",
       "ref": "main",
       "sha256": "1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of merchants/nextjs/install.py at commerce@40d2bd9b (git blob d8d2636e, 1103 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The merchants SDK's nextjs half (commerce#116/#117): shops admin actions/pages, the merchant shop/business/branches/staff/invites/working-hours actions and manager pages, plus components/custom/nav/merchant-nav.tsx. Requires auth_sdk's app/(auth)/actions.ts and users_sdk's customers action; base_sdk, products_sdk and promotions_sdk 'require' the shop/business/shops actions it installs."
     },
@@ -161,6 +166,7 @@
       "path": "../productivity/support/nextjs",
       "ref": "main",
       "sha256": "c15a3f67a1e1c15c6b7d6d9ef934cd334979a9ec63d42c2a2c429c8133103c53",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of support/nextjs/install.py at productivity@312566cc (git blob 99adc060, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The support SDK's nextjs half (productivity#35): the support admin action and tickets page. No cross-SDK requires; orders_sdk and comms_sdk 'require' app/actions/support/admin/support.ts, which it installs."
     },
@@ -172,6 +178,7 @@
       "path": "../core/comms/nextjs",
       "ref": "main",
       "sha256": "c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of comms/nextjs/install.py at core@2a097568 (git blob 1a63ae7a, 1075 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The comms SDK's nextjs half (core#160): admin notifications/email/whatsapp settings pages and the whatsapp action. Requires auth_sdk's auth.ts, base_sdk's content/settings actions and support_sdk's support action — all installed above."
     },
@@ -183,6 +190,7 @@
       "path": "../pay/gateways/nextjs",
       "ref": "main",
       "sha256": "278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of gateways/nextjs/install.py at pay@5f17146d (git blob 9dda4376, 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The gateways SDK's nextjs half (pay#55/#56): payment-gateway admin finance/transactions actions, admin finance (payouts, sales, subscriptions, transactions, payment settings) pages and the manager finance pages. Requires base_sdk's settings action and users_sdk's customers action; wallet_sdk 'requires' the finance actions it installs. Same ref as erp_sdk/wallet_sdk below — the composer clones one ref per repo."
     },
@@ -194,6 +202,7 @@
       "path": "../pay/wallet/nextjs",
       "ref": "main",
       "sha256": "1329aba62272bff52ef92369cf494a28743badc73f79a39c4588b057f66b3109",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of wallet/nextjs/install.py at pay@5f17146d (git blob 6144bb8d, 1100 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The wallet SDK's nextjs half (pay#55/#56): admin business/customers/finance wallet pages and the manager wallet page. Listed after gateways_sdk because its 'requires' names the gateways finance actions gateways_sdk installs (plus users_sdk's customers action). Same pay ref as gateways_sdk/erp_sdk."
     },
@@ -205,6 +214,7 @@
       "path": "../commerce/products/nextjs",
       "ref": "main",
       "sha256": "8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce@40d2bd9b (git blob 398de435, 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The products SDK's nextjs half (commerce#116/#117): products/categories/brands/extras/gallery/receipts actions and admin+manager pages, the product reports, the upload action and components/custom/image-upload.tsx. Requires base_sdk's content action, merchants_sdk's shops action and telemetry_sdk's GenericReport; kitchen_sdk, orders_sdk and promotions_sdk 'require' files it installs."
     },
@@ -216,6 +226,7 @@
       "path": "../commerce/kitchen/nextjs",
       "ref": "main",
       "sha256": "f5711bccc5a13eca47052e411400cc0d922bbbbbb3fa5b8559ec86b06fd52fb1",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of kitchen/nextjs/install.py at commerce@40d2bd9b (git blob 431a91f8, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The kitchen SDK's nextjs half (commerce#116/#117): the manager kitchens page. Listed after products_sdk because its 'requires' names app/actions/products/operations.ts, which products_sdk installs."
     },
@@ -227,6 +238,7 @@
       "path": "../commerce/orders/nextjs",
       "ref": "main",
       "sha256": "906fdcf11b99d5c220ab6f8921adf2b936a8529d94f4214aa165cd1dd4a95a80",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of orders/nextjs/install.py at commerce@40d2bd9b (git blob 21ca558c, 1100 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The orders SDK's nextjs half (commerce#116/#117): orders/parcel/refunds/pos actions, admin orders + POS + order/revenue report pages, manager orders/parcels/refunds/POS pages and the platform orders form/validator. Requires auth_sdk's actions.ts, products_sdk's products action and image-upload, support_sdk's support action, telemetry_sdk's reports action/GenericReport and base_sdk's date-range-picker — all installed above."
     },
@@ -238,6 +250,7 @@
       "path": "../commerce/booking/nextjs",
       "ref": "main",
       "sha256": "2ec597df755f4a1c0056f2bdbefd2e174a6014bbfa52ed13cf9641c70a0256e5",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of booking/nextjs/install.py at commerce@40d2bd9b (git blob fad30a3f, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The booking SDK's nextjs half (commerce#116/#117): the booking action, admin bookings page and manager reservations/tables/bookings pages. Listed after orders_sdk because its 'requires' names app/actions/orders/admin/orders.ts, which orders_sdk installs."
     },
@@ -249,6 +262,7 @@
       "path": "../commerce/promotions/nextjs",
       "ref": "main",
       "sha256": "40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of promotions/nextjs/install.py at commerce@40d2bd9b (git blob 6d6480bf, 1104 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The promotions SDK's nextjs half (commerce#116/#117): marketing/stories actions, admin banners/stories/ads/subscribers pages and manager ads/stories/coupons pages. Requires base_sdk's content action, merchants_sdk's business action, users_sdk's customers action and products_sdk's image-upload — all installed above."
     },
@@ -260,6 +274,7 @@
       "path": "../commerce/loyalty/nextjs",
       "ref": "main",
       "sha256": "f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of loyalty/nextjs/install.py at commerce@40d2bd9b (git blob 6d710f7b, 1101 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The loyalty SDK's nextjs half (commerce#116/#117): admin bonuses/cashback/referrals pages and the manager bonuses page. Listed after promotions_sdk because its 'requires' names the promotions marketing actions promotions_sdk installs."
     },
@@ -271,6 +286,7 @@
       "path": "../pay/erp/nextjs",
       "ref": "main",
       "sha256": "d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of erp/nextjs/install.py at pay@e57930e2; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "Read by the Next.js composer (core/utils/nextjs/sdk_composer.py) only — the frappe engine reads 'modules' above and ignores this key. The erp SDK's nextjs half (accounting + hrms app trees). A Next.js shell for this product commits just '.rokct/config/app_type' containing 'rokctapp' and composes this list."
     },
@@ -282,6 +298,7 @@
       "path": "../productivity/crm/nextjs",
       "ref": "main",
       "sha256": "0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of crm/nextjs/install.py at productivity@84f6495c; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The crm SDK's nextjs half (leads, deals, contacts, organizations, dashboard — the frontend of the crm frappe module above). Listed after erp_sdk because its manifest 'requires' names accounting action files erp_sdk installs (requires is a warn-only prerequisite check in sdk_installer_base.py's check_requires(), not an auto-install)."
     },
@@ -293,6 +310,7 @@
       "path": "../productivity/productivity/nextjs",
       "ref": "main",
       "sha256": "f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2",
+      "home_sdk": false,
       "_sha256_comment": "SHA-256 of productivity/nextjs/install.py at productivity@312566cc (git blob 72516ccd, 1106 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The productivity SDK's nextjs half (productivity #35): the Projects and Workspace surface — app/handson/all/projects and app/handson/all/workspace page trees, the projects/workspace actions, the AI work/strategy/meetings/smart_status actions, app/services/all/projects and the project/task/timesheet/workspace components — plus its Projects/Strategy/Workspace sidebar nav entries (integration into app/handson/sidebar-client.tsx). Listed after erp_sdk and auth_sdk because its 'requires' names erp_sdk's accounting selling/quotation action and auth_sdk's app/(auth)/auth.ts, and ahead of agent_sdk because agent_sdk's 'requires' names the app/actions/handson/all/projects/* and app/services/all/projects/* files this half installs (components/tasks/project-task.tsx imports @/app/actions/handson/all/projects/projects). Same productivity ref as support_sdk/crm_sdk — the composer clones one ref per repo."
     },
@@ -304,6 +322,7 @@
       "path": "../agent/agent/nextjs",
       "ref": "main",
       "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
+      "home_sdk": true,
       "_sha256_comment": "SHA-256 of agent/nextjs/install.py at agent@3e168ea8 (git blob 9a6d974d, 1099 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The agent SDK's nextjs half (owner ruling 2026-09-03: 'agent sdk to rokctapp yes'). Owns the chat root page app/(chat)/page.tsx, the AI action/service/api trees, the chat components, the Memory sidebar nav entry (integration into app/handson/sidebar-client.tsx) and the 'agent: true' AI-first flag (integration into app/config/compose.ts). Listed last: its manifest 'requires' names accounting/hrms action files erp_sdk installs, the projects actions/services productivity_sdk installs, plus host-owned files (auth, db, config, ui components) — warn-only via check_requires(), not an auto-install."
     }

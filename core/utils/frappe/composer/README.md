@@ -32,6 +32,24 @@ behavior.
 **New product = one new template file here + a thin shell repo carrying just
 the one-line `app_type` file.**
 
+## Home SDK (`"home_sdk"` on `sdks[]` entries)
+
+Every `sdks[]` entry carries `"home_sdk": true|false`, the same flag the flutter
+templates set: exactly one entry per product template is the shell's home SDK —
+it owns `app/page.tsx` and base_sdk's single-answer landing registries
+(`header-menu`, `hero-form`, `plans-query`, `site-metadata`; `hero-copy` and
+`page-sections` merge every contributor). The Next.js composer installs the home
+SDK directly behind the kernel entries (`telemetry_sdk`, `base_sdk`), other SDKs
+never write the paths its manifest installs, only the home SDK's line is injected
+at a single-answer marker (another SDK's line there is skipped with a log line,
+never a failure), and the resolved name is recorded as `"home_sdk"` in
+`.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk` and
+`telemetry_sdk` are never home. Today: `supacharge.json` → `lms_sdk`,
+`rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `products_sdk`
+(provisional until the delivery-vs-merchants pick lands), `telephony.json` → none
+(kernel seam only). A template without the key still composes as before: lines
+append in order at a contested marker, with a warning.
+
 ## Per-product templates
 
 One template per docker product. **Every tenant product composes an app named
