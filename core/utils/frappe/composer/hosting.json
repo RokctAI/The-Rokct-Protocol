@@ -1,0 +1,123 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Frappe compose template for the hosting docker product (composes an app named rcore)",
+  "_comment": "Common modules only for now, exactly as telephony.json: the hosting module joins this template once rpanel's hosting module is broken out of the control stack into SDK form - hardware/hosting/frappe is fixtures-only today (the six Hosting Subscription Plan seed records and their Items, no manifest.json), see its README. The Next.js half is composed today: sdks[] below is the hosting shell (RokctAI/hosting, app_type hosting) - Ray, 2026-09-09: \"hosting will just be a seperate frontend for rokctapp, but it points to control site. just hosting focused and filter subscriptions to show only hosting related\"; rpanel stays a standalone product (hosting/docs/spec.md), so the shell is a storefront on the control site and nothing more. hosting_sdk is its home SDK (home_sdk: true) beside the three kernel SDKs; NO agent_sdk, whose integrations are unconditional (the agent: true flag at // @rokct-sdk-flags-start flips the shell AI-first) and whose plans query excludes the very plans this shell sells (agent_sdk 1.10.0).",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315"
+    },
+    {
+      "name": "gateways",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/gateways/frappe",
+      "ref": "main",
+      "_comment": "Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "main"
+    }
+  ],
+  "sdks": [
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/nextjs",
+      "ref": "main",
+      "sha256": "318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs: without it the supacharge-web composed build cannot resolve @/app/services/base/platform-gateway. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the hosting shell provides the host-owned half."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@db78a963 (git blob 0ab330a0, 1098 bytes; same digest rokctapp.json pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the hosting shell provides the host-owned half."
+    },
+    {
+      "name": "hosting_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hosting/nextjs",
+      "ref": "main",
+      "sha256": "a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f",
+      "home_sdk": true,
+      "_sha256_comment": "SHA-256 of hosting/nextjs/install.py at the hardware hosting_sdk 1.0.0 PR head (telephony/nextjs/install.py with sdk_name 'hosting_sdk', 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The hosting SDK's nextjs half (hardware hosting_sdk 1.0.0): the hosting shell's home SDK, the Next.js counterpart of the Dart templates' home_sdk flag. Owns app/page.tsx (every visitor is redirected to base_sdk's composed landing at /landing; there is no signed-in home, rpanel is a standalone product) and fills every seam base_sdk's landing host offers with one registered module each: hero copy and hero form (two calls to action, no input), a features section and a pricing section at // @rokct-sdk-page-sections-start, a header menu of two anchors, the site metadata (no icon, so base_sdk >= 1.17.0's generated letter favicon applies) and the plans query - base's default with [\"plan_category\", \"=\", \"Hosting\"] laid over its payload, the inclusive mirror of agent_sdk's exclusion. Listed after auth_sdk because the composer installs in array order and its 'requires' names files base_sdk installs (app/actions/base/landing.ts, the landing registries) and the landing's sign-up and login links are auth_sdk's routes; the home_sdk composer (#390) moves it directly behind base_sdk at install time regardless. base_sdk floor 1.19.0."
+    }
+  ]
+}
