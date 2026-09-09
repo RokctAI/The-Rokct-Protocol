@@ -40,14 +40,15 @@ it owns `app/page.tsx` and base_sdk's single-answer landing registries
 (`header-menu`, `hero-form`, `plans-query`, `site-metadata`; `hero-copy` and
 `page-sections` merge every contributor). The Next.js composer installs the home
 SDK directly behind the kernel entries (`telemetry_sdk`, `base_sdk`), other SDKs
-never write the paths its manifest installs, a second package registering at a
-single-answer marker fails the compose, and the resolved name is recorded as
-`"home_sdk"` in `.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk` and
+never write the paths its manifest installs, only the home SDK's line is injected
+at a single-answer marker (another SDK's line there is skipped with a log line,
+never a failure), and the resolved name is recorded as `"home_sdk"` in
+`.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk` and
 `telemetry_sdk` are never home. Today: `supacharge.json` → `lms_sdk`,
 `rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `products_sdk`
 (provisional until the delivery-vs-merchants pick lands), `telephony.json` → none
-(kernel seam only). A template without the key still composes, with a warning
-instead of a failure at a contested marker.
+(kernel seam only). A template without the key still composes as before: lines
+append in order at a contested marker, with a warning.
 
 ## Per-product templates
 

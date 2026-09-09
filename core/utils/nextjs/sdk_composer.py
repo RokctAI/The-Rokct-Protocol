@@ -723,7 +723,7 @@ def resolve_home_sdk(sdks):
         print(
             '[i] no home SDK: no sdks[] entry carries "home_sdk": true; installing in '
             "composer.json order (last writer wins home files, single-answer landing "
-            "registries only warn on a second contributor)."
+            "registries append in order with a warning on a second contributor)."
         )
         return None
     return flagged[0]

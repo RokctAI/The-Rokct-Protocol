@@ -31,9 +31,10 @@ answered whichever SDK's line was injected first. These tests pin:
     the flagged home wins in BOTH compose orders
   * the home SDK takes over an unmodified copy another SDK installed on an
     earlier compose, but never a developer-modified one
-  * a second package at a single-answer registry marker fails the compose
-    naming both packages and the marker; without a home SDK it only warns
-    and multi-contributor markers (hero-copy) stay open to everyone
+  * only the home SDK injects at a single-answer registry marker: another
+    package's line there is skipped with a log line, never a failure;
+    without a home SDK the lines append in order with a warning, and
+    multi-contributor markers (hero-copy) stay open to everyone
   * the composer records "home_sdk" in .rokct/cache/install_state.json
 
 Run:  python -m pytest core/utils/nextjs/tests -q
@@ -415,49 +416,57 @@ class TestHomeTakesOverEarlierInstalls(HomeSdkTestBase):
 
 
 class TestSingleAnswerRegistries(HomeSdkTestBase):
-    def test_second_package_at_a_single_answer_marker_fails_compose(self):
+    def test_non_home_line_is_skipped_when_it_arrives_second(self):
         self.write_composer(["alpha_sdk", "beta_sdk"], home="beta_sdk")
         self.install("beta_sdk")
-        installer = self.import_installer()
-        out, err = io.StringIO(), io.StringIO()
-        with redirect_stdout(out), redirect_stderr(err), self.assertRaises(
-            installer.HomeSdkConflict
-        ) as ctx:
-            installer.install_sdk_files("alpha_sdk")
-        message = str(ctx.exception)
-        self.assertIn("@rokct-sdk-header-menu-start", message)
-        self.assertIn(HEADER_MENU_REL, message)
-        self.assertIn("alpha_sdk, beta_sdk", message)
-        self.assertIn("alpha_sdk is not the home SDK", message)
-        self.assertIn("Compose FAILED", err.getvalue())
+        out = self.install("alpha_sdk")
+        self.assertIn(
+            "[~] skipped @rokct-sdk-header-menu-start from alpha_sdk: registry owned by home SDK beta_sdk",
+            out,
+        )
+        header_menu = self.read(HEADER_MENU_REL)
+        self.assertIn('{ id: "beta-header-menu" },', header_menu)
+        self.assertNotIn("alpha-header-menu", header_menu)
 
-    def test_non_home_alone_at_a_single_answer_marker_fails_compose(self):
+    def test_non_home_line_is_skipped_when_it_arrives_first(self):
+        self.write_composer(["alpha_sdk", "beta_sdk"], home="beta_sdk")
+        out = self.install("alpha_sdk")
+        self.assertIn("[~] skipped @rokct-sdk-header-menu-start from alpha_sdk", out)
+        self.assertNotIn("alpha-header-menu", self.read(HEADER_MENU_REL))
+        self.install("beta_sdk")
+        header_menu = self.read(HEADER_MENU_REL)
+        self.assertIn('{ id: "beta-header-menu" },', header_menu)
+        self.assertNotIn("alpha-header-menu", header_menu)
+
+    def test_skip_never_fails_the_compose(self):
         self.write_composer(["alpha_sdk", "beta_sdk"], home="beta_sdk")
         installer = self.import_installer()
-        with redirect_stdout(io.StringIO()), redirect_stderr(
-            io.StringIO()
-        ), self.assertRaises(installer.HomeSdkConflict) as ctx:
-            installer.install_sdk_files("alpha_sdk")
-        self.assertIn("alpha_sdk register a line", str(ctx.exception))
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            ok = installer.install_sdk_files("alpha_sdk")
+        self.assertTrue(ok)
+        self.assertNotIn("FAILED", out.getvalue() + err.getvalue())
 
-    def test_home_alone_at_a_single_answer_marker_is_fine(self):
+    def test_home_alone_at_a_single_answer_marker_is_injected(self):
         self.write_sdk("alpha_sdk", single_answer=False)
         self.compose(["alpha_sdk", "beta_sdk"], home="beta_sdk")
         self.assertIn('{ id: "beta-header-menu" },', self.read(HEADER_MENU_REL))
         self.assertNotIn("alpha-header-menu", self.read(HEADER_MENU_REL))
 
     def test_merged_markers_stay_multi_contributor(self):
-        self.write_sdk("alpha_sdk", single_answer=False)
         self.compose(["alpha_sdk", "beta_sdk"], home="beta_sdk")
         hero_copy = self.read(HERO_COPY_REL)
         self.assertIn('{ id: "alpha-hero-copy" },', hero_copy)
         self.assertIn('{ id: "beta-hero-copy" },', hero_copy)
 
-    def test_no_home_only_warns_and_keeps_first_entry(self):
+    def test_no_home_only_warns_and_appends_in_order(self):
         outputs = self.compose(["alpha_sdk", "beta_sdk"])
         self.assertIn("WARNING", outputs["beta_sdk"])
         self.assertIn("@rokct-sdk-header-menu-start", outputs["beta_sdk"])
         self.assertIn("alpha_sdk, beta_sdk", outputs["beta_sdk"])
+        self.assertNotIn(
+            "[~] skipped @rokct", outputs["alpha_sdk"] + outputs["beta_sdk"]
+        )
         header_menu = self.read(HEADER_MENU_REL)
         self.assertLess(
             header_menu.index("alpha-header-menu"),

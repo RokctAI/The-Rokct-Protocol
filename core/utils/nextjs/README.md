@@ -196,11 +196,12 @@ the pre-role behavior.
   meaning): `resolve_home_sdk()` names it, `order_sdks_for_install()` installs it directly behind
   `telemetry_sdk`/`base_sdk`, the installer base skips the home's manifest-installed paths for every other
   SDK (the home takes over an unmodified copy installed earlier; a developer-modified copy is never
-  overwritten), `update_integrations()` fails the compose when a second package registers at one of
-  base_sdk's single-answer landing markers (`@rokct-sdk-header-menu-start`, `-hero-form-`, `-plans-query-`,
-  `-site-metadata-`; `hero-copy` and `page-sections` stay multi-contributor), and the name is recorded as
-  `"home_sdk"` in `.rokct/cache/install_state.json`. Without the flag the composer behaves as before and
-  only warns at a contested marker. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
+  overwritten), `update_integrations()` injects only the home SDK's line at base_sdk's single-answer
+  landing markers (`@rokct-sdk-header-menu-start`, `-hero-form-`, `-plans-query-`, `-site-metadata-`;
+  another SDK's line there is skipped with `[~] skipped <marker> from <pkg>: registry owned by home SDK
+  <name>`, never a failure; `hero-copy` and `page-sections` stay multi-contributor), and the name is
+  recorded as `"home_sdk"` in `.rokct/cache/install_state.json`. Without the flag the composer behaves
+  as before: lines append in order, with a warning at a contested marker. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
   shallow `git clone -b <ref> --depth 1` path; a SHA (which `git clone -b` rejects) makes `clone_ref()`
   fall back to a full clone + `git checkout <ref>` — same semantics as the Flutter and Frappe composers.
 - **Ref pinning for network clones.** An SDK vendored through a *network clone* (no sibling checkout at

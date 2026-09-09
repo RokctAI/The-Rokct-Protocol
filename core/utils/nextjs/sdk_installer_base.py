@@ -170,8 +170,9 @@ def resolve_sdk_path(sdk_name):
 # the LAST installer to write app/page.tsx kept it, and base_sdk's
 # single-answer landing registries (header-menu, hero-form, plans-query,
 # site-metadata) answered whichever SDK's line happened to be injected first.
-# The flag makes that explicit, and the two rules below make it hold
-# whatever the compose order.
+# The flag makes that explicit, and the two rules below (only the home SDK
+# writes the paths it installs; only the home SDK injects at the
+# single-answer registries) make it hold whatever the compose order.
 # ---------------------------------------------------------------------------
 
 # Per-process memo for resolve_home_sdk() when it reads composer.json: the
@@ -183,9 +184,10 @@ _HOME_SDK = _HOME_SDK_UNSET
 _HOME_OWNED_FILES = {}
 
 # Landing registries whose FIRST entry answers for the whole shell (see
-# base_sdk's components/custom/landing/*.ts). Exactly one SDK - the home SDK
-# - may register a line at these markers. hero-copy and page-sections merge
-# every contributor and are deliberately not listed.
+# base_sdk's components/custom/landing/*.ts). Only the home SDK injects at
+# these markers; other SDKs' lines there are skipped with a log line.
+# hero-copy and page-sections merge every contributor and are deliberately
+# not listed.
 SINGLE_ANSWER_MARKERS = (
     "@rokct-sdk-header-menu-start",
     "@rokct-sdk-hero-form-start",
@@ -195,9 +197,7 @@ SINGLE_ANSWER_MARKERS = (
 
 
 class HomeSdkConflict(RuntimeError):
-    """Raised when composer.json flags more than one home SDK, or when a
-    single-answer registry receives lines from more than one package (or
-    from a package other than the resolved home SDK)."""
+    """Raised when composer.json flags more than one home SDK."""
 
 
 def _read_composer_sdks():
@@ -230,7 +230,8 @@ def resolve_home_sdk(sdks=None):
     Reads ONLY the composer flag - unlike the Dart resolver there is no
     manifest-claim or legacy-scan fallback and no "core_sdk" default: a
     profile without the flag composes exactly as before (last writer wins,
-    a warning at single-answer registries) so older templates keep working.
+    single-answer registries append in order with a warning) so older
+    templates keep working.
     Exactly one flagged entry names the home SDK; more than one is a
     HomeSdkConflict, since that is precisely the ambiguity the flag exists
     to settle.
@@ -263,7 +264,7 @@ def _resolve_home_sdk_from(sdks):
         print(
             '[i] no home SDK: no sdks[] entry in composer.json carries "home_sdk": true; '
             "home files land in install order (last writer wins) and single-answer "
-            "landing registries only warn on a second contributor."
+            "landing registries append in order, with a warning on a second contributor."
         )
         return None
     return flagged[0]
@@ -630,7 +631,7 @@ def update_integrations():
                 (pkg_name, placeholder, replacement)
             )
 
-    enforce_single_answer_registries(by_target, resolve_home_sdk())
+    by_target = filter_single_answer_registries(by_target, resolve_home_sdk())
 
     for target_rel, entries in by_target.items():
         target_abs = os.path.join(PROJECT_ROOT, target_rel)
@@ -668,45 +669,51 @@ def update_integrations():
             print(f"[*] Applied integration in: {target_rel}")
 
 
-def enforce_single_answer_registries(by_target, home_sdk_name):
-    """One home per shell at base_sdk's single-answer landing registries.
+def filter_single_answer_registries(by_target, home_sdk_name):
+    """Only the home SDK injects at base_sdk's single-answer landing
+    registries - the Dart rule (owner ruling 2026-09-09, 12:58Z: "cant do
+    like dart that if sdk is home can inject?").
 
     `by_target` maps a target file to its (package, placeholder,
-    replacement) integration entries across every installed package - the
-    lines already at each marker from earlier installs plus this SDK's
-    incoming ones. For a SINGLE_ANSWER_MARKERS marker the contributors must
-    be exactly the resolved home SDK: a second package, or a package other
-    than the home SDK, fails the compose (HomeSdkConflict, naming the
-    packages and the marker) - the registry would otherwise silently answer
-    whichever line landed first. With no home SDK resolved (profile without
-    the flag) a multi-package marker only warns, so older templates keep
-    composing exactly as before.
+    replacement) integration entries across every installed package. When
+    a home SDK is resolved, an entry from any OTHER package at a
+    SINGLE_ANSWER_MARKERS marker is dropped with a log line and the compose
+    continues - the registry would otherwise silently answer whichever line
+    landed first. Never a failure. With no home SDK resolved (profile
+    without the flag) nothing is dropped: entries append in install order
+    as before, with a warning when several packages meet at one marker, so
+    older templates keep composing exactly as they did.
     """
-    contributors = {}
-    for target_rel, entries in by_target.items():
-        for pkg_name, placeholder, _ in entries:
-            marker = _single_answer_marker(placeholder)
-            if marker:
-                contributors.setdefault((target_rel, marker), []).append(pkg_name)
-    for (target_rel, marker), packages in contributors.items():
-        names = sorted(set(packages))
-        if home_sdk_name is None:
+    if home_sdk_name is None:
+        contributors = {}
+        for target_rel, entries in by_target.items():
+            for pkg_name, placeholder, _ in entries:
+                marker = _single_answer_marker(placeholder)
+                if marker:
+                    contributors.setdefault((target_rel, marker), set()).add(pkg_name)
+        for (target_rel, marker), names in contributors.items():
             if len(names) > 1:
                 print(
                     f"  [!] WARNING: {marker} in {target_rel} is a single-answer registry "
                     f"(the first entry answers) but {len(names)} packages register a line "
-                    f"there ({', '.join(names)}); no home SDK is flagged in composer.json, "
-                    f'so the first installed wins. Flag exactly one sdks[] entry "home_sdk": true.'
+                    f"there ({', '.join(sorted(names))}); no home SDK is flagged in "
+                    f"composer.json, so the first installed wins. Flag exactly one sdks[] "
+                    f'entry "home_sdk": true.'
                 )
-            continue
-        if names != [home_sdk_name]:
-            others = [n for n in names if n != home_sdk_name]
-            message = (
-                f"{marker} in {target_rel} is a single-answer registry owned by the home "
-                f"SDK {home_sdk_name}, but {', '.join(names)} register a line there "
-                f"({', '.join(others)} {'is' if len(others) == 1 else 'are'} not the home SDK). "
-                f"Only the home SDK may contribute to it; move the entry to "
-                f"{home_sdk_name} or drop it from {', '.join(others)}."
-            )
-            print(f"[!] Compose FAILED: {message}", file=sys.stderr)
-            raise HomeSdkConflict(message)
+        return by_target
+
+    filtered = {}
+    for target_rel, entries in by_target.items():
+        kept = []
+        for pkg_name, placeholder, replacement in entries:
+            marker = _single_answer_marker(placeholder)
+            if marker and pkg_name != home_sdk_name:
+                print(
+                    f"  [~] skipped {marker} from {pkg_name}: registry owned by home SDK "
+                    f"{home_sdk_name}"
+                )
+                continue
+            kept.append((pkg_name, placeholder, replacement))
+        if kept:
+            filtered[target_rel] = kept
+    return filtered
