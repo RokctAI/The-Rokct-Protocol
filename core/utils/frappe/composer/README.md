@@ -45,12 +45,14 @@ at a single-answer marker (another SDK's line there is skipped with a log line,
 never a failure), and the resolved name is recorded as `"home_sdk"` in
 `.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk` and
 `telemetry_sdk` are never home. Today: `supacharge.json` → `lms_sdk`,
-`rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `products_sdk`
-(provisional until the delivery-vs-merchants pick lands), `hosting.json` →
-`hosting_sdk` (hardware `hosting/nextjs`, the storefront on the control site; no
-`agent_sdk`), `telephony.json` → `telephony_sdk` (hardware `telephony/nextjs`, its
-`app_type.telephony` block: the same storefront shape selling the Telephony plan
-category; no `agent_sdk`). A template without the key still composes as before: lines
+`rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `delivery_sdk` (zones
+`delivery/nextjs`, the storefront that sells the delivery platform and the door
+to the tenant portal; `products_sdk`, which carried the flag provisionally, is a
+portal part), `hosting.json` → `hosting_sdk` (hardware `hosting/nextjs`, the
+storefront on the control site; no `agent_sdk`), `telephony.json` →
+`telephony_sdk` (hardware `telephony/nextjs`, its `app_type.telephony` block: the
+same storefront shape selling the Telephony plan category; no `agent_sdk`). A
+template without the key still composes as before: lines
 append in order at a contested marker, with a warning.
 
 ## Per-product templates
