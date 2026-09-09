@@ -44,12 +44,13 @@ COMPOSER_SRC = os.path.join(_UTILS_DIR, "nextjs", "sdk_composer.py")
 NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk")
 
 # The home SDK each product template flags today (deliveryplatform's is
-# provisional: products_sdk is the only non-kernel entry in its Next.js
-# half until the delivery-vs-merchants pick lands).
+# delivery_sdk, zones `delivery/nextjs` - the storefront that sells the
+# delivery platform and the door to the tenant portal; products_sdk, which
+# carried the flag provisionally, is a portal part).
 EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
-    "deliveryplatform.json": "products_sdk",
+    "deliveryplatform.json": "delivery_sdk",
     "telephony.json": None,
     "hosting.json": "hosting_sdk",
 }
