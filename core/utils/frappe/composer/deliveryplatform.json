@@ -217,8 +217,21 @@
       "path": "../commerce/products/nextjs",
       "ref": "main",
       "sha256": "8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Portal part, not the home: the products SDK's nextjs half is the tenant portal's product pages under /admin and /manager. It carried home_sdk: true provisionally while it was the only non-kernel entry; delivery_sdk is the shell's home now (Ray, 2026-09-09)."
+    },
+    {
+      "name": "delivery_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/delivery/nextjs",
+      "ref": "main",
+      "sha256": "8ca4ef31c258f0ac3fca917f875522a5714cbcb410bf5a803cf5a648e2d3caed",
       "home_sdk": true,
-      "_sha256_comment": "SHA-256 of products/nextjs/install.py at commerce as bootstrapped; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+      "_sha256_comment": "SHA-256 of delivery/nextjs/install.py at the zones delivery_sdk 1.0.0 PR head (telephony/nextjs/install.py with sdk_name 'delivery_sdk', 1102 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The delivery SDK's nextjs half (zones delivery_sdk 1.0.0): the delivery-platform shell's home SDK (RokctAI/delivery-frontend, app_type deliveryplatform), the Next.js counterpart of the Dart templates' home_sdk flag. Ray, 2026-09-09: the landing \"will be selling a delivery platform not selling to merchants, his portal is the one that sell to merchants\" - so it owns the root route app/(chat)/page.tsx (a signed-in session goes to base_sdk's manager shell at /manager, a ?site_name visitor or a tenant's own domain gets auth_sdk's PaaSLogin, everyone else is redirected to base_sdk's composed landing at /landing) and fills every seam base_sdk's landing host offers with one registered module each: hero copy and hero form (two calls to action, pricing and login, no input), a features section and a pricing section at // @rokct-sdk-page-sections-start, a header menu of two anchors, the site metadata (no icon, so base_sdk >= 1.17.0's generated letter favicon applies) and the plans query - base's default with [\"plan_category\", \"=\", \"paas\"] laid over its payload, the inclusive mirror of agent_sdk 1.10.0's exclusion. It also takes components/custom/nav/delivery-nav.tsx, the sidebar group base_sdk's app-sidebar imports and names in its `requires` as the delivery frontend's to take, and keeps the paas-era /paas/dashboard and /paas/admin paths answering by forwarding to /manager and /admin. Listed after the kernel entries and products_sdk because the composer installs in array order and its 'requires' names files base_sdk and auth_sdk install (the landing registries, the kernel session and tenant-host services, paas-login.tsx); the home_sdk composer (#390) moves it directly behind base_sdk at install time regardless. base_sdk floor 1.19.0, auth_sdk floor 1.6.0."
     }
   ]
 }
