@@ -190,9 +190,17 @@ the pre-role behavior.
   `core/utils/nextjs/sdk_composer.py` / `sdk_installer_base.py` instead of the `flutter/` paths — write
   that wrapper when the first real Next.js host adopts this convention, not speculatively here).
 - `The-Rokct-Protocol/core/utils/nextjs/sdk_composer.py` — reads the host's `composer.json` (same shape as
-  the Dart one: `{package_name, sdks: [{name, source, git, path, ref, enabled}]}`, `path` pointing at each
+  the Dart one: `{package_name, sdks: [{name, source, git, path, ref, enabled, home_sdk}]}`, `path` pointing at each
   SDK's `nextjs/` folder instead of `dart/`), fetches/caches each SDK, runs each `install.py`, then runs
-  `npm install` once at the end. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
+  `npm install` once at the end. Exactly one entry is flagged `"home_sdk": true` (the Dart flag, same
+  meaning): `resolve_home_sdk()` names it, `order_sdks_for_install()` installs it directly behind
+  `telemetry_sdk`/`base_sdk`, the installer base skips the home's manifest-installed paths for every other
+  SDK (the home takes over an unmodified copy installed earlier; a developer-modified copy is never
+  overwritten), `update_integrations()` fails the compose when a second package registers at one of
+  base_sdk's single-answer landing markers (`@rokct-sdk-header-menu-start`, `-hero-form-`, `-plans-query-`,
+  `-site-metadata-`; `hero-copy` and `page-sections` stay multi-contributor), and the name is recorded as
+  `"home_sdk"` in `.rokct/cache/install_state.json`. Without the flag the composer behaves as before and
+  only warns at a contested marker. `ref` accepts a branch, tag, or commit SHA: branch/tag refs stay on the
   shallow `git clone -b <ref> --depth 1` path; a SHA (which `git clone -b` rejects) makes `clone_ref()`
   fall back to a full clone + `git checkout <ref>` — same semantics as the Flutter and Frappe composers.
 - **Ref pinning for network clones.** An SDK vendored through a *network clone* (no sibling checkout at

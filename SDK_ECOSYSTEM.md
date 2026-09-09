@@ -240,6 +240,11 @@ An app repo commits exactly three composition inputs:
    entries (plus optional `home_sdk: true` on exactly one entry,
    `skip_install`, `_comment`), and optionally `host_routes` (routes whose
    pages import multiple SDKs and therefore cannot live inside any one SDK).
+   The Next.js product templates (`core/utils/frappe/composer/*.json`,
+   `sdks[]` read by `core/utils/nextjs/sdk_composer.py`) carry the same
+   `home_sdk` flag with the same meaning: one home per shell, which owns
+   `app/page.tsx` and base_sdk's single-answer landing registries; see
+   `core/utils/frappe/composer/README.md`.
 2. `.rokct/initiate.py` — bootstraps the protocol toolchain from this repo
    at runtime.
 3. `.rokct/config/app_type` — a one-line persona name (`supacharge`,
