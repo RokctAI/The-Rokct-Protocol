@@ -783,8 +783,11 @@ def record_home_sdk(home_sdk_name):
                 loaded = json.load(f)
             if isinstance(loaded, dict):
                 state = loaded
-        except Exception:
-            pass
+        except Exception as e:
+            print(
+                f"[!] WARNING: unreadable {INSTALL_STATE_FILE} ({e}); starting a fresh "
+                "install state."
+            )
     state.setdefault("packages", {})
     state["home_sdk"] = home_sdk_name
     with open(INSTALL_STATE_FILE, "w", encoding="utf-8") as f:

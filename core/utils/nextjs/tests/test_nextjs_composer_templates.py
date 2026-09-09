@@ -83,7 +83,7 @@ class TestNextjsTemplateHomeSdk(unittest.TestCase):
         return [s for s in self.templates[name].get("sdks", []) if isinstance(s, dict)]
 
     def test_every_sdks_entry_carries_a_boolean_home_sdk(self):
-        for name, template in self.templates.items():
+        for name in self.templates:
             names = [s.get("name") for s in self.sdks(name)]
             self.assertEqual(
                 len(names), len(set(names)), f"{name}: duplicate sdks[] names"
