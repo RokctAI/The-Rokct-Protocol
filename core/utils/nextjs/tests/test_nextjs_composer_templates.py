@@ -51,6 +51,7 @@ EXPECTED_HOME = {
     "rokctapp.json": "agent_sdk",
     "deliveryplatform.json": "products_sdk",
     "telephony.json": None,
+    "hosting.json": "hosting_sdk",
 }
 
 
