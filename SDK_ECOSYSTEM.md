@@ -72,6 +72,19 @@ shell). The `betassist` SDK lives in `RokctAI/commerce` (`betassist/`); the
 pending retirement, which is why it shows in the census until it is removed.
 The `RokctAI/SDKs` monorepo is retired and is not censused.
 
+The consumers index beside this file (`SDK_CONSUMERS.md`, rendered from
+`sdk_consumers.json`) carries, for every SDK with a Next.js half, its path,
+`version` and pin (the SHA-256 of `<sdk>/nextjs/install.py`); the generic
+Next.js shell composition `nextjs_compose_example.json` at the repo root is
+generated from those columns alone by `tools/gen_nextjs_compose_example.py`,
+and `RokctAI/factory` copies its `sdks[]` into every new Next.js shell at
+spawn (re-pinned live) when no product template names the shell's
+`app_type`. Release rule: **the consumers file (path, version, pin) and the
+compose example change together** — the weekly refresh regenerates both in
+one commit, and `nextjs-composer-tests.yml` fails when the example is stale
+or when a product template's `sdks[]` or this census disagrees with the
+index on an SDK's repo, path or pin.
+
 <!-- @generated-sdk-census-start -->
 | SDK | Repo | dart | frappe | nextjs |
 |---|---|---|---|---|
@@ -673,6 +686,13 @@ unchanged and the census `nextjs` column stays as a record of the gap.
     `enabled`, `git`, `path` like `../<repo>/<sdk>/dart`, `ref: "main"`).
     Updating only the app repo's committed `composer.json` is not enough — CI
     overwrites it from the template.
+    For a Next.js half, the same goes for the product template's `sdks[]` in
+    `core/utils/frappe/composer/<app_type>.json` (pinned: `sha256` of
+    `<sdk>/nextjs/install.py`); then rerun `python3 tools/gen_sdk_consumers.py`
+    and `python3 tools/gen_nextjs_compose_example.py` in the same commit, so
+    the consumers file (path, version, pin) and `nextjs_compose_example.json`
+    — the composition the factory seeds new Next.js shells from — change
+    together.
 11. Declare `session_policy`, `brand_hook`, or `home_sdk` only if this SDK
     genuinely owns that concern for the app — and first check no already-
     composed SDK declares it (grep the manifests of every SDK in the app's
@@ -705,6 +725,10 @@ unchanged and the census `nextjs` column stays as a record of the gap.
 - Don't commit `.rokct/skills/` or any provisioned composer script.
 - Don't edit an app's committed `composer.json` as the source of truth — the
   protocol template `core/utils/flutter/composer/<app_type>.json` is canonical.
+- Don't hand-edit `sdk_consumers.json`, `SDK_CONSUMERS.md` or
+  `nextjs_compose_example.json` — regenerate them (`tools/gen_sdk_consumers.py`,
+  then `tools/gen_nextjs_compose_example.py`); CI fails when the example is
+  stale or a template disagrees with the index.
 - Don't add a second `session_policy` or `brand_hook` declarer.
 - Don't park a server-queryable value — a reminder, a due date, a
   recurrence, a status, an owner — inside a table's `data` JSON blob; if

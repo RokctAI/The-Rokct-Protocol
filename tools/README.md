@@ -42,6 +42,13 @@ old-but-verified, never unverified.
 - `tools/gen_protocol_lock.py` — generates the lockfile and rewrites the
   embedded constants. Hashes come from `git show <ref>:<path>`, never the
   working tree.
+- `tools/gen_nextjs_compose_example.py` — generates `nextjs_compose_example.json`
+  (the generic Next.js shell composition `RokctAI/factory` seeds new shells
+  from) from `sdk_consumers.json` alone — each SDK's Next.js path, version
+  and pin — so the consumers file and the compose example change together;
+  `--check` is the CI mode
+  (`.github/workflows/nextjs-composer-tests.yml`). Not a fetched-and-executed
+  file, so it has no `protocol.lock.json` entry.
 - `tools/verify_protocol_lock.py` — CI check (`.github/workflows/verify_lock.yml`).
   Default (network) mode checks embedded constants against the lockfile and
   re-downloads every target from raw.githubusercontent.com at the pinned ref

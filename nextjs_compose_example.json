@@ -1,0 +1,452 @@
+{
+  "_generated_by": "tools/gen_nextjs_compose_example.py - do not edit by hand. Generated from sdk_consumers.json alone; regenerate in the same commit as the consumers index (the consumers file - path, version, pin - and this compose example change together). test_nextjs_compose_example.py fails when this file is stale or a product template disagrees with the index.",
+  "_source": "sdk_consumers.json",
+  "_note": "The generic Next.js shell composition. sdks[] is the kernel every Next.js shell composes and is what RokctAI/factory copies into a new shell as composer.json at spawn (renamed, re-pinned live) when core/utils/frappe/composer/<app_type>.json does not exist for that shell. _available_sdks is the menu of every other SDK with a Next.js half, for writing that product template: copy an entry into <app_type>.json, set enabled true, flag exactly one non-kernel entry home_sdk true, and give it a fresh sha256 (SHA-256 of <sdk>/nextjs/install.py at the ref, CRLF folded to LF). `version` is informational (the half's manifest.json version when the index was refreshed); the composer reads name, enabled, source, git, path, ref, sha256 and home_sdk. No composer reads _available_sdks.",
+  "name": "nextjs_shell_composer",
+  "version": "1.0.0",
+  "description": "Generic Next.js shell composition: the kernel (telemetry_sdk, base_sdk) plus the menu of every other SDK with a Next.js half",
+  "sdks": [
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/nextjs",
+      "ref": "main",
+      "sha256": "318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4",
+      "version": "1.2.0",
+      "home_sdk": false,
+      "consumers": [
+        "delivery-frontend",
+        "hosting",
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "radio",
+        "supacharge",
+        "supacharge-web",
+        "telephony-frontend"
+      ],
+      "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py as sdk_consumers.json records it (version 1.2.0); the factory re-pins it live at spawn and `scripts/compose.sh refresh` re-pins it from the SDK repo.",
+      "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9): the delivery-policy seam owner, always first."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "version": "1.35.0",
+      "home_sdk": false,
+      "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "radio",
+        "supacharge"
+      ],
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py as sdk_consumers.json records it (version 1.35.0); the factory re-pins it live at spawn and `scripts/compose.sh refresh` re-pins it from the SDK repo.",
+      "_comment": "The platform kernel: app/services/base, the landing host and its registries, the admin and manager shells. Every other Next.js SDK 'requires' files it installs."
+    }
+  ],
+  "_available_sdks": [
+    {
+      "name": "agent_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/nextjs",
+      "ref": "main",
+      "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
+      "version": "1.18.1",
+      "home_sdk": false,
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "version": "1.7.1",
+      "home_sdk": false,
+      "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "booking_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/booking/nextjs",
+      "ref": "main",
+      "sha256": "2ec597df755f4a1c0056f2bdbefd2e174a6014bbfa52ed13cf9641c70a0256e5",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_manager"
+      ]
+    },
+    {
+      "name": "comms_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/nextjs",
+      "ref": "main",
+      "sha256": "c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "radio",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "crm_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/nextjs",
+      "ref": "main",
+      "sha256": "0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "delivery_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/zones",
+      "path": "../zones/delivery/nextjs",
+      "ref": "main",
+      "sha256": "8ca4ef31c258f0ac3fca917f875522a5714cbcb410bf5a803cf5a648e2d3caed",
+      "version": "1.0.1",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_driver"
+      ]
+    },
+    {
+      "name": "erp_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/nextjs",
+      "ref": "main",
+      "sha256": "d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "fav_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/fav/nextjs",
+      "ref": "main",
+      "sha256": "806c6de3d72ca744065b233b376ec86889559967b1a82fda55c8fd5de196cce5",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "gateways_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/gateways/nextjs",
+      "ref": "main",
+      "sha256": "278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "hosting_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hosting/nextjs",
+      "ref": "main",
+      "sha256": "a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f",
+      "version": "1.0.1",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "kitchen_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/kitchen/nextjs",
+      "ref": "main",
+      "sha256": "f5711bccc5a13eca47052e411400cc0d922bbbbbb3fa5b8559ec86b06fd52fb1",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_manager"
+      ]
+    },
+    {
+      "name": "lms_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/lms/nextjs",
+      "ref": "main",
+      "sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741",
+      "version": "1.25.0",
+      "home_sdk": false,
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    {
+      "name": "loyalty_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/loyalty/nextjs",
+      "ref": "main",
+      "sha256": "f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer"
+      ]
+    },
+    {
+      "name": "merchants_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/merchants/nextjs",
+      "ref": "main",
+      "sha256": "1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "orders_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/orders/nextjs",
+      "ref": "main",
+      "sha256": "906fdcf11b99d5c220ab6f8921adf2b936a8529d94f4214aa165cd1dd4a95a80",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_driver",
+        "paas_manager"
+      ]
+    },
+    {
+      "name": "polaris_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/polaris/nextjs",
+      "ref": "main",
+      "sha256": "90c6e577255101f2804dd74bf2b311cd45bbf1d84adbd52759f9728bec30b60a",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "productivity_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/nextjs",
+      "ref": "main",
+      "sha256": "f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "minilauncher",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "products_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/products/nextjs",
+      "ref": "main",
+      "sha256": "8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c",
+      "version": "1.2.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "promotions_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/commerce",
+      "path": "../commerce/promotions/nextjs",
+      "ref": "main",
+      "sha256": "40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "paas_manager"
+      ]
+    },
+    {
+      "name": "replay_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/replay/nextjs",
+      "ref": "main",
+      "sha256": "bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "supacharge"
+      ]
+    },
+    {
+      "name": "subscriptions_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/nextjs",
+      "ref": "main",
+      "sha256": "647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "support_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/support/nextjs",
+      "ref": "main",
+      "sha256": "c15a3f67a1e1c15c6b7d6d9ef934cd334979a9ec63d42c2a2c429c8133103c53",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "telephony_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/telephony/nextjs",
+      "ref": "main",
+      "sha256": "5e4182ace62450b9feb6689aae032b8d4434e4ef368d071ab344ade58c1bf691",
+      "version": "1.1.1",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "tender_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/tender/nextjs",
+      "ref": "main",
+      "sha256": "3b3ded0a06a66431c50c674eaab1ce3907b7fecbe9976e3d6968a3ac214ad513",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
+      "name": "users_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/nextjs",
+      "ref": "main",
+      "sha256": "3a1855f895916342fe2e421bdf54e4201e0c97490e4eba68259a3b653af597e2",
+      "version": "1.1.0",
+      "home_sdk": false,
+      "consumers": [
+        "minilauncher",
+        "paas_customer",
+        "paas_driver",
+        "paas_manager",
+        "supacharge"
+      ]
+    },
+    {
+      "name": "wallet_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/nextjs",
+      "ref": "main",
+      "sha256": "1329aba62272bff52ef92369cf494a28743badc73f79a39c4588b057f66b3109",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": [
+        "paas_customer",
+        "supacharge"
+      ]
+    }
+  ],
+  "_omitted_no_nextjs_half": [
+    "calc_sdk",
+    "corporate_sdk",
+    "desktop_sdk",
+    "hardware_sdk",
+    "hms_sdk",
+    "launch_sdk",
+    "map_sdk",
+    "marketplace_sdk",
+    "onboarding_sdk",
+    "payments_sdk",
+    "processing_sdk",
+    "radio_sdk",
+    "revenue_sdk",
+    "weather_sdk",
+    "zones_sdk"
+  ]
+}
