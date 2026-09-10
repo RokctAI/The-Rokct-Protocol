@@ -1,0 +1,53 @@
+# Copyright 2026 ROKCT INTELLIGENCE (PTY) LTD
+
+# The Next.js composer's invariants over the product template registry, and
+# the generated nextjs_compose_example.json (tools/gen_nextjs_compose_example.py)
+# that RokctAI/factory seeds new Next.js shells from: it must equal what the
+# SDK consumers index, the templates and the SDK_ECOSYSTEM.md census produce
+# now, so a change to any of those without a regenerate fails here.
+
+name: Next.js Composer Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-nextjs-composer-tests
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "core/utils/nextjs/**"
+      - "core/utils/frappe/composer/**"
+      - "tools/gen_nextjs_compose_example.py"
+      - "nextjs_compose_example.json"
+      - "sdk_consumers.json"
+      - "SDK_CONSUMERS.md"
+      - "SDK_ECOSYSTEM.md"
+      - ".github/workflows/nextjs-composer-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "core/utils/nextjs/**"
+      - "core/utils/frappe/composer/**"
+      - "tools/gen_nextjs_compose_example.py"
+      - "nextjs_compose_example.json"
+      - "sdk_consumers.json"
+      - "SDK_CONSUMERS.md"
+      - "SDK_ECOSYSTEM.md"
+      - ".github/workflows/nextjs-composer-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Product template invariants (home SDK, order)
+        run: |
+          python3 core/utils/nextjs/tests/test_nextjs_composer_templates.py
+          python3 core/utils/nextjs/tests/test_nextjs_home_sdk.py
+      - name: Generated compose example matches the index, templates and census
+        run: |
+          python3 core/utils/nextjs/tests/test_nextjs_compose_example.py
+          python3 tools/gen_nextjs_compose_example.py --check

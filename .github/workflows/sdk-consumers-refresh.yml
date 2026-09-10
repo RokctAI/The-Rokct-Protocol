@@ -177,6 +177,13 @@ jobs:
         run: |
           python3 tools/gen_sdk_consumers.py --workspace "${{ steps.discover.outputs.workspace }}"
 
+      # The generic Next.js shell composition RokctAI/factory seeds new shells
+      # from is generated from the index just refreshed (plus the product
+      # templates and the census), so it moves in the same commit.
+      - name: Regenerate the Next.js compose example
+        run: |
+          python3 tools/gen_nextjs_compose_example.py
+
       - name: Commit the index to the default branch when it changed
         if: steps.discover.outputs.run == 'true'
         run: |
@@ -191,7 +198,7 @@ jobs:
           fi
           git config user.name "RokctBOT[bot]"
           git config user.email "2956274+RokctBOT[bot]@users.noreply.github.com"
-          git add sdk_consumers.json SDK_CONSUMERS.md SDK_ECOSYSTEM.md
+          git add sdk_consumers.json SDK_CONSUMERS.md SDK_ECOSYSTEM.md nextjs_compose_example.json
           git commit -m "chore: weekly refresh of SDK consumers index [skip ci]"
           git push origin HEAD
           {
