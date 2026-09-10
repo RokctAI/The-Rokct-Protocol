@@ -32,7 +32,14 @@ Pins the thin-shell contract shared by the frappe and Next.js composers:
     implementation, and reads the template's "sdks" key while the frappe
     engine reads "modules" — one product template drives both stacks;
   * every real template in core/utils/frappe/composer/ stays valid JSON and
-    declares at least one of "modules"/"sdks".
+    declares at least one of "modules"/"sdks";
+  * the shell-owned top-level keys (SHELL_OWNED_COMPOSER_KEYS: the "data"
+    mode base_sdk >= 1.35.0 reads from the shell's own composer.json, and
+    its _data_comment) survive materialization - the shell's committed value
+    wins even over a template that carries the key, an absent key stays
+    absent, a template with nothing to carry is written byte-identically,
+    and a value outside local|backend|hybrid aborts the compose by name -
+    on both the shared-core path and the Next.js standalone fallback.
 
 Run:  python -m pytest core/utils/frappe/tests -q
   or: python core/utils/frappe/tests/test_template_resolution.py
@@ -417,6 +424,202 @@ class NextjsSharedCoreTest(TemplateResolutionTestBase):
         with redirect_stdout(io.StringIO()):
             self.assertFalse(composer.resolve_composer_config())
         self.assertFalse(self.exists("composer.json"))
+
+
+class ShellOwnedKeysTest(TemplateResolutionTestBase):
+    """A materialized template must not drop the shell's own declarations.
+
+    base_sdk >= 1.35.0 reads the top-level "data" key (local | backend |
+    hybrid) straight from the shell's composer.json (lib/site-data/
+    generate.mjs, run before every build), so a refresh that rewrote the
+    file wholesale from the registry silently reset a local-mode shell
+    (South River) to backend mode."""
+
+    TEMPLATE_CFG = {
+        "name": "testshell_app",
+        "version": "1.0.0",
+        "modules": [],
+        "sdks": [
+            {
+                "name": "example_sdk",
+                "enabled": True,
+                "source": "local",
+                "path": "sdk/example/nextjs",
+            }
+        ],
+    }
+
+    def committed(self, **extra):
+        cfg = {
+            "name": "testshell_app",
+            "modules": [{"name": "ghost", "enabled": True, "path": "sdk/ghost/frappe"}],
+            "sdks": [],
+        }
+        cfg.update(extra)
+        text = json.dumps(cfg)
+        self.write("composer.json", text)
+        return text
+
+    def registry_text(self, config=None):
+        registry = self.make_registry(config=config or self.TEMPLATE_CFG)
+        with open(
+            os.path.join(registry, f"{self.TEMPLATE}.json"), encoding="utf-8"
+        ) as fh:
+            return fh.read()
+
+    def resolve(self, composer):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            return composer.resolve_composer_config()
+
+    def test_shell_declared_data_mode_survives_materialization(self):
+        self.registry_text()
+        self.committed(data="local", _data_comment="South River has no backend")
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer()
+        self.assertTrue(self.resolve(composer))
+        config = json.loads(self.read("composer.json"))
+        # The registry still decides WHAT composes...
+        self.assertEqual(config["sdks"][0]["name"], "example_sdk")
+        self.assertEqual(config["modules"], [])
+        # ...and the shell's own declaration rides along, where base documents it
+        self.assertEqual(config["data"], "local")
+        self.assertEqual(config["_data_comment"], "South River has no backend")
+        keys = list(config)
+        self.assertLess(keys.index("version"), keys.index("data"))
+        self.assertLess(keys.index("data"), keys.index("modules"))
+        # A second refresh (the normal compose.sh cycle) keeps it too
+        self.assertTrue(self.resolve(self.load_composer()))
+        self.assertEqual(json.loads(self.read("composer.json"))["data"], "local")
+
+    def test_shell_value_wins_over_a_template_that_carries_data(self):
+        cfg = dict(self.TEMPLATE_CFG, data="backend")
+        self.registry_text(cfg)
+        self.committed(data="hybrid")
+        self.set_app_type(self.TEMPLATE)
+        self.assertTrue(self.resolve(self.load_composer()))
+        self.assertEqual(json.loads(self.read("composer.json"))["data"], "hybrid")
+
+    def test_absent_key_stays_absent(self):
+        text = self.registry_text()
+        self.committed()  # no "data", no "_data_comment"
+        self.set_app_type(self.TEMPLATE)
+        self.assertTrue(self.resolve(self.load_composer()))
+        # Nothing to carry: the template is written byte-identically
+        self.assertEqual(self.read("composer.json"), text)
+        self.assertNotIn("data", json.loads(text))
+
+    def test_template_without_shell_key_is_unchanged(self):
+        text = self.registry_text()
+        self.set_app_type(self.TEMPLATE)  # no committed composer.json at all
+        self.assertTrue(self.resolve(self.load_composer()))
+        self.assertEqual(self.read("composer.json"), text)
+
+    def test_template_data_kept_when_shell_declares_none(self):
+        text = self.registry_text(dict(self.TEMPLATE_CFG, data="backend"))
+        self.committed()
+        self.set_app_type(self.TEMPLATE)
+        self.assertTrue(self.resolve(self.load_composer()))
+        self.assertEqual(self.read("composer.json"), text)
+
+    def test_invalid_data_mode_is_rejected_by_name(self):
+        self.registry_text()
+        for bad in ("remote", "Local", "", None, True, ["local"]):
+            with self.subTest(value=bad):
+                committed = self.committed(data=bad)
+                self.set_app_type(self.TEMPLATE)
+                composer = self.load_composer()
+                out = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as ctx:
+                        composer.resolve_composer_config()
+                self.assertEqual(ctx.exception.code, 1)
+                self.assertIn(
+                    '"data" must be one of "local", "backend", "hybrid"', out.getvalue()
+                )
+                self.assertIn(json.dumps(bad), out.getvalue())
+                # The committed file is left for the developer to fix
+                self.assertEqual(self.read("composer.json"), committed)
+
+    def test_invalid_template_data_is_rejected_too(self):
+        self.registry_text(dict(self.TEMPLATE_CFG, data="remote"))
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer()
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                composer.resolve_composer_config()
+        self.assertFalse(self.exists("composer.json"))
+
+    def test_preserved_set_is_exactly_data_and_its_comment(self):
+        composer = self.load_composer()
+        self.assertEqual(composer.SHELL_OWNED_COMPOSER_KEYS, ("data", "_data_comment"))
+        self.assertEqual(composer.SITE_DATA_MODES, ("local", "backend", "hybrid"))
+
+    # -- the Next.js composer, both of its paths ----------------------------
+
+    def test_nextjs_shared_core_path_keeps_data_mode(self):
+        self.registry_text()
+        self.committed(data="local", _data_comment="kept")
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        self.assertIsNotNone(composer.load_composer_core())
+        self.assertTrue(self.resolve(composer))
+        config = json.loads(self.read("composer.json"))
+        self.assertEqual(config["data"], "local")
+        self.assertEqual(config["_data_comment"], "kept")
+        self.assertEqual(config["sdks"][0]["name"], "example_sdk")
+
+    def standalone(self, template_text):
+        """The Next.js composer as a shell fetches it: no protocol checkout
+        to import the shared core from, the template fetched data-only."""
+        composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        composer.load_composer_core = lambda: None
+        composer._fetch_template_standalone = lambda name: template_text
+        return composer
+
+    def test_nextjs_standalone_fallback_keeps_data_mode(self):
+        text = self.registry_text()
+        self.committed(data="local", _data_comment="kept")
+        self.set_app_type(self.TEMPLATE)
+        composer = self.standalone(text)
+        self.assertTrue(self.resolve(composer))
+        config = json.loads(self.read("composer.json"))
+        self.assertEqual(config["data"], "local")
+        self.assertEqual(config["_data_comment"], "kept")
+        self.assertEqual(config["sdks"][0]["name"], "example_sdk")
+        keys = list(config)
+        self.assertLess(keys.index("data"), keys.index("modules"))
+
+    def test_nextjs_standalone_fallback_unchanged_without_shell_key(self):
+        text = self.registry_text()
+        self.committed()
+        self.set_app_type(self.TEMPLATE)
+        self.assertTrue(self.resolve(self.standalone(text)))
+        self.assertEqual(self.read("composer.json"), text)
+
+    def test_nextjs_standalone_fallback_rejects_invalid_mode(self):
+        text = self.registry_text()
+        committed = self.committed(data="remote")
+        self.set_app_type(self.TEMPLATE)
+        composer = self.standalone(text)
+        out = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as ctx:
+                composer.resolve_composer_config()
+        self.assertEqual(ctx.exception.code, 1)
+        self.assertIn(
+            '"data" must be one of "local", "backend", "hybrid"', out.getvalue()
+        )
+        self.assertEqual(self.read("composer.json"), committed)
+
+    def test_nextjs_mirror_matches_the_canonical_set(self):
+        """The standalone fallback's local copy can never drift from the one
+        definition in compose_backend.py."""
+        core = self.load_composer()
+        nextjs = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        self.assertEqual(
+            nextjs.SHELL_OWNED_COMPOSER_KEYS, core.SHELL_OWNED_COMPOSER_KEYS
+        )
+        self.assertEqual(nextjs.SITE_DATA_MODES, core.SITE_DATA_MODES)
 
 
 class RealRegistryTest(unittest.TestCase):

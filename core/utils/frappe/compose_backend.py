@@ -491,6 +491,87 @@ COMPOSER_TEMPLATES_RAW_BASE = (
 # marker can never be turned into a path traversal or a surprise fetch.
 _TEMPLATE_NAME_RE = re.compile(r"^[a-z0-9_-]+$")
 
+# Top-level composer.json keys the SHELL owns, not the registry. A registry
+# template says WHAT a product composes (modules[] / sdks[]); these keys are
+# the shell's own declaration about itself, so materializing a template
+# carries them over from the committed composer.json instead of dropping them
+# on every refresh - and when a template happens to carry one too, the shell's
+# committed value wins. This tuple is the ONE definition of the preserved set;
+# the Next.js composer's standalone fallback (core/utils/nextjs/
+# sdk_composer.py, which by definition runs with no protocol checkout to
+# import this from) mirrors it by name and a test pins the two equal.
+#
+#   data           base_sdk >= 1.35.0's site-data mode - "local" | "backend"
+#                  | "hybrid", absent means backend - read straight from the
+#                  shell's composer.json by lib/site-data/generate.mjs before
+#                  every build (core: base/nextjs/docs/site-data.md).
+#   _data_comment  the shell's prose beside it.
+SHELL_OWNED_COMPOSER_KEYS = ("data", "_data_comment")
+
+# The modes base's lib/site-data/validate.mjs accepts (its SITE_DATA_MODES).
+# Anything else fails base's build, so it fails the compose first, by name.
+SITE_DATA_MODES = ("local", "backend", "hybrid")
+
+
+def validate_site_data_mode(value, where="composer.json"):
+    """base's validateMode() rule for a "data" key that IS present: the
+    value must be one of SITE_DATA_MODES (null is not absent). Raises
+    ValueError with the same one-line message shape base prints."""
+    if not isinstance(value, str) or value not in SITE_DATA_MODES:
+        allowed = ", ".join(f'"{m}"' for m in SITE_DATA_MODES)
+        raise ValueError(
+            f'{where}: "data" must be one of {allowed}, got {json.dumps(value)}'
+        )
+
+
+def carry_shell_owned_keys(template_text, composer_path):
+    """The text to write as composer.json when a registry template is
+    materialized: `template_text` with the shell's host-owned top-level keys
+    (SHELL_OWNED_COMPOSER_KEYS) carried over from the committed composer.json
+    at `composer_path`, the shell's value replacing the template's.
+
+    Returns `template_text` byte-identical when nothing is carried over (no
+    committed composer.json, or one without any of the keys), so a plain
+    refresh stays a plain refresh. When a key is carried the result is
+    re-serialized (2-space indent, template key order kept; a key the
+    template lacks lands before its first modules[]/sdks[] block, where base
+    documents "data").
+
+    Raises ValueError when the "data" that would be written - the shell's,
+    or the template's own when the shell declares none - is not a valid
+    mode, so an invalid declaration never reaches base's build."""
+    template = json.loads(template_text)
+    committed = None
+    if os.path.isfile(composer_path):
+        try:
+            with open(composer_path, "r", encoding="utf-8") as fh:
+                committed = json.load(fh)
+        except Exception as e:
+            compose_warning(
+                f"committed composer.json is not valid JSON ({e}); none of its "
+                f"{', '.join(SHELL_OWNED_COMPOSER_KEYS)} keys can be carried over."
+            )
+    if not isinstance(committed, dict):
+        committed = {}
+    carried = {k: committed[k] for k in SHELL_OWNED_COMPOSER_KEYS if k in committed}
+    if isinstance(template, dict):
+        if "data" in carried:
+            validate_site_data_mode(carried["data"])
+        elif "data" in template:
+            validate_site_data_mode(template["data"], "registry template")
+    if not carried or not isinstance(template, dict):
+        return template_text
+    merged = {}
+    placed = False
+    for key, value in template.items():
+        if not placed and key not in carried and isinstance(value, (list, dict)):
+            merged.update(carried)
+            placed = True
+        merged[key] = carried.get(key, value)  # the shell's value wins, in place
+    if not placed:
+        merged.update(carried)
+    return json.dumps(merged, indent=2, ensure_ascii=False) + "\n"
+
 
 def _local_template_dirs(project_root):
     """Candidate registry directories, most explicit first: the env override,
@@ -571,7 +652,9 @@ def resolve_composer_config(project_root=None):
     when the legacy path applies (no marker, or a marker that is a role, not
     a template). When a template resolves it WINS over a committed
     composer.json — the registry templates are canonical (same clobber
-    semantics as the flutter CI's manifest-selection step)."""
+    semantics as the flutter CI's manifest-selection step) — except for the
+    shell-owned top-level keys (SHELL_OWNED_COMPOSER_KEYS: the "data" mode
+    and its comment), which are carried over from the committed file."""
     root = project_root or PROJECT_ROOT
     name = resolve_app_type(root)
     if not name:
@@ -594,6 +677,15 @@ def resolve_composer_config(project_root=None):
             f"Falling back to the committed composer.json."
         )
         return False
+    try:
+        text = carry_shell_owned_keys(text, composer_path)
+    except ValueError as e:
+        print(
+            f"[-] Composition aborted: {e}. The shell's data mode is its own "
+            f"declaration (base_sdk lib/site-data reads it from composer.json); "
+            f"fix the value before composing."
+        )
+        sys.exit(1)
     action = "overwritten" if os.path.exists(composer_path) else "written"
     with open(composer_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)

@@ -20,7 +20,19 @@ in order: `ROKCT_COMPOSER_TEMPLATES_DIR`, `ROKCT_PROTOCOL_DIR`, the protocol
 checkout the composer runs from, the sibling `../The-Rokct-Protocol/`
 checkout, and (only when no local registry exists at all) a data-only fetch
 from this repo's `main`. A resolved template **wins over** a committed
-`composer.json`.
+`composer.json` — except for the shell-owned top-level keys, which are
+carried over from the committed file on every materialization:
+`"data"` (base_sdk 1.35.0+'s site-data mode, `local` | `backend` | `hybrid`,
+read straight from the shell's own `composer.json` by
+`lib/site-data/generate.mjs` before each build — see core
+`base/nextjs/docs/site-data.md`) and its `"_data_comment"`. The mode is the
+shell's declaration, not the template's: the committed value wins even when
+a template carries the key, an absent key stays absent, and a value outside
+the three modes aborts the compose by name (the same rule base applies at
+build time). The set is defined once, as `SHELL_OWNED_COMPOSER_KEYS` in
+`compose_backend.py` (the Next.js composer's standalone fallback mirrors it;
+a test pins the two equal). South River (`southriver-web`, `"data": "local"`)
+is the first shell that relies on this.
 
 The same one-line value doubles as the shell's role/persona marker (the
 shared-namespace convention the flutter side established). A value that names
