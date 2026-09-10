@@ -133,6 +133,18 @@
       "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the supacharge-web shell provides the host-owned half."
     },
     {
+      "name": "corporate_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/corporate/nextjs",
+      "ref": "main",
+      "sha256": "6e03485fd03617ea1e175adc50354a91af25e213908371fa3581083d8aa7d4ba",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of corporate/nextjs/install.py at corporate@c411ef5 (git blob 915470a4, 1103 bytes; the same installer text as polaris/nextjs with sdk_name corporate_sdk); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The corporate SDK's nextjs half (corporate_sdk 1.0.0): the company pages - in 1.0.0 the legal pages, app/legal (the index of the shell's published \"Terms and Conditions\" documents) and app/legal/[id] (one document, server-rendered, 404 when missing or disabled), the renderer and frame under components/custom/legal and the guest read app/actions/corporate/legal.ts. Ray, 2026-09-10: \"legal pages are not in corporate sdk?\" / \"you should look at the dart side if they are not there yet\" - the flutter templates compose corporate_sdk into every composition with auth_sdk because it owns the policy / terms pages (core/utils/flutter/composer/supacharge.json), and this is the Next.js counterpart. Listed after auth_sdk and before the home SDK because its 'requires' names files base_sdk >= 1.34.0 installs (app/actions/base/legal.ts listPublicTerms, components/custom/landing/legal-links.ts, the FooterChromeConfig.links seam on footer-chrome-config.ts / footer-chrome.tsx, app/lib/site-metadata.ts, the platform gateway) plus the host-owned app/config/platform.ts - warn-only via check_requires(), not an auto-install. Never home (home_sdk false). No dependencies or integrations of its own: the routes are file-convention pages. corporate_sdk 1.1.0 adds the about / team pages and the data/ fallback once base 1.35.0 lands."
+    },
+    {
       "name": "lms_sdk",
       "enabled": true,
       "source": "git",
