@@ -303,7 +303,8 @@ in the `core` repo; the types and the rule (`resolveSiteData`) are
 - **The mode is declared, never inferred from the folder.** The shell's
   `composer.json` carries one top-level key,
   `"data": "local" | "backend" | "hybrid"`; absent means `backend`, any
-  other value fails the build.
+  other value fails the build. The composer carries the shell's `data`
+  key through registry-template materialization; templates never set it.
   - `backend` — SDKs never read `data/`: every kind answers `undefined`,
     whatever the folder holds. rokct.ai and supacharge.school today.
   - `hybrid` — the file wins when present, else `undefined` and the
