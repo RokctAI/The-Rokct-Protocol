@@ -19,9 +19,11 @@ core/utils/flutter/tests/test_composer_templates.py.
 
   * every template parses as JSON; every sdks[] entry is uniquely named and
     carries a boolean "home_sdk"
-  * a template whose sdks[] lists any SDK beyond the kernel (base_sdk,
-    auth_sdk, telemetry_sdk) flags exactly one of them home; no template
-    flags more than one; the kernel SDKs are never home
+  * a template whose sdks[] lists any SDK beyond the kernel and seam SDKs
+    (base_sdk, auth_sdk, telemetry_sdk, corporate_sdk) flags exactly one of
+    them home; no template flags more than one; the kernel and seam SDKs
+    are never home (southriver-web.json composes only those, so it has no
+    home SDK until the South River home SDK exists)
   * order_sdks_for_install() puts each template's home SDK directly behind
     the last kernel entry (telemetry_sdk, base_sdk) listed ahead of it
 
@@ -40,19 +42,24 @@ _UTILS_DIR = os.path.dirname(
 COMPOSER_DIR = os.path.join(_UTILS_DIR, "frappe", "composer")
 COMPOSER_SRC = os.path.join(_UTILS_DIR, "nextjs", "sdk_composer.py")
 
-# Shared kernel / seam SDKs: composed into every shell, never its home.
-NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk")
+# Shared kernel / seam SDKs: composed into every shell, never its home
+# (corporate_sdk owns the company pages - legal, about, team - beside
+# whichever SDK is home; its template entries all carry home_sdk false).
+NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk", "corporate_sdk")
 
 # The home SDK each product template flags today (deliveryplatform's is
 # delivery_sdk, zones `delivery/nextjs` - the storefront that sells the
 # delivery platform and the door to the tenant portal; products_sdk, which
-# carried the flag provisionally, is a portal part).
+# carried the flag provisionally, is a portal part). None pins a template
+# that deliberately has no home SDK yet (southriver-web.json: the kernel
+# plus corporate_sdk only, until the South River home SDK exists).
 EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
     "deliveryplatform.json": "delivery_sdk",
     "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",
+    "southriver-web.json": None,
 }
 
 

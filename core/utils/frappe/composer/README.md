@@ -56,15 +56,18 @@ SDK directly behind the kernel entries (`telemetry_sdk`, `base_sdk`), other SDKs
 never write the paths its manifest installs, only the home SDK's line is injected
 at a single-answer marker (another SDK's line there is skipped with a log line,
 never a failure), and the resolved name is recorded as `"home_sdk"` in
-`.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk` and
-`telemetry_sdk` are never home. Today: `supacharge.json` → `lms_sdk`,
+`.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk`,
+`telemetry_sdk` and `corporate_sdk` (the company pages, beside whichever
+SDK is home) are never home. Today: `supacharge.json` → `lms_sdk`,
 `rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `delivery_sdk` (zones
 `delivery/nextjs`, the storefront that sells the delivery platform and the door
 to the tenant portal; `products_sdk`, which carried the flag provisionally, is a
 portal part), `hosting.json` → `hosting_sdk` (hardware `hosting/nextjs`, the
 storefront on the control site; no `agent_sdk`), `telephony.json` →
 `telephony_sdk` (hardware `telephony/nextjs`, its `app_type.telephony` block: the
-same storefront shape selling the Telephony plan category; no `agent_sdk`). A
+same storefront shape selling the Telephony plan category; no `agent_sdk`),
+`southriver-web.json` → none yet (the kernel plus `corporate_sdk` only; the
+South River home SDK joins it later). A
 template without the key still composes as before: lines
 append in order at a contested marker, with a warning.
 
@@ -92,6 +95,16 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
 | `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
 | `control.json` | `tender`, `weather` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; weather composes its hub-side `src/control/` persona tree here — zones#54/#55; the `control` module itself joins when the control repo's SDK-ification lands) |
+
+Next.js-only shells have a template here too, with an empty `modules` array:
+`southriver-web.json` (RokctAI/southriver-web, `app_type` `southriver-web`)
+is a Next.js shell with no backend — it runs base_sdk's local data mode from
+its own `data/` folder — so its template carries only `sdks[]`: the kernel
+(`telemetry_sdk`, `base_sdk`) plus `corporate_sdk` for the company pages; no
+`auth_sdk` (nothing to sign in to) and no home SDK until the South River
+home SDK exists. The data mode is not a template concern: the shell's own
+`composer.json` carries its `"data"` key (SDK_ECOSYSTEM.md, "Host data
+folder and data mode").
 
 To build a given backend shell:
 
