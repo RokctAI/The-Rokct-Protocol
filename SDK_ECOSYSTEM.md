@@ -33,6 +33,7 @@ guides are:
 | Composer app-manifest templates (frappe) + shell scaffold | `core/utils/frappe/composer/README.md` and `core/utils/frappe/templates/shell/README.md` (this repo) |
 | Full de facto Dart manifest schema | docstrings in `core/utils/flutter/sdk_installer_base.py` (this repo) — each `update_*()` function documents one manifest key, including entry shapes and conflict semantics |
 | Lockfile / pinning procedure | `tools/README.md` (this repo) |
+| Host `data/` folder and data mode (Next.js shells) | `base/nextjs/docs/site-data.md` in the `core` repo |
 
 ## SDK repo layout
 
@@ -288,6 +289,67 @@ Rules:
   `.rokct/config/app_type` before composing. So a change to an app's SDK list
   goes to the protocol template — editing only the app's committed copy will be
   clobbered.
+
+## Host data folder and data mode
+
+Since base_sdk 1.35.0 a Next.js shell may commit a host-owned `data/`
+folder beside its `composer.json` for content that has no SDK home — its
+colours, people, places, products and prose (Ray, 2026-09-10: "what we
+cant give sdk we can give data/"). Every composed SDK reads it through one
+base-installed reader. The source of truth is `base/nextjs/docs/site-data.md`
+in the `core` repo; the types and the rule (`resolveSiteData`) are
+`base/nextjs/templates/lib/site-data/kinds.ts`.
+
+- **The mode is declared, never inferred from the folder.** The shell's
+  `composer.json` carries one top-level key,
+  `"data": "local" | "backend" | "hybrid"`; absent means `backend`, any
+  other value fails the build. The composer carries the shell's `data`
+  key through registry-template materialization; templates never set it.
+  - `backend` — SDKs never read `data/`: every kind answers `undefined`,
+    whatever the folder holds. rokct.ai and supacharge.school today.
+  - `hybrid` — the file wins when present, else `undefined` and the
+    renderer falls back to its backend. Planned for supacharge.school.
+  - `local` — `data/` only. A kind an installed SDK's manifest requires
+    (`"site_data": { "requires": ["about"] }`) with no file fails the
+    build; a missing undeclared kind throws at read time. base switches
+    its backend-only surface off: the landing prefetches no plans, the
+    home SDK's sign-in/sign-up header actions are dropped, and
+    `PageSectionContext.dataMode` lets a home SDK's `meta.renders` keep
+    pricing off the page (the header's own sign-in pair is not yet
+    switched; the TODO sits on `dropBackendOnlyActions`). The mode for
+    southriver-web, which has no backend.
+- **Kinds**, one file each: `theme` (`data/theme.json`:
+  `{ primary, secondary?, accent? }`, hex strings); `team`
+  (`data/team.json`: `{ members: [{ name, role, photo?, links? }] }`);
+  `stockists` (`data/stockists.json`:
+  `{ items: [{ name, address, town, lat?, lng?, mapsUrl? }] }`);
+  `products` (`data/products.json`:
+  `{ items: [{ name, description?, sizes?, image?, status? }] }`);
+  `about` (`data/about.md`, the markdown verbatim); `legal`
+  (`data/legal/<slug>.md`, slug to `{ title, markdown }`). Any other
+  `.json` or `.md` under `data/` fails the build (`README.md` is allowed).
+- **Bundled at build time, never read at request time.** base installs
+  `lib/site-data/generate.mjs`; the shell's own `package.json` — the one
+  file no compose rewrites — runs it as `"prebuild"` and `"predev"`
+  (`node lib/site-data/generate.mjs`). It reads the mode and the folder,
+  validates every file (one sentence per problem naming the field, exit
+  status 1) and writes the gitignored `lib/site-data/generated.ts`. base
+  installs the neutral form (backend, no files) with every compose, so a
+  shell that never runs it is unchanged.
+- **Reading it**, from any composed SDK's server code only (a server
+  component, server action or route handler):
+  `import { readSiteData, hasSiteData, siteDataMode } from "@/lib/site-data/read-site-data"`.
+  The types (`SiteTeam`, `SiteLegal`, ...) come from `@/lib/site-data/kinds`,
+  which a client component may import. `hasSiteData(kind)` never throws
+  and is the one `if` a hybrid renderer needs. corporate_sdk 1.1.0 (its
+  legal, about and team renderers) is the first consumer.
+- **`data/` never carries the brand name.** It stays where it is declared:
+  the home SDK's site-metadata copy and the host's `PLATFORM_NAME`.
+- A `data/theme.json` reaches every route with no layout edit through
+  `components/custom/theme-provider.tsx`: `--primary`, `--secondary` and
+  `--accent` as the shadcn HSL triplets, each with a `-foreground`, plus
+  `--ring`; written after the host's `globals.css`, and a home SDK's own
+  theme set later in the document still wins.
 
 ## The control persona: control-plane code in the SDK ecosystem
 
