@@ -41,7 +41,9 @@ import tempfile
 import unittest
 
 _REPO_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
 )
 _GEN_SRC = os.path.join(_REPO_ROOT, "tools", "gen_nextjs_compose_example.py")
 _TEMPLATES_DIR = os.path.join(_REPO_ROOT, "core", "utils", "frappe", "composer")
@@ -53,7 +55,9 @@ RETIRED_CENSUS_REPOS = {"SDKs", "BetAssist"}
 
 
 def load_generator():
-    spec = importlib.util.spec_from_file_location("gen_nextjs_compose_example_test", _GEN_SRC)
+    spec = importlib.util.spec_from_file_location(
+        "gen_nextjs_compose_example_test", _GEN_SRC
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -71,7 +75,7 @@ def repo_of_git(url):
     url = url.strip().rstrip("/")
     if url.endswith(".git"):
         url = url[:-4]
-    return url[len(gen.GITHUB):] if url.startswith(gen.GITHUB) else url
+    return url[len(gen.GITHUB) :] if url.startswith(gen.GITHUB) else url
 
 
 def load_templates():
@@ -127,7 +131,9 @@ class TestCommittedExample(unittest.TestCase):
             record = self.index[entry["name"]]
             half = record["nextjs"]
             self.assertEqual(repo_of_git(entry["git"]), record["repo"], entry["name"])
-            self.assertEqual(entry["path"], gen.sdk_path(record["repo"], half), entry["name"])
+            self.assertEqual(
+                entry["path"], gen.sdk_path(record["repo"], half), entry["name"]
+            )
             self.assertEqual(entry["sha256"], half["install_py_sha256"], entry["name"])
             self.assertEqual(entry["version"], half["version"], entry["name"])
             self.assertEqual(entry["consumers"], record["consumers"], entry["name"])
@@ -157,26 +163,46 @@ class TestTemplatesAgreeWithTheIndex(unittest.TestCase):
                     continue
                 record = self.index.get(entry["name"])
                 if record is None or not record.get("nextjs"):
-                    problems.append(f"{tname}: {entry['name']} is not in {gen.CONSUMERS_JSON} "
-                                    "with a Next.js half - refresh the index")
+                    problems.append(
+                        f"{tname}: {entry['name']} is not in {gen.CONSUMERS_JSON} "
+                        "with a Next.js half - refresh the index"
+                    )
                     continue
                 half = record["nextjs"]
                 if repo_of_git(entry["git"]).lower() != record["repo"].lower():
-                    problems.append(f"{tname}: {entry['name']} repo {repo_of_git(entry['git'])} "
-                                    f"vs index {record['repo']}")
-                if entry.get("path", "").lower() != gen.sdk_path(record["repo"], half).lower():
-                    problems.append(f"{tname}: {entry['name']} path {entry.get('path')} "
-                                    f"vs index {gen.sdk_path(record['repo'], half)}")
+                    problems.append(
+                        f"{tname}: {entry['name']} repo {repo_of_git(entry['git'])} "
+                        f"vs index {record['repo']}"
+                    )
+                if (
+                    entry.get("path", "").lower()
+                    != gen.sdk_path(record["repo"], half).lower()
+                ):
+                    problems.append(
+                        f"{tname}: {entry['name']} path {entry.get('path')} "
+                        f"vs index {gen.sdk_path(record['repo'], half)}"
+                    )
                 if entry.get("sha256") and entry["sha256"] != half["install_py_sha256"]:
-                    problems.append(f"{tname}: {entry['name']} pin {entry['sha256'][:12]} "
-                                    f"vs index {half['install_py_sha256'][:12]}")
+                    problems.append(
+                        f"{tname}: {entry['name']} pin {entry['sha256'][:12]} "
+                        f"vs index {half['install_py_sha256'][:12]}"
+                    )
         self.assertEqual(problems, [], "\n".join(problems))
 
     def test_kernel_pinned_identically_by_every_template(self):
         for name in gen.KERNEL:
-            pins = {t: e.get("sha256") for t, es in self.templates.items() for e in es if e["name"] == name}
+            pins = {
+                t: e.get("sha256")
+                for t, es in self.templates.items()
+                for e in es
+                if e["name"] == name
+            }
             self.assertTrue(pins, f"{name}: pinned by no product template")
-            self.assertEqual(set(pins.values()), {self.index[name]["nextjs"]["install_py_sha256"]}, pins)
+            self.assertEqual(
+                set(pins.values()),
+                {self.index[name]["nextjs"]["install_py_sha256"]},
+                pins,
+            )
 
 
 class TestCensusAgreesWithTheIndex(unittest.TestCase):
@@ -194,9 +220,13 @@ class TestCensusAgreesWithTheIndex(unittest.TestCase):
                 continue
             short = record["repo"].split("/", 1)[1]
             if row["repos"] and short.lower() not in [r.lower() for r in row["repos"]]:
-                problems.append(f"{name}: index says {record['repo']}, census lists {row['repos']}")
+                problems.append(
+                    f"{name}: index says {record['repo']}, census lists {row['repos']}"
+                )
             if row["nextjs"] and not record.get("nextjs"):
-                problems.append(f"{name}: census records a Next.js half the index does not")
+                problems.append(
+                    f"{name}: census records a Next.js half the index does not"
+                )
         self.assertEqual(problems, [], "\n".join(problems))
 
 
@@ -206,23 +236,42 @@ class TestGeneratorRules(unittest.TestCase):
         self.addCleanup(lambda: shutil.rmtree(self.root, ignore_errors=True))
 
     def write_index(self, sdks):
-        with open(os.path.join(self.root, gen.CONSUMERS_JSON), "w", encoding="utf-8") as fh:
+        with open(
+            os.path.join(self.root, gen.CONSUMERS_JSON), "w", encoding="utf-8"
+        ) as fh:
             json.dump({"generated_by": "test", "sdks": sdks}, fh)
 
     @staticmethod
     def record(repo, path, version, pin, consumers=()):
-        return {"repo": repo, "consumers": list(consumers),
-                "nextjs": {"path": path, "version": version, "install_py_sha256": pin}}
+        return {
+            "repo": repo,
+            "consumers": list(consumers),
+            "nextjs": {"path": path, "version": version, "install_py_sha256": pin},
+        }
 
     def test_kernel_and_menu_come_from_the_index_alone(self):
-        self.write_index({
-            "telemetry_sdk": self.record("RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64, ["one"]),
-            "base_sdk": self.record("RokctAI/core", "base/nextjs", "1.35.0", "b" * 64, ["one"]),
-            "lms_sdk": self.record("RokctAI/agent", "lms/nextjs", "1.25.0", "c" * 64, ["one"]),
-            "zones_sdk": {"repo": "RokctAI/zones", "consumers": ["one"], "nextjs": None},
-        })
+        self.write_index(
+            {
+                "telemetry_sdk": self.record(
+                    "RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64, ["one"]
+                ),
+                "base_sdk": self.record(
+                    "RokctAI/core", "base/nextjs", "1.35.0", "b" * 64, ["one"]
+                ),
+                "lms_sdk": self.record(
+                    "RokctAI/agent", "lms/nextjs", "1.25.0", "c" * 64, ["one"]
+                ),
+                "zones_sdk": {
+                    "repo": "RokctAI/zones",
+                    "consumers": ["one"],
+                    "nextjs": None,
+                },
+            }
+        )
         example, warnings = gen.generate(self.root)
-        self.assertEqual([s["name"] for s in example["sdks"]], ["telemetry_sdk", "base_sdk"])
+        self.assertEqual(
+            [s["name"] for s in example["sdks"]], ["telemetry_sdk", "base_sdk"]
+        )
         self.assertEqual(example["sdks"][1]["path"], "../core/base/nextjs")
         self.assertEqual(example["sdks"][1]["sha256"], "b" * 64)
         self.assertEqual(example["sdks"][1]["version"], "1.35.0")
@@ -233,40 +282,64 @@ class TestGeneratorRules(unittest.TestCase):
         self.assertEqual(warnings, [])
 
     def test_kernel_missing_from_the_index_is_drift(self):
-        self.write_index({
-            "base_sdk": self.record("RokctAI/core", "base/nextjs", "1.35.0", "b" * 64),
-        })
+        self.write_index(
+            {
+                "base_sdk": self.record(
+                    "RokctAI/core", "base/nextjs", "1.35.0", "b" * 64
+                ),
+            }
+        )
         with self.assertRaises(gen.DriftError) as ctx:
             gen.generate(self.root)
         self.assertIn("telemetry_sdk", str(ctx.exception))
 
     def test_kernel_without_a_pin_is_drift(self):
-        self.write_index({
-            "telemetry_sdk": self.record("RokctAI/core", "telemetry/nextjs", "1.2.0", None),
-            "base_sdk": self.record("RokctAI/core", "base/nextjs", "1.35.0", "b" * 64),
-        })
+        self.write_index(
+            {
+                "telemetry_sdk": self.record(
+                    "RokctAI/core", "telemetry/nextjs", "1.2.0", None
+                ),
+                "base_sdk": self.record(
+                    "RokctAI/core", "base/nextjs", "1.35.0", "b" * 64
+                ),
+            }
+        )
         with self.assertRaises(gen.DriftError) as ctx:
             gen.generate(self.root)
         self.assertIn("pin", str(ctx.exception))
 
     def test_menu_entry_without_a_pin_is_a_warning(self):
-        self.write_index({
-            "telemetry_sdk": self.record("RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64),
-            "base_sdk": self.record("RokctAI/core", "base/nextjs", "1.35.0", "b" * 64),
-            "new_sdk": self.record("RokctAI/agent", "new/nextjs", None, None),
-        })
+        self.write_index(
+            {
+                "telemetry_sdk": self.record(
+                    "RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64
+                ),
+                "base_sdk": self.record(
+                    "RokctAI/core", "base/nextjs", "1.35.0", "b" * 64
+                ),
+                "new_sdk": self.record("RokctAI/agent", "new/nextjs", None, None),
+            }
+        )
         example, warnings = gen.generate(self.root)
         self.assertTrue(any("new_sdk" in w for w in warnings))
         self.assertIn("_sha256_comment", example["_available_sdks"][0])
 
     def test_check_mode_reports_a_stale_file(self):
-        self.write_index({
-            "telemetry_sdk": self.record("RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64),
-            "base_sdk": self.record("RokctAI/core", "base/nextjs", "1.35.0", "b" * 64),
-        })
+        self.write_index(
+            {
+                "telemetry_sdk": self.record(
+                    "RokctAI/core", "telemetry/nextjs", "1.2.0", "a" * 64
+                ),
+                "base_sdk": self.record(
+                    "RokctAI/core", "base/nextjs", "1.35.0", "b" * 64
+                ),
+            }
+        )
         self.assertEqual(gen.main(["--root", self.root]), 0)
         self.assertEqual(gen.main(["--check", "--root", self.root]), 0)
-        with open(os.path.join(self.root, gen.OUTPUT_NAME), "a", encoding="utf-8") as fh:
+        with open(
+            os.path.join(self.root, gen.OUTPUT_NAME), "a", encoding="utf-8"
+        ) as fh:
             fh.write("\n")
         self.assertEqual(gen.main(["--check", "--root", self.root]), 1)
 

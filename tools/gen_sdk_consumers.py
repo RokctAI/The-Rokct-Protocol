@@ -348,7 +348,9 @@ def census_nextjs_sdks():
         if nextjs.lower() != "yes" or repo in ("SDKs", "BetAssist"):
             continue
         key = f"{sdk}_sdk"
-        if key not in found or census_repo_key(repo) < census_repo_key(found[key].split("/")[-1]):
+        if key not in found or census_repo_key(repo) < census_repo_key(
+            found[key].split("/")[-1]
+        ):
             found[key] = f"RokctAI/{repo}"
     return found
 
@@ -365,7 +367,9 @@ def template_nextjs_sdks():
         if not name.endswith(".json"):
             continue
         try:
-            with open(os.path.join(templates_dir, name), "r", encoding="utf-8-sig") as handle:
+            with open(
+                os.path.join(templates_dir, name), "r", encoding="utf-8-sig"
+            ) as handle:
                 entries = json.load(handle).get("sdks") or []
         except (OSError, ValueError):
             continue
@@ -380,7 +384,9 @@ def nextjs_halves_from_github(index, token):
     every SDK already in the index plus every SDK the census marks with a
     nextjs half, read <sdk>/nextjs/manifest.json and install.py from the
     source repo's default branch. Returns the same shape."""
-    candidates = {sdk: record["repo"] for sdk, record in index.items() if record.get("repo")}
+    candidates = {
+        sdk: record["repo"] for sdk, record in index.items() if record.get("repo")
+    }
     for sdk, repo in census_nextjs_sdks().items():
         candidates.setdefault(sdk, repo)
     for sdk, repo in template_nextjs_sdks().items():
@@ -404,11 +410,15 @@ def nextjs_halves_from_github(index, token):
             "nextjs": {
                 "path": f"{short}/nextjs",
                 "version": version,
-                "install_py_sha256": sha256_lf(installer) if installer is not None else None,
+                "install_py_sha256": sha256_lf(installer)
+                if installer is not None
+                else None,
             },
         }
-        print(f"[gen] {sdk:<18} {repo:<22} nextjs {version or '?':<8} "
-              f"{(halves[sdk]['nextjs']['install_py_sha256'] or '-')[:12]}")
+        print(
+            f"[gen] {sdk:<18} {repo:<22} nextjs {version or '?':<8} "
+            f"{(halves[sdk]['nextjs']['install_py_sha256'] or '-')[:12]}"
+        )
     return halves
 
 
@@ -420,7 +430,11 @@ def merge_nextjs(index, halves):
         record["nextjs"] = half["nextjs"] if half else None
     for sdk, half in halves.items():
         if sdk not in index:
-            index[sdk] = {"repo": half["repo"], "consumers": [], "nextjs": half["nextjs"]}
+            index[sdk] = {
+                "repo": half["repo"],
+                "consumers": [],
+                "nextjs": half["nextjs"],
+            }
     return index
 
 
@@ -578,7 +592,9 @@ def main(argv=None):
     print(f"[gen] Wrote {os.path.relpath(md_path, REPO_ROOT)}")
 
     if args.nextjs_from_github:
-        print(f"[gen] --nextjs-from-github: {ECOSYSTEM_NAME} census block left as committed")
+        print(
+            f"[gen] --nextjs-from-github: {ECOSYSTEM_NAME} census block left as committed"
+        )
         return 0
 
     census = scan_census(workspace)
