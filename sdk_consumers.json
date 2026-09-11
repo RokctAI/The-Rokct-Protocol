@@ -144,7 +144,7 @@
       ],
       "nextjs": {
         "path": "fav/nextjs",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "install_py_sha256": "806c6de3d72ca744065b233b376ec86889559967b1a82fda55c8fd5de196cce5"
       }
     },
@@ -357,7 +357,7 @@
       ],
       "nextjs": {
         "path": "replay/nextjs",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "install_py_sha256": "bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a"
       }
     },
