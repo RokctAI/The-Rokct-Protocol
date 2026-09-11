@@ -8,7 +8,7 @@
       ],
       "nextjs": {
         "path": "agent/nextjs",
-        "version": "1.18.2",
+        "version": "1.19.0",
         "install_py_sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3"
       }
     },
@@ -39,7 +39,7 @@
       ],
       "nextjs": {
         "path": "base/nextjs",
-        "version": "1.39.0",
+        "version": "1.40.0",
         "install_py_sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff"
       }
     },
@@ -210,7 +210,7 @@
       ],
       "nextjs": {
         "path": "lms/nextjs",
-        "version": "1.28.0",
+        "version": "1.29.0",
         "install_py_sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741"
       }
     },
@@ -377,7 +377,7 @@
       ],
       "nextjs": {
         "path": "subscriptions/nextjs",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "install_py_sha256": "647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b"
       }
     },

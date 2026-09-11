@@ -33,9 +33,9 @@ composer profile). This index auto-refreshes weekly via the
 
 | SDK | Source repo | Next.js path | Version | Pin (install.py sha256) | Consuming shells |
 |---|---|---|---|---|---|
-| `agent_sdk` | `RokctAI/agent` | `agent/nextjs` | `1.18.2` | `c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3` | `supacharge` |
+| `agent_sdk` | `RokctAI/agent` | `agent/nextjs` | `1.19.0` | `c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3` | `supacharge` |
 | `auth_sdk` | `RokctAI/Users` | `auth/nextjs` | `1.7.1` | `b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
-| `base_sdk` | `RokctAI/core` | `base/nextjs` | `1.39.0` | `b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
+| `base_sdk` | `RokctAI/core` | `base/nextjs` | `1.40.0` | `b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `booking_sdk` | `RokctAI/commerce` | `booking/nextjs` | `1.1.0` | `2ec597df755f4a1c0056f2bdbefd2e174a6014bbfa52ed13cf9641c70a0256e5` | `paas_customer`, `paas_manager` |
 | `calc_sdk` | `RokctAI/productivity` | — | — | — | `paas_driver`, `paas_manager` |
 | `comms_sdk` | `RokctAI/core` | `comms/nextjs` | `1.1.0` | `c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
@@ -51,7 +51,7 @@ composer profile). This index auto-refreshes weekly via the
 | `hosting_sdk` | `RokctAI/hardware` | `hosting/nextjs` | `1.0.1` | `a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f` | — |
 | `kitchen_sdk` | `RokctAI/commerce` | `kitchen/nextjs` | `1.0.0` | `f5711bccc5a13eca47052e411400cc0d922bbbbbb3fa5b8559ec86b06fd52fb1` | `paas_manager` |
 | `launch_sdk` | `RokctAI/core` | — | — | — | `minilauncher` |
-| `lms_sdk` | `RokctAI/agent` | `lms/nextjs` | `1.28.0` | `65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741` | `supacharge` |
+| `lms_sdk` | `RokctAI/agent` | `lms/nextjs` | `1.29.0` | `65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741` | `supacharge` |
 | `loyalty_sdk` | `RokctAI/commerce` | `loyalty/nextjs` | `1.0.0` | `f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec` | `paas_customer` |
 | `map_sdk` | `RokctAI/zones` | — | — | — | `paas_customer`, `paas_driver`, `paas_manager` |
 | `marketplace_sdk` | `RokctAI/commerce` | — | — | — | `paas_customer` |
@@ -67,7 +67,7 @@ composer profile). This index auto-refreshes weekly via the
 | `radio_sdk` | `RokctAI/agent` | — | — | — | `radio` |
 | `replay_sdk` | `RokctAI/agent` | `replay/nextjs` | `1.0.0` | `bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a` | `supacharge` |
 | `revenue_sdk` | `RokctAI/corporate` | — | — | — | `paas_driver`, `paas_manager` |
-| `subscriptions_sdk` | `RokctAI/agent` | `subscriptions/nextjs` | `1.1.0` | `647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b` | `paas_manager`, `supacharge` |
+| `subscriptions_sdk` | `RokctAI/agent` | `subscriptions/nextjs` | `1.1.1` | `647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b` | `paas_manager`, `supacharge` |
 | `support_sdk` | `RokctAI/productivity` | `support/nextjs` | `1.1.0` | `c15a3f67a1e1c15c6b7d6d9ef934cd334979a9ec63d42c2a2c429c8133103c53` | — |
 | `telemetry_sdk` | `RokctAI/core` | `telemetry/nextjs` | `1.2.0` | `318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4` | `delivery-frontend`, `hosting`, `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge`, `supacharge-web`, `telephony-frontend` |
 | `telephony_sdk` | `RokctAI/hardware` | `telephony/nextjs` | `1.1.1` | `5e4182ace62450b9feb6689aae032b8d4434e4ef368d071ab344ade58c1bf691` | — |
