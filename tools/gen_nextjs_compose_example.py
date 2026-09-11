@@ -121,9 +121,13 @@ def generate(root=REPO_ROOT):
             raise DriftError(f"{name}: kernel SDK missing from {CONSUMERS_JSON}")
         half = record.get("nextjs")
         if not half or not half.get("path"):
-            raise DriftError(f"{name}: {CONSUMERS_JSON} records no Next.js half for the kernel SDK")
+            raise DriftError(
+                f"{name}: {CONSUMERS_JSON} records no Next.js half for the kernel SDK"
+            )
         if not half.get("install_py_sha256"):
-            raise DriftError(f"{name}: {CONSUMERS_JSON} carries no install.py pin for the kernel SDK")
+            raise DriftError(
+                f"{name}: {CONSUMERS_JSON} carries no install.py pin for the kernel SDK"
+            )
         entry = entry_from_index(name, record, enabled=True)
         entry["_sha256_comment"] = (
             f"SHA-256 of {half['path']}/install.py as {CONSUMERS_JSON} records it "
@@ -133,8 +137,8 @@ def generate(root=REPO_ROOT):
         entry["_comment"] = (
             "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9): "
             "the delivery-policy seam owner, always first."
-            if name == "telemetry_sdk" else
-            "The platform kernel: app/services/base, the landing host and its registries, "
+            if name == "telemetry_sdk"
+            else "The platform kernel: app/services/base, the landing host and its registries, "
             "the admin and manager shells. Every other Next.js SDK 'requires' files it installs."
         )
         kernel.append(entry)
@@ -154,15 +158,17 @@ def generate(root=REPO_ROOT):
             entry["_sha256_comment"] = (
                 f"{CONSUMERS_JSON} records no install.py for this half yet: compute at activation"
             )
-            warnings.append(f"{name}: Next.js half without an install.py pin in the index")
+            warnings.append(
+                f"{name}: Next.js half without an install.py pin in the index"
+            )
         menu.append(entry)
 
     example = {
         "_generated_by": "tools/gen_nextjs_compose_example.py - do not edit by hand. Generated "
-                         f"from {CONSUMERS_JSON} alone; regenerate in the same commit as the "
-                         "consumers index (the consumers file - path, version, pin - and this "
-                         "compose example change together). test_nextjs_compose_example.py fails "
-                         "when this file is stale or a product template disagrees with the index.",
+        f"from {CONSUMERS_JSON} alone; regenerate in the same commit as the "
+        "consumers index (the consumers file - path, version, pin - and this "
+        "compose example change together). test_nextjs_compose_example.py fails "
+        "when this file is stale or a product template disagrees with the index.",
         "_source": CONSUMERS_JSON,
         "_note": (
             "The generic Next.js shell composition. sdks[] is the kernel every Next.js shell "
@@ -179,7 +185,7 @@ def generate(root=REPO_ROOT):
         "name": "nextjs_shell_composer",
         "version": "1.0.0",
         "description": "Generic Next.js shell composition: the kernel (telemetry_sdk, base_sdk) "
-                       "plus the menu of every other SDK with a Next.js half",
+        "plus the menu of every other SDK with a Next.js half",
         "sdks": kernel,
         "_available_sdks": menu,
         "_omitted_no_nextjs_half": omitted,
@@ -193,8 +199,11 @@ def render(example):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--check", action="store_true",
-                    help="exit 1 when the committed file differs from what would be generated")
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="exit 1 when the committed file differs from what would be generated",
+    )
     ap.add_argument("--root", default=REPO_ROOT, help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
     try:
@@ -209,17 +218,24 @@ def main(argv=None):
     if args.check:
         current = open(out, encoding="utf-8").read() if os.path.exists(out) else ""
         if current != text:
-            print(f"[gen] {OUTPUT_NAME} is stale: run python3 tools/gen_nextjs_compose_example.py "
-                  "and commit the result.", file=sys.stderr)
+            print(
+                f"[gen] {OUTPUT_NAME} is stale: run python3 tools/gen_nextjs_compose_example.py "
+                "and commit the result.",
+                file=sys.stderr,
+            )
             return 1
-        print(f"[gen] {OUTPUT_NAME} is current: {len(example['sdks'])} kernel SDK(s), "
-              f"{len(example['_available_sdks'])} available.")
+        print(
+            f"[gen] {OUTPUT_NAME} is current: {len(example['sdks'])} kernel SDK(s), "
+            f"{len(example['_available_sdks'])} available."
+        )
         return 0
     with open(out, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
-    print(f"[gen] wrote {OUTPUT_NAME}: {len(example['sdks'])} kernel SDK(s), "
-          f"{len(example['_available_sdks'])} available, {len(example['_omitted_no_nextjs_half'])} "
-          "omitted (no Next.js half).")
+    print(
+        f"[gen] wrote {OUTPUT_NAME}: {len(example['sdks'])} kernel SDK(s), "
+        f"{len(example['_available_sdks'])} available, {len(example['_omitted_no_nextjs_half'])} "
+        "omitted (no Next.js half)."
+    )
     return 0
 
 
