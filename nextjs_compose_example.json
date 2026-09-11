@@ -39,7 +39,7 @@
       "path": "../core/base/nextjs",
       "ref": "main",
       "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
-      "version": "1.39.0",
+      "version": "1.40.0",
       "home_sdk": false,
       "consumers": [
         "minilauncher",
@@ -49,7 +49,7 @@
         "radio",
         "supacharge"
       ],
-      "_sha256_comment": "SHA-256 of base/nextjs/install.py as sdk_consumers.json records it (version 1.39.0); the factory re-pins it live at spawn and `scripts/compose.sh refresh` re-pins it from the SDK repo.",
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py as sdk_consumers.json records it (version 1.40.0); the factory re-pins it live at spawn and `scripts/compose.sh refresh` re-pins it from the SDK repo.",
       "_comment": "The platform kernel: app/services/base, the landing host and its registries, the admin and manager shells. Every other Next.js SDK 'requires' files it installs."
     }
   ],
@@ -62,7 +62,7 @@
       "path": "../agent/agent/nextjs",
       "ref": "main",
       "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
-      "version": "1.18.2",
+      "version": "1.19.0",
       "home_sdk": false,
       "consumers": [
         "supacharge"
@@ -146,7 +146,7 @@
       "path": "../productivity/crm/nextjs",
       "ref": "main",
       "sha256": "0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "home_sdk": false,
       "consumers": []
     },
@@ -173,7 +173,7 @@
       "path": "../pay/erp/nextjs",
       "ref": "main",
       "sha256": "d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "home_sdk": false,
       "consumers": []
     },
@@ -185,7 +185,7 @@
       "path": "../agent/fav/nextjs",
       "ref": "main",
       "sha256": "806c6de3d72ca744065b233b376ec86889559967b1a82fda55c8fd5de196cce5",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "home_sdk": false,
       "consumers": [
         "paas_customer",
@@ -200,7 +200,7 @@
       "path": "../pay/gateways/nextjs",
       "ref": "main",
       "sha256": "278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "home_sdk": false,
       "consumers": []
     },
@@ -238,7 +238,7 @@
       "path": "../agent/lms/nextjs",
       "ref": "main",
       "sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741",
-      "version": "1.28.0",
+      "version": "1.29.0",
       "home_sdk": false,
       "consumers": [
         "supacharge"
@@ -266,7 +266,7 @@
       "path": "../commerce/merchants/nextjs",
       "ref": "main",
       "sha256": "1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "home_sdk": false,
       "consumers": [
         "paas_customer",
@@ -311,7 +311,7 @@
       "path": "../productivity/productivity/nextjs",
       "ref": "main",
       "sha256": "f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "home_sdk": false,
       "consumers": [
         "minilauncher",
@@ -344,7 +344,7 @@
       "path": "../commerce/promotions/nextjs",
       "ref": "main",
       "sha256": "40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "home_sdk": false,
       "consumers": [
         "paas_customer",
@@ -359,7 +359,7 @@
       "path": "../agent/replay/nextjs",
       "ref": "main",
       "sha256": "bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "home_sdk": false,
       "consumers": [
         "supacharge"
@@ -373,7 +373,7 @@
       "path": "../agent/subscriptions/nextjs",
       "ref": "main",
       "sha256": "647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "home_sdk": false,
       "consumers": [
         "paas_manager",
