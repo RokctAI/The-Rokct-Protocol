@@ -210,7 +210,7 @@
       ],
       "nextjs": {
         "path": "lms/nextjs",
-        "version": "1.27.0",
+        "version": "1.28.0",
         "install_py_sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741"
       }
     },

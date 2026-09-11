@@ -51,7 +51,7 @@ composer profile). This index auto-refreshes weekly via the
 | `hosting_sdk` | `RokctAI/hardware` | `hosting/nextjs` | `1.0.1` | `a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f` | — |
 | `kitchen_sdk` | `RokctAI/commerce` | `kitchen/nextjs` | `1.0.0` | `f5711bccc5a13eca47052e411400cc0d922bbbbbb3fa5b8559ec86b06fd52fb1` | `paas_manager` |
 | `launch_sdk` | `RokctAI/core` | — | — | — | `minilauncher` |
-| `lms_sdk` | `RokctAI/agent` | `lms/nextjs` | `1.27.0` | `65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741` | `supacharge` |
+| `lms_sdk` | `RokctAI/agent` | `lms/nextjs` | `1.28.0` | `65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741` | `supacharge` |
 | `loyalty_sdk` | `RokctAI/commerce` | `loyalty/nextjs` | `1.0.0` | `f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec` | `paas_customer` |
 | `map_sdk` | `RokctAI/zones` | — | — | — | `paas_customer`, `paas_driver`, `paas_manager` |
 | `marketplace_sdk` | `RokctAI/commerce` | — | — | — | `paas_customer` |
