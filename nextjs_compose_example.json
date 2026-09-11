@@ -238,7 +238,7 @@
       "path": "../agent/lms/nextjs",
       "ref": "main",
       "sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741",
-      "version": "1.29.0",
+      "version": "1.30.0",
       "home_sdk": false,
       "consumers": [
         "supacharge"
