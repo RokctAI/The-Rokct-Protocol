@@ -62,7 +62,7 @@
       "path": "../agent/agent/nextjs",
       "ref": "main",
       "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
-      "version": "1.19.0",
+      "version": "1.19.1",
       "home_sdk": false,
       "consumers": [
         "supacharge"
@@ -238,7 +238,7 @@
       "path": "../agent/lms/nextjs",
       "ref": "main",
       "sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741",
-      "version": "1.29.0",
+      "version": "1.31.0",
       "home_sdk": false,
       "consumers": [
         "supacharge"
