@@ -40,12 +40,12 @@ composer profile). This index auto-refreshes weekly via the
 | `calc_sdk` | `RokctAI/productivity` | — | — | — | `paas_driver`, `paas_manager` |
 | `comms_sdk` | `RokctAI/core` | `comms/nextjs` | `1.1.0` | `c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `corporate_sdk` | `RokctAI/corporate` | `corporate/nextjs` | `1.1.0` | `6e03485fd03617ea1e175adc50354a91af25e213908371fa3581083d8aa7d4ba` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
-| `crm_sdk` | `RokctAI/productivity` | `crm/nextjs` | `1.0.0` | `0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500` | — |
+| `crm_sdk` | `RokctAI/productivity` | `crm/nextjs` | `1.0.1` | `0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500` | — |
 | `delivery_sdk` | `RokctAI/zones` | `delivery/nextjs` | `1.0.1` | `8ca4ef31c258f0ac3fca917f875522a5714cbcb410bf5a803cf5a648e2d3caed` | `paas_customer`, `paas_driver` |
 | `desktop_sdk` | `RokctAI/hardware` | — | — | — | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
-| `erp_sdk` | `RokctAI/pay` | `erp/nextjs` | `1.0.0` | `d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b` | — |
+| `erp_sdk` | `RokctAI/pay` | `erp/nextjs` | `1.0.1` | `d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b` | — |
 | `fav_sdk` | `RokctAI/agent` | `fav/nextjs` | `1.0.1` | `806c6de3d72ca744065b233b376ec86889559967b1a82fda55c8fd5de196cce5` | `paas_customer`, `supacharge` |
-| `gateways_sdk` | `RokctAI/pay` | `gateways/nextjs` | `1.1.0` | `278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc` | — |
+| `gateways_sdk` | `RokctAI/pay` | `gateways/nextjs` | `1.1.1` | `278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc` | — |
 | `hardware_sdk` | `RokctAI/hardware` | — | — | — | `paas_manager` |
 | `hms_sdk` | `RokctAI/hardware` | — | — | — | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
 | `hosting_sdk` | `RokctAI/hardware` | `hosting/nextjs` | `1.0.1` | `a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f` | — |
@@ -55,15 +55,15 @@ composer profile). This index auto-refreshes weekly via the
 | `loyalty_sdk` | `RokctAI/commerce` | `loyalty/nextjs` | `1.0.0` | `f86b940891ae86a6123ccf83c9ba89721e0e1f9bef98ffef6e321ee68988f1ec` | `paas_customer` |
 | `map_sdk` | `RokctAI/zones` | — | — | — | `paas_customer`, `paas_driver`, `paas_manager` |
 | `marketplace_sdk` | `RokctAI/commerce` | — | — | — | `paas_customer` |
-| `merchants_sdk` | `RokctAI/commerce` | `merchants/nextjs` | `1.1.0` | `1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e` | `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
+| `merchants_sdk` | `RokctAI/commerce` | `merchants/nextjs` | `1.1.1` | `1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e` | `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
 | `onboarding_sdk` | `RokctAI/Users` | — | — | — | `supacharge` |
 | `orders_sdk` | `RokctAI/commerce` | `orders/nextjs` | `1.1.0` | `906fdcf11b99d5c220ab6f8921adf2b936a8529d94f4214aa165cd1dd4a95a80` | `paas_customer`, `paas_driver`, `paas_manager` |
 | `payments_sdk` | `RokctAI/pay` | — | — | — | `paas_customer`, `paas_manager`, `supacharge` |
 | `polaris_sdk` | `RokctAI/corporate` | `polaris/nextjs` | `1.0.0` | `90c6e577255101f2804dd74bf2b311cd45bbf1d84adbd52759f9728bec30b60a` | — |
 | `processing_sdk` | `RokctAI/productivity` | — | — | — | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
-| `productivity_sdk` | `RokctAI/productivity` | `productivity/nextjs` | `1.0.0` | `f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2` | `minilauncher`, `paas_manager`, `supacharge` |
+| `productivity_sdk` | `RokctAI/productivity` | `productivity/nextjs` | `1.0.1` | `f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2` | `minilauncher`, `paas_manager`, `supacharge` |
 | `products_sdk` | `RokctAI/commerce` | `products/nextjs` | `1.2.0` | `8d8a6adbaf6b4ce47fa5d2f194708562dff393b457a0a68abd88649c2df4561c` | `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
-| `promotions_sdk` | `RokctAI/commerce` | `promotions/nextjs` | `1.1.0` | `40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c` | `paas_customer`, `paas_manager` |
+| `promotions_sdk` | `RokctAI/commerce` | `promotions/nextjs` | `1.1.1` | `40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c` | `paas_customer`, `paas_manager` |
 | `radio_sdk` | `RokctAI/agent` | — | — | — | `radio` |
 | `replay_sdk` | `RokctAI/agent` | `replay/nextjs` | `1.0.1` | `bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a` | `supacharge` |
 | `revenue_sdk` | `RokctAI/corporate` | — | — | — | `paas_driver`, `paas_manager` |

@@ -99,7 +99,7 @@
       "consumers": [],
       "nextjs": {
         "path": "crm/nextjs",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "install_py_sha256": "0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500"
       }
     },
@@ -132,7 +132,7 @@
       "consumers": [],
       "nextjs": {
         "path": "erp/nextjs",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "install_py_sha256": "d16f26c4a6d6193c0d21d8cf6f7c50ffbc77bcab34195a787490c7af98b2134b"
       }
     },
@@ -153,7 +153,7 @@
       "consumers": [],
       "nextjs": {
         "path": "gateways/nextjs",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "install_py_sha256": "278a587749310c937c8eb9e9a39a6cd4823a7587e830a1a8d10c87d2e214f1bc"
       }
     },
@@ -251,7 +251,7 @@
       ],
       "nextjs": {
         "path": "merchants/nextjs",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "install_py_sha256": "1904b5df4baac328866f02b018021f5794960bd4cecc42d82328cbd4e1c7aa5e"
       }
     },
@@ -313,7 +313,7 @@
       ],
       "nextjs": {
         "path": "productivity/nextjs",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "install_py_sha256": "f5f3452b116831eb30da95511b5c6045d591b3cb155e98867b1160e7412330c2"
       }
     },
@@ -339,7 +339,7 @@
       ],
       "nextjs": {
         "path": "promotions/nextjs",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "install_py_sha256": "40bfe461f983679b9cc563d549d936899f869700383eba658ca78cb97cfc4c6c"
       }
     },
