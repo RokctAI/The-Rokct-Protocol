@@ -39,7 +39,7 @@
       ],
       "nextjs": {
         "path": "base/nextjs",
-        "version": "1.46.0",
+        "version": "1.47.0",
         "install_py_sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff"
       }
     },
