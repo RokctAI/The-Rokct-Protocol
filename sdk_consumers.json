@@ -23,7 +23,7 @@
       ],
       "nextjs": {
         "path": "auth/nextjs",
-        "version": "1.7.2",
+        "version": "1.7.3",
         "install_py_sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b"
       }
     },
@@ -39,7 +39,7 @@
       ],
       "nextjs": {
         "path": "base/nextjs",
-        "version": "1.42.0",
+        "version": "1.45.0",
         "install_py_sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff"
       }
     },
@@ -210,7 +210,7 @@
       ],
       "nextjs": {
         "path": "lms/nextjs",
-        "version": "1.31.0",
+        "version": "1.31.1",
         "install_py_sha256": "65a891707fd3c741b55681a8cb05ad4dd2d0833ee5643f490928267891144741"
       }
     },
