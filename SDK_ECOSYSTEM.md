@@ -649,6 +649,14 @@ This repo's runtime-fetched-and-executed files are pinned. See
     fixtures and a tour fragment, and a change to a demo-visible screen
     updates both in the same PR (invariant 8).
 
+12. **A bottom bar is described by the page on screen, never stored.** The
+    rule, verbatim from `RokctAI/agent`'s root `adaptive_bar.md` §2, which
+    is its canonical description: "The bar is **described by the page on
+    screen** and passed down as a parameter. It is never stored in a
+    provider, a singleton, or app state." `base_sdk` owns the housing only;
+    a feature SDK supplies the contents of the mode its page passes down,
+    and nothing flows back out (invariant 1).
+
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
 Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
