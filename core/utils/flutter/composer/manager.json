@@ -218,7 +218,7 @@
       "ref": "main",
       "sha256": "01c9a6473238f581f5286e3d0ab2be1acac6d9623201c67dfa7437a53c05c2ab",
       "_sha256_comment": "SHA-256 of weather/dart/install.py at zones@a8df800; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
-      "_comment": "Rebuilt at 1.1.0 (zones PR #4) with adaptive layout: minimal widget on phones, interactive view on large screens. Mirrors launch_manager.json."
+      "_comment": "Rebuilt at 1.1.0 (zones PR #4) with adaptive layout: minimal widget on phones, interactive view on large screens. Mirrors the launcher template."
     },
     {
       "name": "agent_sdk",

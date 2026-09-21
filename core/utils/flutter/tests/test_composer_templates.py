@@ -21,7 +21,7 @@ routes another composed SDK's pages push, and the miss surfaced only when a
 shell recomposed and failed to build (fix-wave 2026-09-02, item P3:
 merchants_sdk's manager restaurant page pushes CalculatorRoute, which only
 generates when calc_sdk is composed - manager.json listed calc_sdk,
-launch_manager.json did not). These tests pin:
+the since-deleted launch_manager.json did not). These tests pin:
 
   * every template parses as JSON and declares a non-empty sdks[] list of
     uniquely named entries, each with the fields the composer's
@@ -50,7 +50,10 @@ README = os.path.join(COMPOSER_DIR, "README.md")
 # Templates copied into shells whose .rokct/config/app_type is "manager".
 # Templates carry no app_type themselves (the host marker selects the SDK
 # manifests' app_type blocks at install time), so the role is known by name.
-MANAGER_ROLE_TEMPLATES = ("manager.json", "launch_manager.json")
+# launch_manager.json was the second entry here until 2026-09-21, when the
+# launch_* templates were deleted (owner: "delete other launch_* in
+# protocol") - no shell had copied either as its composer.json.
+MANAGER_ROLE_TEMPLATES = ("manager.json",)
 
 # SDKs whose pages push routes another SDK generates: composing the first
 # without the second is a compile error in the shell, not a compose error.
