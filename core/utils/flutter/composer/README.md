@@ -1,8 +1,12 @@
 # Composer Templates
 
 The `.json` files in this folder (`betassist.json`, `customer.json`, `driver.json`, `forex.json`,
-`launch_deliver.json`, `launch_manager.json`, `launcher.json`, `manager.json`, `polaris.json`,
-`radio.json`, `supacharge.json`) are **templates**, not active configuration.
+`launcher.json`, `manager.json`, `polaris.json`, `radio.json`, `supacharge.json`) are
+**templates**, not active configuration.
+
+There is no `launch_manager.json` or `launch_deliver.json`: no shell ever copied either as its
+`composer.json`, and `launcher.json` is the one launcher template (owner ruling, 2026-09-21:
+"delete other launch_* in protocol").
 
 There is no `pos.json`: pos became manager, so the pos and manager profiles were merged and
 `manager.json` is the only template for that role (owner ruling: "delete pos.json" / "pos became
