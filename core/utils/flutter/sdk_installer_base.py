@@ -915,6 +915,19 @@ def install_sdk_files_and_routes(sdk_name):
     else:
         package_state.pop("platform_permissions", None)
 
+    # The Android launcher label (home_sdk only): the name under the app's
+    # icon. Ray, 2026-09-23: the label must come from the home SDK, not from
+    # a CUSTOMER_APP_NAME dart-define in base's build.gradle - that define is
+    # one value for every app, and the app type already decides the home SDK.
+    # A literal, not a Dart expression: it lands in strings.xml, where
+    # nothing can evaluate SupachargeConstants.appTitle. A flavor may name
+    # its own (a driver and a customer app from one SDK).
+    app_name = flavor_block.get("app_name") or manifest.get("app_name")
+    if app_name:
+        package_state["app_name"] = app_name
+    else:
+        package_state.pop("app_name", None)
+
     # Extract and store AppConstants field overrides (home_sdk only, normally)
     constants_config = manifest.get("constants")
     flavor_constants = flavor_block.get("constants")
@@ -949,6 +962,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_asset_keys_registration()
     update_app_assets_registration()
     update_platform_permissions()
+    update_android_app_name()
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
@@ -1545,6 +1559,60 @@ ANDROID_PERMS_START = "<!-- @sdk-android-permissions-start -->"
 ANDROID_PERMS_END = "<!-- @sdk-android-permissions-end -->"
 IOS_USAGE_START = "<!-- @sdk-ios-usage-keys-start -->"
 IOS_USAGE_END = "<!-- @sdk-ios-usage-keys-end -->"
+
+
+ANDROID_STRINGS_FILE = os.path.join(
+    PROJECT_ROOT, "android", "app", "src", "main", "res", "values", "strings.xml"
+)
+
+
+def update_android_app_name():
+    """Write the home SDK's declared `app_name` into the shell's Android
+    strings.xml as the `app_name` string the launcher label reads
+    (AndroidManifest.xml's android:label="@string/app_name").
+
+    Only the HOME SDK's name is used - it is the app's identity, the same
+    ownership as AppConstants.appTitle. A home SDK that declares none leaves
+    base's neutral default in place, exactly as before this existed.
+    """
+    state = load_state()
+    home = resolve_home_sdk()
+    name = ((state.get("packages") or {}).get(home) or {}).get("app_name")
+    if not name:
+        return
+    if not os.path.exists(ANDROID_STRINGS_FILE):
+        compose_warning(
+            f"compose skipped: {ANDROID_STRINGS_FILE} missing; "
+            f"app_name '{name}' from {home} NOT applied"
+        )
+        return
+    with open(ANDROID_STRINGS_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+    # Android string resources also treat an apostrophe as syntax.
+    value = _xml_escape(name).replace("'", "\\'")
+    new_content, n = re.subn(
+        r'(<string name="app_name">)(.*?)(</string>)',
+        lambda m: m.group(1) + value + m.group(3),
+        content,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if not n:
+        if "</resources>" not in content:
+            compose_warning(
+                f"compose skipped: no </resources> in {ANDROID_STRINGS_FILE}; "
+                f"app_name '{name}' from {home} NOT applied"
+            )
+            return
+        new_content = content.replace(
+            "</resources>",
+            f'    <string name="app_name">{value}</string>\n</resources>',
+            1,
+        )
+    if new_content != content:
+        with open(ANDROID_STRINGS_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"[*] Android app_name set to '{name}' from home SDK {home}")
 
 
 def _xml_escape(value):
