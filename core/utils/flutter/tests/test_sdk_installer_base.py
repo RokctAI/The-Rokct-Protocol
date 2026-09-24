@@ -412,3 +412,67 @@ class TestIosUsageKeyInjection(PlatformPermissionsTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TrKeysAppIdentityTest(LayoutIntegrationTestBase):
+    """appName/appMotto are app identity owned by AppConstants, not TrKeys
+    (Ray, 2026-09-23). The composer must refuse them as SDK tr_keys, so an
+    SDK cannot re-introduce the translation-key path that hid the
+    compose-time constants override on screen."""
+
+    TRKEYS_BODY = (
+        "class TrKeys {\n"
+        "  static const String skip = 'skip';\n"
+        "  // @sdk-tr-keys-start\n"
+        "  // @sdk-tr-keys-end\n"
+        "}\n"
+    )
+
+    def write_trkeys(self):
+        path = self.installer.TRKEYS_FILE
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(self.TRKEYS_BODY)
+        return path
+
+    def write_tr_keys_state(self, tr_keys):
+        state = {
+            "packages": {
+                self.SDK_NAME: {"version": "1.0.0", "files": {}, "tr_keys": tr_keys}
+            }
+        }
+        state_file = os.path.join(
+            self.project_root, ".rokct", "cache", "install_state.json"
+        )
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+
+    def run_tr_keys(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_tr_keys_registration()
+        return out.getvalue(), err.getvalue()
+
+    def test_identity_fields_are_refused_and_named(self):
+        path = self.write_trkeys()
+        self.write_tr_keys_state(
+            {"appMotto": "motto", "appName": "juvo", "lessonTitle": "lesson_title"}
+        )
+        out, err = self.run_tr_keys()
+        with open(path, encoding="utf-8") as f:
+            body = f.read()
+        self.assertNotIn("appMotto", body)
+        self.assertNotIn("appName", body)
+        # An ordinary SDK key still lands, so the guard is not a blanket stop.
+        self.assertIn("static const String lessonTitle = 'lesson_title';", body)
+        warnings = out + err
+        self.assertIn("constants.overrides", warnings)
+        self.assertIn("AppConstants.appMotto", warnings)
+        self.assertIn("AppConstants.appTitle", warnings)
+
+    def test_strict_flag_escalates_identity_field_to_error(self):
+        self.write_trkeys()
+        self.write_tr_keys_state({"appMotto": "motto"})
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        with self.assertRaises(Exception):
+            self.run_tr_keys()
