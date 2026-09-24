@@ -1302,6 +1302,21 @@ def update_database_registration():
     )
 
 
+# The app's own name and motto are IDENTITY, owned by AppConstants and
+# re-pointed per app through a home SDK's constants.overrides. They were once
+# TrKeys too, so every consumer asked the translation map for them and a
+# compose-time override was invisible on screen (Ray, 2026-09-23: the
+# onboarding welcome card showed the key instead of "To the next level").
+# base_sdk no longer declares them as TrKeys; this stops an SDK from
+# re-introducing them as injected tr_keys. Maps each refused tr_key to the
+# AppConstants field that owns it.
+APP_IDENTITY_FIELDS = {
+    "appName": "appTitle",
+    "appTitle": "appTitle",
+    "appMotto": "appMotto",
+}
+
+
 def update_tr_keys_registration():
     if not os.path.exists(TRKEYS_FILE):
         compose_warning(
@@ -1339,6 +1354,14 @@ def update_tr_keys_registration():
         if not tr_keys:
             continue
         for field, value in tr_keys.items():
+            if field in APP_IDENTITY_FIELDS:
+                compose_warning(
+                    f"tr_keys: '{field}' declared by '{pkg_name}' is app identity, "
+                    f"not a translation key - NOT injected. Re-point "
+                    f"AppConstants.{APP_IDENTITY_FIELDS[field]} through the home "
+                    f"SDK manifest's constants.overrides instead."
+                )
+                continue
             if field in base_owned:
                 print(
                     f"  [!] tr_keys collision: '{field}' declared by '{pkg_name}' already exists in base tr_keys.dart - keeping base's declaration"
