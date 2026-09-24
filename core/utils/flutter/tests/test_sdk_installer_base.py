@@ -412,3 +412,98 @@ class TestIosUsageKeyInjection(PlatformPermissionsTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AndroidAppNameTest(LayoutIntegrationTestBase):
+    """The Android launcher label comes from the home SDK's declared
+    app_name (Ray, 2026-09-23), not a CUSTOMER_APP_NAME dart-define."""
+
+    STRINGS = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        "<resources>\n"
+        '    <string name="app_name">Juvo</string>\n'
+        '    <string name="facebook_app_id">1</string>\n'
+        "</resources>\n"
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.installer.resolve_home_sdk = lambda: self.SDK_NAME
+
+    def write_strings(self, body=None):
+        path = self.installer.ANDROID_STRINGS_FILE
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(self.STRINGS if body is None else body)
+        return path
+
+    def write_app_name_state(self, packages):
+        state_file = os.path.join(
+            self.project_root, ".rokct", "cache", "install_state.json"
+        )
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump({"packages": packages}, f)
+
+    def run_app_name(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_android_app_name()
+        return out.getvalue(), err.getvalue()
+
+    def read(self, path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+
+    def test_home_sdk_name_replaces_the_default(self):
+        path = self.write_strings()
+        self.write_app_name_state(
+            {self.SDK_NAME: {"version": "1", "files": {}, "app_name": "Supacharge"}}
+        )
+        self.run_app_name()
+        body = self.read(path)
+        self.assertIn('<string name="app_name">Supacharge</string>', body)
+        self.assertNotIn(">Juvo<", body)
+        # Nothing else in the file is touched.
+        self.assertIn('<string name="facebook_app_id">1</string>', body)
+
+    def test_only_the_home_sdk_names_the_app(self):
+        path = self.write_strings()
+        self.write_app_name_state(
+            {
+                self.SDK_NAME: {"version": "1", "files": {}},
+                "other_sdk": {"version": "1", "files": {}, "app_name": "Other"},
+            }
+        )
+        self.run_app_name()
+        self.assertIn('<string name="app_name">Juvo</string>', self.read(path))
+
+    def test_apostrophe_and_ampersand_are_escaped(self):
+        path = self.write_strings()
+        self.write_app_name_state(
+            {self.SDK_NAME: {"version": "1", "files": {}, "app_name": "Ray's & Co"}}
+        )
+        self.run_app_name()
+        self.assertIn(
+            "<string name=\"app_name\">Ray\\'s &amp; Co</string>", self.read(path)
+        )
+
+    def test_missing_entry_is_inserted(self):
+        path = self.write_strings(
+            '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
+        )
+        self.write_app_name_state(
+            {self.SDK_NAME: {"version": "1", "files": {}, "app_name": "Supacharge"}}
+        )
+        self.run_app_name()
+        self.assertIn('<string name="app_name">Supacharge</string>', self.read(path))
+
+    def test_rerun_is_idempotent(self):
+        path = self.write_strings()
+        self.write_app_name_state(
+            {self.SDK_NAME: {"version": "1", "files": {}, "app_name": "Supacharge"}}
+        )
+        self.run_app_name()
+        first = self.read(path)
+        self.run_app_name()
+        self.assertEqual(first, self.read(path))
+        self.assertEqual(first.count('name="app_name"'), 1)
