@@ -324,9 +324,7 @@ class TestIntegrationMarkers(LayoutIntegrationTestBase):
         blk = self.marked(self.REPLACEMENT)
         self.write_target(f"{self.PLACEHOLDER}\n{blk}\nmid\n{blk}\nend\n")
         self.run_update()
-        self.assertEqual(
-            self.read_target(), f"{self.PLACEHOLDER}\n{blk}\nmid\nend\n"
-        )
+        self.assertEqual(self.read_target(), f"{self.PLACEHOLDER}\n{blk}\nmid\nend\n")
 
     def test_two_integrations_same_placeholder_are_stable(self):
         second = self.default_integration()
@@ -366,7 +364,9 @@ class TestConstantsImportGuard(LayoutIntegrationTestBase):
         path = self.installer.CONSTANTS_FILE
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            f.write(f"{self.ANCHOR}\n{existing}class AppConstants {{ static String appName = 'x'; }}\n")
+            f.write(
+                f"{self.ANCHOR}\n{existing}class AppConstants {{ static String appName = 'x'; }}\n"
+            )
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             self.installer.update_constants_overrides()
         with open(path, encoding="utf-8") as f:
@@ -732,7 +732,11 @@ class AppAssetsRegistrationTest(LayoutIntegrationTestBase):
     def write_app_assets_state(self, app_assets):
         state = {
             "packages": {
-                self.SDK_NAME: {"version": "1.0.0", "files": {}, "app_assets": app_assets}
+                self.SDK_NAME: {
+                    "version": "1.0.0",
+                    "files": {},
+                    "app_assets": app_assets,
+                }
             }
         }
         state_file = os.path.join(
@@ -748,7 +752,9 @@ class AppAssetsRegistrationTest(LayoutIntegrationTestBase):
         return out.getvalue(), err.getvalue()
 
     def read_pubspec(self):
-        with open(os.path.join(self.project_root, "pubspec.yaml"), encoding="utf-8") as f:
+        with open(
+            os.path.join(self.project_root, "pubspec.yaml"), encoding="utf-8"
+        ) as f:
             return f.read()
 
     def test_missing_directory_entry_is_skipped_and_named(self):

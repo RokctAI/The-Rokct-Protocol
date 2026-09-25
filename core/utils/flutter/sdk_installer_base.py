@@ -2003,7 +2003,9 @@ def _integration_start_marker(sdk_name, integration_id):
     return f"// <rokct:integration sdk={sdk_name} id={integration_id}>"
 
 
-def _apply_layout_integration(content, sdk_name, integration_id, placeholder, replacement):
+def _apply_layout_integration(
+    content, sdk_name, integration_id, placeholder, replacement
+):
     """Place one integration block in `content`; return (new_content, applied).
 
     The block is wrapped in per-SDK, per-integration markers. An existing
@@ -2016,11 +2018,16 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
     start_marker = _integration_start_marker(sdk_name, integration_id)
 
     def block(indent):
-        return f"{indent}{start_marker}\n{replacement}\n{indent}{INTEGRATION_END_MARKER}"
+        return (
+            f"{indent}{start_marker}\n{replacement}\n{indent}{INTEGRATION_END_MARKER}"
+        )
 
     marked = re.compile(
-        r"^([ \t]*)" + re.escape(start_marker) + r"[ \t]*\r?\n.*?^[ \t]*"
-        + re.escape(INTEGRATION_END_MARKER) + r"[ \t]*",
+        r"^([ \t]*)"
+        + re.escape(start_marker)
+        + r"[ \t]*\r?\n.*?^[ \t]*"
+        + re.escape(INTEGRATION_END_MARKER)
+        + r"[ \t]*",
         re.MULTILINE | re.DOTALL,
     )
     matches = list(marked.finditer(content))
@@ -2028,9 +2035,13 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
         first = matches[0]
         # Drop duplicate marked copies (with their line break), last first.
         for m in reversed(matches[1:]):
-            tail = re.match(r"\r?\n", content[m.end():])
-            content = content[: m.start()] + content[m.end() + (tail.end() if tail else 0):]
-        content = content[: first.start()] + block(first.group(1)) + content[first.end():]
+            tail = re.match(r"\r?\n", content[m.end() :])
+            content = (
+                content[: m.start()] + content[m.end() + (tail.end() if tail else 0) :]
+            )
+        content = (
+            content[: first.start()] + block(first.group(1)) + content[first.end() :]
+        )
         return content, True
 
     tokens = replacement.split()
@@ -2044,7 +2055,7 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
             m = legacy.search(content)
         if m is not None:
             indent = re.match(r"[ \t]*", m.group(0)).group(0)
-            content = content[: m.start()] + block(indent) + content[m.end():]
+            content = content[: m.start()] + block(indent) + content[m.end() :]
             return content, True
 
     idx = content.find(placeholder)
