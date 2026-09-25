@@ -1501,6 +1501,17 @@ def update_app_assets_registration():
             entry = str(entry).strip()
             if not entry or entry in seen:
                 continue
+            # A directory entry flutter cannot find fails the host build
+            # ("unable to find directory entry in pubspec.yaml"), so only
+            # register directories an `installs` entry actually placed.
+            if entry.endswith("/") and not os.path.isdir(
+                os.path.join(PROJECT_ROOT, entry)
+            ):
+                compose_warning(
+                    f"SDK '{pkg_name}' declares app_assets entry '{entry}' "
+                    f"but nothing was installed there; entry NOT registered"
+                )
+                continue
             seen.add(entry)
             entries.append(entry)
     entries.sort()
