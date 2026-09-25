@@ -209,8 +209,12 @@ class TestHappyPathUnchanged(LayoutIntegrationTestBase):
         combined = out + err
         self.assertNotIn("WARNING", combined)
         content = self.read_target()
-        # Placeholder preserved for future recomposes, replacement injected.
-        self.assertIn(f"{self.PLACEHOLDER}\n{self.REPLACEMENT}", content)
+        # Placeholder preserved for future recomposes, marked block injected.
+        self.assertIn(
+            f"{self.PLACEHOLDER}\n// <rokct:integration sdk={self.SDK_NAME} id=0>\n"
+            f"{self.REPLACEMENT}\n// </rokct:integration>",
+            content,
+        )
 
     def test_happy_path_unaffected_by_strict_flag(self):
         self.write_state([self.default_integration()])
@@ -222,12 +226,159 @@ class TestHappyPathUnchanged(LayoutIntegrationTestBase):
 
     def test_already_injected_is_still_silent_noop(self):
         self.write_state([self.default_integration()])
-        already = f"class HomeLayout {{}}\n{self.PLACEHOLDER}\n{self.REPLACEMENT}\n"
-        self.write_target(already)
+        self.write_target(f"class HomeLayout {{}}\n{self.PLACEHOLDER}\n")
+        self.run_update()
+        already = self.read_target()
         os.environ["ROKCT_COMPOSE_STRICT"] = "1"
         out, err = self.run_update()
         self.assertNotIn("WARNING", out + err)
         self.assertEqual(self.read_target(), already)
+
+
+class TestIntegrationMarkers(LayoutIntegrationTestBase):
+    START = "// <rokct:integration sdk=demo_sdk id=0>"
+    END = "// </rokct:integration>"
+
+    def marked(self, text, indent=""):
+        return f"{indent}{self.START}\n{text}\n{indent}{self.END}"
+
+    def test_rerun_is_byte_identical(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"class A {{}}\n  {self.PLACEHOLDER}\n}}\n")
+        self.run_update()
+        first = self.read_target()
+        self.assertEqual(
+            first,
+            f"class A {{}}\n  {self.PLACEHOLDER}\n"
+            f"{self.marked(self.REPLACEMENT, '  ')}\n}}\n",
+        )
+        for _ in range(3):
+            self.run_update()
+            self.assertEqual(self.read_target(), first)
+
+    def test_changed_replacement_replaces_old_block(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"{self.PLACEHOLDER}\n")
+        self.run_update()
+        entry = self.default_integration()
+        entry["replacement"] = "const DemoSdkCardV2(),"
+        self.write_state([entry])
+        self.run_update()
+        content = self.read_target()
+        self.assertNotIn(self.REPLACEMENT, content)
+        self.assertEqual(content.count("DemoSdkCardV2"), 1)
+        self.assertEqual(content.count(self.START), 1)
+        self.assertEqual(
+            content, f"{self.PLACEHOLDER}\n{self.marked('const DemoSdkCardV2(),')}\n"
+        )
+
+    def test_whitespace_reformatted_block_is_not_duplicated(self):
+        self.write_state([self.default_integration()])
+        # As if `dart format` reindented the injected block.
+        self.write_target(
+            f"{self.PLACEHOLDER}\n    {self.START}\n    const   DemoSdkCard(),\n"
+            f"    {self.END}\n"
+        )
+        self.run_update()
+        content = self.read_target()
+        self.assertEqual(content.count("DemoSdkCard"), 1)
+        self.assertEqual(
+            content, f"{self.PLACEHOLDER}\n{self.marked(self.REPLACEMENT, '    ')}\n"
+        )
+
+    def test_legacy_unmarked_copy_is_wrapped_not_duplicated(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"{self.PLACEHOLDER}\n{self.REPLACEMENT}\nrest\n")
+        self.run_update()
+        content = self.read_target()
+        self.assertEqual(content.count(self.REPLACEMENT), 1)
+        self.assertEqual(
+            content, f"{self.PLACEHOLDER}\n{self.marked(self.REPLACEMENT)}\nrest\n"
+        )
+        self.run_update()
+        self.assertEqual(self.read_target(), content)
+
+    def test_legacy_reformatted_copy_is_wrapped(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"{self.PLACEHOLDER}\n  const  DemoSdkCard(),\n")
+        self.run_update()
+        content = self.read_target()
+        self.assertEqual(content.count("DemoSdkCard"), 1)
+        self.assertIn(self.START, content)
+
+    def test_duplicate_placeholder_inserts_once(self):
+        self.write_state([self.default_integration()])
+        self.write_target(f"{self.PLACEHOLDER}\nmid\n{self.PLACEHOLDER}\n")
+        self.run_update()
+        content = self.read_target()
+        self.assertEqual(content.count(self.REPLACEMENT), 1)
+        self.assertEqual(
+            content,
+            f"{self.PLACEHOLDER}\n{self.marked(self.REPLACEMENT)}\nmid\n{self.PLACEHOLDER}\n",
+        )
+        self.run_update()
+        self.assertEqual(self.read_target(), content)
+
+    def test_duplicate_marked_blocks_collapse_to_one(self):
+        self.write_state([self.default_integration()])
+        blk = self.marked(self.REPLACEMENT)
+        self.write_target(f"{self.PLACEHOLDER}\n{blk}\nmid\n{blk}\nend\n")
+        self.run_update()
+        self.assertEqual(
+            self.read_target(), f"{self.PLACEHOLDER}\n{blk}\nmid\nend\n"
+        )
+
+    def test_two_integrations_same_placeholder_are_stable(self):
+        second = self.default_integration()
+        second["replacement"] = "const OtherCard(),"
+        self.write_state([self.default_integration(), second])
+        self.write_target(f"{self.PLACEHOLDER}\n")
+        self.run_update()
+        first = self.read_target()
+        self.assertEqual(first.count("DemoSdkCard"), 1)
+        self.assertEqual(first.count("OtherCard"), 1)
+        self.assertIn("id=1>", first)
+        self.run_update()
+        self.assertEqual(self.read_target(), first)
+
+
+class TestConstantsImportGuard(LayoutIntegrationTestBase):
+    ANCHOR = "import 'package:base_sdk/src/services/enums.dart';"
+
+    def run_constants(self, existing):
+        state = {
+            "packages": {
+                self.SDK_NAME: {
+                    "files": {},
+                    "constants": {
+                        "import": "package:demo_sdk/config.dart",
+                        "overrides": {"appName": "DemoConfig.name"},
+                    },
+                }
+            }
+        }
+        with open(
+            os.path.join(self.project_root, ".rokct", "cache", "install_state.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(state, f)
+        path = self.installer.CONSTANTS_FILE
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"{self.ANCHOR}\n{existing}class AppConstants {{ static String appName = 'x'; }}\n")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.installer.update_constants_overrides()
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+
+    def test_import_added_once(self):
+        content = self.run_constants("")
+        self.assertEqual(content.count("package:demo_sdk/config.dart"), 1)
+
+    def test_double_quoted_and_spaced_import_not_duplicated(self):
+        content = self.run_constants('import   "package:demo_sdk/config.dart" ;\n')
+        self.assertEqual(content.count("package:demo_sdk/config.dart"), 1)
 
     def test_strict_flag_off_by_default(self):
         """Unset/other values must keep the warn-and-continue default."""

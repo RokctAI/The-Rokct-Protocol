@@ -1955,8 +1955,12 @@ def update_constants_overrides():
         content = f.read()
 
     import_anchor = "import 'package:base_sdk/src/services/enums.dart';"
+    # Compare import URIs, not raw text, so a reformatted or re-quoted
+    # import (`import  "x";`) is recognised and not added a second time.
+    existing_uris = set(re.findall(r"\bimport\s+['\"]([^'\"]+)['\"]", content))
     for imp in sorted(imports):
-        if imp not in content:
+        uri = re.search(r"'([^']+)'", imp).group(1)
+        if uri not in existing_uris:
             if import_anchor not in content:
                 compose_warning(
                     f"import anchor {import_anchor} not found in {CONSTANTS_FILE}; "
@@ -1968,6 +1972,7 @@ def update_constants_overrides():
                 f"{import_anchor}\n{imp}",
                 1,
             )
+            existing_uris.add(uri)
 
     applied = 0
     for field, expr in overrides.items():
@@ -1991,6 +1996,68 @@ def update_constants_overrides():
         print(f"[*] overrode {applied} AppConstants field(s) from home SDK manifest")
 
 
+INTEGRATION_END_MARKER = "// </rokct:integration>"
+
+
+def _integration_start_marker(sdk_name, integration_id):
+    return f"// <rokct:integration sdk={sdk_name} id={integration_id}>"
+
+
+def _apply_layout_integration(content, sdk_name, integration_id, placeholder, replacement):
+    """Place one integration block in `content`; return (new_content, applied).
+
+    The block is wrapped in per-SDK, per-integration markers. An existing
+    marked block is rewritten in place (extra copies are removed), so a
+    changed or reformatted replacement never piles up. A legacy unmarked copy
+    of the exact replacement text (whitespace-insensitive) is wrapped instead
+    of duplicated. Otherwise the block goes after the first placeholder only.
+    The result is byte-identical across reruns with the same input.
+    """
+    start_marker = _integration_start_marker(sdk_name, integration_id)
+
+    def block(indent):
+        return f"{indent}{start_marker}\n{replacement}\n{indent}{INTEGRATION_END_MARKER}"
+
+    marked = re.compile(
+        r"^([ \t]*)" + re.escape(start_marker) + r"[ \t]*\r?\n.*?^[ \t]*"
+        + re.escape(INTEGRATION_END_MARKER) + r"[ \t]*",
+        re.MULTILINE | re.DOTALL,
+    )
+    matches = list(marked.finditer(content))
+    if matches:
+        first = matches[0]
+        # Drop duplicate marked copies (with their line break), last first.
+        for m in reversed(matches[1:]):
+            tail = re.match(r"\r?\n", content[m.end():])
+            content = content[: m.start()] + content[m.end() + (tail.end() if tail else 0):]
+        content = content[: first.start()] + block(first.group(1)) + content[first.end():]
+        return content, True
+
+    tokens = replacement.split()
+    if tokens:
+        legacy = re.compile(
+            r"^[ \t]*" + r"\s+".join(re.escape(t) for t in tokens), re.MULTILINE
+        )
+        m = legacy.search(content)
+        if m is None:
+            legacy = re.compile(r"\s+".join(re.escape(t) for t in tokens))
+            m = legacy.search(content)
+        if m is not None:
+            indent = re.match(r"[ \t]*", m.group(0)).group(0)
+            content = content[: m.start()] + block(indent) + content[m.end():]
+            return content, True
+
+    idx = content.find(placeholder)
+    if idx < 0:
+        return content, False
+    line_start = content.rfind("\n", 0, idx) + 1
+    prefix = content[line_start:idx]
+    indent = prefix if prefix.strip() == "" else re.match(r"[ \t]*", prefix).group(0)
+    after = idx + len(placeholder)
+    content = content[:after] + "\n" + block(indent) + content[after:]
+    return content, True
+
+
 def update_layout_integrations():
     state = load_state()
     # Track layout file adjustments to rewrite them exactly once
@@ -1998,7 +2065,7 @@ def update_layout_integrations():
 
     for pkg_name, pkg_data in state.get("packages", {}).items():
         integrations = pkg_data.get("integrations", [])
-        for integration in integrations:
+        for index, integration in enumerate(integrations):
             target_rel = integration.get("target")
             placeholder = integration.get("placeholder")
             replacement = integration.get("replacement")
@@ -2025,25 +2092,24 @@ def update_layout_integrations():
                 with open(target_abs, "r", encoding="utf-8") as f:
                     content = f.read()
 
-            # Prevent double injection: Check if replacement is already in file
-            if replacement in content:
-                continue
-
-            if placeholder not in content:
+            integration_id = integration.get("id", index)
+            new_content, applied = _apply_layout_integration(
+                content, pkg_name, integration_id, placeholder, replacement
+            )
+            if not applied:
                 compose_warning(
                     f"marker {placeholder} not found in {target_rel} for SDK "
                     f"{pkg_name}; wiring NOT applied"
                 )
                 continue
+            file_changes[target_abs] = new_content
 
-            # Replace placeholder while preserving it for future updates
-            replacement_block = f"{placeholder}\n{replacement}"
-            content = content.replace(placeholder, replacement_block)
-            file_changes[target_abs] = content
-
-    # Write changes back
+    # Write back only files whose bytes actually changed
     for path, content in file_changes.items():
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
+            if f.read() == content:
+                continue
+        with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(content)
         rel_path = os.path.relpath(path, PROJECT_ROOT).replace("\\", "/")
         print(f"[*] Applied widget layout integration in: {rel_path}")
