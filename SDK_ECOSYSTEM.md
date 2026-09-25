@@ -695,7 +695,11 @@ This repo's runtime-fetched-and-executed files are pinned. See
        Registration is idempotent; the first registered directory holding
        `<cmd>.json` wins.
     4. Optional conveniences inside a fixture: the string values
-       `"$now_iso"` / `"$now_ms"` become the current UTC time, and
+       `"$now_iso"` / `"$now_ms"` become the current UTC time and
+       `"$today"` the UTC date (`yyyy-MM-dd`); each takes one relative
+       offset `<+|-><n><m|h|d|w>` (base_sdk >= 1.74.0), e.g.
+       `"$now_iso-30d"`, `"$now_ms+2h"`, `"$today-7d"`, so dated data
+       never freezes in a file - use these instead of literal dates; and
        `{"$demo_select": {"by": "payload.<field>" | "role", "cases": {...},
        "default": ...}}` answers by a payload field or the signed-in role.
 
