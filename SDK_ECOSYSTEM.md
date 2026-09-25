@@ -634,11 +634,12 @@ This repo's runtime-fetched-and-executed files are pinned. See
     feature may ship local-only; it may not ship values the server will later
     need buried where no query can reach them.
 
-11. **The tour runs on the demo build, but the app never announces itself as
+11. **The tour runs in demo mode, but the app never announces itself as
     a demo** (standing rule, Ray 2026-09-04 — "tour is demo but i should
     never anounce itself as a demo"; logged in the `agent` repo's
-    `decision_log.md`, entry dated 2026-09-04). The guided tour runs on the
-    IS_DEMO build (no backend, seeded fixtures), but the app must never
+    `decision_log.md`, entry dated 2026-09-04). The guided tour runs in demo
+    mode (`TOUR_MODE` / `isTour`, answered from demo fixtures, see
+    invariant 13), but the app must never
     announce itself as a demo. Nothing rendered may say
     Demo/DEMO-/Sample/Example/Placeholder/Fictional or use
     example.com/placeholder hosts: names, addresses, emails, order numbers,
