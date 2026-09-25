@@ -282,6 +282,23 @@ Rules:
   manifests (`app_routes` in SDK manifests, `host_routes` in `composer.json`),
   never in `lib/`. If you move code from an app into an SDK, you must
   `git rm` the app's copies — gitignore does not untrack already-tracked files.
+- **App-specific code goes in `custom/`** at the app root. That folder is
+  tracked. Compose copies it to `lib/custom/` so `package:<app>/custom/...`
+  imports and auto_route codegen see it. Edit `custom/`, never the copy. It
+  plugs in through fixed hooks only:
+  - `custom/routes.dart` declares `final List<AutoRoute> customRoutes`, which
+    is spread into the router's `@generated-routes` block.
+  - `custom/theme.dart` declares `void applyCustomTheme()`, which runs in
+    `main()` right after the SDK brand hook, so it overrides the SDK palette.
+  - `"page_overrides": {"LoginRoute": "CustomLoginRoute"}` in `composer.json`
+    swaps the page of the SDK or host route that uses `LoginRoute.page` for a
+    `@RoutePage` page under `custom/`.
+
+  Constants overrides stay in manifests. With no `custom/` and no
+  `page_overrides`, compose output is unchanged. A `lib/custom/` that compose
+  did not create is never overwritten. Like `host_routes`, `page_overrides`
+  must also go in the protocol template (see the next rule), or CI's
+  `composer.json` overwrite drops it.
 - The **canonical** composer manifests are the templates in
   `core/utils/flutter/composer/*.json` in this repo. CI
   (`shared-workflows/.github/workflows/universal-flutter-build.yml`) overwrites
