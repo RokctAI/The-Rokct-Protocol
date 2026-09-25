@@ -571,3 +571,51 @@ class AndroidAppNameTest(LayoutIntegrationTestBase):
         self.run_app_name()
         self.assertEqual(first, self.read(path))
         self.assertEqual(first.count('name="app_name"'), 1)
+
+
+class AppAssetsRegistrationTest(LayoutIntegrationTestBase):
+    """app_assets directory entries with nothing installed under them must
+    not reach the host pubspec: flutter fails the build on a missing
+    directory entry (supacharge Windows, assets/demo/products/)."""
+
+    def write_app_assets_state(self, app_assets):
+        state = {
+            "packages": {
+                self.SDK_NAME: {"version": "1.0.0", "files": {}, "app_assets": app_assets}
+            }
+        }
+        state_file = os.path.join(
+            self.project_root, ".rokct", "cache", "install_state.json"
+        )
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+
+    def run_app_assets(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_app_assets_registration()
+        return out.getvalue(), err.getvalue()
+
+    def read_pubspec(self):
+        with open(os.path.join(self.project_root, "pubspec.yaml"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_missing_directory_entry_is_skipped_and_named(self):
+        os.makedirs(os.path.join(self.project_root, "assets", "demo", "present"))
+        self.write_app_assets_state(
+            ["assets/demo/present/", "assets/demo/missing/", "assets/logo.png"]
+        )
+        out, err = self.run_app_assets()
+        pubspec = self.read_pubspec()
+        self.assertIn("    - assets/demo/present/", pubspec)
+        self.assertIn("    - assets/logo.png", pubspec)
+        self.assertNotIn("assets/demo/missing/", pubspec)
+        warnings = out + err
+        self.assertIn(self.SDK_NAME, warnings)
+        self.assertIn("assets/demo/missing/", warnings)
+
+    def test_strict_flag_escalates_missing_directory_entry(self):
+        self.write_app_assets_state(["assets/demo/missing/"])
+        os.environ["ROKCT_COMPOSE_STRICT"] = "1"
+        with self.assertRaises(Exception):
+            self.run_app_assets()
