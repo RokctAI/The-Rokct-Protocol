@@ -1297,38 +1297,6 @@ def ensure_lib_gitignore():
         print("[!] Could not update .gitignore: %s" % e)
 
 
-# Root-level Flutter config files hosts ignore because compose generates them.
-# Written unanchored (`pubspec.yaml`) the rule also ignores every
-# .rokct/cache/<sdk>/pubspec.yaml, the same bug the unanchored `lib/` had.
-ROOT_ONLY_IGNORES = ("pubspec.yaml", "analysis_options.yaml", "flutter_native_splash.yaml")
-
-
-def anchor_root_config_gitignore():
-    """Rewrite unanchored ignore rules for the root-level generated config
-    files (ROOT_ONLY_IGNORES) to their anchored `/name` form, so they keep
-    ignoring the app root's copy but stop ignoring each SDK cache's copy.
-    Only an exact bare line is rewritten; any other rule is left alone."""
-    path = os.path.join(PROJECT_ROOT, ".gitignore")
-    if not os.path.exists(path):
-        return
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            lines = f.read().split(NL)
-        changed = []
-        for i, line in enumerate(lines):
-            name = line.strip()
-            if name in ROOT_ONLY_IGNORES:
-                lines[i] = "/" + name
-                changed.append(name)
-        if not changed:
-            return
-        with open(path, "w", encoding="utf-8", newline=NL) as f:
-            f.write(NL.join(lines))
-        print("[*] .gitignore: anchored %s to the app root" % ", ".join(changed))
-    except Exception as e:
-        print("[!] Could not update .gitignore: %s" % e)
-
-
 README_RECOMPOSE_START = "<!-- @generated-recompose-start -->"
 README_RECOMPOSE_END = "<!-- @generated-recompose-end -->"
 
@@ -1782,7 +1750,6 @@ def main():
 
     ensure_pubspec_overrides()
     ensure_lib_gitignore()
-    anchor_root_config_gitignore()
     ensure_host_readme()
     ensure_docs()
     remove_stale_widget_test()
