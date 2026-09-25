@@ -295,55 +295,65 @@ def strip_unused_role_folders(target_dir, sdk_name):
     doesn't declare that role at all - stripping without that confirmation
     risks deleting something the app actually needs.
     """
+    for persona in role_folders_to_strip(target_dir):
+        persona_dir = os.path.join(target_dir, "lib", "src", persona)
+        if os.path.isdir(persona_dir):
+            shutil.rmtree(persona_dir)
+            print(
+                f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {resolve_app_type()})"
+            )
+
+
+def role_folders_to_strip(sdk_dir):
+    """Persona folder names under <sdk_dir>/lib/src/ that
+    strip_unused_role_folders() removes for this host's role (see its
+    docstring for the rules). Also used to hash an SDK source the way it
+    will look once extracted, so the source fingerprint follows the strip.
+    Returns [] when nothing would be stripped."""
     current_role = resolve_app_type()
     if not current_role:
-        return
-
-    manifest_path = os.path.join(target_dir, "manifest.json")
+        return []
+    manifest_path = os.path.join(sdk_dir, "manifest.json")
     if not os.path.exists(manifest_path):
-        return
+        return []
     try:
         with open(manifest_path, "r", encoding="utf-8-sig") as f:
             manifest = json.load(f)
     except Exception:
-        return
-
+        return []
     declared_personas = list((manifest.get("app_type") or {}).keys())
     if current_role not in declared_personas:
         # This SDK doesn't declare the app's role as a persona - nothing to
         # strip; stripping blind here could remove code the app actually uses.
-        return
-
-    lib_src = os.path.join(target_dir, "lib", "src")
+        return []
+    lib_src = os.path.join(sdk_dir, "lib", "src")
     if not os.path.isdir(lib_src):
-        return
-
-    for persona in declared_personas:
-        if persona == current_role:
-            continue
-        persona_dir = os.path.join(lib_src, persona)
-        if os.path.isdir(persona_dir):
-            shutil.rmtree(persona_dir)
-            print(
-                f"[*] Stripped unused role folder lib/src/{persona}/ from {sdk_name} (app role: {current_role})"
-            )
+        return []
+    return [
+        p
+        for p in declared_personas
+        if p != current_role and os.path.isdir(os.path.join(lib_src, p))
+    ]
 
 
 # --- Version-aware cache reconciliation -------------------------------------
 # Hosts are sold with .rokct/cache/ tracked, so a compose run must not blindly
-# re-extract (and thereby clobber) cached SDK source. Per SDK, the recorded
-# manifest version + content hash in install_state.json decide:
-#   newer incoming version  -> delete the old cache dir, re-extract fresh
-#   same version, unmodified -> leave the cached copy (faster, keeps the
-#                               sold-repo self-contained property)
-#   same version, MODIFIED   -> leave it, with a loud warning - manual
-#                               modifications are never silently clobbered.
-#                               Exception: a mismatched cache with NO lib/ is
-#                               structurally corrupt (stripped by the old
-#                               unanchored lib/ gitignore), not modified - it
-#                               is deleted and re-extracted.
+# re-extract cached SDK source. The fingerprint is taken from the SOURCE the
+# cache is extracted from (clone subtree or local path), never from the cache
+# itself: the installers and codegen move and generate files inside the cache
+# after extraction, and git drops the cache's ignored files on checkout, so a
+# cache-side hash never matches on the next run. Per SDK, the manifest version
+# + source hash recorded in install_state.json decide:
+#   newer incoming version     -> delete the old cache dir, re-extract fresh
+#   older incoming version     -> leave the (newer) cached copy
+#   same version, same source  -> leave the cached copy (unless it has lost
+#                                 its lib/, which never composes)
+#   anything else (source hash changed, or no source hash recorded yet by an
+#   older composer)            -> delete and re-extract. The cache is not
+#                                 hand-edited (installers rewrite it), so a
+#                                 mismatch is never "local modifications".
 
-# Noise excluded from the cache content hash: toolchain outputs that differ
+# Noise excluded from the content hash: toolchain outputs that differ
 # per machine/run without the SDK's actual content changing.
 HASH_EXCLUDED_DIRS = {".git", ".dart_tool", "build", "__pycache__", "node_modules"}
 HASH_EXCLUDED_FILES = {
@@ -353,21 +363,85 @@ HASH_EXCLUDED_FILES = {
     ".flutter-plugins-dependencies",
 }
 
+# Source fingerprints computed by should_extract() this run, keyed by clean
+# SDK name, for record_sdk_cache_state() to persist.
+SOURCE_HASHES = {}
 
-def cache_dir_hash(d):
+
+def git_ignored_paths(base_dir, rel_paths):
+    """Subset of rel_paths (relative to base_dir, "/"-separated) that git
+    ignores under the repo containing base_dir, via `git check-ignore
+    --stdin`. Tracked files are never reported (check-ignore skips them), so
+    what is left is exactly what a checkout of that repo keeps. Returns None
+    when base_dir is not inside a git work tree or git is unavailable, so
+    the caller falls back to hashing everything."""
+    if not rel_paths:
+        return set()
+    try:
+        inside = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=base_dir,
+            capture_output=True,
+            text=True,
+        )
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return None
+        proc = subprocess.run(
+            ["git", "check-ignore", "--stdin", "-z"],
+            cwd=base_dir,
+            input="\0".join(rel_paths) + "\0",
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, ValueError):
+        return None
+    # 0 = some ignored, 1 = none ignored, anything else = error.
+    if proc.returncode not in (0, 1):
+        return None
+    return {p for p in proc.stdout.split("\0") if p}
+
+
+def cache_dir_hash(d, exclude_dirs=()):
+    """Content hash of the files under d that git would keep.
+
+    Inside a git work tree, files the repo's .gitignore rules drop (e.g. a
+    cache's pubspec_overrides.yaml, or lib/ under an old unanchored rule)
+    are left out, so a fresh checkout hashes the same as the tree it was
+    committed from. Outside git every file counts. exclude_dirs are
+    "/"-separated paths relative to d to skip as well (role folders the
+    extract will strip)."""
     if not os.path.isdir(d):
         return None
-    h = hashlib.sha256()
+    excluded = {x.strip("/") for x in exclude_dirs}
+    rel_files = []
     for root, dirs, files in os.walk(d):
-        dirs[:] = sorted(x for x in dirs if x not in HASH_EXCLUDED_DIRS)
+        rel_root = os.path.relpath(root, d).replace(os.sep, "/")
+        rel_root = "" if rel_root == "." else rel_root + "/"
+        dirs[:] = sorted(
+            x
+            for x in dirs
+            if x not in HASH_EXCLUDED_DIRS and (rel_root + x) not in excluded
+        )
         for f in sorted(files):
             if f in HASH_EXCLUDED_FILES or f.endswith(".pyc"):
                 continue
-            p = os.path.join(root, f)
-            h.update(os.path.relpath(p, d).encode())
-            with open(p, "rb") as fh:
-                h.update(fh.read())
+            rel_files.append(rel_root + f)
+    ignored = git_ignored_paths(d, rel_files) or set()
+    h = hashlib.sha256()
+    for rel in rel_files:
+        if rel in ignored:
+            continue
+        h.update(rel.encode())
+        with open(os.path.join(d, *rel.split("/")), "rb") as fh:
+            h.update(fh.read())
     return h.hexdigest()[:16]
+
+
+def source_hash(src_dir):
+    """Fingerprint of an SDK source as it will look once extracted: the
+    role folders strip_unused_role_folders() would remove are left out."""
+    strip = ["lib/src/" + p for p in role_folders_to_strip(src_dir)]
+    return cache_dir_hash(src_dir, exclude_dirs=strip)
 
 
 def parse_version(v):
@@ -393,10 +467,12 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
     """Decide whether to (re-)extract this SDK into its cache dir.
 
     Returns True when the existing rmtree+copytree path should run. Records
-    the per-SDK decision in `decisions` so record_sdk_cache_state() knows
-    which entries to (not) update.
+    the per-SDK decision in `decisions` (and the source fingerprint in
+    SOURCE_HASHES) so record_sdk_cache_state() knows what to persist.
     """
     clean_name = clean_sdk_name(sdk_name)
+    incoming_hash = source_hash(src_dir)
+    SOURCE_HASHES[clean_name] = incoming_hash
     if not os.path.isdir(target_dir):
         decisions[clean_name] = "extracted"
         return True
@@ -406,6 +482,7 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
     cached_version = (
         entry.get("version") if entry else read_manifest_version(target_dir)
     )
+    rel_target = os.path.relpath(target_dir, PROJECT_ROOT)
 
     if incoming_version and parse_version(incoming_version) > parse_version(
         cached_version
@@ -427,65 +504,61 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
         decisions[clean_name] = "left-newer"
         return False
 
-    # Same version (or no usable version info): keep the cached copy, but
-    # check for manual modifications against the recorded hash.
-    if entry and entry.get("hash"):
-        current_hash = cache_dir_hash(target_dir)
-        if current_hash != entry["hash"]:
-            # A mismatched cache with no lib/ at all is not a precious local
-            # modification - it is a stripped artifact (hosts whose old
-            # unanchored `lib/` gitignore rule ate .rokct/cache/<sdk>/lib/)
-            # and can never compose. Pinning it just breaks every build, so
-            # treat it as corrupt and take the normal fresh-extract path
-            # (the caller rmtree's the target before copying).
-            if not os.path.isdir(os.path.join(target_dir, "lib")):
-                print(
-                    f"[!] {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has no lib/ (content hash mismatch, version {cached_version} unchanged) - treating as corrupt, deleting and re-extracting."
-                )
-                decisions[clean_name] = "extracted"
-                return True
-            print(
-                f"[!] WARNING: {sdk_name}: cached copy at {os.path.relpath(target_dir, PROJECT_ROOT)} has LOCAL MODIFICATIONS (content hash mismatch, version {cached_version} unchanged) - leaving it in place, NOT refetching. Delete the folder to force a clean re-extract."
-            )
-            decisions[clean_name] = "left-modified"
-            return False
+    if not entry:
+        # Cache exists but predates state tracking: adopt it as the baseline
+        # rather than clobbering it, and record the source fingerprint.
         print(
-            f"[*] {sdk_name}: cache is up to date (version {cached_version}, unmodified) - leaving cached copy in place."
+            f"[*] {sdk_name}: existing cache has no recorded state - adopting current copy as baseline (no re-extract)."
         )
-        decisions[clean_name] = "left-unmodified"
+        decisions[clean_name] = "adopted"
         return False
 
-    # Cache exists but predates hash tracking: adopt it as the baseline
-    # rather than clobbering it - it may carry manual modifications.
+    if entry.get("source_hash") != incoming_hash:
+        print(
+            f"[*] {sdk_name}: source changed since the last extract (version {cached_version}) - deleting cached copy at {rel_target} and re-extracting."
+        )
+        decisions[clean_name] = "extracted"
+        return True
+
+    # A cache with no lib/ at all (stripped by a host's old unanchored `lib/`
+    # gitignore rule) can never compose, whatever the fingerprint says.
+    if os.path.isdir(os.path.join(src_dir, "lib")) and not os.path.isdir(
+        os.path.join(target_dir, "lib")
+    ):
+        print(
+            f"[!] {sdk_name}: cached copy at {rel_target} has no lib/ - treating as corrupt, deleting and re-extracting."
+        )
+        decisions[clean_name] = "extracted"
+        return True
+
     print(
-        f"[*] {sdk_name}: existing cache has no recorded state - adopting current copy as baseline (no re-extract)."
+        f"[*] {sdk_name}: cache is up to date (version {cached_version}, source unchanged) - leaving cached copy in place."
     )
-    decisions[clean_name] = "adopted"
+    decisions[clean_name] = "left-unmodified"
     return False
 
 
 def record_sdk_cache_state(decisions):
-    """Persist each reconciled SDK's manifest version + content hash.
+    """Persist each reconciled SDK's manifest version + source fingerprint.
 
     Re-read the state fresh before writing: the installers (which run between
     reconciliation and this call) share the same file. An SDK left in place
-    because of local modifications keeps its OLD baseline, so the
-    modification warning persists on every compose instead of being
-    silently absorbed."""
+    because its cached copy is newer keeps its old entry: the incoming
+    source's fingerprint does not describe what is cached."""
     if not decisions:
         return
     state = load_install_state()
     sdk_cache = state.setdefault("sdk_cache", {})
     updated = 0
     for clean_name, decision in decisions.items():
-        if decision == "left-modified":
+        if decision == "left-newer":
             continue
         target_dir = os.path.join(PROJECT_ROOT, ".rokct", "cache", clean_name)
         if not os.path.isdir(target_dir):
             continue
         sdk_cache[clean_name] = {
             "version": read_manifest_version(target_dir),
-            "hash": cache_dir_hash(target_dir),
+            "source_hash": SOURCE_HASHES.get(clean_name),
         }
         updated += 1
     save_install_state(state)
@@ -1166,8 +1239,8 @@ def ensure_lib_gitignore():
     The written rule is anchored (`/lib/`, not `lib/`): an unanchored `lib/`
     matches EVERY lib directory in the repo, including each tracked
     `.rokct/cache/<sdk>/lib/` - which is exactly how hosts ended up committing
-    caches with their lib/ stripped (see `.rokct/cache/.gitignore`'s `!**`
-    note). Only the app's own root lib/ is generated by compose; the cache
+    caches with their lib/ stripped (no `.rokct/cache/.gitignore` re-includes
+    them). Only the app's own root lib/ is generated by compose; the cache
     copies are sold content. A pre-existing anchored `/lib/` (or legacy
     unanchored `lib/`) already satisfies the requirement - nothing is
     re-appended.
@@ -1220,6 +1293,38 @@ def ensure_lib_gitignore():
 
         with open(path, "w", encoding="utf-8", newline=NL) as f:
             f.write(NL.join(lines))
+    except Exception as e:
+        print("[!] Could not update .gitignore: %s" % e)
+
+
+# Root-level Flutter config files hosts ignore because compose generates them.
+# Written unanchored (`pubspec.yaml`) the rule also ignores every
+# .rokct/cache/<sdk>/pubspec.yaml, the same bug the unanchored `lib/` had.
+ROOT_ONLY_IGNORES = ("pubspec.yaml", "analysis_options.yaml", "flutter_native_splash.yaml")
+
+
+def anchor_root_config_gitignore():
+    """Rewrite unanchored ignore rules for the root-level generated config
+    files (ROOT_ONLY_IGNORES) to their anchored `/name` form, so they keep
+    ignoring the app root's copy but stop ignoring each SDK cache's copy.
+    Only an exact bare line is rewritten; any other rule is left alone."""
+    path = os.path.join(PROJECT_ROOT, ".gitignore")
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.read().split(NL)
+        changed = []
+        for i, line in enumerate(lines):
+            name = line.strip()
+            if name in ROOT_ONLY_IGNORES:
+                lines[i] = "/" + name
+                changed.append(name)
+        if not changed:
+            return
+        with open(path, "w", encoding="utf-8", newline=NL) as f:
+            f.write(NL.join(lines))
+        print("[*] .gitignore: anchored %s to the app root" % ", ".join(changed))
     except Exception as e:
         print("[!] Could not update .gitignore: %s" % e)
 
@@ -1677,13 +1782,14 @@ def main():
 
     ensure_pubspec_overrides()
     ensure_lib_gitignore()
+    anchor_root_config_gitignore()
     ensure_host_readme()
     ensure_docs()
     remove_stale_widget_test()
-    # Record versions/hashes in a finally block: codegen mutates the caches
-    # (generated sources, override-path fixes), so the recorded hash must be
-    # taken after it - but recording must still happen in environments where
-    # the Flutter toolchain is absent and codegen dies early.
+    # Record versions/source fingerprints in a finally block so recording
+    # still happens where the Flutter toolchain is absent and codegen dies
+    # early. The fingerprint is of the source, so the cache mutations done by
+    # the installers and codegen do not affect it.
     try:
         run_sdk_code_generation()
         run_code_generation()
