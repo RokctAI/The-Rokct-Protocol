@@ -205,5 +205,48 @@ class CacheReconcileTest(unittest.TestCase):
         self.assertNotEqual(self.mod.cache_dir_hash(d), before)
 
 
+class AnchorRootConfigGitignoreTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _import_composer()
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._old_root = self.mod.PROJECT_ROOT
+        self.mod.PROJECT_ROOT = self.tmp
+
+    def tearDown(self):
+        self.mod.PROJECT_ROOT = self._old_root
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_unanchored_rules_are_anchored(self):
+        gi = os.path.join(self.tmp, ".gitignore")
+        _write(
+            gi,
+            "# keep\nanalysis_options.yaml\nflutter_native_splash.yaml\n"
+            "pubspec.yaml\n/pubspec.yaml\nfoo/pubspec.yaml\npubspec.lock\n",
+        )
+        self.mod.anchor_root_config_gitignore()
+        with open(gi, encoding="utf-8") as f:
+            self.assertEqual(
+                f.read(),
+                "# keep\n/analysis_options.yaml\n/flutter_native_splash.yaml\n"
+                "/pubspec.yaml\n/pubspec.yaml\nfoo/pubspec.yaml\npubspec.lock\n",
+            )
+        # Behaviour: the root copy stays ignored, the cache copy does not.
+        _git(self.tmp, "init", "-q")
+        ignored = subprocess.run(
+            ["git", "check-ignore", "pubspec.yaml", ".rokct/cache/auth/pubspec.yaml"],
+            cwd=self.tmp,
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+        self.assertEqual(ignored, ["pubspec.yaml"])
+
+    def test_no_gitignore_is_noop(self):
+        self.mod.anchor_root_config_gitignore()
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, ".gitignore")))
+
+
 if __name__ == "__main__":
     unittest.main()
