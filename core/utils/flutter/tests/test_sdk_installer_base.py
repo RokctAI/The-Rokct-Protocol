@@ -548,7 +548,7 @@ class AndroidAppNameTest(LayoutIntegrationTestBase):
         )
         self.run_app_name()
         self.assertIn(
-            "<string name=\"app_name\">Ray\\'s &amp; Co</string>", self.read(path)
+            '<string name="app_name">Ray\\\'s &amp; Co</string>', self.read(path)
         )
 
     def test_missing_entry_is_inserted(self):
