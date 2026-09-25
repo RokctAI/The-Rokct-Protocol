@@ -634,11 +634,12 @@ This repo's runtime-fetched-and-executed files are pinned. See
     feature may ship local-only; it may not ship values the server will later
     need buried where no query can reach them.
 
-11. **The tour runs on the demo build, but the app never announces itself as
+11. **The tour runs in demo mode, but the app never announces itself as
     a demo** (standing rule, Ray 2026-09-04 — "tour is demo but i should
     never anounce itself as a demo"; logged in the `agent` repo's
-    `decision_log.md`, entry dated 2026-09-04). The guided tour runs on the
-    IS_DEMO build (no backend, seeded fixtures), but the app must never
+    `decision_log.md`, entry dated 2026-09-04). The guided tour runs in demo
+    mode (`TOUR_MODE` / `isTour`, answered from demo fixtures, see
+    invariant 13), but the app must never
     announce itself as a demo. Nothing rendered may say
     Demo/DEMO-/Sample/Example/Placeholder/Fictional or use
     example.com/placeholder hosts: names, addresses, emails, order numbers,
@@ -656,6 +657,50 @@ This repo's runtime-fetched-and-executed files are pinned. See
     provider, a singleton, or app state." `base_sdk` owns the housing only;
     a feature SDK supplies the contents of the mode its page passes down,
     and nothing flows back out (invariant 1).
+
+13. **Demo runs the real repositories through `base_sdk`'s demo
+    interceptor** (standing rule, Ray 2026-09-25; `base_sdk` 1.73.0, core
+    PR #268; LMS pilot agent PR #335; logged in the `agent` repo's
+    `decision_log.md`, entry dated 2026-09-25). `DemoGatewayInterceptor`
+    sits first on every `HttpService` Dio client. While
+    `DemoSession.demoActive` is true (read per request, never cached), a
+    `POST` to the platform gateway (`/api/v1/method/rokct.platform.api`)
+    never reaches the network: the interceptor answers it from
+    `<cmd>.json`, and an unknown `cmd` is rejected with
+    `DemoFixtureMissing` naming the `cmd` (no silent empty value, no network
+    fallback). Outside a demo session, and for non-gateway paths, it is a
+    pass-through. So the repository the app ships is the repository demo
+    and CI exercise; a wrong `cmd` fails in demo instead of hiding behind a
+    swapped repository.
+
+    - No `Demo*`, `Mock*` or `SessionSwitching*` repositories, and no
+      DI ternaries that swap repositories on demo. Register the real one.
+    - Never read `isDemo` / `IS_DEMO`; the only demo question is
+      `DemoSession.demoActive`, asked at call time.
+    - Unchanged: the guided tour (`AppConstants.isTour`, `TOUR_MODE`), demo
+      login (server-marked `is_demo_account` accounts) and demo accounts.
+
+    **How an SDK adds fixtures:**
+
+    1. Put one file per gateway `cmd` in
+       `<sdk>/dart/templates/assets/demo/<sdk>/`, named exactly
+       `<cmd>.json` (e.g. `api.lms.list_courses.json`). The file holds what
+       the backend method returns, i.e. the value inside Frappe's `message`
+       envelope, so the real repository parses it unchanged.
+    2. Install that directory with the Dart manifest (`installs` copies it
+       into the host app, `app_assets` adds `assets/demo/<sdk>/` to the
+       host `pubspec.yaml`).
+    3. In the SDK's DI, call
+       `DemoFixtures.registerAssetDirectory('assets/demo/<sdk>')`.
+       Registration is idempotent; the first registered directory holding
+       `<cmd>.json` wins.
+    4. Optional conveniences inside a fixture: the string values
+       `"$now_iso"` / `"$now_ms"` become the current UTC time, and
+       `{"$demo_select": {"by": "payload.<field>" | "role", "cases": {...},
+       "default": ...}}` answers by a payload field or the signed-in role.
+
+    Every `cmd` a demo-visible screen sends needs a fixture; adding a `cmd`
+    to a repository adds its fixture in the same PR (invariant 11).
 
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
