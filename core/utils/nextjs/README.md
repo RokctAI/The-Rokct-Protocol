@@ -109,14 +109,16 @@ for consistency across the two client SDK kinds — same shape, different manife
 ## Template-based composition (`app_type` names a registry template)
 
 WHAT a Next.js shell composes is resolved through the shared product template
-registry at `core/utils/frappe/composer/` — `sdk_composer.py` imports the
+registry at `core/utils/nextjs/composer/` (sdks[] only; see its README) — `sdk_composer.py` imports the
 frappe composer core (`core/utils/frappe/compose_backend.py`) and calls its
 `resolve_composer_config()`, so both stacks resolve templates with one
 implementation. A shell repo can stay THIN: commit only a one-line
 `.rokct/config/app_type` naming a registry template (e.g. `rokctapp`) and the
 composer materializes `composer.json` from the template before reading the
-SDK list. One template per product carries both stacks' inputs: its `modules`
-array is read by the frappe engine, its `sdks` array by this composer.
+SDK list. The backend's `modules` live separately in
+`core/utils/frappe/composer/`: each side lists its own, so one backend can
+serve many shells. A name missing here falls back to the frappe template's
+`sdks[]` during rollout.
 
 When no protocol checkout is locatable (no `ROKCT_PROTOCOL_DIR`, not running
 from a protocol clone, no sibling `../The-Rokct-Protocol/`), the composer
