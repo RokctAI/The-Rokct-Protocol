@@ -192,6 +192,8 @@ docstrings in `core/utils/flutter/sdk_installer_base.py`.
 | `tr_keys` | Translation-key constants injected into base's `tr_keys.dart` marker block. |
 | `app_assets` | Asset directory entries added to the host `pubspec.yaml` `flutter: assets:` block. |
 | `asset_keys` | `AppAssets` constants injected into base's `app_assets.dart` (first declaration wins on collision). |
+| `platform_permissions` | `{android: [permission names], ios: {UsageKey: "string"}}` — `<uses-permission>` entries and Info.plist usage strings in marker-owned blocks (`update_platform_permissions()`); a name the host already declares wins. |
+| `host_integration` | Host platform config beyond permissions (`update_host_integration()`): `android_application_xml` (whole `<service>`/`<receiver>`/... elements placed inside `<application>` in a marker block, skipped when the host already declares that `android:name`), `android_main_activity` (`{extends, fragment_extends}` — re-bases a `FlutterActivity`/`FlutterFragmentActivity` MainActivity, Kotlin or Java, and adds the import; any other base is left untouched) and `ios_info_plist` (`{Key: [values]}` array values, merged into the host's own array without duplicates or written in a marker block). Flavor lists extend the top level. |
 
 Hook/route entries may carry an `imports` list of FULL import lines
 (`${package}` substituted) that land in `main.dart`'s

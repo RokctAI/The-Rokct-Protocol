@@ -1004,6 +1004,38 @@ def install_sdk_files_and_routes(sdk_name):
     else:
         package_state.pop("platform_permissions", None)
 
+    # Extract and store host_integration: HOST platform config a plugin needs
+    # beyond permissions (audio_service's <service>/<receiver>, its
+    # MainActivity base class, iOS UIBackgroundModes). Shape and merge rules
+    # live on update_host_integration(). A flavor block's lists/arrays extend
+    # the top level; a flavor main_activity replaces it.
+    hi_config = manifest.get("host_integration") or {}
+    flavor_hi = flavor_block.get("host_integration") or {}
+    hi_state = {}
+    app_xml = list(hi_config.get("android_application_xml") or []) + list(
+        flavor_hi.get("android_application_xml") or []
+    )
+    if app_xml:
+        hi_state["android_application_xml"] = app_xml
+    main_activity = flavor_hi.get("android_main_activity") or hi_config.get(
+        "android_main_activity"
+    )
+    if isinstance(main_activity, dict) and main_activity.get("extends"):
+        hi_state["android_main_activity"] = main_activity
+    plist_arrays = {}
+    for block in (hi_config, flavor_hi):
+        for key, values in (block.get("ios_info_plist") or {}).items():
+            merged = plist_arrays.setdefault(key, [])
+            for value in values or []:
+                if value not in merged:
+                    merged.append(value)
+    if plist_arrays:
+        hi_state["ios_info_plist"] = plist_arrays
+    if hi_state:
+        package_state["host_integration"] = hi_state
+    else:
+        package_state.pop("host_integration", None)
+
     # The Android launcher label (home_sdk only): the name under the app's
     # icon. Ray, 2026-09-23: the label must come from the home SDK, not from
     # a CUSTOMER_APP_NAME dart-define in base's build.gradle - that define is
@@ -1051,6 +1083,7 @@ def install_sdk_files_and_routes(sdk_name):
     update_asset_keys_registration()
     update_app_assets_registration()
     update_platform_permissions()
+    update_host_integration()
     update_android_app_name()
     update_layout_integrations()
     update_app_routes()
@@ -1676,6 +1709,11 @@ ANDROID_PERMS_START = "<!-- @sdk-android-permissions-start -->"
 ANDROID_PERMS_END = "<!-- @sdk-android-permissions-end -->"
 IOS_USAGE_START = "<!-- @sdk-ios-usage-keys-start -->"
 IOS_USAGE_END = "<!-- @sdk-ios-usage-keys-end -->"
+ANDROID_APP_XML_START = "<!-- @sdk-android-application-start -->"
+ANDROID_APP_XML_END = "<!-- @sdk-android-application-end -->"
+IOS_ARRAYS_START = "<!-- @sdk-ios-plist-arrays-start -->"
+IOS_ARRAYS_END = "<!-- @sdk-ios-plist-arrays-end -->"
+ANDROID_SRC_DIR = os.path.join(PROJECT_ROOT, "android", "app", "src", "main")
 
 
 ANDROID_STRINGS_FILE = os.path.join(
@@ -1928,6 +1966,323 @@ def _update_ios_usage_keys():
     )
 
 
+def update_host_integration():
+    """Inject SDK-declared host platform config that is not a permission
+    (same ownership model as update_platform_permissions). Each installed
+    SDK's manifest may carry, top-level and/or inside an app_type flavor —
+
+        "host_integration": {
+          "android_application_xml": ["<service android:name=... />", ...],
+          "android_main_activity": {
+            "extends": "com.ryanheise.audioservice.AudioServiceActivity",
+            "fragment_extends": "com.ryanheise.audioservice.AudioServiceFragmentActivity"
+          },
+          "ios_info_plist": {"UIBackgroundModes": ["audio"]}
+        }
+
+    - android_application_xml: whole elements placed inside <application>
+      in a marker-owned block, regenerated from full state every run (a
+      removed SDK's elements vanish). An element whose android:name the host
+      already declares outside the block is skipped (host wins, never
+      duplicated); the same name from two SDKs lands once.
+    - android_main_activity: MainActivity.kt / MainActivity.java is re-based
+      from FlutterActivity to `extends` (from FlutterFragmentActivity to
+      `fragment_extends` when given), adding the import. A file that already
+      extends anything else - the target, or any other FlutterActivity
+      subclass the host chose - is left untouched. Not reverted when the SDK
+      goes: the subclass keeps working as a FlutterActivity.
+    - ios_info_plist: array values per key. A key the host has no entry for
+      is written in a marker-owned block before the closing </dict>; a key
+      the host already declares as an <array> gets the missing values
+      appended to its own array (no duplicates, so reruns are no-ops).
+    """
+    _update_android_application_xml()
+    _update_main_activity()
+    _update_ios_plist_arrays()
+
+
+def _host_integration_entries(field):
+    state = load_state()
+    for pkg_name, pkg_data in sorted(state.get("packages", {}).items()):
+        value = (pkg_data.get("host_integration") or {}).get(field)
+        if value:
+            yield pkg_name, value
+
+
+_ANDROID_NAME_RE = re.compile(r'android:name\s*=\s*"([^"]+)"')
+
+
+def _update_android_application_xml():
+    wanted = {}
+    for pkg_name, elements in _host_integration_entries("android_application_xml"):
+        for element in elements:
+            element = str(element).strip()
+            if not element:
+                continue
+            m = _ANDROID_NAME_RE.search(element)
+            name = m.group(1) if m else element
+            if name in wanted:
+                if wanted[name][1] != element:
+                    print(
+                        f"  [!] android application element '{name}' declared by both '{wanted[name][0]}' and '{pkg_name}' - keeping first"
+                    )
+                continue
+            wanted[name] = (pkg_name, element)
+
+    if not os.path.exists(ANDROID_MANIFEST_FILE):
+        if wanted:
+            compose_warning(
+                f"compose skipped: {ANDROID_MANIFEST_FILE} missing; "
+                f"{len(wanted)} SDK-declared Android application element(s) NOT applied"
+            )
+        return
+
+    with open(ANDROID_MANIFEST_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    body_without_block = re.sub(
+        re.escape(ANDROID_APP_XML_START) + r".*?" + re.escape(ANDROID_APP_XML_END),
+        "",
+        content,
+        flags=re.DOTALL,
+    )
+    # Names on <application> children the host wrote itself (activity,
+    # service, receiver, provider, meta-data ...) own their name.
+    host_owned = set(_ANDROID_NAME_RE.findall(body_without_block))
+
+    lines = [
+        f"        {element}"
+        for name, (_, element) in sorted(wanted.items())
+        if name not in host_owned
+    ]
+    if ANDROID_APP_XML_START not in content and not lines:
+        return
+    inner = ("\n" + "\n".join(lines) + "\n        ") if lines else "\n        "
+    replacement = f"{ANDROID_APP_XML_START}{inner}{ANDROID_APP_XML_END}"
+
+    if ANDROID_APP_XML_START not in content:
+        closing = re.search(r"[ \t]*</application>", content)
+        if not closing:
+            compose_warning(
+                f"no </application> found in {ANDROID_MANIFEST_FILE} (self-closing "
+                f"or absent); SDK-declared Android application elements NOT applied"
+            )
+            return
+        new_content = _replace_or_insert_marker_block(
+            content,
+            ANDROID_APP_XML_START,
+            ANDROID_APP_XML_END,
+            "        " + replacement + "\n",
+            closing.start(),
+        )
+    else:
+        new_content = _replace_or_insert_marker_block(
+            content, ANDROID_APP_XML_START, ANDROID_APP_XML_END, replacement, 0
+        )
+
+    if new_content != content:
+        with open(ANDROID_MANIFEST_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    print(
+        f"[*] Successfully updated AndroidManifest.xml with {len(lines)} SDK-declared application element(s)."
+    )
+
+
+def _find_main_activity():
+    for sub in ("kotlin", "java"):
+        root = os.path.join(ANDROID_SRC_DIR, sub)
+        if not os.path.isdir(root):
+            continue
+        for dirpath, _, files in sorted(os.walk(root)):
+            for fname in ("MainActivity.kt", "MainActivity.java"):
+                if fname in files:
+                    return os.path.join(dirpath, fname)
+    return None
+
+
+def _add_import(content, fqcn, kotlin):
+    line = f"import {fqcn}" + ("" if kotlin else ";")
+    if re.search(r"^import\s+" + re.escape(fqcn) + r"\s*;?\s*$", content, re.M):
+        return content
+    imports = list(re.finditer(r"^import\s+[^\n]*$", content, re.M))
+    if imports:
+        at = imports[-1].end()
+        return content[:at] + "\n" + line + content[at:]
+    pkg = re.search(r"^package\s+[^\n]*$", content, re.M)
+    if pkg:
+        at = pkg.end()
+        return content[:at] + "\n\n" + line + content[at:]
+    return line + "\n\n" + content
+
+
+def _update_main_activity():
+    chosen = None
+    for pkg_name, spec in _host_integration_entries("android_main_activity"):
+        if chosen is None:
+            chosen = (pkg_name, spec)
+        elif spec.get("extends") != chosen[1].get("extends"):
+            compose_warning(
+                f"android_main_activity: '{pkg_name}' wants {spec.get('extends')} but "
+                f"'{chosen[0]}' already claimed {chosen[1].get('extends')}; keeping the first"
+            )
+    if chosen is None:
+        return
+    pkg_name, spec = chosen
+
+    path = _find_main_activity()
+    if not path:
+        compose_warning(
+            f"compose skipped: no MainActivity.kt/.java under {ANDROID_SRC_DIR}; "
+            f"MainActivity base {spec['extends']} from {pkg_name} NOT applied"
+        )
+        return
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    kotlin = path.endswith(".kt")
+    if kotlin:
+        decl = re.search(
+            r"(\bclass\s+MainActivity\s*(?:\([^)]*\))?\s*:\s*)([\w.]+)(\s*\(\s*\))",
+            content,
+        )
+    else:
+        decl = re.search(r"(\bclass\s+MainActivity\s+extends\s+)([\w.]+)()", content)
+    if not decl:
+        compose_warning(
+            f"MainActivity in {path} declares no recognisable base class; "
+            f"MainActivity base {spec['extends']} from {pkg_name} NOT applied"
+        )
+        return
+
+    current = decl.group(2).rsplit(".", 1)[-1]
+    if current == "FlutterActivity":
+        target = spec["extends"]
+    elif current == "FlutterFragmentActivity" and spec.get("fragment_extends"):
+        target = spec["fragment_extends"]
+    else:
+        # Already the target, or a subclass the host chose: leave it be.
+        if current not in (
+            spec["extends"].rsplit(".", 1)[-1],
+            str(spec.get("fragment_extends") or "").rsplit(".", 1)[-1],
+        ):
+            print(
+                f"  [i] MainActivity extends {current}, not FlutterActivity; left untouched ({pkg_name} asked for {spec['extends']})"
+            )
+        return
+
+    simple = target.rsplit(".", 1)[-1]
+    new_content = content[: decl.start(2)] + simple + content[decl.end(2) :]
+    new_content = _add_import(new_content, target, kotlin)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(new_content)
+    print(f"[*] MainActivity now extends {simple} (from {pkg_name})")
+
+
+def _update_ios_plist_arrays():
+    wanted = {}
+    for _, arrays in _host_integration_entries("ios_info_plist"):
+        for key, values in arrays.items():
+            key = str(key).strip()
+            if not key:
+                continue
+            merged = wanted.setdefault(key, [])
+            for value in values or []:
+                if value not in merged:
+                    merged.append(str(value))
+
+    if not os.path.exists(IOS_PLIST_FILE):
+        if wanted:
+            compose_warning(
+                f"compose skipped: {IOS_PLIST_FILE} missing; "
+                f"{len(wanted)} SDK-declared iOS plist array(s) NOT applied"
+            )
+        return
+
+    with open(IOS_PLIST_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+    original = content
+
+    block_re = re.compile(
+        re.escape(IOS_ARRAYS_START) + r".*?" + re.escape(IOS_ARRAYS_END), re.DOTALL
+    )
+    outside = block_re.sub("", content)
+
+    block_lines = []
+    for key in sorted(wanted):
+        values = wanted[key]
+        host = re.search(
+            r"<key>" + re.escape(key) + r"</key>\s*<array>(.*?)</array>",
+            outside,
+            re.DOTALL,
+        )
+        if host:
+            # Host owns the key: merge into its own array in place.
+            have = set(re.findall(r"<string>([^<]*)</string>", host.group(1)))
+            missing = [v for v in values if _xml_escape(v) not in have]
+            if missing:
+                m = re.search(
+                    r"(<key>"
+                    + re.escape(key)
+                    + r"</key>\s*<array>)(.*?)([ \t]*</array>)",
+                    content,
+                    re.DOTALL,
+                )
+                indent = re.search(r"\n([ \t]*)</array>", m.group(0))
+                close_indent = indent.group(1) if indent else "\t"
+                item_indent = close_indent + "\t"
+                body = m.group(2).rstrip(" \t")
+                if not body.endswith("\n"):
+                    body += "\n"
+                body += "".join(
+                    f"{item_indent}<string>{_xml_escape(v)}</string>\n" for v in missing
+                )
+                content = (
+                    content[: m.start(2)]
+                    + body
+                    + close_indent
+                    + "</array>"
+                    + content[m.end(3) :]
+                )
+            continue
+        if re.search(r"<key>" + re.escape(key) + r"</key>", outside):
+            compose_warning(
+                f"{IOS_PLIST_FILE} declares {key} but not as an <array>; "
+                f"SDK-declared values {values} NOT applied"
+            )
+            continue
+        block_lines.append(f"\t<key>{_xml_escape(key)}</key>")
+        block_lines.append("\t<array>")
+        block_lines.extend(f"\t\t<string>{_xml_escape(v)}</string>" for v in values)
+        block_lines.append("\t</array>")
+
+    if block_lines or IOS_ARRAYS_START in content:
+        inner = ("\n" + "\n".join(block_lines) + "\n\t") if block_lines else "\n\t"
+        replacement = f"{IOS_ARRAYS_START}{inner}{IOS_ARRAYS_END}"
+        if IOS_ARRAYS_START in content:
+            content = _replace_or_insert_marker_block(
+                content, IOS_ARRAYS_START, IOS_ARRAYS_END, replacement, 0
+            )
+        else:
+            closing = re.search(r"[ \t]*</dict>\s*</plist>", content)
+            if not closing:
+                compose_warning(
+                    f"no closing </dict></plist> found in {IOS_PLIST_FILE}; "
+                    f"SDK-declared iOS plist arrays NOT applied"
+                )
+                return
+            content = _replace_or_insert_marker_block(
+                content,
+                IOS_ARRAYS_START,
+                IOS_ARRAYS_END,
+                "\t" + replacement + "\n",
+                closing.start(),
+            )
+
+    if content != original:
+        with open(IOS_PLIST_FILE, "w", encoding="utf-8") as f:
+            f.write(content)
+    print(f"[*] Info.plist arrays reconciled for {len(wanted)} SDK-declared key(s).")
+
+
 def update_constants_overrides():
     state = load_state()
     imports = set()
@@ -2003,7 +2358,9 @@ def _integration_start_marker(sdk_name, integration_id):
     return f"// <rokct:integration sdk={sdk_name} id={integration_id}>"
 
 
-def _apply_layout_integration(content, sdk_name, integration_id, placeholder, replacement):
+def _apply_layout_integration(
+    content, sdk_name, integration_id, placeholder, replacement
+):
     """Place one integration block in `content`; return (new_content, applied).
 
     The block is wrapped in per-SDK, per-integration markers. An existing
@@ -2016,11 +2373,16 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
     start_marker = _integration_start_marker(sdk_name, integration_id)
 
     def block(indent):
-        return f"{indent}{start_marker}\n{replacement}\n{indent}{INTEGRATION_END_MARKER}"
+        return (
+            f"{indent}{start_marker}\n{replacement}\n{indent}{INTEGRATION_END_MARKER}"
+        )
 
     marked = re.compile(
-        r"^([ \t]*)" + re.escape(start_marker) + r"[ \t]*\r?\n.*?^[ \t]*"
-        + re.escape(INTEGRATION_END_MARKER) + r"[ \t]*",
+        r"^([ \t]*)"
+        + re.escape(start_marker)
+        + r"[ \t]*\r?\n.*?^[ \t]*"
+        + re.escape(INTEGRATION_END_MARKER)
+        + r"[ \t]*",
         re.MULTILINE | re.DOTALL,
     )
     matches = list(marked.finditer(content))
@@ -2028,9 +2390,13 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
         first = matches[0]
         # Drop duplicate marked copies (with their line break), last first.
         for m in reversed(matches[1:]):
-            tail = re.match(r"\r?\n", content[m.end():])
-            content = content[: m.start()] + content[m.end() + (tail.end() if tail else 0):]
-        content = content[: first.start()] + block(first.group(1)) + content[first.end():]
+            tail = re.match(r"\r?\n", content[m.end() :])
+            content = (
+                content[: m.start()] + content[m.end() + (tail.end() if tail else 0) :]
+            )
+        content = (
+            content[: first.start()] + block(first.group(1)) + content[first.end() :]
+        )
         return content, True
 
     tokens = replacement.split()
@@ -2044,7 +2410,7 @@ def _apply_layout_integration(content, sdk_name, integration_id, placeholder, re
             m = legacy.search(content)
         if m is not None:
             indent = re.match(r"[ \t]*", m.group(0)).group(0)
-            content = content[: m.start()] + block(indent) + content[m.end():]
+            content = content[: m.start()] + block(indent) + content[m.end() :]
             return content, True
 
     idx = content.find(placeholder)
@@ -2983,6 +3349,7 @@ if __name__ == "__main__":
     update_main_dependencies()
     update_database_registration()
     update_platform_permissions()
+    update_host_integration()
     update_layout_integrations()
     update_app_routes()
     update_onboarding_slides()
