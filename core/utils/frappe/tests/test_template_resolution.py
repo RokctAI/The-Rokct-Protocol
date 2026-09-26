@@ -416,9 +416,7 @@ class NextjsSharedCoreTest(TemplateResolutionTestBase):
         # The backend template lists modules only; the shell template is
         # separate - one backend, many shells.
         self.make_registry()
-        self.make_nextjs_registry(
-            config={"name": f"{self.APP}_web", "sdks": self.SDKS}
-        )
+        self.make_nextjs_registry(config={"name": f"{self.APP}_web", "sdks": self.SDKS})
         self.set_app_type(self.TEMPLATE)
         composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
         out = io.StringIO()
@@ -712,7 +710,9 @@ class RealRegistryTest(unittest.TestCase):
         for n in names:
             with open(os.path.join(_NEXTJS_REGISTRY_DIR, n), encoding="utf-8") as fh:
                 data = json.load(fh)
-            self.assertNotIn("modules", data, f"{n}: modules[] belong in frappe/composer")
+            self.assertNotIn(
+                "modules", data, f"{n}: modules[] belong in frappe/composer"
+            )
             self.assertIsInstance(data.get("sdks"), list, f"{n}: no sdks[]")
             for key in ("name", "version", "description", "_comment"):
                 self.assertIn(key, data, f"{n}: missing {key}")

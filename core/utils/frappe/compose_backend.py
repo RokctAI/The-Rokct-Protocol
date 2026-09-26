@@ -609,7 +609,9 @@ def _local_template_dirs(project_root, registry_rel=COMPOSER_TEMPLATES_REL):
     return dirs
 
 
-def fetch_composer_template(name, project_root=None, registry_rel=COMPOSER_TEMPLATES_REL):
+def fetch_composer_template(
+    name, project_root=None, registry_rel=COMPOSER_TEMPLATES_REL
+):
     """Look up registry template <name>.json.
 
     Returns (template_text, source_description), or (None, None) when no
