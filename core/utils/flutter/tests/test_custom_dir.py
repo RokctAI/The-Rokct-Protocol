@@ -13,7 +13,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
-
 """Tests for the app-owned custom/ folder hooks in sdk_installer_base.py.
 
   * no custom/ and no page_overrides -> router and main.dart output is
