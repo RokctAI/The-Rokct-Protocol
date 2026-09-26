@@ -13,7 +13,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
-
 """Tests for sdk_composer.py's version-aware cache reconciliation.
 
 The recorded fingerprint is a hash of the SDK SOURCE (not the cache), and
