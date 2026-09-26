@@ -45,7 +45,7 @@ Output, nextjs_compose_example.json at the repo root (beside the index):
                     index says consume it. Documentation for whoever writes
                     the next product template; no composer reads this key.
 
-The product templates (core/utils/frappe/composer/*.json) and the
+The product templates (core/utils/nextjs/composer/*.json) and the
 SDK_ECOSYSTEM.md census are NOT inputs: core/utils/nextjs/tests/
 test_nextjs_compose_example.py cross-checks them against the index and
 fails on a repo, path or pin that disagrees, and fails when the committed
@@ -173,7 +173,7 @@ def generate(root=REPO_ROOT):
         "_note": (
             "The generic Next.js shell composition. sdks[] is the kernel every Next.js shell "
             "composes and is what RokctAI/factory copies into a new shell as composer.json at "
-            "spawn (renamed, re-pinned live) when core/utils/frappe/composer/<app_type>.json "
+            "spawn (renamed, re-pinned live) when core/utils/nextjs/composer/<app_type>.json "
             "does not exist for that shell. _available_sdks is the menu of every other SDK with "
             "a Next.js half, for writing that product template: copy an entry into "
             "<app_type>.json, set enabled true, flag exactly one non-kernel entry home_sdk true, "

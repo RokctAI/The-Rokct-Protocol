@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Compose template for the South River web shell (RokctAI/southriver-web, app_type southriver-web): a Next.js shell with no backend, so it carries no frappe modules - only the sdks[] the Next.js composer reads",
   "_comment": "The first Next.js-only registry template: RokctAI/southriver-web is a thin shell (a one-line .rokct/config/app_type naming this template) with NO backend - it runs base_sdk's local data mode, reading its site content from the shell's own data/ folder - so modules[] is empty on purpose and there is no rcore app behind it. sdks[] is the kernel (telemetry_sdk, base_sdk) plus corporate_sdk for the company pages. NO auth_sdk: there is no backend to sign in to, so the /login and /register routes and the NextAuth session seam have nothing to talk to. NO lms_sdk or any other product SDK. No home SDK yet (no entry carries home_sdk: true, so base_sdk's landing host serves the shell in composer.json order): the South River home SDK is added to this template later, directly behind base_sdk, when it exists. Data mode is not a template concern - the shell's own composer.json carries its \"data\" key.",
-  "modules": [],
   "sdks": [
     {
       "name": "telemetry_sdk",

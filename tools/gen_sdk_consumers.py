@@ -357,10 +357,10 @@ def census_nextjs_sdks():
 
 def template_nextjs_sdks():
     """{sdk_sdk: owner/repo} for every git entry in a product template's
-    sdks[] (core/utils/frappe/composer/*.json): an SDK a template already
+    sdks[] (core/utils/nextjs/composer/*.json): an SDK a template already
     composes has a Next.js half even before the weekly census lists it."""
     found = {}
-    templates_dir = os.path.join(REPO_ROOT, "core", "utils", "frappe", "composer")
+    templates_dir = os.path.join(REPO_ROOT, "core", "utils", "nextjs", "composer")
     if not os.path.isdir(templates_dir):
         return found
     for name in sorted(os.listdir(templates_dir)):

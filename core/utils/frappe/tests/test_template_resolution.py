@@ -61,12 +61,16 @@ _NEXTJS_COMPOSER_SRC = os.path.join(
     os.path.dirname(_FRAPPE_UTILS_DIR), "nextjs", "sdk_composer.py"
 )
 _REGISTRY_DIR = os.path.join(_FRAPPE_UTILS_DIR, "composer")
+_NEXTJS_REGISTRY_DIR = os.path.join(
+    os.path.dirname(_FRAPPE_UTILS_DIR), "nextjs", "composer"
+)
 
 _module_counter = 0
 
 _ENV_KEYS = (
     "ROKCT_COMPOSE_STRICT",
     "ROKCT_COMPOSER_TEMPLATES_DIR",
+    "ROKCT_NEXTJS_COMPOSER_TEMPLATES_DIR",
     "ROKCT_PROTOCOL_DIR",
 )
 
@@ -383,22 +387,37 @@ class NextjsSharedCoreTest(TemplateResolutionTestBase):
         self.assertTrue(hasattr(core, "fetch_composer_template"))
         self.assertTrue(hasattr(core, "compose_module"))
 
-    def test_template_sdks_key_resolved_via_shared_core(self):
-        self.make_registry(
-            config={
-                "name": f"{self.APP}_app",
-                "modules": [
-                    {"name": "backendmod", "enabled": True, "path": "sdk/x/frappe"}
-                ],
-                "sdks": [
-                    {
-                        "name": "example_sdk",
-                        "enabled": True,
-                        "source": "local",
-                        "path": "sdk/example/nextjs",
-                    }
-                ],
-            }
+    def make_nextjs_registry(self, name=None, config=None):
+        """A Next.js (shell) registry, injected via
+        ROKCT_NEXTJS_COMPOSER_TEMPLATES_DIR. Empty when config is None."""
+        registry = os.path.join(self.root, "_nextjs_registry")
+        os.makedirs(registry, exist_ok=True)
+        if config is not None:
+            with open(
+                os.path.join(registry, f"{name or self.TEMPLATE}.json"),
+                "w",
+                encoding="utf-8",
+                newline="\n",
+            ) as fh:
+                json.dump(config, fh)
+        os.environ["ROKCT_NEXTJS_COMPOSER_TEMPLATES_DIR"] = registry
+        return registry
+
+    SDKS = [
+        {
+            "name": "example_sdk",
+            "enabled": True,
+            "source": "local",
+            "path": "sdk/example/nextjs",
+        }
+    ]
+
+    def test_template_sdks_key_resolved_from_nextjs_registry(self):
+        # The backend template lists modules only; the shell template is
+        # separate - one backend, many shells.
+        self.make_registry()
+        self.make_nextjs_registry(
+            config={"name": f"{self.APP}_web", "sdks": self.SDKS}
         )
         self.set_app_type(self.TEMPLATE)
         composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
@@ -407,10 +426,51 @@ class NextjsSharedCoreTest(TemplateResolutionTestBase):
             self.assertTrue(composer.resolve_composer_config())
         self.assertIn(f"registry template '{self.TEMPLATE}'", out.getvalue())
         config = json.loads(self.read("composer.json"))
-        # The nextjs side of the SAME product template
         self.assertEqual(config["sdks"][0]["name"], "example_sdk")
-        # And the frappe side is present for the backend shell to consume
-        self.assertEqual(config["modules"][0]["name"], "backendmod")
+        self.assertNotIn("modules", config)
+
+    def test_nextjs_template_needs_no_frappe_template(self):
+        # e.g. hosting / telephony shells served by the control backend,
+        # or southriver-web with no backend at all.
+        self.make_registry(name="somethingelse")
+        self.make_nextjs_registry(config={"name": "web", "sdks": self.SDKS})
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        with redirect_stdout(io.StringIO()):
+            self.assertTrue(composer.resolve_composer_config())
+        self.assertEqual(
+            json.loads(self.read("composer.json"))["sdks"][0]["name"], "example_sdk"
+        )
+
+    def test_legacy_combined_frappe_template_falls_back_to_its_sdks(self):
+        # Rollout bridge: no nextjs/<type>.json yet, but the frappe template
+        # still carries sdks[] - the shell composes from that half only.
+        self.make_nextjs_registry()
+        self.make_registry(
+            config={
+                "name": f"{self.APP}_app",
+                "modules": [
+                    {"name": "backendmod", "enabled": True, "path": "sdk/x/frappe"}
+                ],
+                "sdks": self.SDKS,
+            }
+        )
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        with redirect_stdout(io.StringIO()):
+            self.assertTrue(composer.resolve_composer_config())
+        config = json.loads(self.read("composer.json"))
+        self.assertEqual(config["sdks"][0]["name"], "example_sdk")
+        self.assertNotIn("modules", config)
+
+    def test_modules_only_frappe_template_is_no_shell_template(self):
+        self.make_nextjs_registry()
+        self.make_registry()  # modules[] only
+        self.set_app_type(self.TEMPLATE)
+        composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
+        with redirect_stdout(io.StringIO()):
+            self.assertFalse(composer.resolve_composer_config())
+        self.assertFalse(self.exists("composer.json"))
 
     def test_no_app_type_is_noop(self):
         composer = self.load_composer(src=_NEXTJS_COMPOSER_SRC)
@@ -637,8 +697,37 @@ class RealRegistryTest(unittest.TestCase):
                 f"{n} declares neither 'modules' nor 'sdks'",
             )
 
+    def test_frappe_templates_are_backend_only(self):
+        for n in os.listdir(_REGISTRY_DIR):
+            if not n.endswith(".json"):
+                continue
+            with open(os.path.join(_REGISTRY_DIR, n), encoding="utf-8") as fh:
+                data = json.load(fh)
+            self.assertNotIn("sdks", data, f"{n}: sdks[] belong in nextjs/composer")
+            self.assertTrue(data.get("modules"), f"{n}: no modules[]")
+
+    def test_nextjs_templates_are_shell_only(self):
+        names = [n for n in os.listdir(_NEXTJS_REGISTRY_DIR) if n.endswith(".json")]
+        self.assertTrue(names)
+        for n in names:
+            with open(os.path.join(_NEXTJS_REGISTRY_DIR, n), encoding="utf-8") as fh:
+                data = json.load(fh)
+            self.assertNotIn("modules", data, f"{n}: modules[] belong in frappe/composer")
+            self.assertIsInstance(data.get("sdks"), list, f"{n}: no sdks[]")
+            for key in ("name", "version", "description", "_comment"):
+                self.assertIn(key, data, f"{n}: missing {key}")
+
+    def test_rokctapp_shell_does_not_host(self):
+        with open(
+            os.path.join(_NEXTJS_REGISTRY_DIR, "rokctapp.json"), encoding="utf-8"
+        ) as fh:
+            names = [s["name"] for s in json.load(fh)["sdks"]]
+        self.assertNotIn("hosting_sdk", names)
+
     def test_rokctapp_template_carries_nextjs_sdks(self):
-        with open(os.path.join(_REGISTRY_DIR, "rokctapp.json"), encoding="utf-8") as fh:
+        with open(
+            os.path.join(_NEXTJS_REGISTRY_DIR, "rokctapp.json"), encoding="utf-8"
+        ) as fh:
             data = json.load(fh)
         sdk_names = [s["name"] for s in data["sdks"]]
         self.assertIn("erp_sdk", sdk_names)
