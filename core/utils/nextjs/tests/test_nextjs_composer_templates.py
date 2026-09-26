@@ -13,7 +13,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Invariants over the Next.js half of the product templates in
-core/utils/frappe/composer/ (their optional sdks[] arrays, read by
+core/utils/nextjs/composer/ (their sdks[] arrays, read by
 core/utils/nextjs/sdk_composer.py) - the Next.js counterpart of
 core/utils/flutter/tests/test_composer_templates.py.
 
@@ -39,7 +39,7 @@ import unittest
 _UTILS_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
-COMPOSER_DIR = os.path.join(_UTILS_DIR, "frappe", "composer")
+COMPOSER_DIR = os.path.join(_UTILS_DIR, "nextjs", "composer")
 COMPOSER_SRC = os.path.join(_UTILS_DIR, "nextjs", "sdk_composer.py")
 
 # Shared kernel / seam SDKs: composed into every shell, never its home
@@ -56,6 +56,7 @@ NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk", "corporate_sdk")
 EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
+    "rokctapp_web.json": "agent_sdk",
     "deliveryplatform.json": "delivery_sdk",
     "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",

@@ -478,13 +478,15 @@ def load_composer_config():
 # ---------------------------------------------------------------------------
 
 COMPOSER_TEMPLATES_DIR_ENV = "ROKCT_COMPOSER_TEMPLATES_DIR"
+NEXTJS_COMPOSER_TEMPLATES_DIR_ENV = "ROKCT_NEXTJS_COMPOSER_TEMPLATES_DIR"
 PROTOCOL_DIR_ENV = "ROKCT_PROTOCOL_DIR"
 PROTOCOL_REPO_NAME = "The-Rokct-Protocol"
 COMPOSER_TEMPLATES_REL = "core/utils/frappe/composer"
-COMPOSER_TEMPLATES_RAW_BASE = (
-    "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
-    + COMPOSER_TEMPLATES_REL
-)
+# The Next.js shells' registry: sdks[] only. Each side lists its own SDKs, so
+# one backend template (modules[]) can serve many app shells (sdks[]).
+NEXTJS_COMPOSER_TEMPLATES_REL = "core/utils/nextjs/composer"
+PROTOCOL_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
+COMPOSER_TEMPLATES_RAW_BASE = PROTOCOL_RAW_BASE + COMPOSER_TEMPLATES_REL
 
 # Template names are plain registry file basenames — anything else (path
 # separators, dots, uppercase) is treated as "not a template name" so a role
@@ -573,32 +575,41 @@ def carry_shell_owned_keys(template_text, composer_path):
     return json.dumps(merged, indent=2, ensure_ascii=False) + "\n"
 
 
-def _local_template_dirs(project_root):
+def _local_template_dirs(project_root, registry_rel=COMPOSER_TEMPLATES_REL):
     """Candidate registry directories, most explicit first: the env override,
     an explicitly named protocol checkout, the checkout this file itself sits
     in (when running from a protocol clone rather than a standalone fetch),
     and the standard sibling-checkout workspace layout that
     resolve_module_sources() already relies on."""
     dirs = []
-    env_dir = os.environ.get(COMPOSER_TEMPLATES_DIR_ENV)
+    # Each registry has its own env override: ROKCT_COMPOSER_TEMPLATES_DIR
+    # for the frappe (backend) one, ROKCT_NEXTJS_COMPOSER_TEMPLATES_DIR for
+    # the Next.js (shell) one.
+    env_name = (
+        NEXTJS_COMPOSER_TEMPLATES_DIR_ENV
+        if registry_rel == NEXTJS_COMPOSER_TEMPLATES_REL
+        else COMPOSER_TEMPLATES_DIR_ENV
+    )
+    env_dir = os.environ.get(env_name)
     if env_dir:
         dirs.append(env_dir)
     protocol_dir = os.environ.get(PROTOCOL_DIR_ENV)
     if protocol_dir:
-        dirs.append(os.path.join(protocol_dir, *COMPOSER_TEMPLATES_REL.split("/")))
+        dirs.append(os.path.join(protocol_dir, *registry_rel.split("/")))
     here = os.path.dirname(os.path.abspath(__file__))
-    dirs.append(os.path.join(here, "composer"))
+    repo_root = os.path.abspath(os.path.join(here, "..", "..", ".."))
+    dirs.append(os.path.join(repo_root, *registry_rel.split("/")))
     dirs.append(
         os.path.join(
             os.path.dirname(os.path.abspath(project_root)),
             PROTOCOL_REPO_NAME,
-            *COMPOSER_TEMPLATES_REL.split("/"),
+            *registry_rel.split("/"),
         )
     )
     return dirs
 
 
-def fetch_composer_template(name, project_root=None):
+def fetch_composer_template(name, project_root=None, registry_rel=COMPOSER_TEMPLATES_REL):
     """Look up registry template <name>.json.
 
     Returns (template_text, source_description), or (None, None) when no
@@ -611,13 +622,16 @@ def fetch_composer_template(name, project_root=None):
     no local registry can be found at all does this fall back to fetching the
     template from raw.githubusercontent.com — data-only, mirroring the
     flutter CI's curl of composer/<app_type>.json; no fetched code is ever
-    executed."""
+    executed.
+
+    registry_rel picks the registry: core/utils/frappe/composer (the
+    default, backend modules[]) or core/utils/nextjs/composer (shell sdks[])."""
     root = project_root or PROJECT_ROOT
     if not name or not _TEMPLATE_NAME_RE.match(name):
         return None, None
     filename = f"{name}.json"
     saw_local_registry = False
-    for d in _local_template_dirs(root):
+    for d in _local_template_dirs(root, registry_rel):
         if not os.path.isdir(d):
             continue
         saw_local_registry = True
@@ -627,7 +641,7 @@ def fetch_composer_template(name, project_root=None):
                 return fh.read(), candidate
     if saw_local_registry:
         return None, None
-    url = f"{COMPOSER_TEMPLATES_RAW_BASE}/{filename}"
+    url = f"{PROTOCOL_RAW_BASE}{registry_rel}/{filename}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "rokct-composer"})
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -644,7 +658,22 @@ def fetch_composer_template(name, project_root=None):
     return None, None
 
 
-def resolve_composer_config(project_root=None):
+def _sdks_only_template(text):
+    """Reduce a legacy combined template (modules[] + sdks[]) to its Next.js
+    half. Returns None when it carries no sdks[] (nothing for a shell)."""
+    try:
+        data = json.loads(text)
+    except Exception:
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("sdks"), list):
+        return None
+    out = {k: v for k, v in data.items() if k not in ("modules",)}
+    return json.dumps(out, indent=2, ensure_ascii=False) + "\n"
+
+
+def resolve_composer_config(
+    project_root=None, registry_rel=COMPOSER_TEMPLATES_REL, fallback_rel=None
+):
     """Materialize composer.json from the registry template this shell's
     .rokct/config/app_type names, when it names one.
 
@@ -654,18 +683,29 @@ def resolve_composer_config(project_root=None):
     composer.json — the registry templates are canonical (same clobber
     semantics as the flutter CI's manifest-selection step) — except for the
     shell-owned top-level keys (SHELL_OWNED_COMPOSER_KEYS: the "data" mode
-    and its comment), which are carried over from the committed file."""
+    and its comment), which are carried over from the committed file.
+
+    registry_rel selects the registry (frappe by default; the Next.js
+    composer passes NEXTJS_COMPOSER_TEMPLATES_REL). When fallback_rel is given
+    and registry_rel has no <name>.json, the fallback registry's template is
+    used reduced to its sdks[] - the rollout bridge for the legacy combined
+    frappe templates."""
     root = project_root or PROJECT_ROOT
     name = resolve_app_type(root)
     if not name:
         return False
-    text, source = fetch_composer_template(name, root)
+    text, source = fetch_composer_template(name, root, registry_rel)
+    if text is None and fallback_rel:
+        legacy, legacy_source = fetch_composer_template(name, root, fallback_rel)
+        if legacy is not None:
+            text = _sdks_only_template(legacy)
+            source = legacy_source if text is not None else None
     composer_path = os.path.join(root, "composer.json")
     if text is None:
         if not os.path.exists(composer_path):
             print(
                 f"[!] .rokct/config/app_type is '{name}' but no composer template "
-                f"'{name}.json' was found in the registry ({COMPOSER_TEMPLATES_REL}/) "
+                f"'{name}.json' was found in the registry ({registry_rel}/) "
                 f"and no composer.json is committed — nothing to compose."
             )
         return False

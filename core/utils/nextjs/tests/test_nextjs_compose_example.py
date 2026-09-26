@@ -21,7 +21,7 @@ into every new Next.js shell at spawn, so:
 
   * the committed example must equal what the generator produces from the
     committed index now (a refresh of the index without a regenerate fails);
-  * every product template's sdks[] entry (core/utils/frappe/composer/*.json)
+  * every product template's sdks[] entry (core/utils/nextjs/composer/*.json)
     must agree with the index on the SDK's repo, path and install.py pin -
     the index is what the weekly refresh reads from the SDK repos, so a
     template that disagrees is stale (or the index is) and must be fixed in
@@ -46,7 +46,7 @@ _REPO_ROOT = os.path.dirname(
     )
 )
 _GEN_SRC = os.path.join(_REPO_ROOT, "tools", "gen_nextjs_compose_example.py")
-_TEMPLATES_DIR = os.path.join(_REPO_ROOT, "core", "utils", "frappe", "composer")
+_TEMPLATES_DIR = os.path.join(_REPO_ROOT, "core", "utils", "nextjs", "composer")
 _ECOSYSTEM_MD = os.path.join(_REPO_ROOT, "SDK_ECOSYSTEM.md")
 CENSUS_START = "@generated-sdk-census-start"
 CENSUS_END = "@generated-sdk-census-end"
