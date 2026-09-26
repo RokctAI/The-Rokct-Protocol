@@ -55,9 +55,11 @@ needs only the Next.js template.
 
 One template per docker product. **Every tenant product composes an app named
 `rcore`** (the tenant templates share `"name": "rcore_app"`); products differ only
-by module set. The one exception is the hub: `control.json` is named
+by module set. The exceptions are the hub and rPanel: `control.json` is named
 `"control_app"` and composes an app named `control` (per the owner ruling of
-2026-08-20 — matching the live hub's existing app name, so no rename migration).
+2026-08-20 — matching the live hub's existing app name, so no rename migration),
+and `rpanel.json` is named `"rpanel_app"` and composes an app named `rpanel`
+for the same reason (the live app name on the hub).
 `rcore.json` remains the current full composition and stays authoritative until
 the image build switches to the per-product targets below.
 
@@ -70,11 +72,12 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `supacharge.json` | `lms`, `agent` |
 | `startupos.json` | `studio`, `productivity`, `agent` |
 | `telephony.json` | — (telephony module pending extraction from control; `hardware/telephony/frappe` carries a control-persona `manifest.json` and the four Telephony plan fixtures, not a tenant module) |
-| `hosting.json` | — (kept as the hosting product's backend record; the hosting shell's live backend is the control site, where the hosting apps live; hosting module pending extraction from rpanel; `hardware/hosting/frappe` is fixtures-only, no `manifest.json` yet) |
+| `hosting.json` | — (kept as the hosting product's backend record; the hosting shell's live backend is the control site, where the hosting apps live. The hosting module itself is composed by `rpanel.json`, below) |
 | `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder` |
 | `polaris.json` | `polaris`, `crm` (polaris `loan_application` reads CRM Lead.kyc_status) |
 | `control.json` | `tender`, `weather` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; weather composes its hub-side `src/control/` persona tree here — zones#54/#55; the `control` module itself joins when the control repo's SDK-ification lands) |
+| `rpanel.json` | NOT the common set: `hosting` only (the rPanel Frappe shell, RokctAI/rPanel; composes an app named `rpanel`, not `rcore`, keeping the live hub app name as `control.json` does; rpanel installs on the hub beside `control`, which already carries the common modules; the shell commits its composed output because it is open source, Ray 2026-09-26) |
 
 To build a given backend shell:
 

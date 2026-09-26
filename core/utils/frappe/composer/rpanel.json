@@ -1,0 +1,16 @@
+{
+  "name": "rpanel_app",
+  "version": "1.0.0",
+  "description": "Frappe compose template for the rPanel Frappe app shell (composes an app named rpanel)",
+  "_comment": "Ray, 2026-09-26: \"it belong there. hosting and rpanel become app shell repos\" / \"one for frappe another for nexxtjs\": the rPanel backend moved into the hosting SDK's Frappe half (RokctAI/hardware hosting/frappe) and RokctAI/rPanel became the Frappe app shell that composes it; RokctAI/hosting stays the Next.js shell (core/utils/nextjs/composer/hosting.json). Named 'rpanel_app' so the composer derives an app named 'rpanel', the live app name on the hub, as control.json keeps 'control': no app rename and no migration, and every {app_name}.hosting path resolves to rpanel.hosting as before the move. modules[] is hosting alone, with none of the common modules: rpanel installs on the control hub beside the control app, which already composes base/auth/users/subscriptions/gateways/telemetry/comms/wallet, so listing them here would put the same doctypes in two apps on one site. Ray, 2026-09-26: \"only difference is that this app shell get composed as it is open sourced unlike rcore that get composed on the fly\": the rPanel shell commits its composed output rather than composing at deploy time. Merge order: hardware hosting_sdk 1.3.0 (hosting/frappe manifest) first, this template second, the rPanel shell PR third.",
+  "modules": [
+    {
+      "name": "hosting",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hosting/frappe",
+      "ref": "main"
+    }
+  ]
+}
