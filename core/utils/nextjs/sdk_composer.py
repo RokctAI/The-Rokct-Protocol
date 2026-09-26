@@ -630,7 +630,9 @@ COMPOSER_TEMPLATES_REL = "core/utils/nextjs/composer"
 # templates. A name missing from the Next.js registry falls back to the
 # frappe template's sdks[] (when it carries any).
 LEGACY_COMPOSER_TEMPLATES_REL = "core/utils/frappe/composer"
-_PROTOCOL_RAW_BASE = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
+_PROTOCOL_RAW_BASE = (
+    "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/main/"
+)
 COMPOSER_TEMPLATES_RAW_BASE = _PROTOCOL_RAW_BASE + COMPOSER_TEMPLATES_REL
 LEGACY_COMPOSER_TEMPLATES_RAW_BASE = _PROTOCOL_RAW_BASE + LEGACY_COMPOSER_TEMPLATES_REL
 
