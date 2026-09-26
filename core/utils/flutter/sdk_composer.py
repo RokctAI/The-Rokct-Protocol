@@ -1300,7 +1300,11 @@ def ensure_lib_gitignore():
 # Root-level Flutter config files hosts ignore because compose generates them.
 # Written unanchored (`pubspec.yaml`) the rule also ignores every
 # .rokct/cache/<sdk>/pubspec.yaml, the same bug the unanchored `lib/` had.
-ROOT_ONLY_IGNORES = ("pubspec.yaml", "analysis_options.yaml", "flutter_native_splash.yaml")
+ROOT_ONLY_IGNORES = (
+    "pubspec.yaml",
+    "analysis_options.yaml",
+    "flutter_native_splash.yaml",
+)
 
 
 def anchor_root_config_gitignore():
