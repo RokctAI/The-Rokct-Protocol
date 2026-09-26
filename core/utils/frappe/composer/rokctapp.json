@@ -303,18 +303,6 @@
       "_comment": "Read by the Next.js composer (core/utils/nextjs/sdk_composer.py) only — the frappe engine reads 'modules' above and ignores this key. The erp SDK's nextjs half (accounting + hrms app trees). A Next.js shell for this product commits just '.rokct/config/app_type' containing 'rokctapp' and composes this list."
     },
     {
-      "name": "hosting_sdk",
-      "enabled": true,
-      "source": "git",
-      "git": "https://github.com/RokctAI/hardware",
-      "path": "../hardware/hosting/nextjs",
-      "ref": "main",
-      "sha256": "a2f6b895733cacd18dac6f63228bb5537e4ac6ea20c33009a211db2984b4e25f",
-      "home_sdk": false,
-      "_sha256_comment": "SHA-256 of hosting/nextjs/install.py at hardware@8a4da2f (git blob 5843e571, 1101 bytes; hosting_sdk 1.1.0, hardware#36); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
-      "_comment": "The hosting SDK's nextjs half (hosting_sdk 1.1.0, moved into the hardware repo by hardware#36). Composed here as a regular (non-home) SDK, so home_sdk is false. Must not merge before hardware#36 lands on main."
-    },
-    {
       "name": "crm_sdk",
       "enabled": true,
       "source": "git",
