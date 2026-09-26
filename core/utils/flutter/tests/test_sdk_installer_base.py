@@ -324,9 +324,7 @@ class TestIntegrationMarkers(LayoutIntegrationTestBase):
         blk = self.marked(self.REPLACEMENT)
         self.write_target(f"{self.PLACEHOLDER}\n{blk}\nmid\n{blk}\nend\n")
         self.run_update()
-        self.assertEqual(
-            self.read_target(), f"{self.PLACEHOLDER}\n{blk}\nmid\nend\n"
-        )
+        self.assertEqual(self.read_target(), f"{self.PLACEHOLDER}\n{blk}\nmid\nend\n")
 
     def test_two_integrations_same_placeholder_are_stable(self):
         second = self.default_integration()
@@ -366,7 +364,9 @@ class TestConstantsImportGuard(LayoutIntegrationTestBase):
         path = self.installer.CONSTANTS_FILE
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            f.write(f"{self.ANCHOR}\n{existing}class AppConstants {{ static String appName = 'x'; }}\n")
+            f.write(
+                f"{self.ANCHOR}\n{existing}class AppConstants {{ static String appName = 'x'; }}\n"
+            )
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             self.installer.update_constants_overrides()
         with open(path, encoding="utf-8") as f:
@@ -561,6 +561,248 @@ class TestIosUsageKeyInjection(PlatformPermissionsTestBase):
         self.assertEqual(self.read_file(self.IOS_REL), first)
 
 
+AUDIO_SERVICE_XML = (
+    '<service android:name="com.ryanheise.audioservice.AudioService" '
+    'android:foregroundServiceType="mediaPlayback" android:exported="true">'
+    '<intent-filter><action android:name="android.media.browse.MediaBrowserService" />'
+    "</intent-filter></service>"
+)
+MEDIA_RECEIVER_XML = (
+    '<receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" '
+    'android:exported="true"><intent-filter>'
+    '<action android:name="android.intent.action.MEDIA_BUTTON" />'
+    "</intent-filter></receiver>"
+)
+AUDIO_ACTIVITY = {
+    "extends": "com.ryanheise.audioservice.AudioServiceActivity",
+    "fragment_extends": "com.ryanheise.audioservice.AudioServiceFragmentActivity",
+}
+
+MANIFEST_WITH_APPLICATION = """<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:label="app">
+        <activity android:name=".MainActivity" android:exported="true"/>
+    </application>
+</manifest>
+"""
+
+KOTLIN_ACTIVITY = """package com.example.app
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
+"""
+
+JAVA_ACTIVITY = """package com.example.app;
+
+import io.flutter.embedding.android.FlutterActivity;
+
+public class MainActivity extends FlutterActivity {
+}
+"""
+
+PLIST_WITH_BACKGROUND_MODES = """<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+\t<key>UIBackgroundModes</key>
+\t<array>
+\t\t<string>fetch</string>
+\t</array>
+</dict>
+</plist>
+"""
+
+
+class HostIntegrationTestBase(PlatformPermissionsTestBase):
+    KOTLIN_REL = "android/app/src/main/kotlin/com/example/app/MainActivity.kt"
+    JAVA_REL = "android/app/src/main/java/com/example/app/MainActivity.java"
+
+    def hi_state(self, name="demo_sdk", **host_integration):
+        return {
+            name: {
+                "version": "1.0.0",
+                "files": {},
+                "routes": [],
+                "host_integration": host_integration,
+            }
+        }
+
+    def run_hi_update(self):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            self.installer.update_host_integration()
+        return out.getvalue(), err.getvalue()
+
+
+class TestAndroidApplicationXml(HostIntegrationTestBase):
+    def test_injects_inside_application_and_reruns_are_identical(self):
+        self.write_permission_state(
+            self.hi_state(
+                android_application_xml=[AUDIO_SERVICE_XML, MEDIA_RECEIVER_XML]
+            )
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        out, err = self.run_hi_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.ANDROID_REL)
+        self.assertIn(AUDIO_SERVICE_XML, content)
+        self.assertIn(MEDIA_RECEIVER_XML, content)
+        self.assertLess(
+            content.index("<application"), content.index("@sdk-android-application")
+        )
+        self.assertLess(
+            content.index(MEDIA_RECEIVER_XML), content.index("</application>")
+        )
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), content)
+
+    def test_host_declared_name_and_two_sdks_are_not_duplicated(self):
+        state = self.hi_state(android_application_xml=[AUDIO_SERVICE_XML])
+        state.update(
+            self.hi_state(
+                "other_sdk",
+                android_application_xml=[AUDIO_SERVICE_XML, MEDIA_RECEIVER_XML],
+            )
+        )
+        self.write_permission_state(state)
+        host = MANIFEST_WITH_APPLICATION.replace(
+            "</application>",
+            '    <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"/>\n    </application>',
+        )
+        self.write_file(self.ANDROID_REL, host)
+        self.run_hi_update()
+        content = self.read_file(self.ANDROID_REL)
+        self.assertEqual(content.count('com.ryanheise.audioservice.AudioService"'), 1)
+        self.assertEqual(content.count("MediaButtonReceiver"), 1)
+
+    def test_removed_sdk_elements_vanish(self):
+        self.write_permission_state(
+            self.hi_state(android_application_xml=[AUDIO_SERVICE_XML])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        self.run_hi_update()
+        self.write_permission_state({})
+        self.run_hi_update()
+        self.assertNotIn("AudioService", self.read_file(self.ANDROID_REL))
+
+    def test_no_declarations_leave_manifest_untouched(self):
+        self.write_permission_state({})
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), MANIFEST_WITH_APPLICATION)
+
+    def test_missing_manifest_warns(self):
+        self.write_permission_state(
+            self.hi_state(android_application_xml=[AUDIO_SERVICE_XML])
+        )
+        out, err = self.run_hi_update()
+        self.assertIn("NOT applied", out + err)
+
+
+class TestMainActivityBase(HostIntegrationTestBase):
+    def test_kotlin_flutter_activity_is_rebased_once(self):
+        self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))
+        self.write_file(self.KOTLIN_REL, KOTLIN_ACTIVITY)
+        out, err = self.run_hi_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.KOTLIN_REL)
+        self.assertIn("class MainActivity : AudioServiceActivity()", content)
+        self.assertIn(
+            "import com.ryanheise.audioservice.AudioServiceActivity\n", content
+        )
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.KOTLIN_REL), content)
+
+    def test_java_flutter_activity_is_rebased_once(self):
+        self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))
+        self.write_file(self.JAVA_REL, JAVA_ACTIVITY)
+        self.run_hi_update()
+        content = self.read_file(self.JAVA_REL)
+        self.assertIn(
+            "public class MainActivity extends AudioServiceActivity {", content
+        )
+        self.assertIn(
+            "import com.ryanheise.audioservice.AudioServiceActivity;\n", content
+        )
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.JAVA_REL), content)
+
+    def test_fragment_activity_uses_fragment_base(self):
+        self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))
+        self.write_file(
+            self.KOTLIN_REL,
+            KOTLIN_ACTIVITY.replace("FlutterActivity", "FlutterFragmentActivity"),
+        )
+        self.run_hi_update()
+        self.assertIn(
+            ": AudioServiceFragmentActivity()", self.read_file(self.KOTLIN_REL)
+        )
+
+    def test_other_flutter_activity_subclass_is_untouched(self):
+        self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))
+        custom = KOTLIN_ACTIVITY.replace(
+            "class MainActivity : FlutterActivity()",
+            "class MainActivity : MyBrandedFlutterActivity()",
+        )
+        self.write_file(self.KOTLIN_REL, custom)
+        out, err = self.run_hi_update()
+        self.assertNotIn("WARNING", out + err)
+        self.assertEqual(self.read_file(self.KOTLIN_REL), custom)
+
+    def test_missing_activity_warns(self):
+        self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))
+        out, err = self.run_hi_update()
+        self.assertIn("NOT applied", out + err)
+
+
+class TestIosPlistArrays(HostIntegrationTestBase):
+    def test_new_key_lands_in_marker_block_and_reruns_are_identical(self):
+        self.write_permission_state(
+            self.hi_state(ios_info_plist={"UIBackgroundModes": ["audio"]})
+        )
+        self.write_file(self.IOS_REL, PLIST_WITHOUT_MARKERS)
+        out, err = self.run_hi_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.IOS_REL)
+        self.assertIn(
+            "<key>UIBackgroundModes</key>\n\t<array>\n\t\t<string>audio</string>\n\t</array>",
+            content,
+        )
+        self.assertLess(content.index("UIBackgroundModes"), content.index("</dict>"))
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.IOS_REL), content)
+
+    def test_host_array_is_merged_without_duplicates(self):
+        state = self.hi_state(ios_info_plist={"UIBackgroundModes": ["audio", "fetch"]})
+        state.update(
+            self.hi_state("other_sdk", ios_info_plist={"UIBackgroundModes": ["audio"]})
+        )
+        self.write_permission_state(state)
+        self.write_file(self.IOS_REL, PLIST_WITH_BACKGROUND_MODES)
+        self.run_hi_update()
+        content = self.read_file(self.IOS_REL)
+        self.assertEqual(content.count("<key>UIBackgroundModes</key>"), 1)
+        self.assertEqual(content.count("<string>audio</string>"), 1)
+        self.assertEqual(content.count("<string>fetch</string>"), 1)
+        self.assertIn(
+            "\t<array>\n\t\t<string>fetch</string>\n\t\t<string>audio</string>\n\t</array>",
+            content,
+        )
+        self.assertNotIn("@sdk-ios-plist-arrays", content)
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.IOS_REL), content)
+
+    def test_removed_sdk_block_key_vanishes(self):
+        self.write_permission_state(
+            self.hi_state(ios_info_plist={"UIBackgroundModes": ["audio"]})
+        )
+        self.write_file(self.IOS_REL, PLIST_WITHOUT_MARKERS)
+        self.run_hi_update()
+        self.write_permission_state({})
+        self.run_hi_update()
+        self.assertNotIn("UIBackgroundModes", self.read_file(self.IOS_REL))
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -732,7 +974,11 @@ class AppAssetsRegistrationTest(LayoutIntegrationTestBase):
     def write_app_assets_state(self, app_assets):
         state = {
             "packages": {
-                self.SDK_NAME: {"version": "1.0.0", "files": {}, "app_assets": app_assets}
+                self.SDK_NAME: {
+                    "version": "1.0.0",
+                    "files": {},
+                    "app_assets": app_assets,
+                }
             }
         }
         state_file = os.path.join(
@@ -748,7 +994,9 @@ class AppAssetsRegistrationTest(LayoutIntegrationTestBase):
         return out.getvalue(), err.getvalue()
 
     def read_pubspec(self):
-        with open(os.path.join(self.project_root, "pubspec.yaml"), encoding="utf-8") as f:
+        with open(
+            os.path.join(self.project_root, "pubspec.yaml"), encoding="utf-8"
+        ) as f:
             return f.read()
 
     def test_missing_directory_entry_is_skipped_and_named(self):
