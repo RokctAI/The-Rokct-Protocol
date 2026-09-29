@@ -6,9 +6,9 @@ $ErrorActionPreference = "Stop"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 # The initiate.py fetch is pinned to this commit and its SHA-256 is verified
 # before it is executed; a mismatch aborts the install.
-$ProtocolRef = "b710af92513e87a0287b846fc3969688ce5ae9e7"
-$InitiateSha256Local = "bf00fa57ca504e972cc7137f1400772c993a26eb95c14d2dabc009b012d52ec9"
-$InitiateSha256Web = "d7e8839d7bd975c235561b7277461639341ac34865309aaa2d84f107cb971070"
+$ProtocolRef = "111b33289dec7e1de06f480a0496c6b948d4bb2d"
+$InitiateSha256Local = "2b95b7d810e430b43dbf48b9c87a6f4007886b94874d58b96bf611a79348abee"
+$InitiateSha256Web = "d500751d085a2c3d2eab06d0e7e5364e4fa74c4fef7ade0949d851adc3b3bf6a"
 
 $ProtocolRaw = "https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/$ProtocolRef"
 

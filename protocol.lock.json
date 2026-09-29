@@ -1,5 +1,5 @@
 {
-  "ref": "b710af92513e87a0287b846fc3969688ce5ae9e7",
+  "ref": "111b33289dec7e1de06f480a0496c6b948d4bb2d",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
@@ -15,9 +15,9 @@
     "core/utils/agent_delegation/privacy.py": "2ebf709c05a6b6ab2e4dc90615f8b18bee0350acf936e4c17d47ebd9ed557c94",
     "core/utils/agent_delegation/reporter.py": "53bf800992b6e416bc1b86d39fbf76d2bf4901fbac098791e3e5bad58b07e597",
     "core/utils/agent_delegation/update_structure.py": "bc736f306f6067ca19887d15c4df54d6b67581db835684a2f92a040c5c1f95c0",
-    "core/utils/flutter/sdk_composer.py": "3b31a07480f45dd7c061492be95a5ed1b1941a87acf3d3cc53d9d7438a3f4fe6",
-    "core/utils/flutter/sdk_installer_base.py": "693bb6f576651eb3c497866a6c3985a36f93c4b962c6155383fb2bbbc7f1f46b",
-    "core/utils/frappe/compose_backend.py": "698c4a0d3a18cddfcad9d4fee3ea45d2645f872797d3dc10385fc7c0e65edf08",
+    "core/utils/flutter/sdk_composer.py": "051f46dec19ace47ae33c25768d1602cb5d5085587bb79cd5e5b3914675835d1",
+    "core/utils/flutter/sdk_installer_base.py": "6bda42bbcb6fedf838851ac5fb4c1350bb53fb38f0580d27b296dfbee99f081a",
+    "core/utils/frappe/compose_backend.py": "353441cd47a81f24acb5803863087a218e67a132e106d3ca1618d272adf3c5b4",
     "core/utils/opportunities/check_links.py": "03e462c93b4c4b0072a1519f9262a87e775d8f033244ed43d97f5a77718e2e12",
     "core/utils/opportunities/ci/check_links.py": "03e462c93b4c4b0072a1519f9262a87e775d8f033244ed43d97f5a77718e2e12",
     "core/utils/opportunities/eeip/discover_eeip.py": "50c19454cf7594ccf5f81c8f803cb9e63281f4b0335498715fab693a1dfb86a8",
@@ -59,8 +59,8 @@
     "core/utils/startup_os/safe_io.py": "b3afd716283abc9faa2783469a833a0beb8fb5587c0c7dad373c2492efa20368",
     "core/utils/startup_os/schemas.py": "2a9088ae02a07452b428d149dce035fb5c3ef15a9f4047974ddbd4d319de815b",
     "core/utils/startup_os/template_engine.py": "c665050a1149b7ebc6eb0ad91a2d33a955eaa0edcdba198427419447f958f14f",
-    "profiles/local/initiate.py": "bf00fa57ca504e972cc7137f1400772c993a26eb95c14d2dabc009b012d52ec9",
-    "profiles/web/initiate.py": "d7e8839d7bd975c235561b7277461639341ac34865309aaa2d84f107cb971070",
+    "profiles/local/initiate.py": "2b95b7d810e430b43dbf48b9c87a6f4007886b94874d58b96bf611a79348abee",
+    "profiles/web/initiate.py": "d500751d085a2c3d2eab06d0e7e5364e4fa74c4fef7ade0949d851adc3b3bf6a",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
