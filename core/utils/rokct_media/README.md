@@ -25,7 +25,7 @@ pip install "rokct-media[voice] @ git+https://github.com/RokctAI/The-Rokct-Proto
 
 ## A speech job
 
-```
+```text
 tutor_001_ack_02/
 ├── script.md      the words (blank-line paragraphs become segments)
 ├── voice.txt      one registered voice id, or "role: voice_id" lines
