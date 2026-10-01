@@ -150,6 +150,20 @@ def insert_version_block(text, version_block):
     return front_matter + assembled
 
 
+_ADJACENT_QUOTE_RE = re.compile(r"(^>[^\n]*\n)(?:[ \t]*\n)+(?=>)", re.MULTILINE)
+
+
+def separate_adjacent_callouts(text):
+    """Break up consecutive blockquotes separated only by blank lines.
+
+    A blank line between two `>` blocks reads as one quote to markdown
+    tooling (markdownlint MD028), so a callout that directly follows the
+    version block merges with it. An HTML comment between them keeps the
+    quotes distinct without changing what a reader sees.
+    """
+    return _ADJACENT_QUOTE_RE.sub(r"\1\n<!-- -->\n\n", text)
+
+
 def build_provenance_footer(rows, jurisdiction_name):
     """A table saying where every compliance value came from.
 

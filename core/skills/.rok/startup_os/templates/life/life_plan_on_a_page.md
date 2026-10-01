@@ -5,15 +5,15 @@
 {{#if life_purpose}}
 > **Core Purpose**: {{life_purpose}}
 {{else}}
-_No purpose recorded. Answer **Life Purpose** in questions.md — every other
-plan in this suite hangs off it._
+*No purpose recorded. Answer **Life Purpose** in questions.md — every other
+plan in this suite hangs off it.*
 {{/if}}
 
 {{#if personal_values}}
 {{personal_values}}
 {{else}}
-_No values recorded. Answer **Personal Values** — the values you refuse to
-trade away, one per line._
+*No values recorded. Answer **Personal Values** — the values you refuse to
+trade away, one per line.*
 {{/if}}
 
 ---
@@ -46,9 +46,9 @@ trade away, one per line._
 {{daily_rhythm}}
 {{else}}
 
-_No daily rhythm recorded yet. Answer **Daily Rhythm** in questions.md and this
+*No daily rhythm recorded yet. Answer **Daily Rhythm** in questions.md and this
 section fills with your own schedule. The four-cycle shape below is a starting
-suggestion, not a description of how you currently spend your day:_
+suggestion, not a description of how you currently spend your day:*
 
 | Cycle | Purpose |
 | :--- | :--- |
@@ -68,18 +68,18 @@ One line per plan; each links to its own page in this suite.
 {{#if wellness_focus}}
 *   **Health**: {{wellness_focus}}
 {{else}}
-*   **Health**: _answer **Wellness Focus** to set the year's health focus._
+*   **Health**: *answer **Wellness Focus** to set the year's health focus.*
 {{/if}}
 {{#if skill_focus}}
 *   **Craft**: {{skill_focus}}
 {{else}}
-*   **Craft**: _answer **Skill Focus** — the capability you are deliberately
-    building._
+*   **Craft**: *answer **Skill Focus** — the capability you are deliberately
+    building.*
 {{/if}}
 {{#if legacy_vision}}
 *   **Legacy**: {{legacy_vision}}
 {{else}}
-*   **Legacy**: _answer **Legacy Vision** — the long-term stewardship goal._
+*   **Legacy**: *answer **Legacy Vision** — the long-term stewardship goal.*
 {{/if}}
 {{#if daily_rhythm}}
 *   **Rhythm**: protected by the daily loop above.

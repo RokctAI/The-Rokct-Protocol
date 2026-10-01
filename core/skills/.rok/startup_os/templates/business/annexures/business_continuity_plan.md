@@ -18,8 +18,8 @@ core dependency fails.
 {{#if business_continuity_strategy}}
 {{business_continuity_strategy}}
 {{else}}
-_Not recorded. Answer **Business Continuity Strategy** in questions.md — this
-document is a required annexure for most tenders and insurance applications._
+*Not recorded. Answer **Business Continuity Strategy** in questions.md — this
+document is a required annexure for most tenders and insurance applications.*
 {{/if}}
 
 ---
@@ -28,7 +28,7 @@ document is a required annexure for most tenders and insurance applications._
 {{#if key_operational_risks}}
 {{key_operational_risks}}
 {{else}}
-_No risks recorded._
+*No risks recorded.*
 {{/if}}
 
 {{#if capacity_constraints}}
@@ -46,7 +46,7 @@ _No risks recorded._
 For each: record the alternate source, the lead time to switch, and the cost
 difference. An untested alternate is not an alternate.
 {{else}}
-_No suppliers recorded._
+*No suppliers recorded.*
 {{/if}}
 
 ### People
@@ -74,10 +74,10 @@ Set and record these — an untested target is an assumption:
 
 | Measure | Target |
 | :--- | :--- |
-| Recovery time objective (how long until service resumes) | _to be set_ |
-| Recovery point objective (how much data or work may be lost) | _to be set_ |
-| Backup frequency and location | _to be set_ |
-| Last restore test | _to be recorded_ |
+| Recovery time objective (how long until service resumes) | *to be set* |
+| Recovery point objective (how much data or work may be lost) | *to be set* |
+| Backup frequency and location | *to be set* |
+| Last restore test | *to be recorded* |
 
 ---
 

@@ -46,9 +46,9 @@
 {{#if legal_full_name}}
 I, **{{legal_full_name}}**{{#if primary_base}}, of {{primary_base}}{{/if}}, (the principal) make this appointment.
 {{else}}
-_Full legal name not recorded. Answer **Legal Full Name** in questions.md —
+*Full legal name not recorded. Answer **Legal Full Name** in questions.md —
 exactly as it appears on your identity document; institutions verify it
-against the document._
+against the document.*
 {{/if}}
 
 ---
@@ -60,12 +60,12 @@ I appoint **{{attorney_in_fact}}** as my agent and attorney-in-fact.
 {{#if alternate_attorney_in_fact}}
 Should they be unable or unwilling to act, I appoint **{{alternate_attorney_in_fact}}** in their place.
 {{else}}
-_No alternate recorded. Answer **Alternate Attorney In Fact** — an agent who
-emigrates, falls ill or declines leaves this document useless without one._
+*No alternate recorded. Answer **Alternate Attorney In Fact** — an agent who
+emigrates, falls ill or declines leaves this document useless without one.*
 {{/if}}
 {{else}}
-_No agent recorded. Answer **Attorney In Fact** in questions.md — the person
-authorised to act for you. No agent is ever assumed._
+*No agent recorded. Answer **Attorney In Fact** in questions.md — the person
+authorised to act for you. No agent is ever assumed.*
 {{/if}}
 
 ---
@@ -75,14 +75,14 @@ authorised to act for you. No agent is ever assumed._
 {{#if powers_granted}}
 {{powers_granted}}
 
-_From **Powers Granted**. The narrower and more specific the wording, the
+*From **Powers Granted**. The narrower and more specific the wording, the
 more readily institutions accept it — "general authority" often triggers
-extra scrutiny where a named account and named transaction would not._
+extra scrutiny where a named account and named transaction would not.*
 {{else}}
-_No powers recorded. Answer **Powers Granted** — general authority, or
+*No powers recorded. Answer **Powers Granted** — general authority, or
 special powers one per line (a named bank account, a property transaction, a
 company filing). A power of attorney that grants nothing specific does
-nothing specific._
+nothing specific.*
 {{/if}}
 
 ---
@@ -92,11 +92,11 @@ nothing specific._
 {{#if poa_effective_conditions}}
 {{poa_effective_conditions}}
 
-_From **POA Effective Conditions**._
+*From **POA Effective Conditions**.*
 {{else}}
-_Not recorded. Answer **POA Effective Conditions** — from when the power
+*Not recorded. Answer **POA Effective Conditions** — from when the power
 operates and under what conditions: immediately, from a date, or only for a
-named transaction or period._
+named transaction or period.*
 {{/if}}
 
 This power may be revoked by me at any time while I have capacity, by
@@ -117,6 +117,6 @@ Signed at ______________________ on this ______ day of ______________________.
 
 **Witness 2**: Name ______________________ Signature ______________________
 
-_Some institutions and registries require their own forms, certified copies
+*Some institutions and registries require their own forms, certified copies
 or notarisation — ask each institution that will rely on this power what it
-accepts **before** signing._
+accepts **before** signing.*

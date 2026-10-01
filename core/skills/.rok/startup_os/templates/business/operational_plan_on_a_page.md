@@ -15,8 +15,8 @@
 {{#if key_processes}}
 {{key_processes}}
 {{else}}
-_Not recorded. Answer **Key Processes** — the repeatable steps from order to
-delivery. This is the section an operations hire is onboarded from._
+*Not recorded. Answer **Key Processes** — the repeatable steps from order to
+delivery. This is the section an operations hire is onboarded from.*
 {{/if}}
 
 {{#if technical_architecture}}
@@ -38,7 +38,7 @@ delivery. This is the section an operations hire is onboarded from._
 Record an alternate source for each critical input — supplier concentration is
 the most common single point of failure in a small operation.
 {{else}}
-_No suppliers recorded._
+*No suppliers recorded.*
 {{/if}}
 {{#if delivery_terms}}
 
@@ -51,7 +51,7 @@ _No suppliers recorded._
 {{#if capacity_constraints}}
 {{capacity_constraints}}
 {{else}}
-_Not recorded. Answer **Capacity Constraints** — what limits output today._
+*Not recorded. Answer **Capacity Constraints** — what limits output today.*
 {{/if}}
 *   **Current team**: {{personnel_count}}
 
@@ -61,7 +61,7 @@ _Not recorded. Answer **Capacity Constraints** — what limits output today._
 {{#if quality_standards}}
 {{quality_standards}}
 {{else}}
-_No standards or certifications recorded._
+*No standards or certifications recorded.*
 {{/if}}
 {{#if_jurisdiction ZA}}
 {{#if quality_standards}}
@@ -77,5 +77,5 @@ and inspection records in the compliance folder alongside the corporate document
 {{#if business_continuity_strategy}}
 {{business_continuity_strategy}}
 {{else}}
-_No continuity plan recorded._
+*No continuity plan recorded.*
 {{/if}}

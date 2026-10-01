@@ -5,9 +5,9 @@
 {{#if financial_philosophy}}
 {{financial_philosophy}}
 {{else}}
-_No philosophy recorded. Answer **Financial Philosophy** in questions.md — the
+*No philosophy recorded. Answer **Financial Philosophy** in questions.md — the
 principles that govern how you earn, spend and invest, one per line. Without
-them this plan is arithmetic with no compass._
+them this plan is arithmetic with no compass.*
 {{/if}}
 
 ---
@@ -16,9 +16,9 @@ them this plan is arithmetic with no compass._
 
 {{life_financial_summary}}
 
-_Every figure above is computed from your own answers; nothing is estimated
+*Every figure above is computed from your own answers; nothing is estimated
 for you. A line that reads "Pending" unlocks when its question is answered
-with an amount._
+with an amount.*
 
 ---
 
@@ -42,8 +42,8 @@ with an amount._
 {{#if beneficiaries}}
 *   **Beneficiaries**: {{beneficiaries}}
 {{else}}
-*   **Beneficiaries**: _not recorded — answer **Beneficiaries**; cover with no
-    named beneficiary is settled by default rules, not by you._
+*   **Beneficiaries**: *not recorded — answer **Beneficiaries**; cover with no
+    named beneficiary is settled by default rules, not by you.*
 {{/if}}
 {{#if key_relationships}}
 *   **Trusted Circle**: {{key_relationships}}
@@ -62,7 +62,7 @@ with an amount._
 {{#if executor}}
 *   **Executor**: {{executor}}{{#if alternate_executor}} (alternate: {{alternate_executor}}){{/if}}
 {{else}}
-*   **Executor**: _not recorded — answer **Executor** in questions.md._
+*   **Executor**: *not recorded — answer **Executor** in questions.md.*
 {{/if}}
 {{#if legacy_vision}}
 *   **Legacy Vision**: {{legacy_vision}}

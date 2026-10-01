@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > Every registration and compliance value below carries the suite's
 > evidence discipline: a value appears only when a certificate on file (or
-> an explicit operator override) supports it. A field reading _Pending_ must
+> an explicit operator override) supports it. A field reading *Pending* must
 > be resolved **before** submission — a misstated compliance status in a
 > tender is disqualifying at best.
 
@@ -21,8 +21,8 @@
 | **Postal address** | {{postal_address}} |
 
 {{else}}
-_No company-registry regime is configured for {{jurisdiction_name}}; attach
-the local proof of legal existence the funder specifies._
+*No company-registry regime is configured for {{jurisdiction_name}}; attach
+the local proof of legal existence the funder specifies.*
 
 {{/if_feature}}
 {{#if_feature tax_clearance}}
@@ -68,8 +68,8 @@ log before every submission.
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Answer **Core Value Proposition** in questions.md — funders read this line
-first._
+*Answer **Core Value Proposition** in questions.md — funders read this line
+first.*
 {{/if}}
 
 {{#if primary_products}}
@@ -95,9 +95,9 @@ first._
 {{#if achievements_to_date}}
 {{achievements_to_date}}
 {{else}}
-_No track record recorded. Answer **Achievements To Date** in questions.md —
+*No track record recorded. Answer **Achievements To Date** in questions.md —
 delivered contracts, grants, pilots and awards are what an adjudicator
-scores._
+scores.*
 {{/if}}
 
 {{#if reference_contacts}}
@@ -105,12 +105,12 @@ scores._
 
 {{reference_contacts}}
 
-_From **Reference Contacts** — confirm each person has agreed to be named
-before every submission._
+*From **Reference Contacts** — confirm each person has agreed to be named
+before every submission.*
 {{else}}
-_No references recorded. Answer **Reference Contacts** — one per line:
+*No references recorded. Answer **Reference Contacts** — one per line:
 organisation, contact person, role, phone or email. Most tenders score
-references; an empty schedule scores zero._
+references; an empty schedule scores zero.*
 {{/if}}
 
 ---
@@ -120,9 +120,9 @@ references; an empty schedule scores zero._
 {{#if executive_team}}
 {{executive_team}}
 {{else}}
-_Not recorded. Answer **Executive Team** in questions.md — one line per
+*Not recorded. Answer **Executive Team** in questions.md — one line per
 person with the role they own. Attach CVs and certified qualifications as
-the funder requires._
+the funder requires.*
 {{/if}}
 
 ---
@@ -132,7 +132,7 @@ the funder requires._
 The generic set most grant and tender packs require. The compiled suite
 covers the first group; the rest are source documents to collect:
 
-*   Entity registration block — section 1 of this pack{{#if_feature company_registry}} (backed by the {{registry_name}} certificate on file, or _Pending_ until it is){{/if_feature}}
+*   Entity registration block — section 1 of this pack{{#if_feature company_registry}} (backed by the {{registry_name}} certificate on file, or *Pending* until it is){{/if_feature}}
 {{#if_feature tax_clearance}}
 *   Tax clearance / compliance PIN — current, unexpired (see the compliance log's expiry warnings)
 {{/if_feature}}
@@ -145,6 +145,6 @@ covers the first group; the rest are source documents to collect:
 *   Signed declaration-of-interest and bid forms — from the tender pack itself
 *   Financial statements or management accounts — as specified by the funder
 
-_Check the specific bid document's returnables against this list — every
+*Check the specific bid document's returnables against this list — every
 tender adds its own forms, and a missing returnable is an automatic
-disqualification._
+disqualification.*

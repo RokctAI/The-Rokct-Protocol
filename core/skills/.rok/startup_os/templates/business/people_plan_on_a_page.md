@@ -21,7 +21,7 @@
 {{#if hr_vision}}
 {{hr_vision}}
 {{else}}
-_Not recorded. Answer **HR Vision** — the kind of team being built and how._
+*Not recorded. Answer **HR Vision** — the kind of team being built and how.*
 {{/if}}
 
 {{#if organisational_culture}}
@@ -35,7 +35,7 @@ _Not recorded. Answer **HR Vision** — the kind of team being built and how._
 {{#if hiring_plan}}
 {{hiring_plan}}
 {{else}}
-_No hiring plan recorded. Answer **Hiring Plan** — roles, timing and cost._
+*No hiring plan recorded. Answer **Hiring Plan** — roles, timing and cost.*
 {{/if}}
 
 ---
@@ -44,8 +44,8 @@ _No hiring plan recorded. Answer **Hiring Plan** — roles, timing and cost._
 {{#if key_person_dependencies}}
 {{key_person_dependencies}}
 {{else}}
-_Not assessed. Answer **Key Person Dependencies** — in a small team this is
-usually the single largest operational risk, and a lender will ask about it._
+*Not assessed. Answer **Key Person Dependencies** — in a small team this is
+usually the single largest operational risk, and a lender will ask about it.*
 {{/if}}
 
 {{#if succession_arrangements}}

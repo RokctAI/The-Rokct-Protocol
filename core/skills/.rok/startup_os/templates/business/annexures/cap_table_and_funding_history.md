@@ -13,10 +13,10 @@
 
 {{cap_table_ownership_check}}
 {{else}}
-_No percentage split recorded. Answer **Shareholder Distribution** in
+*No percentage split recorded. Answer **Shareholder Distribution** in
 questions.md — one holder per line, with the stated percentage
 (e.g. `Ray Sinyage: 60%`). The compiler then sums the stated shares and
-flags an allocation that does not reach 100%._
+flags an allocation that does not reach 100%.*
 {{/if}}
 
 ---
@@ -26,14 +26,14 @@ flags an allocation that does not reach 100%._
 {{#if cap_table}}
 {{cap_table}}
 
-_Stated in **Cap Table** — share classes, option pool, outstanding notes or
+*Stated in **Cap Table** — share classes, option pool, outstanding notes or
 SAFEs, and special investor rights, as supplied by the owner. Verify against
-the signed instruments before relying on it._
+the signed instruments before relying on it.*
 {{else}}
-_Not recorded. Answer **Cap Table** in questions.md — beyond the percentage
+*Not recorded. Answer **Cap Table** in questions.md — beyond the percentage
 split: share classes, option pool size, outstanding notes or SAFEs, and any
 special investor rights. This is a Level 3 (diligence-grade) answer; an
-investor's counsel will ask for exactly this._
+investor's counsel will ask for exactly this.*
 {{/if}}
 
 ---
@@ -43,14 +43,14 @@ investor's counsel will ask for exactly this._
 {{#if funding_history}}
 {{funding_history}}
 
-_Stated in **Funding History** — for each round or grant, record the
+*Stated in **Funding History** — for each round or grant, record the
 instrument, the date, the amount and the counterparty so this section reads
-as a round-by-round ledger._
+as a round-by-round ledger.*
 {{else}}
-_Nothing recorded. Answer **Funding History** in questions.md — what has been
+*Nothing recorded. Answer **Funding History** in questions.md — what has been
 raised or granted so far, from whom, one round or grant per line with the
 instrument, date and amount. If nothing has been raised, say so explicitly:
-"bootstrapped, no external capital" is a real answer._
+"bootstrapped, no external capital" is a real answer.*
 {{/if}}
 
 ---
@@ -63,7 +63,7 @@ instrument, date and amount. If nothing has been raised, say so explicitly:
 *   **Planned allocation**: {{capital_allocation}}
 {{/if}}
 {{else}}
-_No open ask recorded. If capital is being sought, answer
+*No open ask recorded. If capital is being sought, answer
 **Funding Requirement** — the amount and what it buys — so a reader can see
-what this cap table looks like after the round._
+what this cap table looks like after the round.*
 {{/if}}

@@ -4,10 +4,10 @@
 {{#if technical_architecture}}
 {{technical_architecture}}
 {{else}}
-_Not recorded. Answer **Technical Architecture** in questions.md. For a
+*Not recorded. Answer **Technical Architecture** in questions.md. For a
 software venture this is stack and infrastructure; for a manufacturer it is
 plant, equipment and process flow; for a service business it is systems and
-people._
+people.*
 {{/if}}
 
 {{#if product_components}}
@@ -26,7 +26,7 @@ people._
 {{#if key_processes}}
 {{key_processes}}
 {{else}}
-_Core processes not recorded. Answer **Key Processes** — order to delivery._
+*Core processes not recorded. Answer **Key Processes** — order to delivery.*
 {{/if}}
 
 {{#if capacity_constraints}}
@@ -40,8 +40,8 @@ _Core processes not recorded. Answer **Key Processes** — order to delivery._
 {{#if business_continuity_strategy}}
 {{business_continuity_strategy}}
 {{else}}
-_No continuity plan recorded. Answer **Business Continuity Strategy** — what
-happens when the main dependency fails._
+*No continuity plan recorded. Answer **Business Continuity Strategy** — what
+happens when the main dependency fails.*
 {{/if}}
 
 {{#if service_levels}}

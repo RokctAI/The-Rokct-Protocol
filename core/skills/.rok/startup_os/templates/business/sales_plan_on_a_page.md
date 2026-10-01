@@ -26,8 +26,8 @@
 {{#if sales_process}}
 {{sales_process}}
 {{else}}
-_Not recorded. Answer **Sales Process** — the steps from first contact to
-signature, and who owns each._
+*Not recorded. Answer **Sales Process** — the steps from first contact to
+signature, and who owns each.*
 {{/if}}
 
 {{#if acquisition_channels}}
@@ -48,8 +48,8 @@ signature, and who owns each._
 *   **Warranty**: {{warranty_terms}}
 {{/if}}
 {{#unless payment_terms}}
-_No commercial terms recorded. Answer **Payment Terms**, **Delivery Terms** and
-**Warranty Terms** — a sales conversation stalls without them._
+*No commercial terms recorded. Answer **Payment Terms**, **Delivery Terms** and
+**Warranty Terms** — a sales conversation stalls without them.*
 {{/unless}}
 
 ---

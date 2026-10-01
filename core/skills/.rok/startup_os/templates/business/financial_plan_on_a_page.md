@@ -31,13 +31,13 @@ question in `questions.md` or a calculation from your own accounts:
 
 | Metric | Value | Notes |
 | :--- | :--- | :--- |
-| Average revenue per customer | _to be supplied_ | Per month or per order |
-| Gross margin % | _to be supplied_ | By product or service line |
-| Customer acquisition cost | _to be supplied_ | Fully loaded, including salaries |
-| CAC payback period | _to be supplied_ | Months to recover acquisition cost |
-| Monthly fixed cost base | _to be supplied_ | Rent, salaries, subscriptions |
-| Break-even revenue | _to be supplied_ | Fixed costs ÷ gross margin % |
-| Cash runway | _to be supplied_ | Months at current burn |
+| Average revenue per customer | *to be supplied* | Per month or per order |
+| Gross margin % | *to be supplied* | By product or service line |
+| Customer acquisition cost | *to be supplied* | Fully loaded, including salaries |
+| CAC payback period | *to be supplied* | Months to recover acquisition cost |
+| Monthly fixed cost base | *to be supplied* | Rent, salaries, subscriptions |
+| Break-even revenue | *to be supplied* | Fixed costs ÷ gross margin % |
+| Cash runway | *to be supplied* | Months at current burn |
 
 ---
 
@@ -45,8 +45,8 @@ question in `questions.md` or a calculation from your own accounts:
 {{#if funding_requirement}}
 {{funding_requirement}}
 {{else}}
-_No capital requirement recorded. Answer **Funding Requirement** in questions.md
-if this venture is raising._
+*No capital requirement recorded. Answer **Funding Requirement** in questions.md
+if this venture is raising.*
 {{/if}}
 
 ---
@@ -71,8 +71,8 @@ if this venture is raising._
 *   {{privacy_law}} compliance: data-protection controls and record-keeping
 {{/if}}
 {{#unless jurisdiction_code}}
-*   _Jurisdiction not declared, so no statutory cost lines are listed. Add a
-    **Jurisdiction** answer to questions.md._
+*   *Jurisdiction not declared, so no statutory cost lines are listed. Add a
+    **Jurisdiction** answer to questions.md.*
 {{/unless}}
 
 ---

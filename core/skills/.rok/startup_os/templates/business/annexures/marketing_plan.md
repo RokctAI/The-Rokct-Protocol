@@ -6,8 +6,8 @@ Marketing exists to serve these objectives:
 
 {{strategic_objectives}}
 {{else}}
-_No strategic objectives recorded. Marketing without a business objective
-becomes activity for its own sake — answer **Strategic Objectives**._
+*No strategic objectives recorded. Marketing without a business objective
+becomes activity for its own sake — answer **Strategic Objectives**.*
 {{/if}}
 
 ---
@@ -59,7 +59,7 @@ becomes activity for its own sake — answer **Strategic Objectives**._
 {{#if growth_strategy}}
 {{growth_strategy}}
 {{else}}
-_No channels recorded._
+*No channels recorded.*
 {{/if}}
 {{/if}}
 
@@ -74,7 +74,7 @@ _No channels recorded._
 {{#if marketing_budget}}
 {{marketing_budget}}
 {{else}}
-_No budget recorded. Answer **Marketing Budget** — amount and period._
+*No budget recorded. Answer **Marketing Budget** — amount and period.*
 {{/if}}
 
 ---
@@ -83,11 +83,11 @@ _No budget recorded. Answer **Marketing Budget** — amount and period._
 
 | Metric | Target | Review |
 | :--- | :--- | :--- |
-| Cost per lead | _set_ | Monthly |
-| Cost per acquired customer | _set_ | Monthly |
-| Lead-to-customer conversion | _set_ | Monthly |
-| Revenue by channel | _set_ | Monthly |
-| Payback period | _set_ | Quarterly |
+| Cost per lead | *set* | Monthly |
+| Cost per acquired customer | *set* | Monthly |
+| Lead-to-customer conversion | *set* | Monthly |
+| Revenue by channel | *set* | Monthly |
+| Payback period | *set* | Quarterly |
 
 ---
 

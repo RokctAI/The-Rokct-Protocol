@@ -4,10 +4,10 @@
 
 {{#if life_purpose}}
 > **Core Objective**: Structure daily output around the core purpose:
-> _{{life_purpose}}_.
+> *{{life_purpose}}*.
 {{else}}
-_No purpose recorded. Answer **Life Purpose** in questions.md — accountability
-without a purpose is just busyness._
+*No purpose recorded. Answer **Life Purpose** in questions.md — accountability
+without a purpose is just busyness.*
 {{/if}}
 
 ---
@@ -36,15 +36,15 @@ without a purpose is just busyness._
 {{#if daily_rhythm}}
 {{daily_rhythm}}
 {{else}}
-_No daily rhythm recorded. Answer **Daily Rhythm** — what a productive day
-actually looks like, in your own hours._
+*No daily rhythm recorded. Answer **Daily Rhythm** — what a productive day
+actually looks like, in your own hours.*
 {{/if}}
 
 {{#if focus_blocks}}
 *   **Deep-Focus Blocks**: {{focus_blocks}}
 {{else}}
-*   **Deep-Focus Blocks**: _not recorded — answer **Focus Blocks** with when
-    they run and for how long._
+*   **Deep-Focus Blocks**: *not recorded — answer **Focus Blocks** with when
+    they run and for how long.*
 {{/if}}
 
 ---
@@ -54,8 +54,8 @@ actually looks like, in your own hours._
 {{#if productivity_tools}}
 {{productivity_tools}}
 {{else}}
-_No tools recorded. Answer **Productivity Tools** — the systems that keep your
-commitments visible._
+*No tools recorded. Answer **Productivity Tools** — the systems that keep your
+commitments visible.*
 {{/if}}
 
 ---
@@ -65,6 +65,6 @@ commitments visible._
 {{#if key_bottlenecks}}
 {{key_bottlenecks}}
 {{else}}
-_No bottlenecks recorded. Answer **Key Bottlenecks** — naming what limits you
-is the first accountability act._
+*No bottlenecks recorded. Answer **Key Bottlenecks** — naming what limits you
+is the first accountability act.*
 {{/if}}

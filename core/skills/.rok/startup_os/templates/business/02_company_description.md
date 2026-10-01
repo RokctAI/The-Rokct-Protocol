@@ -64,15 +64,15 @@
 {{#if mission_statement}}
 {{mission_statement}}
 {{else}}
-_Not yet recorded. Answer **Mission Statement** in questions.md — what the
-venture does, for whom, and why._
+*Not yet recorded. Answer **Mission Statement** in questions.md — what the
+venture does, for whom, and why.*
 {{/if}}
 
 ### Vision
 {{#if vision_statement}}
 {{vision_statement}}
 {{else}}
-_Not yet recorded. Answer **Vision Statement** in questions.md._
+*Not yet recorded. Answer **Vision Statement** in questions.md.*
 {{/if}}
 
 {{#if core_philosophy}}
@@ -115,9 +115,9 @@ _Not yet recorded. Answer **Vision Statement** in questions.md._
 
 {{#unless technical_architecture}}
 {{#unless product_components}}
-_How the offering is built and delivered has not been recorded. Answer
+*How the offering is built and delivered has not been recorded. Answer
 **Product Components** and **Technical Architecture** in questions.md — a
-funder or partner reading this document will look for it here._
+funder or partner reading this document will look for it here.*
 {{/unless}}
 {{/unless}}
 
@@ -140,6 +140,6 @@ funder or partner reading this document will look for it here._
 {{/if_feature}}
 {{#unless quality_standards}}
 {{#unless privacy_law}}
-_No standards or certifications recorded._
+*No standards or certifications recorded.*
 {{/unless}}
 {{/unless}}

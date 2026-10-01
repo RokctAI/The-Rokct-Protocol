@@ -12,8 +12,8 @@
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_No value proposition recorded — answer **Core Value Proposition** in
-questions.md so this update opens with what the venture does._
+*No value proposition recorded — answer **Core Value Proposition** in
+questions.md so this update opens with what the venture does.*
 {{/if}}
 
 ---
@@ -41,14 +41,14 @@ questions.md so this update opens with what the venture does._
 {{#if business_milestone_ledger}}
 {{business_milestone_ledger}}
 
-_From the milestone ledger in questions.md — log each win as it happens
+*From the milestone ledger in questions.md — log each win as it happens
 (`startupos milestone --type business`) and it appears here at the next
-compile._
+compile.*
 {{else}}
-_No milestones logged yet. Log them as they happen —
+*No milestones logged yet. Log them as they happen —
 `startupos milestone --type business --name <Instance> --category "Sales"
 --entry "Signed the first paying clinic."` — and this section becomes the
-month-by-month record investors actually read._
+month-by-month record investors actually read.*
 {{/if}}
 
 ---
@@ -61,9 +61,9 @@ month-by-month record investors actually read._
 *   **How it would be deployed**: {{capital_allocation}}
 {{/if}}
 {{else}}
-_No open ask recorded. If there is one — capital, introductions, hires —
+*No open ask recorded. If there is one — capital, introductions, hires —
 answer **Funding Requirement** in questions.md; an update without an ask
-wastes the reader's attention._
+wastes the reader's attention.*
 {{/if}}
 {{#if hiring_plan}}
 *   **Hiring**: {{hiring_plan}}
@@ -82,8 +82,8 @@ wastes the reader's attention._
 
 {{fin_cohort_analysis}}
 {{else}}
-_These sections unlock at depth Level 3 (diligence-grade). The Depth line in
+*These sections unlock at depth Level 3 (diligence-grade). The Depth line in
 Document Control names the exact answers still missing — typically
 **CAC By Channel**, **Retention Cohorts**, **Customer Churn Rate** and their
-Level 3 siblings._
+Level 3 siblings.*
 {{/if}}
