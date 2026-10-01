@@ -45,7 +45,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "111b33289dec7e1de06f480a0496c6b948d4bb2d"
+PROTOCOL_REF = "6786f38f12a221b9b7b93341a283b175f8ead11d"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.
@@ -86,10 +86,10 @@ EXPECTED_SHA256 = {
     "core/utils/startup_os/jurisdictions.py": "5a1632cf877363ce961d8b4d8f7810e35c67a0d0a3c0170e62aef30fe34f9875",
     "core/utils/startup_os/compliance.py": "a62b80ae186075365e0f9507873f792d8a062207b442bb8bf65d4e22569c3050",
     "core/utils/startup_os/template_engine.py": "c665050a1149b7ebc6eb0ad91a2d33a955eaa0edcdba198427419447f958f14f",
-    "core/utils/startup_os/documents.py": "ca094c13323b405ca39bbb0768feab546590116e954438468cd6232b56a0fda6",
+    "core/utils/startup_os/documents.py": "0a276531fe935a63815f3e174c55868d0d9e19d63fa026c2d7f5e925ac6248ed",
     "core/utils/startup_os/safe_io.py": "b3afd716283abc9faa2783469a833a0beb8fb5587c0c7dad373c2492efa20368",
     "core/utils/startup_os/schemas.py": "2a9088ae02a07452b428d149dce035fb5c3ef15a9f4047974ddbd4d319de815b",
-    "core/utils/startup_os/compiler.py": "8031c6b8dad90334dfdd0d09ed4965c14ab858417bf199fd796c58e8689d5997",
+    "core/utils/startup_os/compiler.py": "df7742c00024a8a21017bdf64d11e6e21ea0ae26d1a5f2371c04e0a4e6281067",
     "core/utils/startup_os/agent_bridge.py": "0e36549068e0361ef62f1bd71ba50dd74666553cf514ce453d5d1101aac5f070",
     "core/utils/startup_os/polish.py": "55c130b9158e709574424939473364d4af2172d90bdd2de57c669d863b191ef5",
     "core/utils/startup_os/branding.py": "c1765bf5f785e097f30253f31b2595c33377bfd5ca00c38e17d502abde3f0836",

@@ -5,12 +5,12 @@
 {{#if legacy_vision}}
 > **Long-Term Stewardship Goal**: {{legacy_vision}}
 {{else}}
-_No stewardship goal recorded. Answer **Legacy Vision** in questions.md — what
-should outlast you, and in whose hands?_
+*No stewardship goal recorded. Answer **Legacy Vision** in questions.md — what
+should outlast you, and in whose hands?*
 {{/if}}
 {{#if life_purpose}}
 
-Aligned with the core purpose: _{{life_purpose}}_.
+Aligned with the core purpose: *{{life_purpose}}*.
 {{/if}}
 
 ---
@@ -28,8 +28,8 @@ Aligned with the core purpose: _{{life_purpose}}_.
 {{#if executor}}
 *   **Nominated Executor**: {{executor}}{{#if alternate_executor}} (alternate: {{alternate_executor}}){{/if}}
 {{else}}
-*   **Nominated Executor**: _not recorded — answer **Executor**; an estate
-    without one is administered by a stranger._
+*   **Nominated Executor**: *not recorded — answer **Executor**; an estate
+    without one is administered by a stranger.*
 {{/if}}
 
 ---
@@ -39,9 +39,9 @@ Aligned with the core purpose: _{{life_purpose}}_.
 {{#if digital_asset_inventory}}
 *   **Digital Asset Inventory**: {{digital_asset_inventory}}
 {{else}}
-*   **Digital Asset Inventory**: _not recorded — answer **Digital Asset
+*   **Digital Asset Inventory**: *not recorded — answer **Digital Asset
     Inventory**: the accounts, domains, wallets and repositories that matter,
-    and where access is documented._
+    and where access is documented.*
 {{/if}}
 
 ---
@@ -55,9 +55,9 @@ memory or one channel.
 {{#if release_protocol}}
 {{release_protocol}}
 {{else}}
-_No protocol recorded. Answer **Release Protocol** — who verifies the event,
+*No protocol recorded. Answer **Release Protocol** — who verifies the event,
 over which channels, and after what waiting period. The three-stage shape
-below is a starting suggestion, not a description of your arrangements:_
+below is a starting suggestion, not a description of your arrangements:*
 
 | Stage | Event | Purpose |
 | :--- | :--- | :--- |
@@ -74,8 +74,8 @@ below is a starting suggestion, not a description of your arrangements:_
 {{#if memorial_wishes}}
 {{memorial_wishes}}
 {{else}}
-_No wishes recorded. Answer **Memorial Wishes** if you want a say — burial or
-cremation, ceremony, tone. Unrecorded wishes are guessed at the worst time._
+*No wishes recorded. Answer **Memorial Wishes** if you want a say — burial or
+cremation, ceremony, tone. Unrecorded wishes are guessed at the worst time.*
 {{/if}}
 
 ---

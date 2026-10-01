@@ -4,7 +4,7 @@
 {{#if primary_products}}
 {{primary_products}}
 {{else}}
-_Required. Answer **Primary Products** in questions.md._
+*Required. Answer **Primary Products** in questions.md.*
 {{/if}}
 
 {{#if core_value_proposition}}
@@ -17,8 +17,8 @@ _Required. Answer **Primary Products** in questions.md._
 {{#if product_components}}
 {{product_components}}
 {{else}}
-_Not broken down yet. Answer **Product Components** — name each part of the
-offering and what it does._
+*Not broken down yet. Answer **Product Components** — name each part of the
+offering and what it does.*
 {{/if}}
 
 {{#if hardware_or_equipment}}
@@ -32,8 +32,8 @@ offering and what it does._
 {{#if product_roadmap}}
 {{product_roadmap}}
 {{else}}
-_No roadmap recorded. Answer **Product Roadmap** — what ships over the next
-12-24 months._
+*No roadmap recorded. Answer **Product Roadmap** — what ships over the next
+12-24 months.*
 {{/if}}
 
 ---
@@ -42,7 +42,7 @@ _No roadmap recorded. Answer **Product Roadmap** — what ships over the next
 {{#if pricing_tiers}}
 {{pricing_tiers}}
 {{else}}
-_Pricing not recorded. Answer **Pricing Tiers** in questions.md._
+*Pricing not recorded. Answer **Pricing Tiers** in questions.md.*
 {{/if}}
 
 {{currency_note}}
@@ -59,5 +59,5 @@ _Pricing not recorded. Answer **Pricing Tiers** in questions.md._
 {{trademarks_details}}
 {{/if_feature}}
 {{#unless intellectual_property}}
-_No intellectual property recorded._
+*No intellectual property recorded.*
 {{/unless}}

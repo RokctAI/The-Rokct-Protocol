@@ -4,7 +4,7 @@
 
 | Problem | Solution | Unique Value Proposition | Unfair Advantage | Customer Segments |
 | :--- | :--- | :--- | :--- | :--- |
-| {{#if problem_statement}}{{problem_statement}}{{else}}_Not yet defined — answer **Problem Statement**_{{/if}} | {{primary_products}} | {{core_value_proposition}} | {{unfair_advantage}} | {{customer_segments}} |
+| {{#if problem_statement}}{{problem_statement}}{{else}}*Not yet defined — answer **Problem Statement***{{/if}} | {{primary_products}} | {{core_value_proposition}} | {{unfair_advantage}} | {{customer_segments}} |
 
 | Key Metrics | Channels |
 | :--- | :--- |
@@ -22,10 +22,10 @@
 {{#if problem_statement}}
 {{problem_statement}}
 {{else}}
-_The customer problem this venture solves has not been recorded. Answer
+*The customer problem this venture solves has not been recorded. Answer
 **Problem Statement** in questions.md — who has the problem, and what it
 costs them today. (Internal operational risks belong in the risk register,
-not here.)_
+not here.)*
 {{/if}}
 
 ### B. The Solution
@@ -41,15 +41,15 @@ not here.)_
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Required field not yet answered._
+*Required field not yet answered.*
 {{/if}}
 
 ### D. Unfair Advantage
 {{#if unfair_advantage}}
 {{unfair_advantage}}
 {{else}}
-_No defensible advantage recorded yet. Investors will ask — answer
-**Unfair Advantage** in questions.md._
+*No defensible advantage recorded yet. Investors will ask — answer
+**Unfair Advantage** in questions.md.*
 {{/if}}
 
 {{#if_feature bbee}}
@@ -78,11 +78,11 @@ _No defensible advantage recorded yet. Investors will ask — answer
 No dedicated channel answer yet — showing the acquisition loop as a stand-in:
 {{growth_strategy}}
 
-_Answer **Sales Channels** in questions.md to state how the product reaches
-the customer._
+*Answer **Sales Channels** in questions.md to state how the product reaches
+the customer.*
 {{else}}
-_Path to the customer not yet recorded. Answer **Sales Channels** in
-questions.md._
+*Path to the customer not yet recorded. Answer **Sales Channels** in
+questions.md.*
 {{/if}}
 {{/if}}
 {{/if}}

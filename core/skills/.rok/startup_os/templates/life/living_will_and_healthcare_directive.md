@@ -45,8 +45,8 @@
 {{#if legal_full_name}}
 I, **{{legal_full_name}}**{{#if primary_base}}, of {{primary_base}}{{/if}}, make this directive while of sound mind, to speak for me if illness or injury leaves me unable to make or communicate my own healthcare decisions. It expresses my own considered wishes.
 {{else}}
-_Full legal name not recorded. Answer **Legal Full Name** in questions.md —
-exactly as it appears on your identity document._
+*Full legal name not recorded. Answer **Legal Full Name** in questions.md —
+exactly as it appears on your identity document.*
 {{/if}}
 
 ---
@@ -59,17 +59,17 @@ that my wishes below guide their decisions.
 {{#if alternate_healthcare_proxy}}
 Should they be unavailable or unwilling, I name **{{alternate_healthcare_proxy}}** in their place.
 {{else}}
-_No alternate recorded. Answer **Alternate Healthcare Proxy** — a directive
-with a single point of failure in its proxy is a fragile directive._
+*No alternate recorded. Answer **Alternate Healthcare Proxy** — a directive
+with a single point of failure in its proxy is a fragile directive.*
 {{/if}}
 
-_Whether a nominated proxy has formal decision-making authority in
+*Whether a nominated proxy has formal decision-making authority in
 {{jurisdiction_name}} is a question for your adviser — in some jurisdictions
-this nomination guides the treating team rather than binding it._
+this nomination guides the treating team rather than binding it.*
 {{else}}
-_No proxy recorded. Answer **Healthcare Proxy** in questions.md — the person
+*No proxy recorded. Answer **Healthcare Proxy** in questions.md — the person
 who should speak for you when you cannot. Without one, that role falls to
-whoever the law or the hospital designates by default._
+whoever the law or the hospital designates by default.*
 {{/if}}
 
 ---
@@ -79,21 +79,21 @@ whoever the law or the hospital designates by default._
 {{#if life_sustaining_treatment}}
 *   **Life-sustaining treatment**: {{life_sustaining_treatment}}
 {{else}}
-*   **Life-sustaining treatment**: _not recorded — answer
+*   **Life-sustaining treatment**: *not recorded — answer
     **Life Sustaining Treatment** in your own words; this is the clause the
-    whole document exists for._
+    whole document exists for.*
 {{/if}}
 {{#if resuscitation_preference}}
 *   **Resuscitation (CPR)**: {{resuscitation_preference}}
 {{else}}
-*   **Resuscitation (CPR)**: _not recorded — answer
-    **Resuscitation Preference**, including any conditions._
+*   **Resuscitation (CPR)**: *not recorded — answer
+    **Resuscitation Preference**, including any conditions.*
 {{/if}}
 {{#if pain_relief_priority}}
 *   **Pain relief**: {{pain_relief_priority}}
 {{else}}
-*   **Pain relief**: _not recorded — answer **Pain Relief Priority** — e.g.
-    whether comfort takes priority even at the cost of alertness._
+*   **Pain relief**: *not recorded — answer **Pain Relief Priority** — e.g.
+    whether comfort takes priority even at the cost of alertness.*
 {{/if}}
 
 No preference is ever assumed: an unanswered question above is a gap in this
@@ -106,12 +106,12 @@ directive, not a default.
 {{#if organ_donation_wishes}}
 {{organ_donation_wishes}}
 
-_Registering formally with your jurisdiction's donor registry, and telling
+*Registering formally with your jurisdiction's donor registry, and telling
 your family, matters more in practice than this paragraph — families are
-usually consulted at the moment of decision._
+usually consulted at the moment of decision.*
 {{else}}
-_No wishes recorded. Answer **Organ Donation Wishes** — either way, a
-recorded wish spares your family a guess at the worst possible moment._
+*No wishes recorded. Answer **Organ Donation Wishes** — either way, a
+recorded wish spares your family a guess at the worst possible moment.*
 {{/if}}
 
 ---
@@ -127,7 +127,7 @@ Signed at ______________________ on this ______ day of ______________________.
 
 **Witness 2**: Name ______________________ Signature ______________________
 
-_Witnessing requirements for a directive vary by jurisdiction and are not
+*Witnessing requirements for a directive vary by jurisdiction and are not
 encoded here; independent adult witnesses who are not your healthcare
 providers or beneficiaries are a sensible baseline — confirm with your
-adviser._
+adviser.*

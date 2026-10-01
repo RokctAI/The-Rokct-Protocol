@@ -23,8 +23,8 @@ Issued by {{company_name}}.
 {{#if pricing_tiers}}
 {{pricing_tiers}}
 {{else}}
-_Not recorded. Answer **Pricing Tiers** in questions.md — one line per product
-or tier, with the price and what is included._
+*Not recorded. Answer **Pricing Tiers** in questions.md — one line per product
+or tier, with the price and what is included.*
 {{/if}}
 
 {{#if_feature vat}}
@@ -44,8 +44,8 @@ or tier, with the price and what is included._
 **Cost basis**: {{cost_structure}}
 {{/if}}
 {{#unless gross_margin_target}}
-_No margin target recorded. Answer **Gross Margin Target** — a price list
-without a known margin is a guess._
+*No margin target recorded. Answer **Gross Margin Target** — a price list
+without a known margin is a guess.*
 {{/unless}}
 
 ---

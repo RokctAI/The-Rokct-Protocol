@@ -33,7 +33,7 @@ selects the backend script to execute.
 import hashlib, io, os, sys, subprocess, urllib.request, zipfile
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "111b33289dec7e1de06f480a0496c6b948d4bb2d"
+PROTOCOL_REF = "6786f38f12a221b9b7b93341a283b175f8ead11d"
 BACKEND_PREFIX = "core/utils/opportunities/"
 GITHUB_ZIP_URL = (
     f"https://github.com/RokctAI/The-Rokct-Protocol/archive/{PROTOCOL_REF}.zip"
@@ -58,7 +58,7 @@ EXPECTED_SHA256 = {
     "core/utils/opportunities/registry_orchestrator/index.py": "033756d0507e82f0b02bc1ea3bb22bda50c0a26d024f79120f20d01c8779c475",
     "core/utils/opportunities/registry_orchestrator/scanners.py": "f09dcecc90a00532ca68b9b5e5905328997abd69514eba504939d381d1c0d103",
     "core/utils/opportunities/registry_orchestrator/send_registry_emails.py": "30b7f7f24834c02ca65c5f9cfe1bdaf1e43340a5f278b8d3b932e11e0260463c",
-    "core/utils/opportunities/registry_orchestrator/updaters.py": "224b21d18806a4df55ab4de038390a577d65e2f219567b7619b5e84b129a435f",
+    "core/utils/opportunities/registry_orchestrator/updaters.py": "0d93d8a5207b9dacf0034757d68323877b61f8313dfa26f7407180394926a740",
     "core/utils/opportunities/response_kits/index.py": "962f7df2b43463bfda70564dc8a4c4d91a65821eb5a45e717f4863c3a6fd1d65",
     "core/utils/opportunities/tenders/api/ocds.py": "e78ef9ff97bcd2255d9581e985138f16b1292154a364cc8df888001efb0b007f",
     "core/utils/opportunities/tenders/enrichment/extract_requirements.py": "03eabbdbdd3173d7587ed6150e1fdef01a432eb6079d0ad473ee976b4a1c1217",

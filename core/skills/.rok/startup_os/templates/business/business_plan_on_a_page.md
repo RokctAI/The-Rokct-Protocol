@@ -4,8 +4,8 @@
 {{#if vision_statement}}
 {{company_name}}{{#if industry}} operates in {{industry}}{{/if}}{{#if primary_base}}, based in {{primary_base}}{{/if}}. {{vision_statement}}
 {{else}}
-_No vision statement recorded. Answer **Vision Statement** in questions.md —
-this paragraph is the first thing a lender or investor reads._
+*No vision statement recorded. Answer **Vision Statement** in questions.md —
+this paragraph is the first thing a lender or investor reads.*
 {{/if}}
 
 {{#if core_value_proposition}}
@@ -34,8 +34,8 @@ this paragraph is the first thing a lender or investor reads._
 {{else}}
 *   **Trading Name**: {{trading_name}}
 *   **Jurisdiction**: {{jurisdiction_name}}
-*   _No company-registry regime is configured for this jurisdiction, so no
-    registration details are asserted._
+*   *No company-registry regime is configured for this jurisdiction, so no
+    registration details are asserted.*
 {{/if_feature}}
 {{#if establishment_date}}
 *   **Established**: {{establishment_date}}
@@ -94,8 +94,8 @@ this paragraph is the first thing a lender or investor reads._
 {{#if key_operational_risks}}
 {{key_operational_risks}}
 {{else}}
-_No operational risks recorded. Every plan reviewed by a lender is expected to
-name its top risks and their mitigations — answer **Key Operational Risks**._
+*No operational risks recorded. Every plan reviewed by a lender is expected to
+name its top risks and their mitigations — answer **Key Operational Risks**.*
 {{/if}}
 
 {{#if business_continuity_strategy}}

@@ -11,9 +11,9 @@
 {{#if emergency_contacts}}
 {{emergency_contacts}}
 {{else}}
-_No contacts recorded. Answer **Emergency Contacts** in questions.md — one
+*No contacts recorded. Answer **Emergency Contacts** in questions.md — one
 per line: name, relationship, phone. This is the single most useful answer
-on this page._
+on this page.*
 {{/if}}
 
 ---
@@ -23,16 +23,16 @@ on this page._
 {{#if primary_doctor}}
 *   **Doctor**: {{primary_doctor}}
 {{else}}
-*   **Doctor**: _not recorded — answer **Primary Doctor** (name and phone)._
+*   **Doctor**: *not recorded — answer **Primary Doctor** (name and phone).*
 {{/if}}
 {{#if allergies_and_conditions}}
 *   **Allergies, conditions & medication**:
     {{allergies_and_conditions}}
 {{else}}
-*   **Allergies, conditions & medication**: _not recorded — answer
+*   **Allergies, conditions & medication**: *not recorded — answer
     **Allergies And Conditions**, one per line. If there are none, say
     "None known" — an explicit none is information; a blank is a question
-    mark over a stretcher._
+    mark over a stretcher.*
 {{/if}}
 {{#if healthcare_proxy}}
 *   **Healthcare proxy**: {{healthcare_proxy}}{{#if alternate_healthcare_proxy}} (alternate: {{alternate_healthcare_proxy}}){{/if}} — see the Living Will & Healthcare Directive in this suite.
@@ -48,8 +48,8 @@ on this page._
 {{#if key_document_locations}}
 {{key_document_locations}}
 {{else}}
-_No locations recorded. Answer **Key Document Locations** — where the will,
-policies, identity document and medical aid details live, one per line._
+*No locations recorded. Answer **Key Document Locations** — where the will,
+policies, identity document and medical aid details live, one per line.*
 {{/if}}
 {{#if digital_asset_inventory}}
 
@@ -66,7 +66,7 @@ policies, identity document and medical aid details live, one per line._
 {{#if release_protocol}}
 *   **Document release protocol**: {{release_protocol}}
 {{else}}
-*   **Document release protocol**: _not recorded — answer
+*   **Document release protocol**: *not recorded — answer
     **Release Protocol** in questions.md: who verifies the event, over which
-    channels, and after what waiting period._
+    channels, and after what waiting period.*
 {{/if}}

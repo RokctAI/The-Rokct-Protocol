@@ -15,9 +15,9 @@ Sector: {{industry}}.
 {{#if quality_standards}}
 {{quality_standards}}
 {{else}}
-_Not recorded. Answer **Quality Standards** in questions.md — the standards,
+*Not recorded. Answer **Quality Standards** in questions.md — the standards,
 certifications or inspections that apply. Most tenders and many customers ask
-for this document by name._
+for this document by name.*
 {{/if}}
 {{#if standards_body}}
 
@@ -30,8 +30,8 @@ for this document by name._
 {{#if key_processes}}
 {{key_processes}}
 {{else}}
-_Not recorded. Answer **Key Processes** — quality control needs a defined
-process to control._
+*Not recorded. Answer **Key Processes** — quality control needs a defined
+process to control.*
 {{/if}}
 
 {{#if capacity_constraints}}
@@ -47,7 +47,7 @@ process to control._
 For each supplier, record: specification agreed, incoming inspection method,
 and what happens when a batch fails.
 {{else}}
-_No suppliers recorded._
+*No suppliers recorded.*
 {{/if}}
 
 ---
@@ -56,7 +56,7 @@ _No suppliers recorded._
 {{#if service_levels}}
 {{service_levels}}
 {{else}}
-_No service levels recorded._
+*No service levels recorded.*
 {{/if}}
 
 ---
@@ -66,11 +66,11 @@ Keep these current — they are what an auditor or customer asks to see:
 
 | Record | Where held | Review frequency |
 | :--- | :--- | :--- |
-| Incoming inspection results | _to be recorded_ | Per delivery |
-| Non-conformance and corrective actions | _to be recorded_ | Per incident |
-| Customer complaints and resolution | _to be recorded_ | Monthly |
-| Calibration and maintenance logs | _to be recorded_ | Per schedule |
-| Staff training records | _to be recorded_ | Annually |
+| Incoming inspection results | *to be recorded* | Per delivery |
+| Non-conformance and corrective actions | *to be recorded* | Per incident |
+| Customer complaints and resolution | *to be recorded* | Monthly |
+| Calibration and maintenance logs | *to be recorded* | Per schedule |
+| Staff training records | *to be recorded* | Annually |
 | Certificates and licences | Compliance folder | Before expiry |
 
 
