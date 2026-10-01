@@ -292,6 +292,63 @@ def copy_dir(rel_src, dst):
             ensure_file(rel, d)
 
 
+def is_bot_email(email):
+    """True for noreply/bot git identities (CI containers, GitHub's private
+    noreply addresses, Anthropic agents) that must never become a Safe ID."""
+    local, _, domain = email.lower().partition("@")
+    return (
+        "noreply" in local
+        or domain == "users.noreply.github.com"
+        or domain == "anthropic.com"
+        or domain.endswith(".anthropic.com")
+    )
+
+
+def register_safe_id(mem, email):
+    """Append `## Safe ID` to memory.md at most once; return the id written.
+
+    1. ROKCT_SAFE_ID, when set, is the id (no email needed).
+    2. Otherwise an existing `## Safe ID` section is kept as-is.
+    3. Otherwise a bot/noreply email is skipped with a hint.
+    In every case memory.md never gets a second `## Safe ID` section.
+    """
+    existing = ""
+    if os.path.exists(mem):
+        with open(mem, "r", encoding="utf-8") as f:
+            existing = f.read()
+    has_section = any(line.strip() == "## Safe ID" for line in existing.splitlines())
+    safe_id = os.environ.get("ROKCT_SAFE_ID", "").strip()
+    if has_section:
+        if safe_id and safe_id not in existing:
+            print(
+                "[init] memory.md already has a Safe ID; ROKCT_SAFE_ID not applied "
+                "(edit the existing section to change it)"
+            )
+        return None
+    if not safe_id:
+        if not email or "@" not in email:
+            return None
+        if is_bot_email(email):
+            print(
+                f"[init] Skipped Safe ID for bot/noreply git email {email}; "
+                "set ROKCT_SAFE_ID to register one"
+            )
+            return None
+        prefix = email.split("@")[0].replace(".", "").lower()
+        domain = email.split("@")[1].lower()
+        # Non-security use: short fingerprint of the email domain to build a
+        # human-readable safe identity. usedforsecurity=False documents intent
+        # and clears bandit B324 (CWE-327) without changing the digest output.
+        domain_hash = hashlib.md5(domain.encode(), usedforsecurity=False).hexdigest()[
+            :6
+        ]
+        safe_id = f"{prefix}.{domain_hash}"
+    with open(mem, "a", encoding="utf-8") as f:
+        f.write(f"\n## Safe ID\n\n{safe_id}\n")
+    print(f"[init] Registered safe identity: {safe_id}")
+    return safe_id
+
+
 def safe_extract_path(dst, rel):
     """Resolve an archive-controlled relative path under dst, refusing any
     entry that escapes the destination (zip-slip). Same realpath+commonpath
@@ -492,25 +549,7 @@ def main():
         ).strip()
     except Exception:
         email = ""
-    if email:
-        prefix = email.split("@")[0].replace(".", "").lower()
-        domain = email.split("@")[1].lower()
-        # Non-security use: short fingerprint of the email domain to build a
-        # human-readable safe identity. usedforsecurity=False documents intent
-        # and clears bandit B324 (CWE-327) without changing the digest output.
-        domain_hash = hashlib.md5(domain.encode(), usedforsecurity=False).hexdigest()[
-            :6
-        ]
-        safe_id = f"{prefix}.{domain_hash}"
-        mem = os.path.join(ROKCT_DIR, "memory.md")
-        existing_mem_content = ""
-        if os.path.exists(mem):
-            with open(mem, "r", encoding="utf-8") as f:
-                existing_mem_content = f.read()
-        if safe_id not in existing_mem_content:
-            with open(mem, "a", encoding="utf-8") as f:
-                f.write(f"\n## Safe ID\n\n{safe_id}\n")
-            print(f"[init] Registered safe identity: {safe_id}")
+    register_safe_id(os.path.join(ROKCT_DIR, "memory.md"), email)
 
     ignore = os.path.join(ROKCT_DIR, ".gitignore")
     required_ignores = ("skills/", "tmp/")
