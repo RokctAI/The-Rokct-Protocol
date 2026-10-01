@@ -4,8 +4,8 @@
 {{#if key_projects}}
 {{key_projects}}
 {{else}}
-_Not recorded. Answer **Key Projects** — name, owner and due date for each.
-A project without a named owner and a date is a wish._
+*Not recorded. Answer **Key Projects** — name, owner and due date for each.
+A project without a named owner and a date is a wish.*
 {{/if}}
 
 ---
@@ -26,7 +26,7 @@ A project without a named owner and a date is a wish._
 {{#if product_roadmap}}
 {{product_roadmap}}
 {{else}}
-_No product roadmap recorded._
+*No product roadmap recorded.*
 {{/if}}
 
 ---
@@ -49,7 +49,7 @@ _No product roadmap recorded._
 {{#if key_operational_risks}}
 {{key_operational_risks}}
 {{else}}
-_No delivery risks recorded._
+*No delivery risks recorded.*
 {{/if}}
 {{#if key_person_dependencies}}
 

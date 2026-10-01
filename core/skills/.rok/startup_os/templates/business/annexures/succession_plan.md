@@ -13,7 +13,7 @@ unavailable — through illness, departure or death.
 {{#if board_directors}}
 *   **Directors**: {{board_directors}}
 {{else}}
-_No leadership recorded._
+*No leadership recorded.*
 {{/if}}
 {{/if}}
 {{#if shareholder_distribution}}
@@ -27,8 +27,8 @@ _No leadership recorded._
 {{#if key_person_dependencies}}
 {{key_person_dependencies}}
 {{else}}
-_Not assessed. Answer **Key Person Dependencies** in questions.md — name each
-person and what would stop if they were unavailable tomorrow._
+*Not assessed. Answer **Key Person Dependencies** in questions.md — name each
+person and what would stop if they were unavailable tomorrow.*
 {{/if}}
 
 ---
@@ -37,8 +37,8 @@ person and what would stop if they were unavailable tomorrow._
 {{#if succession_arrangements}}
 {{succession_arrangements}}
 {{else}}
-_Not recorded. Answer **Succession Arrangements** — who steps into each role,
-what authority they need, and how they would be given it._
+*Not recorded. Answer **Succession Arrangements** — who steps into each role,
+what authority they need, and how they would be given it.*
 {{/if}}
 
 ---

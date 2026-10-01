@@ -4,7 +4,7 @@
 {{#if vision_statement}}
 {{vision_statement}}
 {{else}}
-_Required. Answer **Vision Statement** in questions.md._
+*Required. Answer **Vision Statement** in questions.md.*
 {{/if}}
 
 {{#if mission_statement}}
@@ -24,9 +24,9 @@ _Required. Answer **Vision Statement** in questions.md._
 {{#if problem_statement}}
 {{problem_statement}}
 {{else}}
-_Not recorded. Answer **Problem Statement** in questions.md — name who has the
+*Not recorded. Answer **Problem Statement** in questions.md — name who has the
 problem and what it costs them. Every reader judges the rest of this document
-against it._
+against it.*
 {{/if}}
 
 ---
@@ -60,8 +60,8 @@ against it._
 *   **Customers**: {{customer_segments}}
 {{/if}}
 {{#unless market_size_tam}}
-_Market sizing not recorded. Answer **Market Size TAM / SAM / SOM** — an
-unsized market reads as an unresearched one._
+*Market sizing not recorded. Answer **Market Size TAM / SAM / SOM** — an
+unsized market reads as an unresearched one.*
 {{/unless}}
 
 ---
@@ -94,7 +94,7 @@ Revenue comes from: {{primary_products}}
 {{#if achievements_to_date}}
 {{achievements_to_date}}
 {{else}}
-_No traction recorded._
+*No traction recorded.*
 {{/if}}
 {{#if funding_history}}
 

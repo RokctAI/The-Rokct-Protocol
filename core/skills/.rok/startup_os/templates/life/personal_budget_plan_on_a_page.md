@@ -1,17 +1,17 @@
 # {{full_name}} — Personal Budget Plan on a Page
 
 {{#if financial_philosophy}}
-> **Operating principle**: _{{financial_philosophy}}_
+> **Operating principle**: *{{financial_philosophy}}*
 {{/if}}
 
 ## 1. Monthly Cash Flow
 
 {{budget_cash_flow_table}}
 
-_Every figure above is computed from your own answers — **Monthly Income**,
+*Every figure above is computed from your own answers — **Monthly Income**,
 **Monthly Expenses**, **Monthly Savings**, **Liquid Savings** — and each row
 names its basis. A row that reads "Pending" unlocks when its question is
-answered with an amount. Nothing is estimated for you._
+answered with an amount. Nothing is estimated for you.*
 
 {{#if budget_flags}}
 

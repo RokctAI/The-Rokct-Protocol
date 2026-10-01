@@ -1041,7 +1041,7 @@ class TestComputedFinancials(unittest.TestCase):
 
     def test_unit_economics_are_derived_not_to_be_supplied(self):
         table = self._values(self.FULL)["fin_unit_economics"]
-        self.assertNotIn("_to be supplied_", table)
+        self.assertNotIn("*to be supplied*", table)
         self.assertIn("8 months", table)  # runway: 5.2m / 650k
         self.assertIn("5.1 months", table)  # payback: 14000 / (3500*0.78)
         self.assertIn("R136,500", table)  # LTV: 3500*0.78/0.02
@@ -1067,7 +1067,7 @@ class TestComputedFinancials(unittest.TestCase):
         values = self._values({})
         self.assertEqual(values["fin_projection_table"], "")
         table = values["fin_unit_economics"]
-        self.assertNotIn("_to be supplied_", table)
+        self.assertNotIn("*to be supplied*", table)
         self.assertIn("Pending — answer **Average Revenue Per Customer**", table)
         self.assertIn("Not derivable yet", table)
         # No digits invented for any metric value.
@@ -1264,7 +1264,7 @@ class TestOldProfileStillCompiles(unittest.TestCase):
                 os.path.join(out, "07_financial_model.md"), encoding="utf-8"
             ) as handle:
                 financial = handle.read()
-            self.assertNotIn("_to be supplied_", financial)
+            self.assertNotIn("*to be supplied*", financial)
             self.assertNotIn("«", financial)
             self.assertIn("Pending — answer", financial)
             for name in ("09_business_model_canvas.md", "10_lean_canvas.md"):

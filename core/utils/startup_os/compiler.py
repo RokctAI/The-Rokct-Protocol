@@ -1260,8 +1260,8 @@ def compile_instance(
             print(f"  Generated: {relative_name}")
 
     if record is not None:
-        log_text = compliance_mod.build_compliance_log(
-            record, instance_name, generated_on
+        log_text = documents.separate_adjacent_callouts(
+            compliance_mod.build_compliance_log(record, instance_name, generated_on)
         )
         safe_io.atomic_write(os.path.join(out_dir, COMPLIANCE_LOG_FILENAME), log_text)
         written_names.add(COMPLIANCE_LOG_FILENAME)
@@ -1437,6 +1437,7 @@ def _assemble(
     missing = {key: profile.labels.get(key, key) for key in sorted(profile.pending)}
     document += documents.build_gap_report(missing, gap_warnings)
 
+    document = documents.separate_adjacent_callouts(document)
     return document.rstrip() + "\n"
 
 
@@ -1872,7 +1873,7 @@ def _add_computed_financials(values, profile, jurisdiction):
                 "; gross profit applies the **Gross Margin Target** "
                 f"({margin_pct:.0f}%) — no per-year cost projections were supplied"
             )
-        lines.append(f"_{basis}._")
+        lines.append(f"*{basis}.*")
         values["fin_projection_table"] = "\n".join(lines)
     else:
         values["fin_projection_table"] = ""
@@ -2089,8 +2090,8 @@ def _add_market_analysis(values, profile):
                 f"| **SOM** — realistic capture over 36 months | "
                 f"{format_money(som, symbol)} | {som / sam:.1%} of SAM |",
                 "",
-                "_Computed from **Market Size TAM / SAM / SOM**. Each figure "
-                "should carry a source — a reader will check._",
+                "*Computed from **Market Size TAM / SAM / SOM**. Each figure "
+                "should carry a source — a reader will check.*",
             ]
         )
         flags = []
@@ -2169,8 +2170,8 @@ def _add_diligence_analysis(values, profile, jurisdiction):
         rows.append(f"| {_cell(cells[0])} | {_cell(cells[1])} |")
     rows.append("")
     rows.append(
-        "_Stated in **Competitor Pricing** — founder-supplied; verify against "
-        "current price lists before quoting it to an investor._"
+        "*Stated in **Competitor Pricing** — founder-supplied; verify against "
+        "current price lists before quoting it to an investor.*"
     )
     values["competitor_pricing_table"] = "\n".join(rows)
 
@@ -2385,9 +2386,9 @@ def _add_dd_analysis(values, record, jurisdiction):
 
     rows.append("")
     rows.append(
-        "_Statuses are read from the evidence on disk — nothing above is "
+        "*Statuses are read from the evidence on disk — nothing above is "
         "asserted without a document, and operator-asserted values come from "
-        "`compliance_overrides.json`._"
+        "`compliance_overrides.json`.*"
     )
     values["dd_evidence_table"] = "\n".join(rows)
 

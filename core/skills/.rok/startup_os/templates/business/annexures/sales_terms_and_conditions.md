@@ -21,7 +21,7 @@ These terms apply to all sales by **{{trading_name}}** ("the Supplier").
 {{#if primary_products}}
 {{primary_products}}
 {{else}}
-_Not recorded. Answer **Primary Products** in questions.md._
+*Not recorded. Answer **Primary Products** in questions.md.*
 {{/if}}
 
 ---
@@ -30,7 +30,7 @@ _Not recorded. Answer **Primary Products** in questions.md._
 {{#if pricing_tiers}}
 {{pricing_tiers}}
 {{else}}
-_Pricing not recorded. Answer **Pricing Tiers**._
+*Pricing not recorded. Answer **Pricing Tiers**.*
 {{/if}}
 
 {{currency_note}}
@@ -46,8 +46,8 @@ charged at the prevailing rate where the Supplier is registered.
 {{#if payment_terms}}
 {{payment_terms}}
 {{else}}
-_Not recorded. Answer **Payment Terms** — deposit, credit period and what
-happens on late payment. This clause decides your working capital._
+*Not recorded. Answer **Payment Terms** — deposit, credit period and what
+happens on late payment. This clause decides your working capital.*
 {{/if}}
 
 ---
@@ -56,8 +56,8 @@ happens on late payment. This clause decides your working capital._
 {{#if delivery_terms}}
 {{delivery_terms}}
 {{else}}
-_Not recorded. Answer **Delivery Terms** — lead time, who bears delivery cost,
-and the point at which risk passes to the customer._
+*Not recorded. Answer **Delivery Terms** — lead time, who bears delivery cost,
+and the point at which risk passes to the customer.*
 {{/if}}
 
 ---
@@ -66,8 +66,8 @@ and the point at which risk passes to the customer._
 {{#if warranty_terms}}
 {{warranty_terms}}
 {{else}}
-_Not recorded. Answer **Warranty Terms** — what is warranted, for how long, and
-what remedy applies._
+*Not recorded. Answer **Warranty Terms** — what is warranted, for how long, and
+what remedy applies.*
 {{/if}}
 
 {{#if_jurisdiction ZA}}
@@ -81,7 +81,7 @@ Protection Act 68 of 2008 where that Act applies to the transaction.
 {{#if returns_policy}}
 {{returns_policy}}
 {{else}}
-_Not recorded. Answer **Returns Policy**._
+*Not recorded. Answer **Returns Policy**.*
 {{/if}}
 
 ---
@@ -90,7 +90,7 @@ _Not recorded. Answer **Returns Policy**._
 {{#if service_levels}}
 {{service_levels}}
 {{else}}
-_No service commitments recorded._
+*No service commitments recorded.*
 {{/if}}
 
 ---
@@ -110,6 +110,6 @@ Record how customer personal data is collected, used, retained and deleted.
 {{#if dispute_resolution}}
 {{dispute_resolution}}
 {{else}}
-_Not recorded. Answer **Dispute Resolution** — the process and the governing
-law. Absent agreement, the default rules of {{jurisdiction_name}} apply._
+*Not recorded. Answer **Dispute Resolution** — the process and the governing
+law. Absent agreement, the default rules of {{jurisdiction_name}} apply.*
 {{/if}}

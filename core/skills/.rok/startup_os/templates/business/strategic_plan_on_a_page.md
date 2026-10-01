@@ -9,7 +9,7 @@
 **Mission**: {{mission_statement}}
 {{/if}}
 {{#unless vision_statement}}
-_No vision recorded. Answer **Vision Statement** in questions.md._
+*No vision recorded. Answer **Vision Statement** in questions.md.*
 {{/unless}}
 
 ---
@@ -18,8 +18,8 @@ _No vision recorded. Answer **Vision Statement** in questions.md._
 {{#if strategic_objectives}}
 {{strategic_objectives}}
 {{else}}
-_Not recorded. Answer **Strategic Objectives** — three to five, each one you
-would be willing to be measured against._
+*Not recorded. Answer **Strategic Objectives** — three to five, each one you
+would be willing to be measured against.*
 {{/if}}
 
 ---
@@ -30,14 +30,14 @@ would be willing to be measured against._
 {{#if milestones_12_month}}
 {{milestones_12_month}}
 {{else}}
-_Not recorded._
+*Not recorded.*
 {{/if}}
 
 ### Next 36 Months
 {{#if milestones_36_month}}
 {{milestones_36_month}}
 {{else}}
-_Not recorded._
+*Not recorded.*
 {{/if}}
 
 ---
@@ -61,7 +61,7 @@ _Not recorded._
 {{#if key_operational_risks}}
 {{key_operational_risks}}
 {{else}}
-_No risks recorded._
+*No risks recorded.*
 {{/if}}
 
 ---
