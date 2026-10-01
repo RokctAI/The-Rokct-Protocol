@@ -138,7 +138,7 @@ index on an SDK's repo, path or pin.
 | `polaris` | `corporate` | yes | yes | yes |
 | `revenue` | `corporate` | yes | — | — |
 | `tender` | `corporate` | — | yes | yes |
-| `studio` | `designer` | — | yes | — |
+| `studio` | `designer` | — | yes | yes |
 | `betassist` | `BetAssist` | — | yes | — |
 | `agent` | `SDKs` | yes | yes | — |
 | `betassist` | `SDKs` | yes | yes | — |

@@ -67,6 +67,7 @@ composer profile). This index auto-refreshes weekly via the
 | `radio_sdk` | `RokctAI/agent` | — | — | — | `radio` |
 | `replay_sdk` | `RokctAI/agent` | `replay/nextjs` | `1.0.1` | `bfcf4127c1d93cd1776df8e1ac30fd1330d49156a89f4bc758c057130cbe3a8a` | `supacharge` |
 | `revenue_sdk` | `RokctAI/corporate` | — | — | — | `paas_driver`, `paas_manager` |
+| `studio_sdk` | `RokctAI/designer` | `studio/nextjs` | `1.0.0` | `70338e56c0f709e698f4a7f0a26c5681e1b444776885195a255229b6d3150456` | — |
 | `subscriptions_sdk` | `RokctAI/agent` | `subscriptions/nextjs` | `1.1.1` | `647bd14c9759ea76ba826701ba2dcf17a19a96e660c540a64872340ea020599b` | `paas_manager`, `supacharge` |
 | `support_sdk` | `RokctAI/productivity` | `support/nextjs` | `1.1.0` | `c15a3f67a1e1c15c6b7d6d9ef934cd334979a9ec63d42c2a2c429c8133103c53` | — |
 | `telemetry_sdk` | `RokctAI/core` | `telemetry/nextjs` | `1.2.0` | `318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4` | `delivery-frontend`, `hosting`, `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge`, `supacharge-web`, `telephony-frontend` |
