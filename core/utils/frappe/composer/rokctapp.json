@@ -95,6 +95,15 @@
       "path": "../productivity/crm/frappe",
       "ref": "main",
       "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    },
+    {
+      "name": "studio",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/designer",
+      "path": "../designer/studio/frappe",
+      "ref": "main",
+      "_comment": "Studio operations layer from the designer repo (design systems, requests, approvals and proofs, print jobs, prepress, hot folder) — the backend of studio_sdk in the rokctapp Next.js template. Same module startupos.json composes."
     }
   ]
 }

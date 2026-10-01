@@ -234,6 +234,18 @@
       "_comment": "The productivity SDK's nextjs half (productivity #35): the Projects and Workspace surface — app/handson/all/projects and app/handson/all/workspace page trees, the projects/workspace actions, the AI work/strategy/meetings/smart_status actions, app/services/all/projects and the project/task/timesheet/workspace components — plus its Projects/Strategy/Workspace sidebar nav entries (integration into app/handson/sidebar-client.tsx). Listed after erp_sdk and auth_sdk because its 'requires' names erp_sdk's accounting selling/quotation action and auth_sdk's app/(auth)/auth.ts, and ahead of agent_sdk because agent_sdk's 'requires' names the app/actions/handson/all/projects/* and app/services/all/projects/* files this half installs (components/tasks/project-task.tsx imports @/app/actions/handson/all/projects/projects). Same productivity ref as support_sdk/crm_sdk — the composer clones one ref per repo."
     },
     {
+      "name": "studio_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/designer",
+      "path": "../designer/studio/nextjs",
+      "ref": "main",
+      "sha256": "70338e56c0f709e698f4a7f0a26c5681e1b444776885195a255229b6d3150456",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of studio/nextjs/install.py at designer PR #17; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The studio SDK's nextjs half (owner ruling 2026-10-01: print/studio pages reach rokctai_frontend through SDK install): /studio/print, /studio/preflight, /studio/review/[token], /studio/settings/hot-folder and the construction/proof panels, calling only the studio frappe module's own cmds. Listed before agent_sdk, which stays last as the home SDK."
+    },
+    {
       "name": "agent_sdk",
       "enabled": true,
       "source": "git",

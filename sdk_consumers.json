@@ -369,6 +369,15 @@
       ],
       "nextjs": null
     },
+    "studio_sdk": {
+      "repo": "RokctAI/designer",
+      "consumers": [],
+      "nextjs": {
+        "path": "studio/nextjs",
+        "version": "1.0.0",
+        "install_py_sha256": "70338e56c0f709e698f4a7f0a26c5681e1b444776885195a255229b6d3150456"
+      }
+    },
     "subscriptions_sdk": {
       "repo": "RokctAI/agent",
       "consumers": [
