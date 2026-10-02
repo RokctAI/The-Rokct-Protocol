@@ -40,6 +40,7 @@ word-exact.
 R-3 phonics respellings (r3_respellings.json) are a separate, whole-line
 file; this runs after them, on the respelled text.
 """
+
 from __future__ import annotations
 
 import json
@@ -84,14 +85,23 @@ def validate(raw) -> dict:
         if not isinstance(w, str) or not WORD_RE.fullmatch(w):
             raise PronunciationError(f"words: bad word {w!r}")
         if not isinstance(r, str) or not SPOKEN_RE.fullmatch(r) or not r.strip():
-            raise PronunciationError(f"words: bad respelling for {w!r} (no braces, bars or . ! ?)")
+            raise PronunciationError(
+                f"words: bad respelling for {w!r} (no braces, bars or . ! ?)"
+            )
         out["words"][w] = _clean(r)
     for w, vs in amb.items():
         if not isinstance(w, str) or not WORD_RE.fullmatch(w):
             raise PronunciationError(f"ambiguous: bad word {w!r}")
-        if not isinstance(vs, list) or len(vs) < 2 or not all(
-                isinstance(v, str) and SPOKEN_RE.fullmatch(v) and v.strip() for v in vs):
-            raise PronunciationError(f"ambiguous: {w!r} needs a list of at least two respellings")
+        if (
+            not isinstance(vs, list)
+            or len(vs) < 2
+            or not all(
+                isinstance(v, str) and SPOKEN_RE.fullmatch(v) and v.strip() for v in vs
+            )
+        ):
+            raise PronunciationError(
+                f"ambiguous: {w!r} needs a list of at least two respellings"
+            )
         out["ambiguous"][w] = [_clean(v) for v in vs]
     both = {w.lower() for w in out["words"]} & {w.lower() for w in out["ambiguous"]}
     if both:
@@ -133,18 +143,22 @@ def _segments(text: str) -> list[tuple[str, str | None]]:
     that is not exactly {{display|spoken}}."""
     out, pos = [], 0
     for m in INLINE_RE.finditer(text):
-        out.append((text[pos:m.start()], None))
+        out.append((text[pos : m.start()], None))
         d, s = _clean(m.group(1)), _clean(m.group(2))
         if not d or not s:
-            raise PronunciationError("malformed inline respelling (an empty part): write {{word|respelling}}")
+            raise PronunciationError(
+                "malformed inline respelling (an empty part): write {{word|respelling}}"
+            )
         out.append((d, s))
         pos = m.end()
     out.append((text[pos:], None))
     for plain, spoken in out:
         if spoken is None and has_markup(plain):
             # Never quote the line: errors reach public CI logs.
-            raise PronunciationError("malformed inline respelling (a brace outside "
-                                     "{{word|respelling}}): write {{word|respelling}}")
+            raise PronunciationError(
+                "malformed inline respelling (a brace outside "
+                "{{word|respelling}}): write {{word|respelling}}"
+            )
     return out
 
 
@@ -169,7 +183,9 @@ def apply(text: str, pron: dict | None = None) -> tuple[str, str, list[list[str]
     disp, tts, wild = [], [], []
     for plain, spoken in _segments(text):
         if spoken is not None:
-            disp.append(plain); tts.append(spoken); wild.append([plain, spoken])
+            disp.append(plain)
+            tts.append(spoken)
+            wild.append([plain, spoken])
             continue
         disp.append(plain)
         hits = []
@@ -201,7 +217,8 @@ def ambiguous_uses(text: str, pron: dict | None = None) -> list[str]:
     seen, out = set(), []
     for _, w in sorted(found):
         if w not in seen:
-            seen.add(w); out.append(w)
+            seen.add(w)
+            out.append(w)
     return out
 
 
@@ -225,6 +242,7 @@ def check_ambiguous(items: list[dict], pron: dict | None = None) -> list[str]:
 # ASR comparison with wildcards
 # ---------------------------------------------------------------------------
 
+
 def _wild_tokens(reference: str, wild: list[list[str]]) -> list:
     """norm_words(reference), with each respelled word's tokens folded into
     one ('*', max tokens) entry."""
@@ -238,15 +256,19 @@ def _wild_tokens(reference: str, wild: list[list[str]]) -> list:
     out, i = [], 0
     while i < len(ref):
         for dt, n in specs:
-            if ref[i:i + len(dt)] == dt:
-                out.append(("*", n)); i += len(dt)
+            if ref[i : i + len(dt)] == dt:
+                out.append(("*", n))
+                i += len(dt)
                 break
         else:
-            out.append(ref[i]); i += 1
+            out.append(ref[i])
+            i += 1
     return out
 
 
-def word_errors_wild(reference: str, hypothesis: str, wild: list[list[str]] | None = None) -> int:
+def word_errors_wild(
+    reference: str, hypothesis: str, wild: list[list[str]] | None = None
+) -> int:
     """textnorm.word_errors, except that each respelled display word matches
     1 to N transcript words at no cost. With no wildcards it IS word_errors."""
     if not wild:

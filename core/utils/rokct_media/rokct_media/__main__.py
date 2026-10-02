@@ -13,6 +13,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """python -m rokct_media: the rokct-media CLI."""
+
 import sys
 
 from .cli import main

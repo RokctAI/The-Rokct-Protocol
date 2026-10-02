@@ -22,6 +22,7 @@ QC-gated 24 kHz mono clips at -20 dBFS, lifted verbatim from factory's
 voice_batch stack so a deterministic render reproduces it byte for byte.
 Levels 2 and 3 and still composition follow in later steps.
 """
+
 from __future__ import annotations
 
 __version__ = "0.1.0"
@@ -32,17 +33,30 @@ __all__ = ["__version__", "render", "validate", "Result"]
 def __getattr__(name):
     if name == "Result":
         from .result import Result
+
         return Result
     raise AttributeError(name)
 
 
-def validate(folder, *, voices=None, voices_root=None, level=None, preset=None, profiles=None, deliver=None):
+def validate(
+    folder,
+    *,
+    voices=None,
+    voices_root=None,
+    level=None,
+    preset=None,
+    profiles=None,
+    deliver=None,
+):
     """Load and check a job without rendering. Returns (job, problems):
     problems is a list of strings, empty when the job would render."""
     from .manifest.load import JobError, load_job
     from .voices.registry import Registry, VoiceError
+
     try:
-        job = load_job(folder, level=level, preset=preset, profiles=profiles, deliver=deliver)
+        job = load_job(
+            folder, level=level, preset=preset, profiles=profiles, deliver=deliver
+        )
     except JobError as exc:
         return None, [str(exc)]
     problems = []
@@ -55,8 +69,21 @@ def validate(folder, *, voices=None, voices_root=None, level=None, preset=None, 
     return job, problems
 
 
-def render(folder, *, level=None, deliver=None, preset=None, profiles=None, on_progress=None, isolate=True,
-           voices=None, voices_root=None, model_path=None, speech=None, no_cache=False):
+def render(
+    folder,
+    *,
+    level=None,
+    deliver=None,
+    preset=None,
+    profiles=None,
+    on_progress=None,
+    isolate=True,
+    voices=None,
+    voices_root=None,
+    model_path=None,
+    speech=None,
+    no_cache=False,
+):
     """Render a job folder; returns a Result (also written to out/result.json).
 
     voices      the caller's voices file (default: $ROKCT_MEDIA_VOICES)
@@ -71,8 +98,16 @@ def render(folder, *, level=None, deliver=None, preset=None, profiles=None, on_p
     from .manifest.load import JobError, load_job
     from .result import Result
     from .voices.registry import Registry, VoiceError
+
     try:
-        job = load_job(folder, level=level, preset=preset, profiles=profiles, deliver=deliver, speech=speech)
+        job = load_job(
+            folder,
+            level=level,
+            preset=preset,
+            profiles=profiles,
+            deliver=deliver,
+            speech=speech,
+        )
     except JobError as exc:
         res = Result(status="invalid", errors=[str(exc)])
         if Path(folder).is_dir():
@@ -84,5 +119,11 @@ def render(folder, *, level=None, deliver=None, preset=None, profiles=None, on_p
         res = Result(status="invalid", job_id=job.id, errors=[str(exc)])
         res.write(job.out_dir / "result.json")
         return res
-    return l1_speech.run(job, reg, model_path=model_path, isolate=isolate, on_progress=on_progress,
-                         no_cache=no_cache)
+    return l1_speech.run(
+        job,
+        reg,
+        model_path=model_path,
+        isolate=isolate,
+        on_progress=on_progress,
+        no_cache=no_cache,
+    )

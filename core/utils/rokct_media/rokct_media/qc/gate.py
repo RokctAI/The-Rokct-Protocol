@@ -29,6 +29,7 @@ Gate       : the shipped file's median F0 inside the window; similarity >=
            0.88 at 5 s or longer, >= 0.83 under 5 s; word-exact ASR; tail:
            the last 50 ms at or below -34 dB of the loudest 10 ms frame.
 """
+
 from __future__ import annotations
 
 from .meter import TAIL_MAX_DB, TAIL_WIN_S, tail_db, tail_ok  # noqa: F401  (re-exported)
@@ -45,11 +46,15 @@ def sim_threshold(duration_s: float) -> float:
     return SIM_LONG if duration_s >= LONG_S else SIM_SHORT
 
 
-def f0_range(target: float = TARGET_F0, tolerance: float = F0_TOLERANCE) -> tuple[float, float]:
+def f0_range(
+    target: float = TARGET_F0, tolerance: float = F0_TOLERANCE
+) -> tuple[float, float]:
     return (target - tolerance, target + tolerance)
 
 
-def pyin_bounds(target: float = TARGET_F0, tolerance: float = F0_TOLERANCE) -> tuple[float, float]:
+def pyin_bounds(
+    target: float = TARGET_F0, tolerance: float = F0_TOLERANCE
+) -> tuple[float, float]:
     """pYIN search range: 50-300 Hz for Voice A, widened for a voice whose
     gate reaches outside it (e.g. a higher voice)."""
     lo, hi = f0_range(target, tolerance)
@@ -60,7 +65,9 @@ def take_rank(m: dict, target: float = TARGET_F0) -> tuple:
     return (abs(m["f0"] - target), m["swings"], -m["res"])
 
 
-def pick(cands: list[dict], target: float = TARGET_F0, tolerance: float = F0_TOLERANCE) -> tuple[dict | None, int]:
+def pick(
+    cands: list[dict], target: float = TARGET_F0, tolerance: float = F0_TOLERANCE
+) -> tuple[dict | None, int]:
     """(best take, tier): tier 1 strict pass, tier 2 word-exact only, 0 none."""
     lo, hi = f0_range(target, tolerance)
     # A take that ends mid-word never counts, however well the ASR heard it.
@@ -74,20 +81,35 @@ def pick(cands: list[dict], target: float = TARGET_F0, tolerance: float = F0_TOL
     return None, 0
 
 
-def final_gate(m: dict, duration_s: float, target: float = TARGET_F0,
-               tolerance: float = F0_TOLERANCE) -> tuple[dict, float]:
+def final_gate(
+    m: dict,
+    duration_s: float,
+    target: float = TARGET_F0,
+    tolerance: float = F0_TOLERANCE,
+) -> tuple[dict, float]:
     """The gate on a shipped file from its measurement `m` (Meter.measure):
     ({"f0", "similarity", "asr", "tail"}: bool, similarity threshold used)."""
     lo, hi = f0_range(target, tolerance)
     thr = sim_threshold(duration_s)
-    gate = {"f0": lo <= m["f0"] <= hi, "similarity": m["res"] >= thr, "asr": m["err"] == 0,
-            "tail": tail_ok(m["tail_db"])}
+    gate = {
+        "f0": lo <= m["f0"] <= hi,
+        "similarity": m["res"] >= thr,
+        "asr": m["err"] == 0,
+        "tail": tail_ok(m["tail_db"]),
+    }
     return gate, thr
 
 
 def gate_settings(target: float, tolerance: float) -> dict:
     """The gate numbers as result.json records them."""
     lo, hi = f0_range(target, tolerance)
-    return {"median_f0_hz": [round(lo, 2), round(hi, 2)], "f0_target_hz": target, "f0_tolerance_hz": tolerance,
-            "similarity_min_ge_5s": SIM_LONG, "similarity_min_lt_5s": SIM_SHORT, "asr": "word-exact",
-            "tail_max_db": TAIL_MAX_DB, "tail_window_ms": int(TAIL_WIN_S * 1000)}
+    return {
+        "median_f0_hz": [round(lo, 2), round(hi, 2)],
+        "f0_target_hz": target,
+        "f0_tolerance_hz": tolerance,
+        "similarity_min_ge_5s": SIM_LONG,
+        "similarity_min_lt_5s": SIM_SHORT,
+        "asr": "word-exact",
+        "tail_max_db": TAIL_MAX_DB,
+        "tail_window_ms": int(TAIL_WIN_S * 1000),
+    }

@@ -16,6 +16,7 @@
 destination, registered through the entry-point group "rokct_media.sinks".
 Rendering and delivering are separate: sinks run only after every output
 passed its gates."""
+
 from __future__ import annotations
 
 from typing import Protocol

@@ -18,6 +18,7 @@ Built-in engines: "voice_model" (the pinned default) and "dummy" (tone
 bursts, for tests). Other engines register through the entry-point group
 "rokct_media.engines" and are found by name.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -44,9 +45,11 @@ class EngineError(RuntimeError):
 def builtin(name: str):
     if name == "voice_model":
         from .voice_model import VoiceModelEngine
+
         return VoiceModelEngine
     if name == "dummy":
         from .dummy import DummyEngine
+
         return DummyEngine
     return None
 
@@ -56,6 +59,7 @@ def engine_class(name: str):
     if cls is not None:
         return cls
     from importlib.metadata import entry_points
+
     for ep in entry_points(group="rokct_media.engines"):
         if ep.name == name:
             return ep.load()

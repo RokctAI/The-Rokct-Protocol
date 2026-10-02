@@ -15,6 +15,7 @@
 """The QC gate's selection, tail check, stitch and keep_through cut.
 Model-free; lifted from factory voice_batch/tests (Selection, Tail). The
 gate numbers are asserted, so a change to one fails here."""
+
 import unittest
 
 import numpy as np
@@ -26,6 +27,7 @@ from rokct_media.speech.cut import cut_after, text_through
 
 try:
     import librosa  # noqa: F401
+
     HAVE_LIBROSA = True
 except ImportError:
     HAVE_LIBROSA = False
@@ -39,20 +41,29 @@ def tone(s, amp=0.3):
 
 class Numbers(unittest.TestCase):
     def test_gate_numbers_unchanged(self):
-        self.assertEqual((G.SIM_LONG, G.SIM_SHORT, G.LONG_S, G.TAKE_SIM_MIN), (0.88, 0.83, 5.0, 0.83))
+        self.assertEqual(
+            (G.SIM_LONG, G.SIM_SHORT, G.LONG_S, G.TAKE_SIM_MIN), (0.88, 0.83, 5.0, 0.83)
+        )
         self.assertEqual((G.TAIL_WIN_S, G.TAIL_MAX_DB), (0.05, -34.0))
         self.assertEqual((G.TARGET_F0, G.F0_TOLERANCE), (102.0, 8.0))
         self.assertEqual(G.f0_range(196, 12), (184, 208))
         self.assertEqual(G.pyin_bounds(102, 8), (50.0, 300.0))
         self.assertEqual(G.pyin_bounds(196, 12), (50.0, 416))
         from rokct_media.speech.stitch import FADE_S, GAPS_S, PAD_S
-        self.assertEqual((GAPS_S, PAD_S, FADE_S), ((0.22, 0.20, 0.24, 0.22), 0.04, 0.012))
+
+        self.assertEqual(
+            (GAPS_S, PAD_S, FADE_S), ((0.22, 0.20, 0.24, 0.22), 0.04, 0.012)
+        )
         from rokct_media.speech.takes import SEED_ROUNDS
+
         self.assertEqual(SEED_ROUNDS, ([11, 22, 33], [44], [55]))
 
     def test_final_gate(self):
         m = {"f0": 106.87, "res": 0.8936, "err": 0, "tail_db": -44.59}
-        self.assertEqual(G.final_gate(m, 3.335), ({"f0": True, "similarity": True, "asr": True, "tail": True}, 0.83))
+        self.assertEqual(
+            G.final_gate(m, 3.335),
+            ({"f0": True, "similarity": True, "asr": True, "tail": True}, 0.83),
+        )
         gate, thr = G.final_gate(dict(m, res=0.86), 5.39)
         self.assertEqual((gate["similarity"], thr), (False, 0.88))
         gate, _ = G.final_gate(dict(m, f0=204.67), 5.0, 196, 12)
@@ -66,7 +77,11 @@ class Selection(unittest.TestCase):
         return {"err": err, "f0": f0, "swings": sw, "res": res}
 
     def test_order(self):
-        a, b, c = self.t(0, 104, 2, 0.9), self.t(0, 101, 5, 0.85), self.t(1, 102, 0, 0.99)
+        a, b, c = (
+            self.t(0, 104, 2, 0.9),
+            self.t(0, 101, 5, 0.85),
+            self.t(1, 102, 0, 0.99),
+        )
         self.assertIs(pick([a, b, c])[0], b)
         d = self.t(0, 101, 1, 0.84)
         self.assertIs(pick([b, d])[0], d)
@@ -114,6 +129,7 @@ class Tail(unittest.TestCase):
 class Stitch(unittest.TestCase):
     def test_stitch_pauses(self):
         from rokct_media.speech.stitch import stitch
+
         pad = np.zeros(int(0.5 * SR))
         y, pauses = stitch([np.concatenate([pad, tone(1), pad])] * 3, SR)
         self.assertEqual(pauses, [300, 280])
@@ -122,6 +138,7 @@ class Stitch(unittest.TestCase):
 
     def test_stitch_keeps_a_clipped_end_detectable(self):
         from rokct_media.speech.stitch import stitch
+
         pad = np.zeros(int(0.5 * SR))
         decay = tone(0.3) * np.exp(-np.arange(int(0.3 * SR)) / (0.02 * SR))
         clean = np.concatenate([pad, tone(1.0), decay, pad])
@@ -133,7 +150,9 @@ class Stitch(unittest.TestCase):
 class Cut(unittest.TestCase):
     def test_text_through(self):
         self.assertEqual(text_through("Rokct. Tutors that explain.", "rokct"), "Rokct.")
-        self.assertEqual(text_through("Meet the Rokct tutors.", "Rokct"), "Meet the Rokct")
+        self.assertEqual(
+            text_through("Meet the Rokct tutors.", "Rokct"), "Meet the Rokct"
+        )
         self.assertIsNone(text_through("Meet the tutors.", "Rokct"))
 
     def test_cut_after_lands_in_the_gap(self):
@@ -141,7 +160,9 @@ class Cut(unittest.TestCase):
         y = cut_after(x, SR, 0.5)
         self.assertIsNotNone(y)
         self.assertAlmostEqual(len(y) / SR, 0.5 + 0.04, delta=0.011)
-        self.assertEqual(float(np.max(np.abs(y[-int(0.04 * SR):]))), 0.0)  # 40 ms of the gap kept
+        self.assertEqual(
+            float(np.max(np.abs(y[-int(0.04 * SR) :]))), 0.0
+        )  # 40 ms of the gap kept
 
     def test_cut_after_refuses_run_on(self):
         self.assertIsNone(cut_after(tone(2.0), SR, 0.5))

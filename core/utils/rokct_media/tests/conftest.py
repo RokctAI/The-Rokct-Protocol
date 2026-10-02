@@ -14,6 +14,7 @@
 
 """Run the tests from a checkout without installing: put the package root on
 sys.path (an installed rokct-media works the same way)."""
+
 import sys
 from pathlib import Path
 

@@ -28,6 +28,7 @@ Two selections, both lifted from factory:
 In both, the display text (inline {{display|spoken}} resolved to the
 display part) is the ASR reference and every respelled word is a wildcard.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -61,11 +62,14 @@ def pronounced_fields(id_: str, text: str, pron: dict | None) -> dict:
     display = " ".join(p[0] for p in parts)
     render = [speak_text(p[1]) for p in parts]
     out = {
-        "text": display, "source_text": text,
+        "text": display,
+        "source_text": text,
         "text_sha256": hashlib.sha256(display.encode("utf-8")).hexdigest(),
         "render_sha256": hashlib.sha256("\n".join(render).encode("utf-8")).hexdigest(),
-        "sentences": [p[0] for p in parts], "render_text": render,
-        "sentence_wild": [p[2] for p in parts], "asr_text": display,
+        "sentences": [p[0] for p in parts],
+        "render_text": render,
+        "sentence_wild": [p[2] for p in parts],
+        "asr_text": display,
         "asr_wild": [w for p in parts for w in p[2]],
         "pronounced": [w[0] for p in parts for w in p[2]],
     }
@@ -85,7 +89,7 @@ def render_parts(text: str) -> list[str]:
             break
         j = short + 1 if short + 1 < len(parts) else short - 1
         a, b = sorted((short, j))
-        parts[a:b + 1] = [f"{parts[a]} {parts[b]}"]
+        parts[a : b + 1] = [f"{parts[a]} {parts[b]}"]
     return parts
 
 
@@ -131,9 +135,17 @@ def whole_take_line(seg: dict, pron: dict, rounds=SEED_ROUNDS) -> dict:
     ln["part_wild"] = [w for _, _, w in said]
     ln["wild"] = [x for w in ln["part_wild"] for x in w]
     prefer = ln.get("prefer_seeds", [])
-    if not (isinstance(prefer, list) and all(s in seeds for s in prefer) and len(set(prefer)) == len(prefer)):
-        raise PlanError(f"segment {ln['id']}: prefer_seeds must be distinct seeds from {seeds}")
+    if not (
+        isinstance(prefer, list)
+        and all(s in seeds for s in prefer)
+        and len(set(prefer)) == len(prefer)
+    ):
+        raise PlanError(
+            f"segment {ln['id']}: prefer_seeds must be distinct seeds from {seeds}"
+        )
     ln["rounds"] = seed_rounds(prefer, rounds)
     if "keep_through" in ln and text_through(ln["text"], ln["keep_through"]) is None:
-        raise PlanError(f"segment {ln['id']}: keep_through {ln['keep_through']!r} is not a word of its text")
+        raise PlanError(
+            f"segment {ln['id']}: keep_through {ln['keep_through']!r} is not a word of its text"
+        )
     return ln

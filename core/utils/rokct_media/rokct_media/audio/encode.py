@@ -19,6 +19,7 @@ lameenc (a pip wheel of LAME, in the [voice] extra) when importable,
 otherwise the ffmpeg binary. Constant bitrate, mono, 24 kHz, no tags, so
 the same WAV always gives the same bytes and re-runs stay idempotent.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -44,7 +45,9 @@ def encode(wav: str | Path, mp3: str | Path, bitrate_kbps: int = BITRATE_KBPS) -
         x, sr = sf.read(str(wav), dtype="int16", always_2d=True)
         if sr != SAMPLE_RATE:
             raise ValueError(f"expected {SAMPLE_RATE} Hz, got {sr}")
-        pcm = np.ascontiguousarray(x.mean(axis=1).astype(np.int16) if x.shape[1] > 1 else x[:, 0])
+        pcm = np.ascontiguousarray(
+            x.mean(axis=1).astype(np.int16) if x.shape[1] > 1 else x[:, 0]
+        )
         enc = lameenc.Encoder()
         enc.set_bit_rate(bitrate_kbps)
         enc.set_in_sample_rate(SAMPLE_RATE)
@@ -56,10 +59,39 @@ def encode(wav: str | Path, mp3: str | Path, bitrate_kbps: int = BITRATE_KBPS) -
         ff = shutil.which("ffmpeg")
         if not ff:
             raise RuntimeError("no MP3 encoder: install lameenc or ffmpeg")
-        subprocess.run([ff, "-nostdin", "-loglevel", "error", "-y", "-i", str(wav), "-map_metadata", "-1",
-                        "-fflags", "+bitexact", "-flags:a", "+bitexact", "-ac", "1", "-ar", str(SAMPLE_RATE),
-                        "-c:a", "libmp3lame", "-b:a", f"{bitrate_kbps}k", "-id3v2_version", "0",
-                        "-write_xing", "0", "-f", "mp3", str(tmp)], check=True)
+        subprocess.run(
+            [
+                ff,
+                "-nostdin",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(wav),
+                "-map_metadata",
+                "-1",
+                "-fflags",
+                "+bitexact",
+                "-flags:a",
+                "+bitexact",
+                "-ac",
+                "1",
+                "-ar",
+                str(SAMPLE_RATE),
+                "-c:a",
+                "libmp3lame",
+                "-b:a",
+                f"{bitrate_kbps}k",
+                "-id3v2_version",
+                "0",
+                "-write_xing",
+                "0",
+                "-f",
+                "mp3",
+                str(tmp),
+            ],
+            check=True,
+        )
         used = "ffmpeg"
     tmp.replace(mp3)
     return used
