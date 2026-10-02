@@ -17,6 +17,7 @@
 Deterministic for a given text and seed, 24 kHz mono, with a short
 silence at the end (so a take ends cleanly). Needs numpy only.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -41,8 +42,11 @@ class DummyEngine:
 
     def render(self, text: str, ref: Path, seed: int):
         import numpy as np
+
         words = max(1, len(text.split()))
-        h = int.from_bytes(hashlib.sha256(f"{seed}|{text}".encode()).digest()[:4], "big")
+        h = int.from_bytes(
+            hashlib.sha256(f"{seed}|{text}".encode()).digest()[:4], "big"
+        )
         rng = np.random.default_rng(h)
         sr = SAMPLE_RATE
         out = [np.zeros(int(0.05 * sr), dtype=np.float32)]
@@ -50,7 +54,9 @@ class DummyEngine:
             n = int(sr * (0.18 + 0.08 * rng.random()))
             t = np.arange(n) / sr
             env = np.sin(np.pi * np.arange(n) / n) ** 2
-            out.append((0.3 * env * np.sin(2 * np.pi * self.f0_hz * t)).astype(np.float32))
+            out.append(
+                (0.3 * env * np.sin(2 * np.pi * self.f0_hz * t)).astype(np.float32)
+            )
             out.append(np.zeros(int(0.06 * sr), dtype=np.float32))
         out.append(np.zeros(int(0.2 * sr), dtype=np.float32))
         return np.concatenate(out)

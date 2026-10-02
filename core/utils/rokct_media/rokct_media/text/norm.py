@@ -23,6 +23,7 @@
   spelling variants and ASR homophones are normalised; everything else
   must match exactly.
 """
+
 from __future__ import annotations
 
 import difflib
@@ -58,8 +59,10 @@ def tts_prompt(sentence: str) -> str:
     return s + TAIL_PAD
 
 
-_ONES = ("zero one two three four five six seven eight nine ten eleven twelve "
-         "thirteen fourteen fifteen sixteen seventeen eighteen nineteen").split()
+_ONES = (
+    "zero one two three four five six seven eight nine ten eleven twelve "
+    "thirteen fourteen fifteen sixteen seventeen eighteen nineteen"
+).split()
 _TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
 
 
@@ -70,14 +73,22 @@ def _n2w(n: int) -> str:
         return _TENS[n // 10] + ("" if n % 10 == 0 else " " + _ONES[n % 10])
     if n < 1000:
         rest = n % 100
-        return _ONES[n // 100] + " hundred" + ("" if rest == 0 else " and " + _n2w(rest))
+        return (
+            _ONES[n // 100] + " hundred" + ("" if rest == 0 else " and " + _n2w(rest))
+        )
     return str(n)
 
 
 # British/American spelling pairs the ASR model may pick either way.
-_SPELLING = {"practice": "practise", "factorize": "factorise", "factorizing": "factorising",
-             "factorized": "factorised", "recognize": "recognise", "organize": "organise",
-             "okay": "ok"}
+_SPELLING = {
+    "practice": "practise",
+    "factorize": "factorise",
+    "factorizing": "factorising",
+    "factorized": "factorised",
+    "recognize": "recognise",
+    "organize": "organise",
+    "okay": "ok",
+}
 
 # Homophones the ASR model writes for a correctly spoken word (a sentence-
 # final "guessed" comes back as "guest"). Applied to both sides, so either
@@ -98,4 +109,8 @@ def norm_words(text: str) -> list[str]:
 def word_errors(reference: str, hypothesis: str) -> int:
     a, b = norm_words(reference), norm_words(hypothesis)
     sm = difflib.SequenceMatcher(None, a, b, autojunk=False)
-    return sum(max(i2 - i1, j2 - j1) for op, i1, i2, j1, j2 in sm.get_opcodes() if op != "equal")
+    return sum(
+        max(i2 - i1, j2 - j1)
+        for op, i1, i2, j1, j2 in sm.get_opcodes()
+        if op != "equal"
+    )

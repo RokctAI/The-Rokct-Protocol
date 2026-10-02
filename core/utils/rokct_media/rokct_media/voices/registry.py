@@ -35,6 +35,7 @@ voice yet, and any render with it is refused. A ref whose bytes do not
 match its sha256 stops the job before the model loads. The registry holds
 no documents and no donor details.
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -47,8 +48,16 @@ from pathlib import Path
 
 ID_RE = re.compile(r"[a-z][a-z0-9_]{0,40}")
 SHA_RE = re.compile(r"[0-9a-f]{64}")
-KEYS = {"ref", "sha256", "f0_target_hz", "f0_tolerance_hz", "agreement_in_place", "confirmed_by",
-        "confirmed_on", "aliases"}
+KEYS = {
+    "ref",
+    "sha256",
+    "f0_target_hz",
+    "f0_tolerance_hz",
+    "agreement_in_place",
+    "confirmed_by",
+    "confirmed_on",
+    "aliases",
+}
 
 
 class VoiceError(ValueError):
@@ -74,7 +83,9 @@ class Voice:
     def verify(self) -> str:
         """Check the reference's bytes against its pin; returns the sha256."""
         if self.ref is None:
-            raise VoiceRefused(f"{self.id}: no reference registered (no cloned voice yet)")
+            raise VoiceRefused(
+                f"{self.id}: no reference registered (no cloned voice yet)"
+            )
         if not self.ref.is_file():
             raise VoiceError(f"{self.id}: reference not found at {self.ref}")
         h = hashlib.sha256()
@@ -83,13 +94,20 @@ class Voice:
                 h.update(chunk)
         got = h.hexdigest()
         if got != self.sha256:
-            raise VoiceRefused(f"{self.id}: reference sha256 does not match the registry; refusing to render")
+            raise VoiceRefused(
+                f"{self.id}: reference sha256 does not match the registry; refusing to render"
+            )
         return got
 
     def summary(self) -> dict:
         """What result.json records about the voice (no paths, no people)."""
-        out = {"id": self.id, "ref_sha256": self.sha256, "f0_target_hz": self.f0_target_hz,
-               "f0_tolerance_hz": self.f0_tolerance_hz, "agreement_in_place": self.agreement_in_place}
+        out = {
+            "id": self.id,
+            "ref_sha256": self.sha256,
+            "f0_target_hz": self.f0_target_hz,
+            "f0_tolerance_hz": self.f0_tolerance_hz,
+            "agreement_in_place": self.agreement_in_place,
+        }
         for k in ("confirmed_by", "confirmed_on"):
             if getattr(self, k):
                 out[k] = getattr(self, k)
@@ -105,6 +123,7 @@ def _read(path: Path) -> dict:
             raise VoiceError(f"{path.name}: not valid JSON ({exc.msg})") from None
         return raw.get("voices", raw) if isinstance(raw, dict) else raw
     import tomllib
+
     try:
         return tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
@@ -139,20 +158,33 @@ def parse(raw: dict, root: Path) -> dict[str, Voice]:
         if isinstance(on, (_dt.date, _dt.datetime)):
             on = on.isoformat()
         aliases = e.get("aliases", [])
-        if not (isinstance(aliases, list) and all(isinstance(a, str) and ID_RE.fullmatch(a) for a in aliases)):
+        if not (
+            isinstance(aliases, list)
+            and all(isinstance(a, str) and ID_RE.fullmatch(a) for a in aliases)
+        ):
             raise VoiceError(f"{vid}: aliases must be a list of ids")
         p = None
         if ref:
             p = Path(ref)
             p = p if p.is_absolute() else root / p
-        voices[vid] = Voice(id=vid, ref=p, sha256=sha, f0_target_hz=float(e.get("f0_target_hz") or 0),
-                            f0_tolerance_hz=float(e.get("f0_tolerance_hz") or 0), agreement_in_place=agree,
-                            confirmed_by=e.get("confirmed_by"), confirmed_on=on, aliases=list(aliases))
+        voices[vid] = Voice(
+            id=vid,
+            ref=p,
+            sha256=sha,
+            f0_target_hz=float(e.get("f0_target_hz") or 0),
+            f0_tolerance_hz=float(e.get("f0_tolerance_hz") or 0),
+            agreement_in_place=agree,
+            confirmed_by=e.get("confirmed_by"),
+            confirmed_on=on,
+            aliases=list(aliases),
+        )
     seen: dict[str, str] = {}
     for v in voices.values():
         for a in v.aliases:
             if a in voices or a in seen:
-                raise VoiceError(f"alias {a!r} of {v.id} is already a voice id or another voice's alias")
+                raise VoiceError(
+                    f"alias {a!r} of {v.id} is already a voice id or another voice's alias"
+                )
             seen[a] = v.id
     return voices
 
@@ -164,19 +196,30 @@ class Registry:
         self._alias = {a: v.id for v in voices.values() for a in v.aliases}
 
     @classmethod
-    def load(cls, path: str | os.PathLike | None = None, root: str | os.PathLike | None = None) -> "Registry":
+    def load(
+        cls,
+        path: str | os.PathLike | None = None,
+        root: str | os.PathLike | None = None,
+    ) -> "Registry":
         path = path or os.environ.get("ROKCT_MEDIA_VOICES")
         if not path:
             return cls({}, "")
         p = Path(path)
         if not p.is_file():
             raise VoiceError(f"voices file not found: {p}")
-        root = Path(root or os.environ.get("ROKCT_MEDIA_VOICES_ROOT") or p.resolve().parent)
+        root = Path(
+            root or os.environ.get("ROKCT_MEDIA_VOICES_ROOT") or p.resolve().parent
+        )
         return cls(parse(_read(p), root), str(p))
 
     def get(self, vid: str) -> Voice:
         vid = self._alias.get(vid, vid)
         if vid not in self.voices:
-            have = ", ".join(sorted(self.voices)) or "(none: pass --voices or set ROKCT_MEDIA_VOICES)"
-            raise VoiceError(f"voice {vid!r} is not in the voices registry (registered: {have})")
+            have = (
+                ", ".join(sorted(self.voices))
+                or "(none: pass --voices or set ROKCT_MEDIA_VOICES)"
+            )
+            raise VoiceError(
+                f"voice {vid!r} is not in the voices registry (registered: {have})"
+            )
         return self.voices[vid]

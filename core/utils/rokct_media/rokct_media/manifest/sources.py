@@ -24,6 +24,7 @@ script.md  : the same, after markdown is reduced to its spoken text
              headings start one segment per subtopic instead (the lesson
              linkage), each holding that subtopic's paragraphs.
 """
+
 from __future__ import annotations
 
 import re
@@ -40,7 +41,7 @@ def spoken_text(md: str) -> str:
     if md.startswith("---\n"):
         end = md.find("\n---", 4)
         if end != -1:
-            md = md[end + 4:]
+            md = md[end + 4 :]
     md = re.sub(r"<!--.*?-->", " ", md, flags=re.S)
     keep = [ln for ln in md.split("\n") if not ln.lstrip().startswith(("#", ">", "|"))]
     text = " ".join(" ".join(keep).split())
@@ -57,7 +58,7 @@ def _strip_front_matter(md: str) -> str:
     if md.startswith("---\n"):
         end = md.find("\n---", 4)
         if end != -1:
-            md = md[end + 4:]
+            md = md[end + 4 :]
     return re.sub(r"<!--.*?-->", " ", md, flags=re.S)
 
 
@@ -95,8 +96,15 @@ def script_segments(path: Path, roles: set[str], default_role: str) -> list[dict
             pars = [clean(take_role(p)) for p in _paragraphs("\n".join(lines))]
             text = " ".join(p for p in pars if p)
             if text:
-                segs.append({"id": f"subtopic_{n}", "role": role, "text": text, "subtopic": f"subtopic_{n}",
-                             "title": title})
+                segs.append(
+                    {
+                        "id": f"subtopic_{n}",
+                        "role": role,
+                        "text": text,
+                        "subtopic": f"subtopic_{n}",
+                        "title": title,
+                    }
+                )
     else:
         for par in _paragraphs(body):
             text = clean(take_role(par))

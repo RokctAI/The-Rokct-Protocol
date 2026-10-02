@@ -27,6 +27,7 @@ Exit codes: 0 all outputs gated and written (compare: everything passed);
 3 refused (a voice without agreement_in_place for a publishing sink, a
 reference whose sha256 does not match, or an unpinned model).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,18 +39,37 @@ from . import __version__
 
 
 def _voices_args(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--voices", help="the caller's voices file (TOML or JSON); default $ROKCT_MEDIA_VOICES")
-    p.add_argument("--voices-root", help="folder relative refs resolve against; default $ROKCT_MEDIA_VOICES_ROOT, "
-                                         "else the voices file's folder")
+    p.add_argument(
+        "--voices",
+        help="the caller's voices file (TOML or JSON); default $ROKCT_MEDIA_VOICES",
+    )
+    p.add_argument(
+        "--voices-root",
+        help="folder relative refs resolve against; default $ROKCT_MEDIA_VOICES_ROOT, "
+        "else the voices file's folder",
+    )
 
 
 def cmd_render(a) -> int:
     from . import render
-    deliver = [s.strip() for s in a.deliver.split(",") if s.strip()] if a.deliver else None
+
+    deliver = (
+        [s.strip() for s in a.deliver.split(",") if s.strip()] if a.deliver else None
+    )
     speech = {"asr_model": a.asr_model, "language": a.language, "engine": a.engine}
-    res = render(a.folder, level=a.level, deliver=deliver, preset=a.preset, profiles=a.profile or None,
-                 voices=a.voices, voices_root=a.voices_root, model_path=a.model_path, speech=speech,
-                 no_cache=a.no_cache, isolate=not a.in_process)
+    res = render(
+        a.folder,
+        level=a.level,
+        deliver=deliver,
+        preset=a.preset,
+        profiles=a.profile or None,
+        voices=a.voices,
+        voices_root=a.voices_root,
+        model_path=a.model_path,
+        speech=speech,
+        no_cache=a.no_cache,
+        isolate=not a.in_process,
+    )
     if a.json:
         print(json.dumps(res.to_dict(), indent=1, ensure_ascii=False))
     else:
@@ -65,6 +85,7 @@ def cmd_render(a) -> int:
 
 def cmd_validate(a) -> int:
     from . import validate
+
     rc = 0
     for folder in a.folders:
         job, problems = validate(folder, voices=a.voices, voices_root=a.voices_root)
@@ -73,27 +94,35 @@ def cmd_validate(a) -> int:
             for p in problems:
                 print(f"{folder}: error: {p}", file=sys.stderr)
         else:
-            print(f"{folder}: ok ({job.id}, level {job.level}, {len(job.segments)} segment(s), "
-                  f"selection {job.speech['selection']})")
+            print(
+                f"{folder}: ok ({job.id}, level {job.level}, {len(job.segments)} segment(s), "
+                f"selection {job.speech['selection']})"
+            )
     return rc
 
 
 def cmd_voices(a) -> int:
     from .voices.registry import Registry, VoiceError, VoiceRefused
+
     try:
         reg = Registry.load(a.voices, a.voices_root)
     except VoiceError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     if not reg.voices:
-        print("error: no voices file (pass --voices or set ROKCT_MEDIA_VOICES)", file=sys.stderr)
+        print(
+            "error: no voices file (pass --voices or set ROKCT_MEDIA_VOICES)",
+            file=sys.stderr,
+        )
         return 2
     rc = 0
     for v in reg.voices.values():
         try:
             v.verify()
-            print(f"{v.id}: ok (sha256 verified, F0 {v.f0_target_hz:g} +/- {v.f0_tolerance_hz:g} Hz, "
-                  f"agreement_in_place {str(v.agreement_in_place).lower()})")
+            print(
+                f"{v.id}: ok (sha256 verified, F0 {v.f0_target_hz:g} +/- {v.f0_tolerance_hz:g} Hz, "
+                f"agreement_in_place {str(v.agreement_in_place).lower()})"
+            )
         except VoiceRefused as exc:
             print(f"{v.id}: refused: {exc}")
             rc = max(rc, 3)
@@ -104,10 +133,21 @@ def cmd_voices(a) -> int:
 
 
 def cmd_compare(a) -> int:
-    from .compare import CompareError, compare, load_expected, load_manifest, render_text
+    from .compare import (
+        CompareError,
+        compare,
+        load_expected,
+        load_manifest,
+        render_text,
+    )
+
     try:
-        report = compare(load_manifest(a.baseline), load_manifest(a.candidate), a.engine or None,
-                         load_expected(a.expected_diffs))
+        report = compare(
+            load_manifest(a.baseline),
+            load_manifest(a.candidate),
+            a.engine or None,
+            load_expected(a.expected_diffs),
+        )
     except CompareError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -127,13 +167,19 @@ def main(argv: list[str] | None = None) -> int:
     _voices_args(r)
     r.add_argument("--model-path", help="local snapshot of the pinned model revision")
     r.add_argument("--level", type=int, choices=[1, 2, 3])
-    r.add_argument("--deliver", help="comma-separated sinks (replaces job.json deliver)")
+    r.add_argument(
+        "--deliver", help="comma-separated sinks (replaces job.json deliver)"
+    )
     r.add_argument("--preset")
     r.add_argument("--profile", action="append")
     r.add_argument("--asr-model")
     r.add_argument("--language")
-    r.add_argument("--engine", help="speech engine (default voice_model; dummy for tests)")
-    r.add_argument("--no-cache", action="store_true", help="do not read or write the take cache")
+    r.add_argument(
+        "--engine", help="speech engine (default voice_model; dummy for tests)"
+    )
+    r.add_argument(
+        "--no-cache", action="store_true", help="do not read or write the take cache"
+    )
     r.add_argument("--in-process", action="store_true", help=argparse.SUPPRESS)
     r.add_argument("--json", action="store_true", help="print the Result as JSON")
     r.set_defaults(func=cmd_render)
@@ -151,8 +197,13 @@ def main(argv: list[str] | None = None) -> int:
     c = sub.add_parser("compare", help="compare a candidate manifest with the baseline")
     c.add_argument("baseline")
     c.add_argument("candidate")
-    c.add_argument("--engine", action="append", help="compare only this engine (repeatable)")
-    c.add_argument("--expected-diffs", help="expected_diffs.toml: differences allowed, with reasons")
+    c.add_argument(
+        "--engine", action="append", help="compare only this engine (repeatable)"
+    )
+    c.add_argument(
+        "--expected-diffs",
+        help="expected_diffs.toml: differences allowed, with reasons",
+    )
     c.add_argument("-o", "--output", help="write the report as JSON here")
     c.add_argument("--json", action="store_true")
     c.set_defaults(func=cmd_compare)

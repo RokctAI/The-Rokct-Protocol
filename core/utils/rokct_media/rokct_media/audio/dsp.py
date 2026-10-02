@@ -18,6 +18,7 @@ Lifted verbatim from the agent's lms/team/scripts/render_voices.py
 (normalise, write_wav), which voice_batch rendered and stitched with:
 24 kHz mono PCM_16, RMS-normalised to -20 dBFS with a peak guard at 0.99.
 """
+
 from __future__ import annotations
 
 import os
@@ -74,5 +75,6 @@ def write_wav(path: Path, audio) -> float:
 
 def rms_dbfs(x) -> float:
     import numpy as np
+
     x = np.asarray(x, dtype=np.float64).reshape(-1)
-    return round(float(20 * np.log10(np.sqrt(np.mean(x ** 2)))), 2)
+    return round(float(20 * np.log10(np.sqrt(np.mean(x**2)))), 2)

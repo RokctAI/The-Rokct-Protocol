@@ -19,6 +19,7 @@ job.json (optional) overrides what the names imply. The table is the
 spec's "Naming conventions"; this version renders level 1 (speech) and
 reports the rest so a folder that asks for more fails clearly.
 """
+
 from __future__ import annotations
 
 import re
@@ -92,7 +93,9 @@ def supported_level(found: dict[str, list[Path]], job: dict) -> int:
     """The highest level the folder (and job.json) asks for: 3, 2 or 1."""
     if any(found.get(r) for r in L3_ROLES) or job.get("visual"):
         return 3
-    if any(found.get(r) for r in L2_ROLES) or any(job.get(k) for k in ("timeline", "music", "cues", "chapters")):
+    if any(found.get(r) for r in L2_ROLES) or any(
+        job.get(k) for k in ("timeline", "music", "cues", "chapters")
+    ):
         return 2
     return 1
 
@@ -100,19 +103,27 @@ def supported_level(found: dict[str, list[Path]], job: dict) -> int:
 def parse_voice_txt(text: str) -> dict[str, str]:
     """voice.txt: one registry id, or "role: id" lines for several speakers.
     Returns {role: voice id}; a bare id is the role "default"."""
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    lines = [
+        ln.strip()
+        for ln in text.splitlines()
+        if ln.strip() and not ln.strip().startswith("#")
+    ]
     if not lines:
         raise ValueError("voice.txt is empty: name a registered voice id")
     if len(lines) == 1 and ":" not in lines[0]:
         vid = lines[0]
         if not ROLE_ID_RE.fullmatch(vid):
-            raise ValueError("voice.txt: a voice id is lower-case letters, digits and _")
+            raise ValueError(
+                "voice.txt: a voice id is lower-case letters, digits and _"
+            )
         return {"default": vid}
     cast: dict[str, str] = {}
     for ln in lines:
         role, sep, vid = (s.strip() for s in ln.partition(":"))
         if not sep or not ROLE_ID_RE.fullmatch(role) or not ROLE_ID_RE.fullmatch(vid):
-            raise ValueError("voice.txt: write one voice id, or one 'role: voice_id' per line")
+            raise ValueError(
+                "voice.txt: write one voice id, or one 'role: voice_id' per line"
+            )
         if role in cast:
             raise ValueError(f"voice.txt: role {role!r} is listed twice")
         cast[role] = vid

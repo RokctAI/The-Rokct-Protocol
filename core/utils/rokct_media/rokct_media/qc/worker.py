@@ -31,6 +31,7 @@ and speaker models are never resident beside the voice model.
 
 Logs ids and numbers only.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,17 +57,31 @@ def gate_sentences(args) -> int:
     index = json.loads((work / "takes_index.json").read_text(encoding="utf-8"))
     mpath = work / "takes_measure.json"
     M = json.loads(mpath.read_text(encoding="utf-8")) if mpath.exists() else {}
-    meter = Meter(Path(args.ref), args.asr_model, args.language, qc.pyin_bounds(args.f0_target, args.f0_tolerance))
-    sentence_of = {f"{it['id']}#{k}": s for it in lines for k, s in enumerate(it["sentences"], 1)}
-    wild_of = {f"{it['id']}#{k}": w for it in lines for k, w in enumerate(it.get("sentence_wild", []), 1)}
+    meter = Meter(
+        Path(args.ref),
+        args.asr_model,
+        args.language,
+        qc.pyin_bounds(args.f0_target, args.f0_tolerance),
+    )
+    sentence_of = {
+        f"{it['id']}#{k}": s for it in lines for k, s in enumerate(it["sentences"], 1)
+    }
+    wild_of = {
+        f"{it['id']}#{k}": w
+        for it in lines
+        for k, w in enumerate(it.get("sentence_wild", []), 1)
+    }
 
     for p, meta in index.items():
         if p in M or not Path(p).exists():
             continue
         m = meter.measure(p, sentence_of[meta["key"]], wild_of.get(meta["key"]))
         M[p] = {**m, **meta}
-        print(f"take {meta['key']} seed{meta['seed']}: err={m['err']} f0={m['f0']} swings={m['swings']} "
-              f"sim={m['res']} dur={m['dur']} tail={m['tail_db']}", flush=True)
+        print(
+            f"take {meta['key']} seed{meta['seed']}: err={m['err']} f0={m['f0']} swings={m['swings']} "
+            f"sim={m['res']} dur={m['dur']} tail={m['tail_db']}",
+            flush=True,
+        )
         mpath.write_text(json.dumps(M, indent=1), encoding="utf-8")
 
     results = []
@@ -76,15 +91,20 @@ def gate_sentences(args) -> int:
             key = f"{it['id']}#{k}"
             cands = [dict(m, path=p) for p, m in M.items() if m["key"] == key]
             best, tier = qc.pick(cands, args.f0_target, args.f0_tolerance)
-            picks.append(best); tiers.append(tier)  # noqa: E702
+            picks.append(best)
+            tiers.append(tier)  # noqa: E702
             if tier != 1:
                 lacking.append({"key": key, "tier": tier})
-        tried = sorted({m["seed"] for m in M.values() if m["key"].split("#")[0] == it["id"]})
+        tried = sorted(
+            {m["seed"] for m in M.values() if m["key"].split("#")[0] == it["id"]}
+        )
         r = {"id": it["id"], "seeds_tried": tried, "lacking": lacking}
         if any(t == 0 for t in tiers):
             r["status"] = "incomplete"
             results.append(r)
-            print(f"segment {it['id']}: incomplete (no word-exact take for {sum(t == 0 for t in tiers)} sentence(s))")
+            print(
+                f"segment {it['id']}: incomplete (no word-exact take for {sum(t == 0 for t in tiers)} sentence(s))"
+            )
             continue
         arrays = []
         for b in picks:
@@ -100,26 +120,55 @@ def gate_sentences(args) -> int:
         x, _ = sf.read(str(dst))
         dur = round(len(x) / SR, 3)
         thr = qc.sim_threshold(dur)
-        gate = {"f0": lo <= fm["f0"] <= hi, "similarity": fm["res"] >= thr, "asr": fm["err"] == 0,
-                "tail": qc.tail_ok(fm["tail_db"])}
-        r.update({
-            "status": "pass" if all(gate.values()) else "fail", "gate": gate, "final_path": str(dst),
-            "duration_s": dur, "median_f0_hz": fm["f0"], "upward_swings": fm["swings"],
-            "similarity": fm["res"], "similarity_threshold": thr, "asr_match": fm["err"] == 0,
-            "asr_word_errors": fm["err"], "asr_transcript": fm["transcript"], "tail_db": fm["tail_db"],
-            "rms_dbfs": round(float(20 * np.log10(np.sqrt(np.mean(x ** 2)))), 2),
-            "peak": round(float(np.max(np.abs(x))), 4), "pauses_ms": pauses,
-            "sha256": sha256_file(dst),
-            "seeds": [b["seed"] for b in picks],
-            "takes": [{"sentence": k, "seed": b["seed"], "tier": t, "median_f0_hz": b["f0"],
-                       "upward_swings": b["swings"], "similarity": b["res"], "duration_s": b["dur"],
-                       "tail_db": b.get("tail_db")}
-                      for k, (b, t) in enumerate(zip(picks, tiers), 1)],
-        })
+        gate = {
+            "f0": lo <= fm["f0"] <= hi,
+            "similarity": fm["res"] >= thr,
+            "asr": fm["err"] == 0,
+            "tail": qc.tail_ok(fm["tail_db"]),
+        }
+        r.update(
+            {
+                "status": "pass" if all(gate.values()) else "fail",
+                "gate": gate,
+                "final_path": str(dst),
+                "duration_s": dur,
+                "median_f0_hz": fm["f0"],
+                "upward_swings": fm["swings"],
+                "similarity": fm["res"],
+                "similarity_threshold": thr,
+                "asr_match": fm["err"] == 0,
+                "asr_word_errors": fm["err"],
+                "asr_transcript": fm["transcript"],
+                "tail_db": fm["tail_db"],
+                "rms_dbfs": round(float(20 * np.log10(np.sqrt(np.mean(x**2)))), 2),
+                "peak": round(float(np.max(np.abs(x))), 4),
+                "pauses_ms": pauses,
+                "sha256": sha256_file(dst),
+                "seeds": [b["seed"] for b in picks],
+                "takes": [
+                    {
+                        "sentence": k,
+                        "seed": b["seed"],
+                        "tier": t,
+                        "median_f0_hz": b["f0"],
+                        "upward_swings": b["swings"],
+                        "similarity": b["res"],
+                        "duration_s": b["dur"],
+                        "tail_db": b.get("tail_db"),
+                    }
+                    for k, (b, t) in enumerate(zip(picks, tiers), 1)
+                ],
+            }
+        )
         results.append(r)
-        print(f"segment {it['id']}: {r['status']} dur={dur}s f0={fm['f0']} sim={fm['res']} (>= {thr}) "
-              f"asr_errors={fm['err']} tail={fm['tail_db']} seeds={r['seeds']}", flush=True)
-    (work / "results.json").write_text(json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8")
+        print(
+            f"segment {it['id']}: {r['status']} dur={dur}s f0={fm['f0']} sim={fm['res']} (>= {thr}) "
+            f"asr_errors={fm['err']} tail={fm['tail_db']} seeds={r['seeds']}",
+            flush=True,
+        )
+    (work / "results.json").write_text(
+        json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8"
+    )
     return 0
 
 
@@ -128,6 +177,7 @@ def listen_take(meter, t: dict, r: dict) -> None:
     rendered, only so it can be heard: measured ("listen"), not gated."""
     import numpy as np
     import soundfile as sf
+
     arrays = [sf.read(p)[0] for p in t["paths"] if Path(p).exists()]
     if not arrays:
         return
@@ -137,8 +187,14 @@ def listen_take(meter, t: dict, r: dict) -> None:
     sf.write(str(dst), normalise(y).astype(np.float32), SR, subtype="PCM_16")
     m = meter.measure(dst, t["text"], t["wild"])
     r["final_path"] = str(dst)
-    r["listen"] = {"duration_s": m["dur"], "median_f0_hz": m["f0"], "similarity": m["res"],
-                   "asr_word_errors": m["err"], "asr_transcript": m["transcript"], "tail_db": m["tail_db"]}
+    r["listen"] = {
+        "duration_s": m["dur"],
+        "median_f0_hz": m["f0"],
+        "similarity": m["res"],
+        "asr_word_errors": m["err"],
+        "asr_transcript": m["transcript"],
+        "tail_db": m["tail_db"],
+    }
 
 
 def gate_takes(args) -> int:
@@ -148,7 +204,9 @@ def gate_takes(args) -> int:
     spec = json.loads(Path(args.qc).read_text(encoding="utf-8"))
     target, tol = spec["f0_target_hz"], spec["f0_tolerance_hz"]
     lo, hi = qc.f0_range(target, tol)
-    meter = Meter(Path(spec["ref"]), args.asr_model, args.language, qc.pyin_bounds(target, tol))
+    meter = Meter(
+        Path(spec["ref"]), args.asr_model, args.language, qc.pyin_bounds(target, tol)
+    )
     results = []
     for t in spec["takes"]:
         r = {"id": t["id"], "seed": t["seed"], "status": "fail"}
@@ -159,8 +217,17 @@ def gate_takes(args) -> int:
                 continue
             m = meter.measure(p, text, wild)
             best, tier = qc.pick([m], target, tol)
-            parts.append({"tier": tier, "median_f0_hz": m["f0"], "similarity": m["res"], "asr_word_errors": m["err"],
-                          "asr_transcript": m["transcript"], "tail_db": m["tail_db"], "duration_s": m["dur"]})
+            parts.append(
+                {
+                    "tier": tier,
+                    "median_f0_hz": m["f0"],
+                    "similarity": m["res"],
+                    "asr_word_errors": m["err"],
+                    "asr_transcript": m["transcript"],
+                    "tail_db": m["tail_db"],
+                    "duration_s": m["dur"],
+                }
+            )
             if best is not None:
                 x, sr = sf.read(p)
                 assert sr == SR, "unexpected sample rate"
@@ -179,18 +246,39 @@ def gate_takes(args) -> int:
         fm = meter.measure(dst, t["text"], t["wild"])
         dur = fm["dur"]
         thr = qc.sim_threshold(dur)
-        gate = {"f0": lo <= fm["f0"] <= hi, "similarity": fm["res"] >= thr, "asr": fm["err"] == 0,
-                "tail": qc.tail_ok(fm["tail_db"])}
-        r.update({"status": "pass" if all(gate.values()) else "fail", "gate": gate, "final_path": str(dst),
-                  "duration_s": dur, "median_f0_hz": fm["f0"], "similarity": fm["res"],
-                  "similarity_threshold": thr, "asr_word_errors": fm["err"], "asr_transcript": fm["transcript"],
-                  "tail_db": fm["tail_db"], "pauses_ms": pauses, "sha256": sha256_file(dst)})
+        gate = {
+            "f0": lo <= fm["f0"] <= hi,
+            "similarity": fm["res"] >= thr,
+            "asr": fm["err"] == 0,
+            "tail": qc.tail_ok(fm["tail_db"]),
+        }
+        r.update(
+            {
+                "status": "pass" if all(gate.values()) else "fail",
+                "gate": gate,
+                "final_path": str(dst),
+                "duration_s": dur,
+                "median_f0_hz": fm["f0"],
+                "similarity": fm["res"],
+                "similarity_threshold": thr,
+                "asr_word_errors": fm["err"],
+                "asr_transcript": fm["transcript"],
+                "tail_db": fm["tail_db"],
+                "pauses_ms": pauses,
+                "sha256": sha256_file(dst),
+            }
+        )
         if r["status"] == "pass" and t.get("keep_through"):
             r.update(keep_through(meter, dst, t))
         results.append(r)
-        print(f"take {t['id']} seed{t['seed']}: {r['status']} dur={dur}s f0={fm['f0']} sim={fm['res']} "
-              f"(>= {thr}) asr_errors={fm['err']} tail={fm['tail_db']}", flush=True)
-    Path(args.qc_out).write_text(json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8")
+        print(
+            f"take {t['id']} seed{t['seed']}: {r['status']} dur={dur}s f0={fm['f0']} sim={fm['res']} "
+            f"(>= {thr}) asr_errors={fm['err']} tail={fm['tail_db']}",
+            flush=True,
+        )
+    Path(args.qc_out).write_text(
+        json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8"
+    )
     return 0
 
 

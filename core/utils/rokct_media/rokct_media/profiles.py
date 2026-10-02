@@ -17,13 +17,28 @@
 This version renders the level-1 profiles. The others are listed so a job
 that names one gets a clear "not in this version" rather than a typo error.
 """
+
 from __future__ import annotations
 
 PROFILES = {
-    "clip_wav": {"level": 1, "format": "wav", "sample_rate": 24_000, "channels": 1, "subtype": "PCM_16",
-                 "rms_dbfs": -20.0, "peak_max": 0.99, "true_peak_max_dbtp": 0.0},
-    "app_r3_mp3": {"level": 1, "format": "mp3", "bitrate_kbps": 64, "sample_rate": 24_000, "channels": 1,
-                   "rms_dbfs": -20.0},
+    "clip_wav": {
+        "level": 1,
+        "format": "wav",
+        "sample_rate": 24_000,
+        "channels": 1,
+        "subtype": "PCM_16",
+        "rms_dbfs": -20.0,
+        "peak_max": 0.99,
+        "true_peak_max_dbtp": 0.0,
+    },
+    "app_r3_mp3": {
+        "level": 1,
+        "format": "mp3",
+        "bitrate_kbps": 64,
+        "sample_rate": 24_000,
+        "channels": 1,
+        "rms_dbfs": -20.0,
+    },
     "lesson_replay": {"level": 2},
     "broadcast_r128": {"level": 2, "lufs": -23.0, "true_peak_max_dbtp": -1.0},
     "radio_streaming": {"level": 2, "lufs": -16.0, "true_peak_max_dbtp": -1.0},

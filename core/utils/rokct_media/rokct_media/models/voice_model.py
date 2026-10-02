@@ -21,6 +21,7 @@ reference handed to the processor by path, and a "Speaker 1: " prompt.
 The pin is what the loader adds: the model is loaded only from a local
 snapshot of REVISION, and a branch name or any other revision is refused.
 """
+
 from __future__ import annotations
 
 import os
@@ -45,11 +46,15 @@ _SHA_RE = re.compile(r"[0-9a-f]{40}")
 
 def check_revision(revision: str) -> str:
     if not isinstance(revision, str) or not _SHA_RE.fullmatch(revision):
-        raise EngineError(f"refused: model revision must be a full 40-character commit sha, got {revision!r}")
+        raise EngineError(
+            f"refused: model revision must be a full 40-character commit sha, got {revision!r}"
+        )
     return revision
 
 
-def resolve_model_path(model_path: str | os.PathLike | None = None, revision: str = REVISION) -> str:
+def resolve_model_path(
+    model_path: str | os.PathLike | None = None, revision: str = REVISION
+) -> str:
     """A local snapshot directory of `revision`.
 
     An explicit path (argument or ROKCT_MEDIA_MODEL_PATH) must be a
@@ -63,20 +68,23 @@ def resolve_model_path(model_path: str | os.PathLike | None = None, revision: st
         if not p.is_dir():
             raise EngineError(f"model path is not a directory: {p}")
         if p.name != revision:
-            raise EngineError(f"refused: model path {p} is not a snapshot of the pinned revision {revision}")
+            raise EngineError(
+                f"refused: model path {p} is not a snapshot of the pinned revision {revision}"
+            )
         return str(p)
     try:
         from huggingface_hub import snapshot_download
     except ImportError as exc:
-        raise EngineError("the voice model needs the [voice] extra (pip install 'rokct-media[voice]')") from exc
+        raise EngineError(
+            "the voice model needs the [voice] extra (pip install 'rokct-media[voice]')"
+        ) from exc
     return snapshot_download(REPO, revision=revision)
 
 
 class Renderer:
     """Loads the voice model once and keeps it, because loading is the expensive part."""
 
-    def __init__(self, model_path: str, device: str, ddpm_steps: int,
-                 cfg_scale: float):
+    def __init__(self, model_path: str, device: str, ddpm_steps: int, cfg_scale: float):
         self.model_path = model_path
         self.device = device
         self.ddpm_steps = ddpm_steps
@@ -87,7 +95,8 @@ class Renderer:
     def load(self) -> None:
         import torch
         from vibevoice.modular.modeling_vibevoice_inference import (
-            VibeVoiceForConditionalGenerationInference)
+            VibeVoiceForConditionalGenerationInference,
+        )
         from vibevoice.processor.vibevoice_processor import VibeVoiceProcessor
 
         started = time.time()
@@ -143,9 +152,14 @@ class VoiceModelEngine:
     sample_rate = SAMPLE_RATE
     capabilities = {"native_rate": False, "max_speakers": 4}
 
-    def __init__(self, model_path: str | None = None, revision: str = REVISION,
-                 cfg_scale: float = DEFAULT_CFG_SCALE, ddpm_steps: int = DEFAULT_DDPM_STEPS,
-                 device: str = "cpu"):
+    def __init__(
+        self,
+        model_path: str | None = None,
+        revision: str = REVISION,
+        cfg_scale: float = DEFAULT_CFG_SCALE,
+        ddpm_steps: int = DEFAULT_DDPM_STEPS,
+        device: str = "cpu",
+    ):
         self.revision = check_revision(revision)
         self.model_path = model_path
         self.cfg_scale = float(cfg_scale)
@@ -154,9 +168,17 @@ class VoiceModelEngine:
         self._r: Renderer | None = None
 
     def identity(self) -> dict:
-        return {"engine": self.name, "repo": REPO, "revision": self.revision, "fork": FORK_REPO,
-                "fork_commit": FORK_COMMIT, "cfg": self.cfg_scale, "steps": self.ddpm_steps,
-                "device": self.device, "prompt": PROMPT.format(text="<sentence>")}
+        return {
+            "engine": self.name,
+            "repo": REPO,
+            "revision": self.revision,
+            "fork": FORK_REPO,
+            "fork_commit": FORK_COMMIT,
+            "cfg": self.cfg_scale,
+            "steps": self.ddpm_steps,
+            "device": self.device,
+            "prompt": PROMPT.format(text="<sentence>"),
+        }
 
     def load(self) -> None:
         path = resolve_model_path(self.model_path, self.revision)
@@ -167,5 +189,8 @@ class VoiceModelEngine:
         # Seeded exactly as voice_batch/render_takes.py did before each take.
         import numpy as np
         import torch
-        torch.manual_seed(seed); np.random.seed(seed); random.seed(seed)  # noqa: E702
+
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)  # noqa: E702
         return self._r.render(text, ref)

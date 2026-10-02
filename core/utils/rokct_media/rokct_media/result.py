@@ -17,6 +17,7 @@
 result.json carries ids, numbers and hashes only: never the script text or
 an ASR transcript (those stay in .work/).
 """
+
 from __future__ import annotations
 
 import json
@@ -36,7 +37,7 @@ class Output:
     sha256: str
     duration_s: float | None = None
     segment: str | None = None
-    kind: str = "clip"          # clip | take | cut | listen
+    kind: str = "clip"  # clip | take | cut | listen
     publishable: bool = False
     lufs: float | None = None
     true_peak: float | None = None
@@ -80,6 +81,7 @@ class Result:
             if isinstance(v, (list, tuple)):
                 return [conv(x) for x in v]
             return v
+
         d = conv(asdict(self))
         d["schema"] = "rokct-media/result@1"
         return d
@@ -88,5 +90,8 @@ class Result:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         self.result_path = path
-        path.write_text(json.dumps(self.to_dict(), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(self.to_dict(), indent=1, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
         return path

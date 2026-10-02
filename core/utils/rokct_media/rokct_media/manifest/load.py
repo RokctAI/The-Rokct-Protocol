@@ -17,6 +17,7 @@
 Values resolve in this order, highest first: CLI flags / API arguments ->
 job.json -> file-name convention -> preset -> package defaults.
 """
+
 from __future__ import annotations
 
 import copy
@@ -33,9 +34,16 @@ from . import names, sources
 
 SCHEMA_PATH = Path(__file__).resolve().parent / "job.schema.json"
 DEFAULT_SPEECH = {
-    "engine": "voice_model", "model_revision": REVISION, "cfg": 1.3, "steps": 10,
-    "seed_rounds": [list(r) for r in SEED_ROUNDS], "selection": "f0_closest",
-    "pace": 1.0, "tempo": 1.0, "asr_model": "small.en", "language": "en",
+    "engine": "voice_model",
+    "model_revision": REVISION,
+    "cfg": 1.3,
+    "steps": 10,
+    "seed_rounds": [list(r) for r in SEED_ROUNDS],
+    "selection": "f0_closest",
+    "pace": 1.0,
+    "tempo": 1.0,
+    "asr_model": "small.en",
+    "language": "en",
 }
 SINKS = ("local", "commit", "publish", "return")
 IMPLEMENTED_SINKS = ("local", "return")
@@ -79,12 +87,16 @@ def schema() -> dict:
 
 def validate_manifest(raw: dict) -> None:
     import jsonschema
+
     v = jsonschema.Draft202012Validator(schema())
     errs = sorted(v.iter_errors(raw), key=lambda e: list(e.path))
     if errs:
         e = errs[0]
         where = "/".join(str(p) for p in e.path) or "(top level)"
-        raise JobError(f"job.json: {where}: {e.message}" + (f" (+{len(errs) - 1} more)" if len(errs) > 1 else ""))
+        raise JobError(
+            f"job.json: {where}: {e.message}"
+            + (f" (+{len(errs) - 1} more)" if len(errs) > 1 else "")
+        )
 
 
 def _sink(d) -> dict:
@@ -92,11 +104,20 @@ def _sink(d) -> dict:
         return {"sink": d}
     if isinstance(d, dict) and isinstance(d.get("sink"), str):
         return dict(d)
-    raise JobError(f"deliver: each entry is a sink name or {{\"sink\": name, ...}}, got {d!r}")
+    raise JobError(
+        f'deliver: each entry is a sink name or {{"sink": name, ...}}, got {d!r}'
+    )
 
 
-def load_job(folder, *, level: int | None = None, preset: str | None = None, profiles: list[str] | None = None,
-             deliver: list | None = None, speech: dict | None = None) -> Job:
+def load_job(
+    folder,
+    *,
+    level: int | None = None,
+    preset: str | None = None,
+    profiles: list[str] | None = None,
+    deliver: list | None = None,
+    speech: dict | None = None,
+) -> Job:
     folder = Path(folder).resolve()
     if not folder.is_dir():
         raise JobError(f"job folder not found: {folder}")
@@ -106,7 +127,9 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
         try:
             raw = json.loads(found["job"][0].read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            raise JobError(f"job.json is not valid JSON ({exc.msg}, line {exc.lineno})") from None
+            raise JobError(
+                f"job.json is not valid JSON ({exc.msg}, line {exc.lineno})"
+            ) from None
         validate_manifest(raw)
 
     job_id = raw.get("id") or ID_RE.sub("_", folder.name.lower()).strip("_-") or "job"
@@ -116,26 +139,45 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
     sup = names.supported_level(found, raw)
     cap = level or raw.get("level")
     if cap is not None and cap > sup:
-        raise JobError(f"level {cap} asked for, but the folder has no inputs for it (it supports level {sup})")
+        raise JobError(
+            f"level {cap} asked for, but the folder has no inputs for it (it supports level {sup})"
+        )
     eff = cap or sup
     if eff > 1 or preset in ("social_post", "thumbnail", "slide_deck"):
-        raise JobError(f"this job needs level {eff} ({preset or 'speech'}); this version of rokct-media renders "
-                       f"speech jobs (level 1) only. Set \"level\": 1 in job.json to render just its speech.")
+        raise JobError(
+            f"this job needs level {eff} ({preset or 'speech'}); this version of rokct-media renders "
+            f'speech jobs (level 1) only. Set "level": 1 in job.json to render just its speech.'
+        )
 
     # Cast: job.json, else voice.txt. The engine never guesses a voice.
     cast: dict = {}
     if raw.get("cast"):
-        cast = {r: {"voice": c["voice"], **({"gain_db": c["gain_db"]} if "gain_db" in c else {})}
-                for r, c in raw["cast"].items()}
+        cast = {
+            r: {
+                "voice": c["voice"],
+                **({"gain_db": c["gain_db"]} if "gain_db" in c else {}),
+            }
+            for r, c in raw["cast"].items()
+        }
     elif found.get("voice"):
         try:
-            cast = {r: {"voice": v} for r, v in
-                    names.parse_voice_txt(found["voice"][0].read_text(encoding="utf-8")).items()}
+            cast = {
+                r: {"voice": v}
+                for r, v in names.parse_voice_txt(
+                    found["voice"][0].read_text(encoding="utf-8")
+                ).items()
+            }
         except ValueError as exc:
             raise JobError(str(exc)) from None
     if not cast:
-        raise JobError("no voice: add voice.txt (one registered voice id) or \"cast\" in job.json")
-    default_role = next(iter(cast)) if len(cast) == 1 else ("default" if "default" in cast else None)
+        raise JobError(
+            'no voice: add voice.txt (one registered voice id) or "cast" in job.json'
+        )
+    default_role = (
+        next(iter(cast))
+        if len(cast) == 1
+        else ("default" if "default" in cast else None)
+    )
 
     # Segments: job.json segments, else segments_from, else script.*.
     segs: list[dict]
@@ -143,7 +185,9 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
         segs = copy.deepcopy(raw["segments"])
         for s in segs:
             if "from_asset" in s:
-                raise JobError(f"segment {s['id']}: from_asset (reuse) is not in this version")
+                raise JobError(
+                    f"segment {s['id']}: from_asset (reuse) is not in this version"
+                )
             if not str(s.get("text", "")).strip():
                 raise JobError(f"segment {s['id']}: no text")
             s.setdefault("role", default_role)
@@ -152,17 +196,23 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
         if sf_:
             split = sf_.get("split", "paragraphs")
             if split == "chapter_headings" or sf_.get("then"):
-                raise JobError("segments_from: chapter splitting (audiobooks) is not in this version")
+                raise JobError(
+                    "segments_from: chapter splitting (audiobooks) is not in this version"
+                )
             path = (folder / sf_["file"]).resolve()
             if not path.is_relative_to(folder) or not path.is_file():
-                raise JobError(f"segments_from.file must be a file inside the job folder: {sf_['file']}")
+                raise JobError(
+                    f"segments_from.file must be a file inside the job folder: {sf_['file']}"
+                )
             role = sf_.get("role", default_role)
         elif found.get("script"):
             if len(found["script"]) > 1:
                 raise JobError("more than one script.* file: keep one")
             path, split, role = found["script"][0], None, default_role
         else:
-            raise JobError("nothing to say: add script.txt / script.md, or segments in job.json")
+            raise JobError(
+                "nothing to say: add script.txt / script.md, or segments in job.json"
+            )
         try:
             segs = sources.script_segments(path, set(cast), role)
         except ValueError as exc:
@@ -176,24 +226,35 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
             raise JobError(f"segment id {s['id']!r} is used twice")
         seen.add(s["id"])
         if not s.get("role"):
-            raise JobError(f"segment {s['id']}: no role, and the cast has more than one voice")
+            raise JobError(
+                f"segment {s['id']}: no role, and the cast has more than one voice"
+            )
         if s["role"] not in cast:
             raise JobError(f"segment {s['id']}: role {s['role']!r} is not in the cast")
         if s.get("tempo", 1.0) != 1.0:
-            raise JobError(f"segment {s['id']}: tempo is not in this version (renders at 1.0)")
+            raise JobError(
+                f"segment {s['id']}: tempo is not in this version (renders at 1.0)"
+            )
 
     # Speech settings.
-    sp = {**copy.deepcopy(DEFAULT_SPEECH), **copy.deepcopy(raw.get("speech", {})),
-          **{k: v for k, v in (speech or {}).items() if v is not None}}
+    sp = {
+        **copy.deepcopy(DEFAULT_SPEECH),
+        **copy.deepcopy(raw.get("speech", {})),
+        **{k: v for k, v in (speech or {}).items() if v is not None},
+    }
     if sp.get("tempo", 1.0) != 1.0 or sp.get("pace", 1.0) != 1.0:
-        raise JobError("speech.tempo and speech.pace other than 1.0 are not in this version")
+        raise JobError(
+            "speech.tempo and speech.pace other than 1.0 are not in this version"
+        )
     if sp.get("reuse"):
         raise JobError("speech.reuse is not in this version")
     if sp["selection"] == "f0_closest":
         for s in segs:
             for k in ("takes", "prefer_seeds", "keep_through"):
                 if k in s:
-                    raise JobError(f"segment {s['id']}: {k} needs \"speech\": {{\"selection\": \"whole_take\"}}")
+                    raise JobError(
+                        f'segment {s["id"]}: {k} needs "speech": {{"selection": "whole_take"}}'
+                    )
     else:
         for s in segs:
             if "takes" not in s and "takes" in sp:
@@ -210,7 +271,9 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
         if p not in _profiles.PROFILES:
             raise JobError(f"unknown output profile {p!r}")
         if p not in _profiles.IMPLEMENTED:
-            raise JobError(f"output profile {p!r} is not in this version (level {_profiles.PROFILES[p]['level']})")
+            raise JobError(
+                f"output profile {p!r} is not in this version (level {_profiles.PROFILES[p]['level']})"
+            )
     formats = list(out.get("formats") or [])
     if "wav" not in formats:
         formats.insert(0, "wav")
@@ -220,10 +283,28 @@ def load_job(folder, *, level: int | None = None, preset: str | None = None, pro
         if f not in ("wav", "mp3", "json"):
             raise JobError(f"output format {f!r} is not a level-1 format")
 
-    sinks = [_sink(d) for d in (deliver if deliver is not None else raw.get("deliver") or [{"sink": "local"}])]
+    sinks = [
+        _sink(d)
+        for d in (
+            deliver
+            if deliver is not None
+            else raw.get("deliver") or [{"sink": "local"}]
+        )
+    ]
     for s in sinks:
         if s["sink"] not in SINKS:
             raise JobError(f"unknown delivery sink {s['sink']!r}")
 
-    return Job(folder=folder, id=job_id, preset=preset, level=1, cast=cast, segments=segs, speech=sp,
-               pronunciations=pron, output={"profiles": profs, "formats": formats}, deliver=sinks, found=found)
+    return Job(
+        folder=folder,
+        id=job_id,
+        preset=preset,
+        level=1,
+        cast=cast,
+        segments=segs,
+        speech=sp,
+        pronunciations=pron,
+        output={"profiles": profs, "formats": formats},
+        deliver=sinks,
+        found=found,
+    )
