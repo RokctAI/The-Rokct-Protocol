@@ -1,0 +1,114 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "rokct-media/job@1",
+ "title": "rokct-media job.json",
+ "description": "Optional manifest of a job folder. Every field is optional; what is absent comes from the file names, the preset and the package defaults.",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "$schema": {"type": "string"},
+  "_comment": {},
+  "schema": {"const": "rokct-media/job@1"},
+  "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,80}$"},
+  "preset": {"enum": ["lesson", "radio_ad", "reel", "tiktok", "audiobook", "social_post", "thumbnail", "slide_deck"]},
+  "level": {"enum": [1, 2, 3]},
+  "cast": {
+   "type": "object",
+   "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,40}$"},
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["voice"],
+    "properties": {
+     "voice": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"},
+     "gain_db": {"type": "number"}
+    }
+   }
+  },
+  "pronunciations": {
+   "type": "object",
+   "properties": {
+    "words": {"type": "object", "additionalProperties": {"type": "string"}},
+    "ambiguous": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}}
+   }
+  },
+  "speech": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "engine": {"type": "string"},
+    "model_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "cfg": {"type": "number", "exclusiveMinimum": 0},
+    "steps": {"type": "integer", "minimum": 1},
+    "takes": {"type": "integer", "minimum": 1},
+    "seed_rounds": {"type": "array", "minItems": 1, "items": {"type": "array", "minItems": 1, "items": {"type": "integer"}}},
+    "selection": {"enum": ["f0_closest", "whole_take"]},
+    "pace": {"type": "number", "exclusiveMinimum": 0, "maximum": 2},
+    "tempo": {"type": "number", "minimum": 0.9, "maximum": 1.1},
+    "reuse": {"type": "string"},
+    "resume": {"type": "boolean"},
+    "asr_model": {"type": "string"},
+    "language": {"type": "string"}
+   }
+  },
+  "segments": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id"],
+    "properties": {
+     "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"},
+     "role": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"},
+     "text": {"type": "string"},
+     "start_s": {"type": "number"},
+     "gap_before_s": {"type": "number"},
+     "pause_after_s": {"type": "number"},
+     "anchor": {"enum": ["end"]},
+     "end_margin_s": {"type": "number"},
+     "tempo": {"type": "number", "minimum": 0.9, "maximum": 1.1},
+     "gain_db": {"type": "number"},
+     "takes": {"type": "integer", "minimum": 1},
+     "prefer_seeds": {"type": "array", "items": {"type": "integer"}},
+     "keep_through": {"type": "string"},
+     "asset": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}\\.wav$"},
+     "from_asset": {"type": "string"},
+     "subtopic": {"type": "string"},
+     "chapter": {"type": "string"}
+    }
+   }
+  },
+  "segments_from": {
+   "type": "object",
+   "required": ["file"],
+   "properties": {
+    "file": {"type": "string"},
+    "split": {"enum": ["paragraphs", "subtopic_headings", "chapter_headings"]},
+    "then": {"enum": ["paragraphs"]},
+    "max_chars": {"type": "integer"},
+    "role": {"type": "string"},
+    "subtopics": {"type": "string"}
+   }
+  },
+  "timeline": {"type": "object"},
+  "music": {"type": "array"},
+  "cues": {"type": "array"},
+  "chapters": {"type": "object"},
+  "visual": {"type": "object"},
+  "output": {
+   "type": "object",
+   "properties": {
+    "profiles": {"type": "array", "items": {"type": "string"}},
+    "formats": {"type": "array", "items": {"enum": ["wav", "mp3", "m4b", "mp4", "json"]}}
+   }
+  },
+  "deliver": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": ["sink"],
+    "properties": {"sink": {"type": "string"}}
+   }
+  }
+ }
+}

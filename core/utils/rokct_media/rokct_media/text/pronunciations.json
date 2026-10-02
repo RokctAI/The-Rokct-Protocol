@@ -1,0 +1,5 @@
+{
+ "_comment": "Pronunciation fixes for every voice batch kind (rokct_media/text/pronounce.py; a job's own \"pronunciations\" merge over this list). \"words\" maps a word to how the voice should say it, applied to every whole-word use in any line, e.g. an entry \"Mahikeng\": \"mah-hee-KENG\". \"ambiguous\" lists words (usually names) with more than one right pronunciation for the same spelling, with the known variants, e.g. an entry \"<Name>\": [\"<variant 1>\", \"<variant 2>\"]; the global list never touches them, and a batch fails if a line uses one without an inline respelling. Inline, in a line's script: {{<Name>|<variant>}}; the voice says the part after the bar, the display text and the word check use the part before it, and inline always wins over this file. Only the spoken text changes, never the displayed text. Respellings may not contain braces, a bar or . ! ?. The examples above are illustrations, not entries. Grades R-3 phonics respellings stay in r3_respellings.json.",
+ "words": {},
+ "ambiguous": {}
+}

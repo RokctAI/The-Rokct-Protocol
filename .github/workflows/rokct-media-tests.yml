@@ -1,0 +1,47 @@
+name: rokct-media Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-rokct-media-tests
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "core/utils/rokct_media/**"
+      - ".github/workflows/rokct-media-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "core/utils/rokct_media/**"
+      - ".github/workflows/rokct-media-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      # The core install only (numpy, soundfile, jsonschema), plus librosa
+      # and lameenc for the stitch and end-to-end tests. No model, no torch.
+      - name: Install rokct-media (core) and test tools
+        run: pip install ./core/utils/rokct_media pytest librosa lameenc
+      - name: The wheel ships no tests
+        run: |
+          pip wheel --no-deps -w "$RUNNER_TEMP/wheel" ./core/utils/rokct_media
+          python - "$RUNNER_TEMP"/wheel/*.whl <<'PY'
+          import sys, zipfile
+          names = zipfile.ZipFile(sys.argv[1]).namelist()
+          assert not [n for n in names if n.startswith("tests/")], "tests/ is in the wheel"
+          for need in ("rokct_media/manifest/job.schema.json", "rokct_media/text/pronunciations.json"):
+              assert need in names, f"{need} missing from the wheel"
+          print(f"{len(names)} files in the wheel, no tests")
+          PY
+      - name: Run the rokct-media test suite
+        run: python -m pytest core/utils/rokct_media/tests -q
+      - name: CLI smoke test
+        run: rokct-media --version && rokct-media validate --help > /dev/null
