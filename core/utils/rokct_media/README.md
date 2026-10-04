@@ -84,6 +84,20 @@ respelled words as wildcards, and a clean tail (last 50 ms <= -34 dB of
 the loudest 10 ms frame). Pronunciations: the package's global list,
 the job's `pronunciations` merged over it, and inline `{{word|respelling}}`.
 
+## Clip finishing
+
+Every finished clip goes through the same steps, in this order: each take
+is trimmed at -40 dB keeping 40 ms of its own silence at each end
+(`PAD_S`, 12 ms fades), takes are joined with 200-240 ms gaps, then a
+lead-in is added, then the clip is RMS-normalised to -20 dBFS.
+
+The lead-in (`LEAD_S`, default 40 ms, the same as the tail pad) makes sure
+no clip starts with speech at sample 0. It counts the silence the clip
+already has before its first sound and pads only up to the target, so an
+existing lead-in is never doubled; a 10 ms fade-in (`LEAD_FADE_S`) goes on
+the first sound when padding is added. Like the tail pad, it is a constant
+in `rokct_media/speech/stitch.py`; `stitch(..., lead_s=0)` turns it off.
+
 ## Tests
 
 ```bash
