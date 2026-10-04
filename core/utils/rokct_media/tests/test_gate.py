@@ -133,7 +133,10 @@ class Stitch(unittest.TestCase):
         pad = np.zeros(int(0.5 * SR))
         y, pauses = stitch([np.concatenate([pad, tone(1), pad])] * 3, SR)
         self.assertEqual(pauses, [300, 280])
-        self.assertAlmostEqual(len(y) / SR, 3 + 6 * 0.04 + 0.22 + 0.20, delta=0.1)
+        # the first take keeps 40 ms of its own silence; the lead-in tops it up
+        self.assertAlmostEqual(
+            len(y) / SR, 3 + 6 * 0.04 + 0.22 + 0.20 + (0.20 - 0.04), delta=0.1
+        )
         self.assertAlmostEqual(float(y[0]), 0.0, places=6)
 
     def test_stitch_keeps_a_clipped_end_detectable(self):

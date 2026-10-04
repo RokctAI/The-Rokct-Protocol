@@ -18,7 +18,7 @@ import unittest
 
 import numpy as np
 
-from rokct_media.speech.stitch import LEAD_FADE_S, LEAD_S, PAD_S, SR, lead_in
+from rokct_media.speech.stitch import LEAD_FADE_S, LEAD_S, SR, lead_in
 
 WANT = int(round(LEAD_S * SR))
 
@@ -28,8 +28,8 @@ def tone(n):
 
 
 class LeadInTest(unittest.TestCase):
-    def test_defaults_mirror_tail(self):
-        self.assertEqual((LEAD_S, LEAD_FADE_S), (PAD_S, 0.010))
+    def test_defaults(self):
+        self.assertEqual((LEAD_S, LEAD_FADE_S), (0.20, 0.010))
 
     def test_speech_at_sample_zero_gets_lead_in(self):
         x = np.full(SR // 2, 0.5)

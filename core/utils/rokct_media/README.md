@@ -91,8 +91,10 @@ is trimmed at -40 dB keeping 40 ms of its own silence at each end
 (`PAD_S`, 12 ms fades), takes are joined with 200-240 ms gaps, then a
 lead-in is added, then the clip is RMS-normalised to -20 dBFS.
 
-The lead-in (`LEAD_S`, default 40 ms, the same as the tail pad) makes sure
-no clip starts with speech at sample 0. It counts the silence the clip
+The lead-in (`LEAD_S`, default 200 ms) makes sure no clip starts with
+speech at sample 0. It is sized to the trailing silence clips already end
+on (mostly from the prompt's `" ..."` suffix, not just the 40 ms pad),
+so it is set separately from `PAD_S`. It counts the silence the clip
 already has before its first sound and pads only up to the target, so an
 existing lead-in is never doubled; a 10 ms fade-in (`LEAD_FADE_S`) goes on
 the first sound when padding is added. Like the tail pad, it is a constant
