@@ -17,6 +17,11 @@
 Lifted verbatim from factory voice_batch/qc.py (stitch): trim each take at
 -40 dB with 40 ms padding, 12 ms fades, then 200-240 ms of silence between
 takes (280-320 ms pauses once the pads are counted).
+
+The finished clip then gets a lead-in (`lead_in`): silence at the front up
+to LEAD_S, the same 40 ms as the tail pad, with a 10 ms fade-in on the
+first sound, so no clip starts with speech at sample 0. It runs after the
+trim and before loudness normalisation.
 """
 
 from __future__ import annotations
@@ -24,9 +29,38 @@ from __future__ import annotations
 SR = 24_000
 GAPS_S = (0.22, 0.20, 0.24, 0.22)  # + 2 x 40 ms padding = 300/280/320/300 ms pauses
 PAD_S, FADE_S = 0.04, 0.012
+# Lead-in: silence at the front of every finished clip, mirroring the tail
+# pad. Pass lead_s= to stitch()/lead_in() to change it; 0 turns it off.
+LEAD_S, LEAD_FADE_S = PAD_S, 0.010
+# Below this (relative to the clip's peak) a sample counts as silence when
+# measuring the lead-in a clip already has; matches the stitch trim.
+LEAD_TOP_DB = 40.0
 
 
-def stitch(arrays: list, sr: int = SR):
+def lead_in(x, sr: int = SR, lead_s: float = LEAD_S, fade_s: float = LEAD_FADE_S):
+    """`x` with silence at the front up to `lead_s`, never doubled: the
+    silence it already has (samples under -LEAD_TOP_DB of the peak before
+    the first sound) counts, and only the shortfall is added. A 10 ms
+    fade-in is applied to the first sound when padding is added."""
+    import numpy as np
+
+    x = np.asarray(x, dtype=np.float64).reshape(-1)
+    peak = float(np.max(np.abs(x))) if x.size else 0.0
+    want = int(round(lead_s * sr))
+    if peak <= 0.0 or want <= 0:
+        return x
+    loud = np.nonzero(np.abs(x) > peak * 10 ** (-LEAD_TOP_DB / 20))[0]
+    have = int(loud[0]) if loud.size else len(x)
+    if have >= want:
+        return x
+    y = x.copy()
+    fade = min(int(round(fade_s * sr)), len(y) - have)
+    if fade > 0:
+        y[have : have + fade] *= np.linspace(0, 1, fade)
+    return np.concatenate([np.zeros(want - have), y])
+
+
+def stitch(arrays: list, sr: int = SR, lead_s: float = LEAD_S):
     import librosa
     import numpy as np
 
@@ -44,4 +78,4 @@ def stitch(arrays: list, sr: int = SR):
             g = GAPS_S[j % len(GAPS_S)]
             out.append(np.zeros(int(round(g * sr))))
             pauses.append(int(round((g + 2 * PAD_S) * 1000)))
-    return np.concatenate(out), pauses
+    return lead_in(np.concatenate(out), sr, lead_s), pauses
