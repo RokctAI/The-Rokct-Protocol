@@ -19,7 +19,8 @@ Lifted verbatim from factory voice_batch/qc.py (stitch): trim each take at
 takes (280-320 ms pauses once the pads are counted).
 
 The finished clip then gets a lead-in (`lead_in`): silence at the front up
-to LEAD_S, the same 40 ms as the tail pad, with a 10 ms fade-in on the
+to LEAD_S (200 ms, in line with the trailing silence finished clips end
+on, which comes mostly from the prompt's " ..." suffix), with a 10 ms fade-in on the
 first sound, so no clip starts with speech at sample 0. It runs after the
 trim and before loudness normalisation.
 """
@@ -29,9 +30,12 @@ from __future__ import annotations
 SR = 24_000
 GAPS_S = (0.22, 0.20, 0.24, 0.22)  # + 2 x 40 ms padding = 300/280/320/300 ms pauses
 PAD_S, FADE_S = 0.04, 0.012
-# Lead-in: silence at the front of every finished clip, mirroring the tail
-# pad. Pass lead_s= to stitch()/lead_in() to change it; 0 turns it off.
-LEAD_S, LEAD_FADE_S = PAD_S, 0.010
+# Lead-in: silence at the front of every finished clip. Not PAD_S: the
+# tail listeners hear is the " ..." suffix's silence plus the pad (measured
+# median ~130 ms below -40 dB of peak on local renders), so the lead-in is
+# that, clamped to the 200-350 ms band that stops a clip sounding cut off.
+# Pass lead_s= to stitch()/lead_in() to change it; 0 turns it off.
+LEAD_S, LEAD_FADE_S = 0.20, 0.010
 # Below this (relative to the clip's peak) a sample counts as silence when
 # measuring the lead-in a clip already has; matches the stitch trim.
 LEAD_TOP_DB = 40.0
