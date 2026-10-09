@@ -18,6 +18,7 @@ import subprocess
 import json
 import shutil
 import hashlib
+import re
 
 PROJECT_ROOT = os.getcwd()
 NL = chr(10)
@@ -444,6 +445,50 @@ def source_hash(src_dir):
     return cache_dir_hash(src_dir, exclude_dirs=strip)
 
 
+# A `path:` dependency line in a pubspec (dependencies, dev_dependencies or
+# dependency_overrides). Quotes and a trailing comment are tolerated.
+_PUBSPEC_PATH_DEP_RE = re.compile(r"""^\s+path:\s*['"]?([^'"#\s]+)['"]?\s*(?:#.*)?$""")
+
+
+def missing_vendored_path_deps(src_dir, target_dir):
+    """Path dependencies the cached SDK vendors INSIDE itself (e.g. a patched
+    third_party/ plugin) that the source ships but the cache has lost.
+
+    A host may deliberately gitignore such a subtree - pay's vendored
+    flutter_braintree plugin carries a vendor-published Maven credential that
+    trips push protection, so hosts drop .rokct/cache/payments/third_party/
+    flutter_braintree/. A fresh checkout then has a cache whose source
+    fingerprint still matches (the fingerprint describes the SOURCE), so it
+    was "left in place" forever and `flutter pub get` failed with exit 66
+    (could not find package). Only paths that stay inside the SDK are
+    considered (sibling-cache overrides like ../base are not the SDK's to
+    restore), and only those the source actually provides."""
+    pubspec = os.path.join(target_dir, "pubspec.yaml")
+    if not os.path.isfile(pubspec):
+        return []
+    try:
+        with open(pubspec, "r", encoding="utf-8-sig") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return []
+    missing = []
+    for line in lines:
+        m = _PUBSPEC_PATH_DEP_RE.match(line)
+        if not m:
+            continue
+        rel = m.group(1)
+        if os.path.isabs(rel):
+            continue
+        norm = os.path.normpath(rel)
+        if norm == "." or norm.startswith(".."):
+            continue
+        if os.path.isdir(os.path.join(src_dir, norm)) and not os.path.isfile(
+            os.path.join(target_dir, norm, "pubspec.yaml")
+        ):
+            missing.append(norm.replace(os.sep, "/"))
+    return sorted(set(missing))
+
+
 def parse_version(v):
     """'1.2.3' -> (1, 2, 3); tolerant of junk (unparseable -> (0,))."""
     try:
@@ -503,6 +548,19 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
         )
         decisions[clean_name] = "left-newer"
         return False
+
+    # A cache that lost a subtree it vendors as a path dependency (a host
+    # gitignores it, so every fresh checkout lacks it) can never resolve,
+    # whatever the fingerprint says: re-extract so the source restores it.
+    lost = missing_vendored_path_deps(src_dir, target_dir)
+    if lost:
+        print(
+            f"[!] {sdk_name}: cached copy at {rel_target} is missing vendored path "
+            f"dependenc{'y' if len(lost) == 1 else 'ies'} {', '.join(lost)} - "
+            "deleting and re-extracting."
+        )
+        decisions[clean_name] = "extracted"
+        return True
 
     if not entry:
         # Cache exists but predates state tracking: adopt it as the baseline
@@ -1498,9 +1556,6 @@ def _run_build_runner(cwd, label):
     print((build.stdout or "")[-2000:], end="")
     print((build.stderr or "")[-2000:], end="")
     return False
-
-
-import re
 
 
 def _fix_cache_dependency_override_paths(sdk_dir, pubspec):
