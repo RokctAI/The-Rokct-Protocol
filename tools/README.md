@@ -49,6 +49,11 @@ old-but-verified, never unverified.
   `--check` is the CI mode
   (`.github/workflows/nextjs-composer-tests.yml`). Not a fetched-and-executed
   file, so it has no `protocol.lock.json` entry.
+- `tools/new_sdk.py` — scaffolds a new SDK (the three-platform skeleton plus
+  a `CONTRACT.md` to fill in first) into a domain monorepo checkout; see
+  `SDK_ECOSYSTEM.md`, "Introducing a new SDK". Tests:
+  `python tests/test_new_sdk.py`. Run by hand, never fetched by consumers, so
+  it has no `protocol.lock.json` entry.
 - `tools/verify_protocol_lock.py` — CI check (`.github/workflows/verify_lock.yml`).
   Default (network) mode checks embedded constants against the lockfile and
   re-downloads every target from raw.githubusercontent.com at the pinned ref

@@ -31,6 +31,7 @@ guides are:
 | Frappe backend SDKs (manifest, hooks, `{app_name}`/`{module_name}` tokens) | `core/utils/frappe/frappe_sdk_management.md` (this repo) |
 | Composer app-manifest templates (flutter) | `core/utils/flutter/composer/README.md` (this repo) |
 | Composer app-manifest templates (frappe) + shell scaffold | `core/utils/frappe/composer/README.md` and `core/utils/frappe/templates/shell/README.md` (this repo) |
+| New SDK scaffold (three halves + `CONTRACT.md`) | `tools/new_sdk.py` (this repo); see "Introducing a new SDK" below |
 | Full de facto Dart manifest schema | docstrings in `core/utils/flutter/sdk_installer_base.py` (this repo) — each `update_*()` function documents one manifest key, including entry shapes and conflict semantics |
 | Lockfile / pinning procedure | `tools/README.md` (this repo) |
 | Host `data/` folder and data mode (Next.js shells) | `base/nextjs/docs/site-data.md` in the `core` repo |
@@ -793,9 +794,19 @@ unchanged and the census `nextjs` column stays as a record of the gap.
    `Users`, `pay`, `productivity`, `agent`). Only propose a new repo if no
    existing domain fits — and then replicate the monorepo conventions
    (`.relation`, `.github/workflows/` caller set, `.rokct/`).
-2. Create the three-platform skeleton: `<sdk>/dart/`, `<sdk>/frappe/`,
-   `<sdk>/nextjs/` (empty placeholder dirs are fine for platforms you don't
-   ship yet).
+2. Create the three-platform skeleton with `tools/new_sdk.py` (this repo):
+   `python3 tools/new_sdk.py <name> --repo ../<repo> --description "..."`
+   (`--platforms frappe,nextjs` for fewer halves). It writes `<sdk>/dart/`,
+   `<sdk>/frappe/` and `<sdk>/nextjs/` in the existing SDKs' shape (manifests
+   and pubspec at 1.0.0, `install.py`, the DDD `lib/src/common/` layout,
+   CHANGELOGs, `.gitignore`s) plus `<sdk>/CONTRACT.md`, and a Next.js
+   `tests/test_gateway_cmds.py` that fails when the service sends a `cmd`
+   the frappe half does not whitelist. It writes nothing outside the new
+   directory, so the wiring steps below (8-14) are still yours.
+   **Fill in `CONTRACT.md` first** (agent decision log, "SDK contract
+   first", 2026-10-09): every gateway `cmd`, its manifest alias, payload and
+   response shape, before any frappe, Dart or Next.js code. Then build the
+   halves against it.
 3. Read the `agent` repo's root `SDK_README.md` in full before writing Dart
    code. Follow its DDD layout (`domain/` interfaces; `infrastructure/` with
    `models/` sliced into data/response and `repositories/`; `application/`,
