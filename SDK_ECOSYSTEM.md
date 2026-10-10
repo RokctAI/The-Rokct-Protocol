@@ -176,7 +176,7 @@ docstrings in `core/utils/flutter/sdk_installer_base.py`.
 |---|---|
 | `name` | SDK package name (matches the Dart package). |
 | `version` | Authoritative semver — bump it in the same commit as any change. |
-| `installs` | `[{from, to}]` — copies `templates/` files into the host app's `lib/`. |
+| `installs` | `[{from, to, app_types?}]` — copies `templates/` files into the host app's `lib/`. Optional `app_types` (list of `.rokct/config/app_type` names) limits one entry to those apps; elsewhere it is skipped, its earlier unmodified copies are removed, and an `app_assets` entry only it fills is not registered (`install_entry_applies()`). Unlike an `app_type` block it declares no persona, so role-folder stripping is unchanged. |
 | `routes` | `[{path, page, type, import}]` — auto_route entries injected into the generated `app_router.dart`; `import` uses the `${package}` placeholder. |
 | `app_routes` | `[{method, body, imports}]` — `AppRoutes.I` method implementations injected into `main.dart`'s `_HostAppRoutes` block; `body` is Dart **statements** (e.g. `"context.router.replace(LauncherHomeRoute());"`). Duplicate methods: first SDK wins, others skipped with a warning. |
 | `home_sdk` | This SDK provides the app's entry widget/home page (one per app). |
@@ -709,7 +709,12 @@ This repo's runtime-fetched-and-executed files are pinned. See
        envelope, so the real repository parses it unchanged.
     2. Install that directory with the Dart manifest (`installs` copies it
        into the host app, `app_assets` adds `assets/demo/<sdk>/` to the
-       host `pubspec.yaml`).
+       host `pubspec.yaml`). Fixtures only some apps answer from carry
+       `app_types` on that `installs` entry; marketplace SDKs (products,
+       merchants) scope theirs to `["customer", "driver", "manager"]`
+       (Ray, 2026-10-05), so supacharge and other non-marketplace shells
+       that compose them transitively get no `assets/demo/<sdk>/`.
+       Fixtures that seed data an app needs stay unscoped.
     3. In the SDK's DI, call
        `DemoFixtures.registerAssetDirectory('assets/demo/<sdk>')`.
        Registration is idempotent; the first registered directory holding

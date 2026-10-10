@@ -171,6 +171,189 @@ def resolve_app_type():
     return None
 
 
+def install_entry_applies(entry, app_type):
+    """Whether one manifest `installs` entry applies to this host app.
+
+    An entry may carry an optional "app_types" list naming the app types
+    (the .rokct/config/app_type persona: customer, driver, manager, ...)
+    it installs into, e.g. demo fixtures that only marketplace apps use:
+
+        {"from": "templates/assets/demo/products",
+         "to": "assets/demo/products",
+         "app_types": ["customer", "driver", "manager"]}
+
+    An entry without the key applies everywhere, exactly as before. A
+    scoped entry is skipped in every other app, and in a host that has no
+    app_type marker at all. Unlike an "app_type" flavor block, scoping one
+    entry does not declare those personas for the SDK, so it does not
+    change which lib/src/<role>/ folders sdk_composer.py strips.
+
+    Composers older than this key ignore it and install the entry
+    everywhere - the same behaviour as before the key existed."""
+    scope = entry.get("app_types") if isinstance(entry, dict) else None
+    if scope is None:
+        return True
+    if isinstance(scope, str):
+        scope = [scope]
+    wanted = {str(s).strip().lower() for s in scope if str(s).strip()}
+    return bool(app_type) and app_type in wanted
+
+
+def _under_install_dest(path, to_rel):
+    """True when host-relative `path` (file or directory, trailing slash
+    allowed) is `to_rel` itself or lies inside it."""
+    p = path.replace("\\", "/").strip().rstrip("/")
+    t = to_rel.replace("\\", "/").strip().rstrip("/")
+    return bool(t) and (p == t or p.startswith(t + "/"))
+
+
+def _render_template_text(file_src, file_dest, sdk_name):
+    """The text an install writes for one TEXT_SUBSTITUTION_EXTENSIONS
+    template: ${package} substituted and, for .dart files, the generated-
+    template banner placed above the first import/export/part line."""
+    with open(file_src, "r", encoding="utf-8", errors="ignore") as fs:
+        content = fs.read()
+        content = content.replace("${package}", get_project_package_name())
+
+    # Prepend developer warning banner for dart files above first import/export/part
+    if file_dest.endswith(".dart"):
+        banner = f"""// ==========================================
+// [GENERATED TEMPLATE FILE]
+// This file was installed from: {sdk_name}
+// Feel free to modify and customize this code.
+// Note: If you edit this file, the SDK installer will detect your changes
+// and automatically skip overwriting it during future upgrades.
+// ==========================================
+
+"""
+        lines = content.splitlines(keepends=True)
+        insert_idx = 0
+        for idx, line in enumerate(lines):
+            trimmed = line.strip()
+            if (
+                trimmed.startswith("import ")
+                or trimmed.startswith("export ")
+                or trimmed.startswith("part ")
+                or trimmed.startswith("part '")
+                or trimmed.startswith('part "')
+            ):
+                insert_idx = idx
+                break
+        lines.insert(insert_idx, banner)
+        content = "".join(lines)
+    return content
+
+
+def _is_unmodified_install_copy(file_src, file_dest, sdk_name, recorded_hash):
+    """True when the host file at file_dest is verifiably this SDK's own
+    untouched install output of file_src: its hash matches the one the
+    installer recorded, or its bytes equal what installing file_src would
+    write now. Anything else is treated as host work."""
+    current_hash = file_hash(file_dest)
+    if current_hash is None:
+        return False
+    if recorded_hash is not None and recorded_hash == current_hash:
+        return True
+    if file_dest.endswith(TEXT_SUBSTITUTION_EXTENSIONS):
+        text = _render_template_text(file_src, file_dest, sdk_name)
+        # Installs write text mode, so a Windows copy carries CRLF endings.
+        candidates = {text, text.replace("\n", os.linesep)}
+        return any(
+            hashlib.sha256(c.encode("utf-8")).hexdigest() == current_hash
+            for c in candidates
+        )
+    return file_hash(file_src) == current_hash
+
+
+def _expand_install_entry(sdk_path, from_rel, to_rel):
+    """(abs_src, abs_dest, rel_dest) for every file one installs entry
+    copies - directory entries expanded file by file."""
+    src_path = os.path.join(sdk_path, from_rel)
+    dest_path = os.path.join(PROJECT_ROOT, to_rel)
+    files = []
+    if os.path.isdir(src_path):
+        for root, _, filenames in os.walk(src_path):
+            for filename in filenames:
+                abs_src = os.path.join(root, filename)
+                rel_to_src = os.path.relpath(abs_src, src_path)
+                abs_dest = os.path.join(dest_path, rel_to_src)
+                rel_dest = os.path.relpath(abs_dest, PROJECT_ROOT).replace("\\", "/")
+                files.append((abs_src, abs_dest, rel_dest))
+    elif os.path.exists(src_path):
+        files.append((src_path, dest_path, to_rel.replace("\\", "/")))
+    return files
+
+
+def _prune_empty_dirs(start_dir):
+    """Remove start_dir and its now-empty parents, never PROJECT_ROOT."""
+    root = os.path.abspath(PROJECT_ROOT)
+    d = os.path.abspath(start_dir)
+    while d != root and d.startswith(root + os.sep):
+        try:
+            if os.listdir(d):
+                return
+            os.rmdir(d)
+        except OSError:
+            return
+        d = os.path.dirname(d)
+
+
+def retract_gated_installs(
+    sdk_name, sdk_path, gated_entries, active_targets, package_state, state
+):
+    """Remove what a scoped installs entry (see install_entry_applies) put
+    into an app it no longer applies to - e.g. demo fixtures an earlier
+    compose copied into a non-marketplace app before the entry was scoped.
+
+    Only this SDK's unmodified copies go (_is_unmodified_install_copy);
+    a developer-modified copy, a path an applying entry still installs,
+    a path the home SDK owns and a path another SDK recorded are all kept.
+    Returns the number of files removed."""
+    removed = 0
+    home_sdk_name = resolve_home_sdk()
+    home_owned = (
+        set() if sdk_name == home_sdk_name else home_sdk_owned_files(home_sdk_name)
+    )
+    files_state = package_state.setdefault("files", {})
+    for entry in gated_entries:
+        from_rel = entry.get("from")
+        to_rel = entry.get("to")
+        if not from_rel or not to_rel:
+            continue
+        for file_src, file_dest, rel_dest in _expand_install_entry(
+            sdk_path, from_rel, to_rel
+        ):
+            if rel_dest in active_targets or rel_dest in home_owned:
+                continue
+            if not os.path.exists(file_dest):
+                files_state.pop(rel_dest, None)
+                continue
+            other_owner = any(
+                rel_dest in ((other.get("files") or {}))
+                for name, other in (state.get("packages") or {}).items()
+                if name != sdk_name
+            )
+            if other_owner:
+                continue
+            if not _is_unmodified_install_copy(
+                file_src, file_dest, sdk_name, files_state.get(rel_dest)
+            ):
+                print(
+                    f"  [!] WARNING: {rel_dest} is scoped out of app_type "
+                    f"'{resolve_app_type()}' by {sdk_name}'s manifest but was "
+                    f"modified locally; keeping it."
+                )
+                continue
+            os.remove(file_dest)
+            files_state.pop(rel_dest, None)
+            _prune_empty_dirs(os.path.dirname(file_dest))
+            removed += 1
+            print(
+                f"  [-] RETRACT: {rel_dest} (not installed in app_type '{resolve_app_type()}')"
+            )
+    return removed
+
+
 # Per-process memo for resolve_home_sdk(): the answer cannot change while
 # one installer runs, and load_state() (which consults it) is called by every
 # update_* pass, so re-reading composer.json and every cached manifest each
@@ -312,6 +495,8 @@ def _manifest_install_targets(manifest, sdk_path):
     )
     targets = set()
     for entry in manifest.get("installs", []) + flavor_block.get("installs", []):
+        if not install_entry_applies(entry, current_app_type):
+            continue
         from_rel = entry.get("from") if isinstance(entry, dict) else None
         to_rel = entry.get("to") if isinstance(entry, dict) else None
         if not from_rel or not to_rel:
@@ -728,7 +913,16 @@ def install_sdk_files_and_routes(sdk_name):
     )
 
     version = manifest.get("version", "1.0.0")
-    installs = manifest.get("installs", []) + flavor_block.get("installs", [])
+    # An installs entry may be scoped to some app types ("app_types", see
+    # install_entry_applies); entries scoped away from this app are not
+    # installed, and their earlier copies are retracted after the sync.
+    all_installs = manifest.get("installs", []) + flavor_block.get("installs", [])
+    installs = [e for e in all_installs if install_entry_applies(e, current_app_type)]
+    gated_installs = [
+        e
+        for e in all_installs
+        if isinstance(e, dict) and not install_entry_applies(e, current_app_type)
+    ]
     routes = manifest.get("routes", []) + flavor_block.get("routes", [])
     app_routes = manifest.get("app_routes", []) + flavor_block.get("app_routes", [])
     onboarding_slides = manifest.get("onboarding_slides", []) + flavor_block.get(
@@ -895,36 +1089,7 @@ def install_sdk_files_and_routes(sdk_name):
             is_text = file_dest.endswith(TEXT_SUBSTITUTION_EXTENSIONS)
 
             if is_text:
-                with open(file_src, "r", encoding="utf-8", errors="ignore") as fs:
-                    content = fs.read()
-                    content = content.replace("${package}", get_project_package_name())
-
-                # Prepend developer warning banner for dart files above first import/export/part
-                if file_dest.endswith(".dart"):
-                    banner = f"""// ==========================================
-// [GENERATED TEMPLATE FILE]
-// This file was installed from: {sdk_name}
-// Feel free to modify and customize this code.
-// Note: If you edit this file, the SDK installer will detect your changes
-// and automatically skip overwriting it during future upgrades.
-// ==========================================
-
-"""
-                    lines = content.splitlines(keepends=True)
-                    insert_idx = 0
-                    for idx, line in enumerate(lines):
-                        trimmed = line.strip()
-                        if (
-                            trimmed.startswith("import ")
-                            or trimmed.startswith("export ")
-                            or trimmed.startswith("part ")
-                            or trimmed.startswith("part '")
-                            or trimmed.startswith('part "')
-                        ):
-                            insert_idx = idx
-                            break
-                    lines.insert(insert_idx, banner)
-                    content = "".join(lines)
+                content = _render_template_text(file_src, file_dest, sdk_name)
 
                 with open(file_dest, "w", encoding="utf-8") as fd:
                     fd.write(content)
@@ -934,6 +1099,18 @@ def install_sdk_files_and_routes(sdk_name):
             # Store the resulting file's hash in state
             package_state["files"][rel_dest] = file_hash(file_dest)
             print(f"  [+] COPY: {rel_dest}")
+
+    if gated_installs:
+        active_targets = set()
+        for entry in installs:
+            if isinstance(entry, dict) and entry.get("from") and entry.get("to"):
+                for _, _, rel_dest in _expand_install_entry(
+                    sdk_path, entry["from"], entry["to"]
+                ):
+                    active_targets.add(rel_dest)
+        retract_gated_installs(
+            sdk_name, sdk_path, gated_installs, active_targets, package_state, state
+        )
 
     # Extract and store database definitions if present (tables from both
     # common and the matching flavor block; flavor's migration step wins if
@@ -975,6 +1152,22 @@ def install_sdk_files_and_routes(sdk_name):
     # disappear on the next regeneration.
     app_assets_config = list(manifest.get("app_assets") or [])
     app_assets_config += list(flavor_block.get("app_assets") or [])
+    # An asset entry that only a scoped-away installs entry fills (e.g.
+    # assets/demo/products/ in a non-marketplace app) is not this app's:
+    # registering it would point the pubspec at a directory nothing placed.
+    gated_dests = [e.get("to") for e in gated_installs if e.get("to")]
+    if gated_dests:
+        active_dests = [
+            e.get("to") for e in installs if isinstance(e, dict) and e.get("to")
+        ]
+        app_assets_config = [
+            a
+            for a in app_assets_config
+            if not (
+                any(_under_install_dest(str(a), t) for t in gated_dests)
+                and not any(_under_install_dest(str(a), t) for t in active_dests)
+            )
+        ]
     if app_assets_config:
         package_state["app_assets"] = app_assets_config
     else:
