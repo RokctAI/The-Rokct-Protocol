@@ -56,8 +56,8 @@
 {{#if sales_process}}
 {{sales_process}}
 {{else}}
-_Not recorded. Answer **Sales Process** — the stages, who owns each, and what
-moves a deal from one to the next._
+*Not recorded. Answer **Sales Process** — the stages, who owns each, and what
+moves a deal from one to the next.*
 {{/if}}
 
 ---
@@ -76,8 +76,8 @@ moves a deal from one to the next._
 *   **Returns**: {{returns_policy}}
 {{/if}}
 {{#unless payment_terms}}
-_No standard terms recorded. Without them each deal is negotiated from
-scratch, and margin leaks._
+*No standard terms recorded. Without them each deal is negotiated from
+scratch, and margin leaks.*
 {{/unless}}
 
 Anything outside these terms needs approval before it is offered.
@@ -91,7 +91,7 @@ Anything outside these terms needs approval before it is offered.
 Sell within this. A signed order the operation cannot deliver costs more than
 the order was worth.
 {{else}}
-_Capacity limits not recorded._
+*Capacity limits not recorded.*
 {{/if}}
 *   **Team**: {{personnel_count}}
 

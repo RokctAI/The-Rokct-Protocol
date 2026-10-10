@@ -23,7 +23,8 @@ cache_dir_hash() only counts files git would keep. These tests pin:
   * a manifest version bump re-extracts
   * a same-version source change re-extracts (no "local modifications"
     branch any more), as does a state entry with no source fingerprint
-  * a cache that lost lib/ re-extracts
+  * a cache that lost lib/ re-extracts, as does one that lost a vendored
+    in-SDK path dependency (e.g. a host-gitignored third_party/ plugin)
   * gitignored files do not count toward cache_dir_hash inside a git repo,
     and everything counts outside git
 
@@ -181,6 +182,58 @@ class CacheReconcileTest(unittest.TestCase):
     def test_cache_missing_lib_reextracts(self):
         self._compose()
         shutil.rmtree(os.path.join(self.target, "lib"))
+        self.assertEqual(self._compose(), (True, "extracted"))
+
+    def _vendor_plugin(self):
+        _write(
+            os.path.join(self.src, "pubspec.yaml"),
+            "name: auth_sdk\n"
+            "dependencies:\n"
+            "  plugin:\n"
+            "    path: third_party/plugin\n"
+            "dependency_overrides:\n"
+            "  base_sdk:\n"
+            "    path: ../base\n",
+        )
+        _write(
+            os.path.join(self.src, "third_party", "plugin", "pubspec.yaml"),
+            "name: plugin\n",
+        )
+
+    def test_gitignored_vendored_path_dep_is_restored(self):
+        # The host gitignores the vendored plugin (pay's flutter_braintree
+        # case): a fresh checkout lacks it while the fingerprint matches.
+        self._vendor_plugin()
+        _write(
+            os.path.join(self.host, ".gitignore"),
+            ".rokct/cache/auth/third_party/plugin/\n",
+        )
+        _git(self.host, "init", "-q")
+        self._compose()
+        _git(self.host, "add", "-A")
+        _git(self.host, "commit", "-qm", "composed")
+        _git(self.host, "clean", "-fdqx")
+        plugin = os.path.join(self.target, "third_party", "plugin", "pubspec.yaml")
+        self.assertFalse(os.path.exists(plugin))
+        self.assertEqual(self._compose(), (True, "extracted"))
+        self.assertTrue(os.path.exists(plugin))
+        # Once restored, an unchanged rerun keeps the cache again.
+        self.assertEqual(self._compose(), (False, "left-unmodified"))
+
+    def test_sibling_override_path_does_not_force_reextract(self):
+        # ../base is another cache's business, not this SDK's to restore.
+        self._vendor_plugin()
+        os.makedirs(os.path.join(self.tmp, "sdks", "base"))
+        self._compose()
+        self.assertEqual(self._compose(), (False, "left-unmodified"))
+
+    def test_missing_vendored_path_dep_without_state_reextracts(self):
+        # A cache that predates state tracking is normally adopted, but not
+        # when it cannot resolve.
+        self._vendor_plugin()
+        self._compose()
+        os.remove(self.mod.STATE_FILE)
+        shutil.rmtree(os.path.join(self.target, "third_party"))
         self.assertEqual(self._compose(), (True, "extracted"))
 
     def test_hash_respects_gitignore_inside_git(self):

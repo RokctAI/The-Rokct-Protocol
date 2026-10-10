@@ -366,6 +366,18 @@
       ]
     },
     {
+      "name": "studio_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/designer",
+      "path": "../designer/studio/nextjs",
+      "ref": "main",
+      "sha256": "70338e56c0f709e698f4a7f0a26c5681e1b444776885195a255229b6d3150456",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
       "name": "subscriptions_sdk",
       "enabled": false,
       "source": "git",

@@ -7,7 +7,7 @@
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Not recorded. Answer **Brand Positioning**._
+*Not recorded. Answer **Brand Positioning**.*
 {{/if}}
 {{/if}}
 
@@ -33,7 +33,7 @@ _Not recorded. Answer **Brand Positioning**._
 {{#if growth_strategy}}
 {{growth_strategy}}
 {{else}}
-_Not recorded._
+*Not recorded.*
 {{/if}}
 {{/if}}
 
@@ -54,14 +54,14 @@ _Not recorded._
 {{#if marketing_budget}}
 **Budget**: {{marketing_budget}}
 {{else}}
-_No marketing budget recorded._
+*No marketing budget recorded.*
 {{/if}}
 
 Measure monthly:
 
 | Metric | Target |
 | :--- | :--- |
-| Cost per lead | _set a target_ |
-| Cost per acquired customer | _set a target_ |
-| Lead-to-customer conversion | _set a target_ |
-| Revenue attributed by channel | _set a target_ |
+| Cost per lead | *set a target* |
+| Cost per acquired customer | *set a target* |
+| Lead-to-customer conversion | *set a target* |
+| Revenue attributed by channel | *set a target* |

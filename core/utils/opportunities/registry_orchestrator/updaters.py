@@ -161,7 +161,9 @@ def parse_tender_card(content):
     title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
     data["title"] = title_match.group(1).strip() if title_match else "Unknown"
 
-    for key, val in re.findall(r"-\s+\*\*(.+?)\*\*:\s*(.*)", content):
+    # [ \t]* rather than \s*: an empty field ("- **Phone**:") must stay
+    # empty instead of swallowing the next line ("## Source") as its value.
+    for key, val in re.findall(r"-[ \t]+\*\*(.+?)\*\*:[ \t]*([^\n]*)", content):
         clean_key = key.lower().replace(" ", "_").strip("?")
         data[clean_key] = val.strip()
 

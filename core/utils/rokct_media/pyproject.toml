@@ -1,0 +1,77 @@
+# Packaging for the Rokct media engine (rokct-media).
+#
+# Mirrors core/utils/startup_os/: its own pyproject in the directory,
+# setuptools, the version read from rokct_media.__version__, a console
+# script, and tests/ left out of the wheel.
+#
+#   pip install core/utils/rokct_media                    # core (light)
+#   pip install "core/utils/rokct_media[voice]"           # + the voice model and QC stack
+#   pip install "rokct-media[voice] @ git+https://github.com/RokctAI/The-Rokct-Protocol@<sha>#subdirectory=core/utils/rokct_media"
+#
+# The core install is light (numpy, soundfile, jsonschema), so a web worker
+# can import the package without pulling torch. Callers pin a commit SHA,
+# never main.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rokct-media"
+description = "Rokct media engine: a job folder in, gated speech (and later mixes and video) out."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "RokctAI" }]
+dynamic = ["version"]
+dependencies = [
+    "numpy",
+    "soundfile",
+    "jsonschema",
+]
+
+[project.optional-dependencies]
+# Everything the L1 speech render and its QC gate need. Install CPU torch
+# first from https://download.pytorch.org/whl/cpu, or pip pulls the CUDA
+# wheels. The voice-model code is the community fork, pinned by commit.
+voice = [
+    "torch",
+    "transformers==4.51.3",
+    "huggingface_hub",
+    "vibevoice @ git+https://github.com/vibevoice-community/VibeVoice.git@952326ddb264062466a888cf32a5b2f4e803e16e",
+    "librosa",
+    "faster-whisper",
+    "resemblyzer",
+    "lameenc",
+]
+test = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/RokctAI/The-Rokct-Protocol"
+Source = "https://github.com/RokctAI/The-Rokct-Protocol/tree/main/core/utils/rokct_media"
+
+[project.scripts]
+rokct-media = "rokct_media.cli:main"
+
+[tool.setuptools]
+# tests/ sits beside the package and is deliberately not listed, so it is
+# not shipped in the wheel.
+packages = [
+    "rokct_media",
+    "rokct_media.audio",
+    "rokct_media.deliver",
+    "rokct_media.levels",
+    "rokct_media.manifest",
+    "rokct_media.models",
+    "rokct_media.qc",
+    "rokct_media.speech",
+    "rokct_media.text",
+    "rokct_media.voices",
+]
+
+[tool.setuptools.package-data]
+"rokct_media.manifest" = ["*.json"]
+"rokct_media.text" = ["*.json"]
+
+[tool.setuptools.dynamic]
+version = { attr = "rokct_media.__version__" }

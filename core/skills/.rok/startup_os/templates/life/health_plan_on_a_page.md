@@ -12,8 +12,8 @@ own commitments — nothing here is prescribed.
 {{#if wellness_focus}}
 > **Primary Wellness Goal**: {{wellness_focus}}
 {{else}}
-_No wellness goal recorded. Answer **Wellness Focus** in questions.md — the
-rest of this plan hangs off it._
+*No wellness goal recorded. Answer **Wellness Focus** in questions.md — the
+rest of this plan hangs off it.*
 {{/if}}
 
 ---
@@ -23,8 +23,8 @@ rest of this plan hangs off it._
 {{#if sleep_target}}
 *   **Committed Sleep Schedule**: {{sleep_target}}
 {{else}}
-*   **Committed Sleep Schedule**: _not recorded — answer **Sleep Target** with
-    the schedule and duration you are committing to._
+*   **Committed Sleep Schedule**: *not recorded — answer **Sleep Target** with
+    the schedule and duration you are committing to.*
 {{/if}}
 
 ---
@@ -34,8 +34,8 @@ rest of this plan hangs off it._
 {{#if training_routine}}
 {{training_routine}}
 {{else}}
-_No routine recorded. Answer **Training Routine** — the weekly movement you
-actually do, not an aspiration._
+*No routine recorded. Answer **Training Routine** — the weekly movement you
+actually do, not an aspiration.*
 {{/if}}
 
 ---
@@ -45,8 +45,8 @@ actually do, not an aspiration._
 {{#if nutrition_approach}}
 {{nutrition_approach}}
 {{else}}
-_No approach recorded. Answer **Nutrition Approach** — how you actually fuel
-a working day._
+*No approach recorded. Answer **Nutrition Approach** — how you actually fuel
+a working day.*
 {{/if}}
 
 ---
@@ -56,6 +56,6 @@ a working day._
 {{#if health_metrics}}
 {{health_metrics}}
 {{else}}
-_No metrics recorded. Answer **Health Metrics** — what you track and the
-current targets. A plan without a measure is a wish._
+*No metrics recorded. Answer **Health Metrics** — what you track and the
+current targets. A plan without a measure is a wish.*
 {{/if}}

@@ -16,8 +16,8 @@ Issued by {{company_name}}.
 {{#if core_value_proposition}}
 {{core_value_proposition}}
 {{else}}
-_Not recorded. Answer **Core Value Proposition** in questions.md — one line on
-what the customer gets and why it is worth paying for._
+*Not recorded. Answer **Core Value Proposition** in questions.md — one line on
+what the customer gets and why it is worth paying for.*
 {{/if}}
 {{#if mission_statement}}
 
@@ -38,9 +38,9 @@ what the customer gets and why it is worth paying for._
 {{#if pricing_tiers}}
 {{pricing_tiers}}
 {{else}}
-_Not recorded. Answer **Pricing Tiers** in questions.md — one line per product
+*Not recorded. Answer **Pricing Tiers** in questions.md — one line per product
 or tier, with the price and what is included. Include any discounted rates
-(annual prepayment, bundles, promotions) and the conditions attached to each._
+(annual prepayment, bundles, promotions) and the conditions attached to each.*
 {{/if}}
 
 {{#if_feature vat}}
@@ -59,9 +59,9 @@ Where an account falls into arrears, the payment terms above and the full
 terms of sale govern what happens next; unless agreed otherwise,
 {{company_name}} may suspend delivery or access until the account is settled.
 {{else}}
-_Not recorded. Answer **Payment Terms** in questions.md — accepted payment
+*Not recorded. Answer **Payment Terms** in questions.md — accepted payment
 methods, billing frequency, whether fees are billed in advance or in arrears,
-and what happens on late or failed payment._
+and what happens on late or failed payment.*
 {{/if}}
 
 ---
@@ -70,9 +70,9 @@ and what happens on late or failed payment._
 {{#if delivery_terms}}
 {{delivery_terms}}
 {{else}}
-_Not recorded. Answer **Delivery Terms** in questions.md — how and when the
+*Not recorded. Answer **Delivery Terms** in questions.md — how and when the
 customer receives the product or gains access, who bears any delivery cost,
-and any preconditions (for example, payment received)._
+and any preconditions (for example, payment received).*
 {{/if}}
 {{#if service_levels}}
 
@@ -85,9 +85,9 @@ and any preconditions (for example, payment received)._
 {{#if returns_policy}}
 {{returns_policy}}
 {{else}}
-_Not recorded. Answer **Returns Policy** in questions.md — notice period for
+*Not recorded. Answer **Returns Policy** in questions.md — notice period for
 cancellation, when a refund applies, how it is calculated, and how long it
-takes to process._
+takes to process.*
 {{/if}}
 {{#if warranty_terms}}
 
@@ -100,9 +100,9 @@ takes to process._
 {{#if dispute_resolution}}
 {{dispute_resolution}}
 {{else}}
-_Not recorded. Answer **Dispute Resolution** in questions.md — the process a
+*Not recorded. Answer **Dispute Resolution** in questions.md — the process a
 customer follows to query a fee or invoice, and the governing law. Absent
-agreement, the default rules of {{jurisdiction_name}} apply._
+agreement, the default rules of {{jurisdiction_name}} apply.*
 {{/if}}
 
 ---

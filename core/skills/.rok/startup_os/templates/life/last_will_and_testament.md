@@ -29,18 +29,18 @@
 {{#if legal_full_name}}
 I, **{{legal_full_name}}**{{#if primary_base}}, of {{primary_base}}{{/if}}, declare this to be my last will and testament. I revoke all wills, codicils and testamentary writings previously made by me.
 {{else}}
-_Full legal name not recorded. Answer **Legal Full Name** in questions.md —
+*Full legal name not recorded. Answer **Legal Full Name** in questions.md —
 exactly as it appears on your identity document. A will that misnames its
-testator invites a challenge._
+testator invites a challenge.*
 {{/if}}
 
 {{#if marital_status}}
 *   **Marital Status**: {{marital_status}}
-    _A marriage regime (in or out of community of property, accrual) changes
-    what is yours to bequeath — confirm the effect with your adviser._
+    *A marriage regime (in or out of community of property, accrual) changes
+    what is yours to bequeath — confirm the effect with your adviser.*
 {{else}}
-*   **Marital Status**: _not recorded — answer **Marital Status**, including
-    the regime; it decides what the estate actually contains._
+*   **Marital Status**: *not recorded — answer **Marital Status**, including
+    the regime; it decides what the estate actually contains.*
 {{/if}}
 {{#if spouse_or_partner_name}}
 *   **Spouse / Partner**: {{spouse_or_partner_name}}
@@ -58,18 +58,18 @@ I appoint **{{executor}}** as the executor of my estate.
 {{#if alternate_executor}}
 Should they be unable or unwilling to act, I appoint **{{alternate_executor}}** in their place.
 {{else}}
-_No alternate recorded. Answer **Alternate Executor** — a will with a single
-point of failure in its executor is a fragile will._
+*No alternate recorded. Answer **Alternate Executor** — a will with a single
+point of failure in its executor is a fragile will.*
 {{/if}}
 
 I direct that my executor have all powers permitted by the law of
 {{jurisdiction_name}} to administer, realise and distribute my estate.
-_Whether the executor may act free of security (bond) and how their fees are
-set are jurisdiction-specific — have your adviser add the correct wording._
+*Whether the executor may act free of security (bond) and how their fees are
+set are jurisdiction-specific — have your adviser add the correct wording.*
 {{else}}
-_No executor recorded. Answer **Executor** in questions.md — without a
+*No executor recorded. Answer **Executor** in questions.md — without a
 nominated executor the estate is administered by an official appointee, on
-the state's schedule, not yours._
+the state's schedule, not yours.*
 {{/if}}
 
 ---
@@ -80,13 +80,13 @@ the state's schedule, not yours._
 {{#if guardian_nomination}}
 Should any child of mine be a minor at my death and no surviving parent hold
 guardianship, I nominate **{{guardian_nomination}}** as guardian.
-_Guardianship nominations are subject to confirmation by the competent
+*Guardianship nominations are subject to confirmation by the competent
 authority in {{jurisdiction_name}}; discuss the nomination with the person
-named before signing._
+named before signing.*
 {{else}}
-_Your **Children** answer marks at least one minor, but no guardian is
+*Your **Children** answer marks at least one minor, but no guardian is
 recorded. Answer **Guardian Nomination** — a guardian chosen by you beats one
-chosen for you._
+chosen for you.*
 {{/if}}
 
 ---
@@ -100,9 +100,9 @@ stated otherwise:
 
 {{will_bequests_list}}
 {{else}}
-_No specific bequests recorded — the residue clause below governs the whole
+*No specific bequests recorded — the residue clause below governs the whole
 estate. To leave particular items or amounts to particular people, answer
-**Specific Bequests**, one per line. No recipient is ever assumed._
+**Specific Bequests**, one per line. No recipient is ever assumed.*
 {{/if}}
 
 ---
@@ -120,14 +120,14 @@ Should a named heir not survive me, their share passes as follows:
 {{alternate_heirs}}
 {{else}}
 
-_No alternates recorded. Answer **Alternate Heirs** — say where a share goes
-if its heir dies before you, or the law will decide by default._
+*No alternates recorded. Answer **Alternate Heirs** — say where a share goes
+if its heir dies before you, or the law will decide by default.*
 {{/if}}
 {{else}}
-_No residue beneficiaries recorded. Answer **Residue Beneficiaries** — this
+*No residue beneficiaries recorded. Answer **Residue Beneficiaries** — this
 is the clause that disposes of everything not specifically bequeathed. A will
 without it leaves the bulk of the estate to the default rules of intestate
-succession. No heir is ever invented for you._
+succession. No heir is ever invented for you.*
 {{/if}}
 
 ---
@@ -136,8 +136,8 @@ succession. No heir is ever invented for you._
 
 A beneficiary who does not survive me by thirty days is treated as having
 predeceased me, and their benefit passes under the alternate provisions of
-this will. _A survivorship period is standard drafting, but confirm the
-period and wording for {{jurisdiction_name}} with your adviser._
+this will. *A survivorship period is standard drafting, but confirm the
+period and wording for {{jurisdiction_name}} with your adviser.*
 
 ---
 
