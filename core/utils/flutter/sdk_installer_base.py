@@ -329,7 +329,7 @@ def retract_gated_installs(
                 files_state.pop(rel_dest, None)
                 continue
             other_owner = any(
-                rel_dest in ((other.get("files") or {}))
+                rel_dest in (other.get("files") or {})
                 for name, other in (state.get("packages") or {}).items()
                 if name != sdk_name
             )
