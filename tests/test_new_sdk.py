@@ -85,12 +85,16 @@ class TestScaffold(unittest.TestCase):
         self.scaffold()
         frappe = self.load("frappe/manifest.json")
         self.assertEqual(frappe["name"], "booking")
-        self.assertEqual(frappe["app_type"]["tenant"]["hooks"]["whitelisted_methods"], {})
+        self.assertEqual(
+            frappe["app_type"]["tenant"]["hooks"]["whitelisted_methods"], {}
+        )
         for half in ("dart", "nextjs"):
             manifest = self.load(f"{half}/manifest.json")
             self.assertEqual(manifest["name"], "booking_sdk")
             self.assertEqual(manifest["version"], "1.0.0")
-        with open(os.path.join(self.sdk_dir, "dart/pubspec.yaml"), encoding="utf-8") as f:
+        with open(
+            os.path.join(self.sdk_dir, "dart/pubspec.yaml"), encoding="utf-8"
+        ) as f:
             pubspec = f.read()
         self.assertIn("name: booking_sdk\n", pubspec)
         self.assertIn("version: 1.0.0\n", pubspec)

@@ -130,7 +130,8 @@ pubspec.lock
     + COMMON_IGNORE_TAIL
 )
 
-FRAPPE_GITIGNORE = """# Frappe Project
+FRAPPE_GITIGNORE = (
+    """# Frappe Project
 # Python
 __pycache__/
 *.py[cod]
@@ -146,7 +147,10 @@ venv/
 .venv
 .env
 
-""" + IDE_OS_IGNORE + COMMON_IGNORE_TAIL
+"""
+    + IDE_OS_IGNORE
+    + COMMON_IGNORE_TAIL
+)
 
 NEXTJS_GITIGNORE = (
     "# Next.js Project\n"
@@ -166,7 +170,9 @@ out/
 
 
 def install_py(sdk_name, call):
-    return PY_LICENSE + f"""
+    return (
+        PY_LICENSE
+        + f"""
 import sys
 import os
 
@@ -186,6 +192,7 @@ if __name__ == '__main__':
     sdk_name = '{sdk_name}'
     sdk_installer_base.{call}(sdk_name)
 """
+    )
 
 
 def contract_md(name, description, platforms):
@@ -309,7 +316,9 @@ dependency_overrides:
     return files
 
 
-NEXTJS_TEST = PY_LICENSE + '''
+NEXTJS_TEST = (
+    PY_LICENSE
+    + '''
 """Every gateway cmd this SDK's Next.js half sends is whitelisted by its own
 frappe half (scaffolded by The-Rokct-Protocol tools/new_sdk.py).
 
@@ -410,6 +419,7 @@ class TestVersion(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 '''
+)
 
 
 def nextjs_files(name, description):
