@@ -3034,6 +3034,15 @@ def update_session_policy():
     contain quotes or backslashes — the installer stays a dumb pipe and
     rejects them instead of escaping.
 
+    Two optional keys (auth_sdk >= 1.18.0, "Becoming a seller or driver"):
+    "signup_app_role" is the role a sign-up in this app asks the backend for
+    (register_user's app_role; the manager app sends "seller"), emitted as
+    appRole; "allow_offline_accounts": true lets an account signed up
+    offline on the phone sign in offline, landing where signup_app_role
+    lands (the manager app: a seller can sign up and sell with no signal).
+    Older auth_sdk has neither parameter, so declare them only with
+    auth_sdk >= 1.18.0.
+
     Exactly zero or one installed SDK may declare a policy. Two apps'
     worth of login gates is not a tie to break silently (whichever lost
     would admit the wrong accounts), so like brand_hook this raises a hard
@@ -3119,6 +3128,19 @@ def update_session_policy():
                 body_lines.append(
                     f"    rejectionRoute: {_lit(route, 'rejection_route')},"
                 )
+            app_role = policy.get("signup_app_role")
+            if app_role:
+                body_lines.append(
+                    f"    appRole: {_lit(app_role, 'signup_app_role')},"
+                )
+            allow_offline = policy.get("allow_offline_accounts")
+            if allow_offline is not None and not isinstance(allow_offline, bool):
+                raise RuntimeError(
+                    f"session_policy: allow_offline_accounts in {pkg_name} must be "
+                    f"true or false, not {allow_offline!r}."
+                )
+            if allow_offline:
+                body_lines.append("    allowOfflineAccounts: true,")
             body_lines.append("  );")
     policy_block = "\n".join(body_lines)
 
