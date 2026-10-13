@@ -1,0 +1,95 @@
+{
+  "name": "rokctapp_composer",
+  "version": "1.0.0",
+  "package_name": "drive",
+  "description": "Configuration list of active SDKs for the drive app: files on the user's own private GitHub repos, offline first",
+  "sdks": [
+    {
+      "name": "depot_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/depot/dart",
+      "ref": "main",
+      "sha256": "b05eb10221aaed7744b111905977e3fad4dd62ab705b1c354b4936eca5759c57",
+      "_sha256_comment": "SHA-256 of depot/dart/install.py at hardware@3b579b4; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "home_sdk": true,
+      "_comment": "Storage on the user's own private GitHub repos (depot/CONTRACT.md): device-flow GitHub sign-in, batched commits, index, versions, offline queue, repo-side jobs. The host passes DepotConfig(thumbnails: false, suggestedRepoName: 'my-drive') with the clientId of the GitHub OAuth app (device flow enabled). A drive app's home IS the file browser: depot's app_type.drive block sets replaceMainRoute -> DepotFilesRoute (/depot/files), so the shell's .rokct/config/app_type must be 'drive'. There is no separate drive SDK; file types and icons come from each entry's index mime."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/dart",
+      "ref": "main",
+      "sha256": "909d60c5455993693ad4169653e961e99f683ecfa1c8f8f714f787fc2d39c740",
+      "_sha256_comment": "SHA-256 of base/dart/install.py at core@344e5a6; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Shared kernel: app shell templates, AppStyle, BundledTranslations (depot registers its English copy there at boot) and the AppDatabase depot_sdk registers its six tables into. The drive app has no Frappe backend, so base's gateway is never the storage remote."
+    },
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/dart",
+      "ref": "main",
+      "sha256": "f4ebf13b33b28b668332407790e2aa6f5a0d79283a845200188b77f7f8035ba6",
+      "_sha256_comment": "SHA-256 of telemetry/dart/install.py at core@344e5a6; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Mandatory in every profile: delivery policy on top of base_sdk's TelemetryClient."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/dart",
+      "ref": "main",
+      "sha256": "da93bdfbb0265deda5f22f3199097a9af2c9f064aeca916c807c4cc429b045f9",
+      "_sha256_comment": "SHA-256 of auth/dart/install.py at Users@8fc635b; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The app account, separate from the GitHub sign-in that only connects storage (depot's /depot/setup). With no backend, registration and login work offline (auth_sdk's offline users), so the app never blocks on a server. Requires users_sdk at runtime."
+    },
+    {
+      "name": "users_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/dart",
+      "ref": "main",
+      "sha256": "c45dc71de03c47c0930d1ea277469a4520988946336066f6328b85b8e6e43137",
+      "_sha256_comment": "SHA-256 of users/dart/install.py at Users@8fc635b; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Required by auth_sdk at runtime (the signed-in user's profile); not optional while auth_sdk is composed."
+    },
+    {
+      "name": "onboarding_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/onboarding/dart",
+      "ref": "main",
+      "sha256": "5980c6a541ec6334686b10a08932c4e4967c835cb99ec6e9097fc25f4f324076",
+      "_sha256_comment": "SHA-256 of onboarding/dart/install.py at Users@8fc635b; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "First-run intro (/onboarding-intro) before the app account; owner ruling 2026-10-13: onboarding is included in the drive app."
+    },
+    {
+      "name": "desktop_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/desktop/dart",
+      "ref": "main",
+      "sha256": "d9adf68c4c9da75ad3e7b8164253f09acb82ed3a68595687d5f138f99caf1057",
+      "_comment": "TEMPORARY (desktop testing convenience, revert candidate): added to every app profile so all composed apps pull desktop support and can be viewed/tested on desktop. Pin = sha256 of hardware desktop/dart/install.py at main head 84aa6ed, same value as supacharge.json's entry."
+    },
+    {
+      "name": "hms_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hms/dart",
+      "ref": "main",
+      "sha256": "91468daf800bb0a348019c491605f25ad2d37f44682fd61211fd471a60b2d57b",
+      "_comment": "Huawei Mobile Services support, built like desktop_sdk (SDK module, not productFlavors). Dart-side: DeviceServices ({gms, hms, neither} detection, cached, fail-open to gms) and an order-30 boot hook that, ONLY on GMS-free HMS-capable devices, boots Push Kit and registers the HMS push token through the same api.user.register_device_token gateway cmd the FCM token uses (provider 'hms'). No installs - the BUILD_HMS-gated AGConnect Gradle wiring lives statically in core's android template, default-off. Strict no-op in every plain GMS build."
+    }
+  ]
+}
