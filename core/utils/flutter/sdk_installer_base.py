@@ -3130,9 +3130,7 @@ def update_session_policy():
                 )
             app_role = policy.get("signup_app_role")
             if app_role:
-                body_lines.append(
-                    f"    appRole: {_lit(app_role, 'signup_app_role')},"
-                )
+                body_lines.append(f"    appRole: {_lit(app_role, 'signup_app_role')},")
             allow_offline = policy.get("allow_offline_accounts")
             if allow_offline is not None and not isinstance(allow_offline, bool):
                 raise RuntimeError(
