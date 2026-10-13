@@ -180,6 +180,17 @@
       "_sha256_comment": "SHA-256 of promotions/dart/install.py at commerce@71394ca8; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
+      "name": "subscriptions_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/dart",
+      "ref": "main",
+      "sha256": "5320373f3c4524cc87a16d0dff362bf4acf95e9c5e7a2b98bd7784fb527ecfb4",
+      "skip_install": true,
+      "_comment": "Library only. loyalty_sdk 1.1.0 (customer plans) imports subscriptions_sdk's payment-method row, so pub needs it in the cache. skip_install keeps its manager /subscriptions page and demo assets out of the customer app."
+    },
+    {
       "name": "loyalty_sdk",
       "enabled": true,
       "source": "git",
