@@ -62,7 +62,7 @@
       "path": "../commerce/products/dart",
       "ref": "main",
       "sha256": "16c3664281acd12e34fb13432c9491de1993383e5465b30ae79de9f4278df556",
-      "_comment": "Transitive dependency of users_sdk, not used directly by Supacharge features today."
+      "_comment": "Registers the product, category and brand repositories behind base_sdk's ProductsRepositoryFacade / CategoriesRepositoryFacade / BrandsRepositoryFacade (base's home and shop notifiers resolve them through get_it) and the productScreen embedded widget. users_sdk does not depend on it, and no Supacharge screen is known to use it directly today."
     },
     {
       "name": "merchants_sdk",
@@ -72,7 +72,7 @@
       "path": "../commerce/merchants/dart",
       "ref": "main",
       "sha256": "eeb112f21c2ae23e7da1d7fed8336d5b9b143ff7edc71f0a0b0ef88d306f6b28",
-      "_comment": "Mutual dependency of products_sdk, not used directly by Supacharge features today."
+      "_comment": "Supacharge uses it for its app assets: the splash images (assets/images/splash*.png), assets/svgs/menu.svg and assets/audio/notification.wav. Its manager screens (which import products_sdk) are not installed here."
     },
     {
       "name": "onboarding_sdk",
@@ -100,7 +100,7 @@
       "path": "../pay/wallet/dart",
       "ref": "main",
       "sha256": "ef9e35ae06bf8a90ac13ec7da63d13c744df25390d90b9e1ad1f400d0b779ec0",
-      "_comment": "Transitive dependency of payments_sdk, not used directly by Supacharge features today."
+      "_comment": "Used directly: lms_sdk's installed lms_route_pages.dart imports WalletCardSection for the student profile's wallet card, and wallet_sdk's /wallet-topup and /wallet-history routes are Supacharge's main money screens (the plans sheet pushes /wallet-topup)."
     },
     {
       "name": "subscriptions_sdk",

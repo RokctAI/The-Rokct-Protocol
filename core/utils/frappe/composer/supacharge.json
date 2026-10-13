@@ -93,6 +93,15 @@
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
       "ref": "main"
+    },
+    {
+      "name": "productivity",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/frappe",
+      "ref": "main",
+      "_comment": "Vision, pillars, strategic objectives, KPIs, plan on a page and personal mastery goals behind productivity_sdk's tenant.api.get_* calls. The projects module (personal task sync, api.projects.*) is NOT composed here: its manifest requires the erp module (pay repo) alongside, and supacharge does not compose erp."
     }
   ]
 }

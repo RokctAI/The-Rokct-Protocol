@@ -69,7 +69,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 
 | Template | Extra modules |
 | --- | --- |
-| `supacharge.json` | `lms`, `agent` |
+| `supacharge.json` | `lms`, `replay`, `agent`, `productivity` (not `projects`: it needs `erp` alongside, so personal task sync has no backend here yet) |
 | `startupos.json` | `studio`, `productivity`, `agent` |
 | `telephony.json` | — (telephony module pending extraction from control; `hardware/telephony/frappe` carries a control-persona `manifest.json` and the four Telephony plan fixtures, not a tenant module) |
 | `hosting.json` | — (kept as the hosting product's backend record; the hosting shell's live backend is the control site, where the hosting apps live. The hosting module itself is composed by `rpanel.json`, below) |
