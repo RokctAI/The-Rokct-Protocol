@@ -64,6 +64,7 @@ def remove_workflow(name):
         os.remove(path)
         print(f"[init] SDK repo: removed .github/workflows/{name}")
 
+
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
