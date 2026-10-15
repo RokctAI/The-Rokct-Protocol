@@ -51,6 +51,23 @@ PROTOCOL_DIR = (
 PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 
+# An SDK repo declares itself with an (empty is fine) marker at
+# .rokct/config/is_sdk. SDK repos never receive Protocol CI: initiate skips
+# those workflows and deletes any copy already in .github/workflows/.
+SDK_MARKER = os.path.join(ROKCT_DIR, "config", "is_sdk")
+SDK_EXCLUDED_WORKFLOWS = ("sync_workspace.yml", "maintenance.yml")
+
+
+def is_sdk_repo():
+    return os.path.isfile(SDK_MARKER)
+
+
+def remove_workflow(name):
+    path = os.path.join(PROJECT_ROOT, ".github", "workflows", name)
+    if os.path.isfile(path):
+        os.remove(path)
+        print(f"[init] SDK repo: removed .github/workflows/{name}")
+
 
 # The profile file this copy self-updates from. Stays in lockstep with the
 # profile directory this file lives in.
@@ -433,6 +450,9 @@ def main():
     # Skipped in CI: GITHUB_TOKEN lacks the `workflows` permission, so any
     # file deployed into .github/workflows/ gets the compose commit-back
     # remote-rejected by GitHub.
+    sdk = is_sdk_repo()
+    if sdk:
+        print("[init] SDK repo (.rokct/config/is_sdk present): Protocol CI disabled")
     if "RokctAI/" in origin_url and not os.environ.get("CI"):
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
         # Staged under the git-ignored .rokct/tmp/ rather than
@@ -454,6 +474,9 @@ def main():
                 os.makedirs(dst_workflows, exist_ok=True)
                 repo_name = origin_url.split("RokctAI/")[-1].replace(".git", "")
                 for src_name, dst_name in select_rok_workflows(src_dir, repo_name):
+                    if sdk:
+                        remove_workflow(dst_name)
+                        continue
                     shutil.copy2(
                         os.path.join(src_dir, src_name),
                         os.path.join(dst_workflows, dst_name),
@@ -550,7 +573,10 @@ def main():
     ensure_file(
         "workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py")
     )
-    if not os.environ.get("CI"):
+    if sdk:
+        for name in SDK_EXCLUDED_WORKFLOWS:
+            remove_workflow(name)
+    elif not os.environ.get("CI"):
         ensure_file(
             "workflows/sync_workspace.yml",
             os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"),
@@ -597,7 +623,7 @@ def main():
         else:
             print("[init] Standalone mode (no workspace sync)")
             # Only standalone or parent repos get the maintenance workflow (children don't need it)
-            if not os.environ.get("CI"):
+            if not os.environ.get("CI") and not sdk:
                 ensure_file(
                     "workflows/maintenance.yml",
                     os.path.join(
@@ -611,7 +637,11 @@ def main():
         # If config already exists, check if it's a parent (no parent_repo set)
         with open(cfg, "r", encoding="utf-8") as f:
             config_data = json.load(f)
-            if not config_data.get("parent_repo") and not os.environ.get("CI"):
+            if (
+                not config_data.get("parent_repo")
+                and not os.environ.get("CI")
+                and not sdk
+            ):
                 ensure_file(
                     "workflows/maintenance.yml",
                     os.path.join(

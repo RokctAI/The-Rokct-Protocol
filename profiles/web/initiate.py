@@ -47,6 +47,23 @@ PROJECT_ROOT = os.getcwd()
 ROKCT_DIR = os.path.join(PROJECT_ROOT, ".rokct")
 REMOTE_PREFIX = f"The-Rokct-Protocol-{PROTOCOL_REF}"
 
+# An SDK repo declares itself with an (empty is fine) marker at
+# .rokct/config/is_sdk. SDK repos never receive Protocol CI: initiate skips
+# those workflows and deletes any copy already in .github/workflows/.
+SDK_MARKER = os.path.join(ROKCT_DIR, "config", "is_sdk")
+SDK_EXCLUDED_WORKFLOWS = ("sync_workspace.yml", "maintenance.yml")
+
+
+def is_sdk_repo():
+    return os.path.isfile(SDK_MARKER)
+
+
+def remove_workflow(name):
+    path = os.path.join(PROJECT_ROOT, ".github", "workflows", name)
+    if os.path.isfile(path):
+        os.remove(path)
+        print(f"[init] SDK repo: removed .github/workflows/{name}")
+
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
@@ -534,6 +551,9 @@ def main():
     # Skipped in CI: GITHUB_TOKEN lacks the `workflows` permission, so any
     # file deployed into .github/workflows/ gets the compose commit-back
     # remote-rejected by GitHub.
+    sdk = is_sdk_repo()
+    if sdk:
+        print("[init] SDK repo (.rokct/config/is_sdk present): Protocol CI disabled")
     repo_owner = detect_repo_owner()
     if repo_owner and not os.environ.get("CI"):
         rok_workflows_src = os.path.join(PROTOCOL_DIR, "workflows", ".rok")
@@ -554,6 +574,9 @@ def main():
                 dst_workflows = os.path.join(PROJECT_ROOT, ".github", "workflows")
                 os.makedirs(dst_workflows, exist_ok=True)
                 for src_name, dst_name in select_rok_workflows(src_dir, repo_owner):
+                    if sdk:
+                        remove_workflow(dst_name)
+                        continue
                     shutil.copy2(
                         os.path.join(src_dir, src_name),
                         os.path.join(dst_workflows, dst_name),
@@ -634,7 +657,10 @@ def main():
     ensure_file(
         "workflows/sync_workspace.py", os.path.join(ROKCT_DIR, "sync_workspace.py")
     )
-    if not os.environ.get("CI"):
+    if sdk:
+        for name in SDK_EXCLUDED_WORKFLOWS:
+            remove_workflow(name)
+    elif not os.environ.get("CI"):
         ensure_file(
             "workflows/sync_workspace.yml",
             os.path.join(PROJECT_ROOT, ".github", "workflows", "sync_workspace.yml"),
