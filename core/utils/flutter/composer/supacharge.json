@@ -62,7 +62,7 @@
       "path": "../commerce/products/dart",
       "ref": "main",
       "sha256": "16c3664281acd12e34fb13432c9491de1993383e5465b30ae79de9f4278df556",
-      "_comment": "Transitive dependency of users_sdk, not used directly by Supacharge features today."
+      "_comment": "NOT a dependency of users_sdk or any other SDK here (no composed pubspec or template imports products_sdk). It has been carried since the first supacharge composer.json (supacharge b006d94, 2026-07-11). What it adds to this app: it fills base_sdk's EmbeddedWidgets.productScreen seam and registers its demo assets, neither of which a Supacharge screen uses today; the profile host's GalleryRepositoryFacade is stubbed by lms_sdk (registerSupachargeProfileSections), not provided by this SDK. The host pubspec.yaml still lists products_sdk and assets/demo/products/, so dropping it is a separate change to both files."
     },
     {
       "name": "merchants_sdk",
@@ -72,7 +72,7 @@
       "path": "../commerce/merchants/dart",
       "ref": "main",
       "sha256": "eeb112f21c2ae23e7da1d7fed8336d5b9b143ff7edc71f0a0b0ef88d306f6b28",
-      "_comment": "Mutual dependency of products_sdk, not used directly by Supacharge features today."
+      "_comment": "NOT a dependency of products_sdk or any other SDK here (no composed pubspec or template imports merchants_sdk). Carried since the first supacharge composer.json (supacharge b006d94, 2026-07-11). What it does supply to this app: it is the only composed SDK that installs assets/audio/notification.wav and assets/svgs/menu.svg (unscoped installs), and the host pubspec.yaml declares assets/audio/notification.wav, so removing it without editing the pubspec breaks the asset bundle. It also fills base_sdk's cart/bonus EmbeddedWidgets seams, which no Supacharge screen calls; the profile host's ShopsRepositoryFacade is stubbed by lms_sdk, not provided by this SDK."
     },
     {
       "name": "onboarding_sdk",
@@ -100,7 +100,7 @@
       "path": "../pay/wallet/dart",
       "ref": "main",
       "sha256": "ef9e35ae06bf8a90ac13ec7da63d13c744df25390d90b9e1ad1f400d0b779ec0",
-      "_comment": "Transitive dependency of payments_sdk, not used directly by Supacharge features today."
+      "_comment": "Used directly, not transitively (payments_sdk does not depend on it): lms_sdk's installed lms_route_pages.dart imports wallet_sdk's WalletCardSection to configure the student profile wallet card ('wallet.card' section, student-persona gate, 'R' symbol), and the card's top-up action opens wallet_sdk's /wallet-topup screen (tour chapter 4). lms_sdk's manifest requires wallet_sdk >= 1.2.0 in any composition that includes it."
     },
     {
       "name": "subscriptions_sdk",

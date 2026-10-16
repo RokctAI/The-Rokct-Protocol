@@ -79,6 +79,15 @@
       "_comment": "Supacharge's session-replay SDK (Replay Session schedule + decision #8 release-asset pipeline: fetch/cache/serve, warm + evict). Composed beside lms, which its serving gates resolve into."
     },
     {
+      "name": "productivity",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/frappe",
+      "ref": "main",
+      "_comment": "Backend for productivity_sdk, which the supacharge Flutter composer already composes: the vision, pillar and personal mastery goal cmds (get_visions, get_personal_mastery_goals, ...) go through the platform gateway, and without this module every one of them failed at the gateway. Same entry as startupos.json. The sibling 'projects' module (task sync) is deliberately NOT composed here yet: it is waiting on Ray's ERP decision for supacharge, so task sync stays unavailable on this backend until that decision lands."
+    },
+    {
       "name": "comms",
       "enabled": true,
       "source": "git",
