@@ -60,6 +60,7 @@ EXPECTED_HOME = {
     "deliveryplatform.json": "delivery_sdk",
     "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",
+    "polaris.json": "polaris_sdk",
     "southriver-web.json": None,
 }
 
