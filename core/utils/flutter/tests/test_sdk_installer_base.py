@@ -699,6 +699,103 @@ class TestAndroidApplicationXml(HostIntegrationTestBase):
         self.assertIn("NOT applied", out + err)
 
 
+SPEECH_QUERIES_XML = (
+    "<queries><intent>"
+    '<action android:name="android.speech.RecognitionService"/>'
+    "</intent></queries>"
+)
+TTS_QUERIES_XML = (
+    "<queries><intent>"
+    '<action android:name="android.intent.action.TTS_SERVICE"/>'
+    "</intent></queries>"
+)
+
+
+class TestAndroidManifestXml(HostIntegrationTestBase):
+    def test_injects_before_application_and_reruns_are_identical(self):
+        self.write_permission_state(
+            self.hi_state(android_manifest_xml=[SPEECH_QUERIES_XML, TTS_QUERIES_XML])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        out, err = self.run_hi_update()
+        self.assertNotIn("WARNING", out + err)
+        content = self.read_file(self.ANDROID_REL)
+        self.assertIn(SPEECH_QUERIES_XML, content)
+        self.assertIn(TTS_QUERIES_XML, content)
+        self.assertLess(
+            content.index("<manifest"), content.index("@sdk-android-manifest-start")
+        )
+        self.assertLess(
+            content.index("@sdk-android-manifest-end"), content.index("<application")
+        )
+        self.assertIn(
+            "<!-- @sdk-android-manifest-end -->\n    <application", content
+        )
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), content)
+
+    def test_host_declared_element_and_two_sdks_are_not_duplicated(self):
+        state = self.hi_state(android_manifest_xml=[SPEECH_QUERIES_XML])
+        state.update(
+            self.hi_state(
+                "other_sdk",
+                android_manifest_xml=[SPEECH_QUERIES_XML, TTS_QUERIES_XML],
+            )
+        )
+        self.write_permission_state(state)
+        host = MANIFEST_WITH_APPLICATION.replace(
+            "</manifest>",
+            "    <queries>\n        <intent>\n"
+            '            <action android:name="android.intent.action.TTS_SERVICE"/>\n'
+            "        </intent>\n    </queries>\n</manifest>",
+        )
+        self.write_file(self.ANDROID_REL, host)
+        self.run_hi_update()
+        content = self.read_file(self.ANDROID_REL)
+        self.assertEqual(content.count("android.speech.RecognitionService"), 1)
+        self.assertEqual(content.count("android.intent.action.TTS_SERVICE"), 1)
+
+    def test_coexists_with_application_xml_and_permissions(self):
+        self.write_permission_state(
+            self.hi_state(
+                android_manifest_xml=[SPEECH_QUERIES_XML],
+                android_application_xml=[AUDIO_SERVICE_XML],
+            )
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        self.run_hi_update()
+        content = self.read_file(self.ANDROID_REL)
+        self.assertLess(
+            content.index(SPEECH_QUERIES_XML), content.index("<application")
+        )
+        self.assertLess(content.index("<application"), content.index(AUDIO_SERVICE_XML))
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), content)
+
+    def test_removed_sdk_elements_vanish(self):
+        self.write_permission_state(
+            self.hi_state(android_manifest_xml=[SPEECH_QUERIES_XML])
+        )
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        self.run_hi_update()
+        self.write_permission_state({})
+        self.run_hi_update()
+        self.assertNotIn("RecognitionService", self.read_file(self.ANDROID_REL))
+
+    def test_no_declarations_leave_manifest_untouched(self):
+        self.write_permission_state({})
+        self.write_file(self.ANDROID_REL, MANIFEST_WITH_APPLICATION)
+        self.run_hi_update()
+        self.assertEqual(self.read_file(self.ANDROID_REL), MANIFEST_WITH_APPLICATION)
+
+    def test_missing_manifest_warns(self):
+        self.write_permission_state(
+            self.hi_state(android_manifest_xml=[SPEECH_QUERIES_XML])
+        )
+        out, err = self.run_hi_update()
+        self.assertIn("NOT applied", out + err)
+
+
 class TestMainActivityBase(HostIntegrationTestBase):
     def test_kotlin_flutter_activity_is_rebased_once(self):
         self.write_permission_state(self.hi_state(android_main_activity=AUDIO_ACTIVITY))

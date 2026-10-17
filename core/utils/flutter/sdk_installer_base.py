@@ -1210,6 +1210,11 @@ def install_sdk_files_and_routes(sdk_name):
     )
     if app_xml:
         hi_state["android_application_xml"] = app_xml
+    manifest_xml = list(hi_config.get("android_manifest_xml") or []) + list(
+        flavor_hi.get("android_manifest_xml") or []
+    )
+    if manifest_xml:
+        hi_state["android_manifest_xml"] = manifest_xml
     main_activity = flavor_hi.get("android_main_activity") or hi_config.get(
         "android_main_activity"
     )
@@ -1904,6 +1909,8 @@ IOS_USAGE_START = "<!-- @sdk-ios-usage-keys-start -->"
 IOS_USAGE_END = "<!-- @sdk-ios-usage-keys-end -->"
 ANDROID_APP_XML_START = "<!-- @sdk-android-application-start -->"
 ANDROID_APP_XML_END = "<!-- @sdk-android-application-end -->"
+ANDROID_MANIFEST_XML_START = "<!-- @sdk-android-manifest-start -->"
+ANDROID_MANIFEST_XML_END = "<!-- @sdk-android-manifest-end -->"
 IOS_ARRAYS_START = "<!-- @sdk-ios-plist-arrays-start -->"
 IOS_ARRAYS_END = "<!-- @sdk-ios-plist-arrays-end -->"
 ANDROID_SRC_DIR = os.path.join(PROJECT_ROOT, "android", "app", "src", "main")
@@ -2166,6 +2173,7 @@ def update_host_integration():
 
         "host_integration": {
           "android_application_xml": ["<service android:name=... />", ...],
+          "android_manifest_xml": ["<queries>...</queries>", ...],
           "android_main_activity": {
             "extends": "com.ryanheise.audioservice.AudioServiceActivity",
             "fragment_extends": "com.ryanheise.audioservice.AudioServiceFragmentActivity"
@@ -2178,6 +2186,13 @@ def update_host_integration():
       removed SDK's elements vanish). An element whose android:name the host
       already declares outside the block is skipped (host wins, never
       duplicated); the same name from two SDKs lands once.
+    - android_manifest_xml: whole elements placed directly under <manifest>
+      (e.g. a <queries> block for package visibility on Android 11+), in a
+      marker-owned block just before <application>, regenerated from full
+      state every run. An element the host already carries verbatim
+      (whitespace-insensitive) outside the block is skipped, and the same
+      element from two SDKs lands once. A separate <queries> element next
+      to the host's own is valid: Android merges every <queries> it finds.
     - android_main_activity: MainActivity.kt / MainActivity.java is re-based
       from FlutterActivity to `extends` (from FlutterFragmentActivity to
       `fragment_extends` when given), adding the import. A file that already
@@ -2190,6 +2205,7 @@ def update_host_integration():
       appended to its own array (no duplicates, so reruns are no-ops).
     """
     _update_android_application_xml()
+    _update_android_manifest_xml()
     _update_main_activity()
     _update_ios_plist_arrays()
 
@@ -2278,6 +2294,80 @@ def _update_android_application_xml():
             f.write(new_content)
     print(
         f"[*] Successfully updated AndroidManifest.xml with {len(lines)} SDK-declared application element(s)."
+    )
+
+
+def _normalize_xml(text):
+    return re.sub(r"\s+", " ", re.sub(r">\s+<", "><", str(text))).strip()
+
+
+def _update_android_manifest_xml():
+    wanted = {}
+    for pkg_name, elements in _host_integration_entries("android_manifest_xml"):
+        for element in elements:
+            element = str(element).strip()
+            if not element:
+                continue
+            wanted.setdefault(_normalize_xml(element), element)
+
+    if not os.path.exists(ANDROID_MANIFEST_FILE):
+        if wanted:
+            compose_warning(
+                f"compose skipped: {ANDROID_MANIFEST_FILE} missing; "
+                f"{len(wanted)} SDK-declared Android manifest element(s) NOT applied"
+            )
+        return
+
+    with open(ANDROID_MANIFEST_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    body_without_block = re.sub(
+        re.escape(ANDROID_MANIFEST_XML_START)
+        + r".*?"
+        + re.escape(ANDROID_MANIFEST_XML_END),
+        "",
+        content,
+        flags=re.DOTALL,
+    )
+    # An element the host already wrote itself (same markup, whitespace
+    # aside) is host-owned: injecting it again would only duplicate it.
+    host_body = _normalize_xml(body_without_block)
+
+    lines = [
+        f"    {element}"
+        for key, element in wanted.items()
+        if key not in host_body
+    ]
+    if ANDROID_MANIFEST_XML_START not in content and not lines:
+        return
+    inner = ("\n" + "\n".join(lines) + "\n    ") if lines else "\n    "
+    replacement = f"{ANDROID_MANIFEST_XML_START}{inner}{ANDROID_MANIFEST_XML_END}"
+
+    if ANDROID_MANIFEST_XML_START not in content:
+        opening = re.search(r"[ \t]*<application\b", content)
+        if not opening:
+            compose_warning(
+                f"no <application> found in {ANDROID_MANIFEST_FILE}; "
+                f"SDK-declared Android manifest elements NOT applied"
+            )
+            return
+        new_content = _replace_or_insert_marker_block(
+            content,
+            ANDROID_MANIFEST_XML_START,
+            ANDROID_MANIFEST_XML_END,
+            "    " + replacement + "\n",
+            opening.start(),
+        )
+    else:
+        new_content = _replace_or_insert_marker_block(
+            content, ANDROID_MANIFEST_XML_START, ANDROID_MANIFEST_XML_END, replacement, 0
+        )
+
+    if new_content != content:
+        with open(ANDROID_MANIFEST_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    print(
+        f"[*] Successfully updated AndroidManifest.xml with {len(lines)} SDK-declared manifest element(s)."
     )
 
 
