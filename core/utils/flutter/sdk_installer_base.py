@@ -2334,9 +2334,7 @@ def _update_android_manifest_xml():
     host_body = _normalize_xml(body_without_block)
 
     lines = [
-        f"    {element}"
-        for key, element in wanted.items()
-        if key not in host_body
+        f"    {element}" for key, element in wanted.items() if key not in host_body
     ]
     if ANDROID_MANIFEST_XML_START not in content and not lines:
         return
@@ -2360,7 +2358,11 @@ def _update_android_manifest_xml():
         )
     else:
         new_content = _replace_or_insert_marker_block(
-            content, ANDROID_MANIFEST_XML_START, ANDROID_MANIFEST_XML_END, replacement, 0
+            content,
+            ANDROID_MANIFEST_XML_START,
+            ANDROID_MANIFEST_XML_END,
+            replacement,
+            0,
         )
 
     if new_content != content:
