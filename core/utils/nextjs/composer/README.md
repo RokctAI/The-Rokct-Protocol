@@ -73,6 +73,10 @@ portal part), `hosting.json` → `hosting_sdk` (hardware `hosting/nextjs`, the
 storefront on the control site; no `agent_sdk`), `telephony.json` →
 `telephony_sdk` (hardware `telephony/nextjs`, its `app_type.telephony` block: the
 same storefront shape selling the Telephony plan category; no `agent_sdk`),
+`polaris.json` → `polaris_sdk` (corporate `polaris/nextjs`, its `app_type.polaris`
+block: a lender's site, landing for visitors, the back office for lending staff
+and the borrower area at `/loans`; no `agent_sdk`, no `erp_sdk`; backend is the
+lender's site with the frappe `polaris` module),
 `southriver-web.json` → none yet (the kernel plus `corporate_sdk` only; the
 South River home SDK joins it later). A
 template without the key still composes as before: lines

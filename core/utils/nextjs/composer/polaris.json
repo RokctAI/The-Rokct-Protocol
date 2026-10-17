@@ -1,0 +1,68 @@
+{
+  "name": "polaris_web",
+  "version": "1.0.0",
+  "description": "Next.js compose template for the Polaris web app shell(s): the sdks[] a shell with app_type polaris composes. The backend modules[] live in core/utils/frappe/composer/polaris.json",
+  "_comment": "The Polaris web app (persona polaris): a lender's own site where a borrower applies for a personal loan, sends the bank statement PDF, accepts the contract and follows the loan in a browser, and where the lender's staff sign in to the lending back office. polaris_sdk is the home SDK beside the three kernel SDKs and corporate_sdk (the legal pages), as hosting.json does for the hosting shell.",
+  "sdks": [
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/nextjs",
+      "ref": "main",
+      "sha256": "318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs: without it the supacharge-web composed build cannot resolve @/app/services/base/platform-gateway. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the polaris shell provides the host-owned half."
+    },
+    {
+      "name": "auth_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/nextjs",
+      "ref": "main",
+      "sha256": "b9b0d4156a68d46f528be2b885eed17cc7dba21f6b4b48b2991ba2c3274ae21b",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of auth/nextjs/install.py at Users@db78a963 (git blob 0ab330a0, 1098 bytes; same digest rokctapp.json pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The auth SDK's nextjs half (Users#83/#84): the app/(auth) route group (credentials login/register/forgot-password + the [...nextauth] handler), the NextAuth-backed app/lib/session.ts seam, paas-login/auth-form/submit-button components, db/ + lib/drizzle schema, drizzle.config.ts and middleware.ts. Listed after base_sdk (requires its platform-gateway service). Composed here because base_sdk's landing links its CTAs to /login and /register (LANDING_CONFIG.loginUrl/signupUrl), which 404 without this SDK, and because base_sdk's session reader (app/services/base/session.ts) goes through app/lib/session.ts, which only this half implements: without it the shell's session seam resolves to null and the composed /admin and /manager pages are ungated. Its own 'requires' names host-owned files (app/config/compose.ts, constants.ts, platform.ts, app/lib/i18n, components/custom/branding/header/icons, components/ui primitives) - warn-only via check_requires(), not an auto-install; the polaris shell provides the host-owned half. For the polaris shell it also carries the sign-up a new borrower needs before /loans/apply; its next.config.mjs sets ROKCT_TENANT_LINK=single-tenant, since one shell serves one lender's site."
+    },
+    {
+      "name": "corporate_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/corporate/nextjs",
+      "ref": "main",
+      "sha256": "6e03485fd03617ea1e175adc50354a91af25e213908371fa3581083d8aa7d4ba",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of corporate/nextjs/install.py at corporate@c411ef5 (git blob 915470a4, 1103 bytes; the same installer text as polaris/nextjs with sdk_name corporate_sdk); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The corporate SDK's nextjs half (corporate_sdk 1.0.0): the company pages - in 1.0.0 the legal pages, app/legal (the index of the shell's published \"Terms and Conditions\" documents) and app/legal/[id] (one document, server-rendered, 404 when missing or disabled), the renderer and frame under components/custom/legal and the guest read app/actions/corporate/legal.ts. Ray, 2026-09-10: \"legal pages are not in corporate sdk?\" / \"you should look at the dart side if they are not there yet\" - the flutter templates compose corporate_sdk into every composition with auth_sdk because it owns the policy / terms pages (core/utils/flutter/composer/hosting.json), and this is the Next.js counterpart. Listed after auth_sdk and before the home SDK because its 'requires' names files base_sdk >= 1.34.0 installs (app/actions/base/legal.ts listPublicTerms, components/custom/landing/legal-links.ts, the FooterChromeConfig.links seam on footer-chrome-config.ts / footer-chrome.tsx, app/lib/site-metadata.ts, the platform gateway) plus the host-owned app/config/platform.ts - warn-only via check_requires(), not an auto-install. Never home (home_sdk false). No dependencies or integrations of its own: the routes are file-convention pages. corporate_sdk 1.1.0 adds the about / team pages and the data/ fallback once base 1.35.0 lands."
+    },
+    {
+      "name": "polaris_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/polaris/nextjs",
+      "ref": "main",
+      "sha256": "90c6e577255101f2804dd74bf2b311cd45bbf1d84adbd52759f9728bec30b60a",
+      "home_sdk": true,
+      "_sha256_comment": "SHA-256 of polaris/nextjs/install.py at corporate main (the installer text corporate_sdk's install.py carries, with sdk_name 'polaris_sdk'; CRLF folded to LF); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The Polaris lending SDK's nextjs half (polaris_sdk >= 1.6.0, corporate/polaris/docs/web-app.md): the Polaris web app's home SDK. Ray, 2026-10-17: a Next.js frontend for Polaris like supacharge-web, landing from the SDK as the home SDK, staff do their thing when signed in as such, and customers do what they do in the Dart app, because a borrower cannot be made to install an app on a desktop. Its app_type.polaris block owns app/page.tsx (signed out to base_sdk's /landing; signed in to /handson/all/lending for lending staff, /loans for everyone else, decided by the backend's api.lending.get_my_lending_access) and fills base_sdk's landing registries with one module each: hero copy and hero form (Apply now and How it works, no input), a how-it-works section, a header menu of one anchor, the site metadata (named after the shell's PLATFORM_NAME) and a null plans query (the Subscription Plan catalog is what a lender buys, not what a borrower is offered). Its top-level installs are the back office, the public quote page and the borrower area (/loans, /loans/apply, /loans/[id], POST /api/lending/documents). NO agent_sdk (its integrations flip the shell AI-first) and no erp_sdk: the back office reads everything it needs through its own lending services. The backend is the lender's site with the polaris Frappe module composed (core/utils/frappe/composer/polaris.json)."
+    }
+  ]
+}
