@@ -728,9 +728,7 @@ class TestAndroidManifestXml(HostIntegrationTestBase):
         self.assertLess(
             content.index("@sdk-android-manifest-end"), content.index("<application")
         )
-        self.assertIn(
-            "<!-- @sdk-android-manifest-end -->\n    <application", content
-        )
+        self.assertIn("<!-- @sdk-android-manifest-end -->\n    <application", content)
         self.run_hi_update()
         self.assertEqual(self.read_file(self.ANDROID_REL), content)
 
