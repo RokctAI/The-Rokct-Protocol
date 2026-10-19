@@ -60,6 +60,26 @@
       "_comment": "Push notifications: a Stick that needs you (an open confirm card) is the one event worth a push."
     },
     {
+      "name": "productivity_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/productivity/dart",
+      "ref": "main",
+      "sha256": "355a4149b7210391386f19cd078880c806c6e7a9ec15542ce623ed517b173238",
+      "_comment": "Required by agent_sdk (its pubspec depends on it), so the composed app resolves; the Sticks screens do not call it directly."
+    },
+    {
+      "name": "processing_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/processing/dart",
+      "ref": "main",
+      "sha256": "1514678d5c20d26c6653f630bbd77811f454263390980ced8c3b462089b399a5",
+      "_comment": "Required by agent_sdk (its pubspec depends on it), so the composed app resolves; the Sticks screens do not call it directly."
+    },
+    {
       "name": "telemetry_sdk",
       "enabled": true,
       "source": "git",
