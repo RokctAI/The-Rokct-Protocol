@@ -1776,6 +1776,69 @@ def order_sdks_for_install(sdks):
     return ordered
 
 
+def find_missing_sdk_requires(sdks_to_check, all_enabled_sdks):
+    """Check each SDK's own `sdk_requires` (manifest key, this layer only)
+    against the enabled set from composer.json.
+
+    `sdk_requires` lists the SDKs this layer needs composed alongside it
+    (names with or without the `_sdk` suffix). Each layer declares only its
+    own requirements in its own manifest: a Dart app using tasks does not
+    inherit the backend's need for projects. A persona flavor block
+    (`app_type.<persona>.sdk_requires`) counts only when the persona matches
+    this host's own role marker. `all_enabled_sdks` is the FULL enabled set,
+    so a scoped run (`sdk_composer.py <name>`) is still checked against the
+    whole profile. Returns [(sdk, required)] for every gap.
+    """
+    enabled = {
+        clean_sdk_name(s["name"] if isinstance(s, dict) else s)
+        for s in all_enabled_sdks
+    }
+    current_app_type = resolve_app_type()
+    missing = []
+    for sdk_config in sdks_to_check:
+        sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
+        manifest_path = os.path.join(resolve_active_path(sdk_config), "manifest.json")
+        if not os.path.exists(manifest_path):
+            continue
+        try:
+            with open(manifest_path, "r", encoding="utf-8-sig") as f:
+                manifest = json.load(f)
+        except Exception:
+            continue
+        declared = list(manifest.get("sdk_requires") or [])
+        flavor = (
+            (manifest.get("app_type") or {}).get(current_app_type)
+            if current_app_type
+            else None
+        )
+        if isinstance(flavor, dict):
+            declared += list(flavor.get("sdk_requires") or [])
+        for req in declared:
+            if clean_sdk_name(str(req).strip()) not in enabled:
+                missing.append((sdk_name, req))
+    return missing
+
+
+def check_sdk_requires(sdks_to_check, all_enabled_sdks):
+    """Fail the compose early, one clear line per gap, when an SDK requires
+    an SDK the profile does not enable."""
+    missing = find_missing_sdk_requires(sdks_to_check, all_enabled_sdks)
+    if not missing:
+        return
+    for sdk_name, req in missing:
+        print(
+            f"[!] Missing required SDK: '{sdk_name}' requires '{req}', "
+            f"which is not enabled in composer.json.",
+            file=sys.stderr,
+        )
+    print(
+        f"\n[!] Compose FAILED: {len(missing)} required SDK(s) not enabled. "
+        f"Enable them in composer.json or drop the SDK that needs them.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def main():
     composer_path = os.path.join(PROJECT_ROOT, "composer.json")
     package_name = None
@@ -1817,6 +1880,9 @@ def main():
     # Cache all SDKs in one consolidated fetch pass (version-aware: an SDK
     # whose cached copy is current is left in place, see should_extract).
     cache_decisions = resolve_and_cache_sdks(sdks_to_install)
+
+    # Fail fast, before any installer touches the host.
+    check_sdk_requires(sdks_to_install, all_enabled_sdks)
 
     # Run the installers. An SDK entry can set "skip_install": true in
     # composer.json to stay fully composed - cached (with role-stripping),

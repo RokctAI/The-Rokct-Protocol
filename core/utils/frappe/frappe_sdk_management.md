@@ -288,3 +288,7 @@ To keep the development workspace clean and easy to evaluate, enforce post-resto
    ```
 2. **Clear Python Cache & Empty Directories**:
    Remove all `__pycache__` folders and empty directories remaining in the working tree.
+
+## `sdk_requires` (dependency check)
+
+A module's `manifest.json` may declare `"sdk_requires": ["productivity"]` (top level, or inside an `app_type.<persona>` block, which counts only for that persona). The composer fails before pouring anything, with one line per gap, when a required module is not enabled in the template. Each layer (Frappe `compose_backend.py`, Dart and Next.js `sdk_composer.py`) reads only its own manifest, so a Dart app using tasks does not inherit the backend's need for projects. The `_sdk` suffix is optional in names. Not the same as `requires` in Dart/Next.js manifests, which lists host file paths and only warns.
