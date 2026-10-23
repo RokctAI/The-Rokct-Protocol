@@ -1888,6 +1888,87 @@ def merge_dependencies(project_root, compiled_manifests):
                 )
 
 
+def _sdk_name(name):
+    """Module name as declared in `sdk_requires`: the template's module name,
+    tolerating the `_sdk` suffix the Dart and Next.js templates use."""
+    name = str(name).strip()
+    for suffix in ("_sdks", "_sdk"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def collect_sdk_requires(modules, resolved_sources, current_app_type=None):
+    """Read each enabled module's own `sdk_requires` from its manifest.
+
+    `sdk_requires` lists the modules THIS layer (the Frappe backend) needs
+    composed alongside it, e.g. ["productivity"]. Each layer (Frappe, Dart,
+    Next.js) declares only its own requirements in its own manifest, so a
+    Dart app using tasks does not inherit the backend's need for projects.
+    A persona flavor block (`app_type.<persona>.sdk_requires`) counts only
+    when the persona matches this shell's own role marker, like every other
+    flavor-scoped key.
+
+    Returns {module_name: [required names]} for modules that declare any.
+    """
+    requirements = {}
+    for m in modules:
+        if not m.get("enabled", False):
+            continue
+        src = resolved_sources.get(id(m))
+        if not src and m.get("path"):
+            src = os.path.abspath(os.path.join(PROJECT_ROOT, m["path"]))
+        manifest_path = os.path.join(src, "manifest.json") if src else None
+        if not manifest_path or not os.path.exists(manifest_path):
+            continue
+        try:
+            with open(manifest_path, "r", encoding="utf-8-sig") as f:
+                manifest = json.load(f)
+        except Exception:
+            continue
+        declared = list(manifest.get("sdk_requires") or [])
+        flavor = (
+            (manifest.get("app_type") or {}).get(current_app_type)
+            if current_app_type
+            else None
+        )
+        if isinstance(flavor, dict):
+            declared += list(flavor.get("sdk_requires") or [])
+        if declared:
+            requirements[m["name"]] = declared
+    return requirements
+
+
+def find_missing_sdk_requires(modules, requirements):
+    """[(module, required)] for every requirement not an enabled module."""
+    enabled = {_sdk_name(m["name"]) for m in modules if m.get("enabled", False)}
+    missing = []
+    for module, declared in requirements.items():
+        for req in declared:
+            if _sdk_name(req) not in enabled:
+                missing.append((module, req))
+    return missing
+
+
+def check_sdk_requires(modules, resolved_sources, current_app_type=None):
+    """Fail the compose early, with one clear line per gap, when an enabled
+    module requires a module the template does not enable."""
+    requirements = collect_sdk_requires(modules, resolved_sources, current_app_type)
+    missing = find_missing_sdk_requires(modules, requirements)
+    if not missing:
+        return
+    for module, req in missing:
+        print(
+            f"[!] Missing required module: '{module}' requires '{req}', "
+            f"which is not enabled in this template.",
+            file=sys.stderr,
+        )
+    raise SystemExit(
+        f"Compose FAILED: {len(missing)} required module(s) not enabled. "
+        f"Enable them in the template or drop the module that needs them."
+    )
+
+
 def main():
     print("[*] Starting Frappe App Backend Composition...")
 
@@ -1948,6 +2029,10 @@ def main():
     # roles at once) or no app_type key, nothing extra is registered and the
     # output is identical to a role-less compose.
     current_app_type = resolve_app_type()
+
+    # Fail fast: every enabled module's declared `sdk_requires` must itself
+    # be enabled, before anything is poured into the app.
+    check_sdk_requires(modules, resolved_sources, current_app_type)
 
     for m in modules:
         if m.get("enabled", False):
