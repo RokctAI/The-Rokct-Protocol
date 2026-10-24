@@ -41,8 +41,11 @@ judgment call is hard.
   is overridden to Sonnet 5.5.
 - Haiku 5.5 only for `batch` (mechanical) work; there `high` is fine.
   Haiku on any other kind is overridden to Sonnet 5.5 low.
-- `judgment` and `verify` work runs Sonnet 5.5 low unless Fable 5.1 or
-  Opus 5.5 was proposed; the PR gatekeeper is Sonnet 5.5 high.
+- `judgment` work runs Sonnet 5.5 low unless Fable 5.1 or Opus 5.5 was
+  proposed; effort is always forced to low.
+- `verify` work (the PR gatekeeper and other verifiers) keeps the effort
+  proposed up to high; the PR gatekeeper is Sonnet 5.5 high and the gate
+  never downgrades it.
 - `plan` work may run Fable 5.1 or Opus 5.5 at low or medium; `high` on a
   plan is overridden to medium (a plan thread at high cost Ray 4% of his
   Fable usage on 2026-10-24).

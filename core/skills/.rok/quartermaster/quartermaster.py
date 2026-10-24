@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 ROKCT INTELLIGENCE (PTY) LTD
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 """Quartermaster: approve or override a thread's model and effort.
 
 Encodes Ray's standing model and effort policy so the gate is deterministic
@@ -60,12 +74,16 @@ def decide(kind, model, effort):
             reasons.append("Haiku 5.5 is for mechanical batch work only")
             model = DEFAULT_MODEL
             effort = DEFAULT_EFFORT
-        if kind in ("judgment", "verify"):
+        if kind == "judgment":
             if model not in ("Fable 5.1", "Opus 5.5"):
                 model = DEFAULT_MODEL
             if effort != "low":
-                reasons.append(f"{kind} work runs at low effort")
+                reasons.append("judgment work runs at low effort")
                 effort = DEFAULT_EFFORT
+        elif kind == "verify":
+            # The PR gatekeeper is Sonnet 5.5 high; verification may keep high.
+            if model not in ("Fable 5.1", "Opus 5.5", "Sonnet 5.5"):
+                model = DEFAULT_MODEL
         elif kind == "plan":
             if model not in ("Fable 5.1", "Opus 5.5"):
                 reasons.append("plans run on Fable 5.1 or Opus 5.5")
