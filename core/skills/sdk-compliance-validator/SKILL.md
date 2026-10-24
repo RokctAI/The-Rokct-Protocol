@@ -1,6 +1,6 @@
 ---
 name: sdk-compliance-validator
-description: before pushing any SDK change, and when Ray says "the sdk validator will check".
+description: Run sdk_validator.py --compliance before pushing any SDK change and fix violations in the files you touched.
 version: 1.0.0
 ---
 

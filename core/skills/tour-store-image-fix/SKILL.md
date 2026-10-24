@@ -1,6 +1,6 @@
 ---
 name: tour-store-image-fix
-description: store images show the wrong colours, fonts or icons.
+description: Fix store or tour images whose colours, fonts, icons or faces do not match the app render (orange canvas, Roboto, emoji).
 version: 1.0.0
 ---
 

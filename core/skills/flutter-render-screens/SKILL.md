@@ -1,6 +1,6 @@
 ---
 name: flutter-render-screens
-description: before and after any screen change, so Ray and the gatekeeper see real pixels. Without Flutter in the container this is the only way to show a Dart UI.
+description: Render Flutter SDK screens to PNG on demo fixtures with real fonts, before and after a UI change, so reviewers see real pixels.
 version: 1.0.0
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: brand-colors-both-themes
-description: an app needs its own palette in light and dark.
+description: Give an app its own brand palette in both light and dark mode with base_sdk AppStyle.injectBrandColors.
 version: 1.0.0
 ---
 

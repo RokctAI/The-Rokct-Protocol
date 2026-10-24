@@ -1,6 +1,6 @@
 ---
 name: frappe-tests-without-bench
-description: a corporate/pay/etc. tenant app change needs unit tests in this container.
+description: Run Frappe tenant app unit tests in a container without a bench, using the bundled frappe stub.
 version: 1.0.0
 ---
 

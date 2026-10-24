@@ -1,6 +1,6 @@
 ---
 name: flutter-screen-redesign
-description: Ray points at store or tour screenshots and says "redesign".
+description: Redesign a set of Flutter app screens in one design language when asked to redesign from store or tour screenshots.
 version: 1.0.0
 ---
 

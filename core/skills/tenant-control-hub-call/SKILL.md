@@ -1,6 +1,6 @@
 ---
 name: tenant-control-hub-call
-description: tenant code must call a `control:*` cmd.
+description: Call a control:* cmd from Frappe tenant code through the gateway, with timeout, rate limit and manual fallback.
 version: 1.0.0
 ---
 
