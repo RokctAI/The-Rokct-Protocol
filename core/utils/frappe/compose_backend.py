@@ -1788,6 +1788,37 @@ def _dep_name(dep):
     return re.split(r"[=<>!~;\[\s]", dep.strip(), 1)[0].strip().lower()
 
 
+def warn_persona_matches_no_manifest(current_app_type, modules, manifests):
+    """Say so when the shell's role marker names no persona any manifest declares.
+
+    The same .rokct/config/app_type value is both the composer template name
+    and the role/persona marker. A template name (e.g. "telephony") is not a
+    persona: manifests that declare personas ("tenant", "control") then merge
+    NONE of their persona hooks, whitelisted methods or fixtures, and the
+    compose still reports success. Prints (never escalates under
+    ROKCT_COMPOSE_STRICT: a plain role marker for a persona-less shell is
+    legitimate). Returns the message, or None when there is nothing to say.
+    """
+    if not current_app_type:
+        return None
+    declared = set()
+    for manifest in manifests.values():
+        declared.update((manifest.get("app_type") or {}).keys())
+    declared.discard(current_app_type)
+    if not declared or any(
+        current_app_type in (m.get("app_type") or {}) for m in manifests.values()
+    ):
+        return None
+    message = (
+        f"role marker '{current_app_type}' matches no persona declared by the "
+        f"composed manifests ({', '.join(sorted(declared))}); their persona "
+        "hooks, whitelisted methods and fixtures were NOT merged. If this "
+        "shell serves a persona, set .rokct/config/app_type to that persona."
+    )
+    print(f"  [!] NOTE: {message}")
+    return message
+
+
 def merge_dependencies(project_root, compiled_manifests):
     # Collect all dependencies from manifests, deduped by package NAME so the
     # same package pinned differently by two manifests doesn't get injected
@@ -2051,6 +2082,8 @@ def main():
                     compiled_manifests[f"{m['name']} ({current_app_type})"] = (
                         flavor_block
                     )
+
+    warn_persona_matches_no_manifest(current_app_type, modules, compiled_manifests)
 
     if compiled_manifests:
         merge_hooks(target_app_path, app_name, compiled_manifests)
