@@ -1274,5 +1274,35 @@ class ShellTemplateSyncTest(ComposeBackendTestBase):
                 self.assertEqual(fh.read(), embedded, rel)
 
 
+class PersonaMarkerNoteTest(ComposeBackendTestBase):
+    """A role marker that names no declared persona (e.g. a composer template
+    name used as the marker) merges no persona hooks; the compose says so."""
+
+    def _compose(self, marker):
+        self.make_composer_json()
+        self.make_shell()
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "app_type": {"tenant": {"hooks": {}}},
+            }
+        )
+        if marker:
+            self.write(".rokct/config/app_type", f"{marker}\n")
+        return self.run_main(self.load_composer())[0]
+
+    def test_unmatched_marker_is_called_out(self):
+        out = self._compose("manager")
+        self.assertIn("matches no persona", out)
+        self.assertIn("tenant", out)
+
+    def test_declared_persona_is_silent(self):
+        self.assertNotIn("matches no persona", self._compose("tenant"))
+
+    def test_no_marker_is_silent(self):
+        self.assertNotIn("matches no persona", self._compose(None))
+
+
 if __name__ == "__main__":
     unittest.main()
