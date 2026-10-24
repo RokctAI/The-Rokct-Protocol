@@ -613,14 +613,29 @@ def _is_artwork(rel_dest):
     return rel.startswith(ARTWORK_PREFIXES)
 
 
-def _keep_hand_updated_artwork(src_path, dest_path):
-    """True when dest_path is artwork the app already has and changed from the
-    baseline in src_path. A fresh `flutter create` scaffold is not hand work:
-    its defaults are replaced as before."""
+def _keep_hand_updated_artwork(state, src_path, dest_path):
+    """True when dest_path is artwork this compose did not write itself: it
+    exists and its content is not the hash bootstrap recorded when it wrote
+    it (no record at all counts as not ours). A file already equal to the
+    baseline is not a conflict. A fresh `flutter create` scaffold is not hand
+    work: its defaults are replaced as before."""
     if FRESH_SCAFFOLD or not os.path.isfile(dest_path):
         return False
-    rel = os.path.relpath(dest_path, PROJECT_ROOT)
-    return _is_artwork(rel) and file_hash(dest_path) != file_hash(src_path)
+    rel = os.path.relpath(dest_path, PROJECT_ROOT).replace("\\", "/")
+    if not _is_artwork(rel):
+        return False
+    current = file_hash(dest_path)
+    if current == file_hash(src_path):
+        return False
+    return current != state.get("bootstrap_artwork", {}).get(rel)
+
+
+def _record_bootstrap_artwork(state, dest_path):
+    """Remember the hash of an artwork file bootstrap just wrote, so a later
+    run can tell its own file from one the app changed."""
+    rel = os.path.relpath(dest_path, PROJECT_ROOT).replace("\\", "/")
+    if _is_artwork(rel):
+        state.setdefault("bootstrap_artwork", {})[rel] = file_hash(dest_path)
 
 
 def bootstrap_home_sdk_if_missing(state):
@@ -672,19 +687,20 @@ def bootstrap_home_sdk_if_missing(state):
                             f_dest = os.path.join(
                                 dest_path, os.path.relpath(f_src, src_path)
                             )
-                            if _keep_hand_updated_artwork(f_src, f_dest):
+                            if _keep_hand_updated_artwork(state, f_src, f_dest):
                                 print(
                                     f"  [i] KEEP: {os.path.relpath(f_dest, PROJECT_ROOT)} was updated by hand; baseline artwork not applied."
                                 )
                                 continue
                             os.makedirs(os.path.dirname(f_dest), exist_ok=True)
                             shutil.copy2(f_src, f_dest)
+                            _record_bootstrap_artwork(state, f_dest)
                     continue
                 if os.path.exists(dest_path):
                     shutil.rmtree(dest_path)
                 shutil.copytree(src_path, dest_path)
             else:
-                if _keep_hand_updated_artwork(src_path, dest_path):
+                if _keep_hand_updated_artwork(state, src_path, dest_path):
                     print(
                         f"  [i] KEEP: {to_rel} was updated by hand; baseline artwork not applied."
                     )
@@ -698,6 +714,7 @@ def bootstrap_home_sdk_if_missing(state):
                         fd.write(content)
                 else:
                     shutil.copy2(src_path, dest_path)
+                _record_bootstrap_artwork(state, dest_path)
 
     # Mark as bootstrapped
     state["bootstrapped_home_sdk"] = home_sdk_name

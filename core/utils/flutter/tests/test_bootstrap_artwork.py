@@ -68,6 +68,30 @@ class BootstrapArtworkTest(LayoutIntegrationTestBase):
         self.installer.bootstrap_home_sdk_if_missing({})
         self.assertEqual(self._read(ICON), b"baseline-icon")
 
+    def test_own_written_file_is_refreshed_but_a_later_hand_edit_is_kept(self):
+        self._sdk()
+        state = {}
+        self.installer.bootstrap_home_sdk_if_missing(state)
+        self.assertEqual(self._read(ICON), b"baseline-icon")
+        self.assertIn(ICON, state["bootstrap_artwork"])
+        # The baseline moves on and compose wrote the file itself: replaced.
+        _write(
+            os.path.join(self.project_root, "sdk", "home_sdk", "templates", "icon.png"),
+            b"baseline-icon-v2",
+        )
+        state.pop("bootstrapped_home_sdk")
+        self.installer.bootstrap_home_sdk_if_missing(state)
+        self.assertEqual(self._read(ICON), b"baseline-icon-v2")
+        # The app edits it by hand: the next baseline change is not applied.
+        _write(os.path.join(self.project_root, ICON), b"my-own-icon")
+        _write(
+            os.path.join(self.project_root, "sdk", "home_sdk", "templates", "icon.png"),
+            b"baseline-icon-v3",
+        )
+        state.pop("bootstrapped_home_sdk")
+        self.installer.bootstrap_home_sdk_if_missing(state)
+        self.assertEqual(self._read(ICON), b"my-own-icon")
+
 
 if __name__ == "__main__":
     unittest.main()
