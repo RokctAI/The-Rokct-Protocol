@@ -14,7 +14,7 @@ skills/
     - *Example*: `scan_secrets.py` (A script the Agent runs to find API keys).
 ```
 
-*Note*: Skills may ship helper scripts under `scripts/` (see `flutter-render-screens`, `html-mockup-first`, `frappe-tests-without-bench`).
+*Note*: Skills may ship helper scripts under `scripts/` (see `.rok/flutter-render-screens`, `html-mockup-first`, `frappe-tests-without-bench`).
 
 ## How to Use
 *   **Agent**: When asked to perform a specific task (e.g., "Security Audit"), look for a matching folder in `skills/` and follow `SKILL.md`.
