@@ -34,13 +34,15 @@ judgment call is hard.
    keyed by task id. `python3 quartermaster.py history <task-id>` shows a
    task's past decisions so a re-task does not repeat a bad pick.
 
-## Policy the script encodes (Ray, 2026-09-28 and 2026-10-19)
+## Policy the script encodes (Ray, 2026-09-28, 2026-10-19 and 2026-10-24)
 
 - Default effort is `low`.
 - Allowed models: Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5. Anything else
   is overridden to Sonnet 5.5.
-- Haiku 5.5 only for `batch` (mechanical) work; there `high` is fine.
-  Haiku on any other kind is overridden to Sonnet 5.5 low.
+- Haiku 5.5 for `batch` (mechanical) work at any effort, and for `code` or
+  `design` jobs at `low` (file moves, rewrites; Ray 2026-10-24, Haiku has
+  proven itself on his local work). Haiku on `judgment`, `verify` or `plan`,
+  or above low outside batch, is overridden to Sonnet 5.5 low.
 - `judgment` work runs Sonnet 5.5 low unless Fable 5.1 or Opus 5.5 was
   proposed; effort is always forced to low.
 - `verify` work (the PR gatekeeper and other verifiers) keeps the effort

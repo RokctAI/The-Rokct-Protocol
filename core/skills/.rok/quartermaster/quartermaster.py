@@ -71,9 +71,16 @@ def decide(kind, model, effort):
         pass
     else:
         if model == "Haiku 5.5":
-            reasons.append("Haiku 5.5 is for mechanical batch work only")
-            model = DEFAULT_MODEL
-            effort = DEFAULT_EFFORT
+            # Ray 2026-10-24: Haiku may take low-effort code and design jobs
+            # (moves, rewrites); judgment, verify and plan work stay off it.
+            if kind in ("code", "design") and effort == "low":
+                pass
+            else:
+                reasons.append(
+                    "Haiku 5.5 is for batch work or low-effort code/design only"
+                )
+                model = DEFAULT_MODEL
+                effort = DEFAULT_EFFORT
         if kind == "judgment":
             if model not in ("Fable 5.1", "Opus 5.5"):
                 model = DEFAULT_MODEL
