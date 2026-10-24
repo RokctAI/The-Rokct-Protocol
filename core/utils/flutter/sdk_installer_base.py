@@ -590,6 +590,39 @@ def initialize_flutter_project():
         )
 
 
+# Artwork a shell brands by hand: launcher icons, web icons and favicon, iOS
+# app icon set, splash and logo images, the native-splash config. Bootstrap
+# writes the home SDK's baseline over the app, and for these paths a file that
+# already exists and differs from the baseline is the app's own branding, so
+# it is kept (each app gets its own branding). Matched on the destination
+# path relative to the project root, with forward slashes.
+ARTWORK_PREFIXES = (
+    "android/app/src/main/res/mipmap",
+    "android/app/src/main/res/drawable",
+    "ios/Runner/Assets.xcassets/AppIcon.appiconset/",
+    "ios/Runner/Assets.xcassets/LaunchImage.imageset/",
+    "web/icons/",
+    "web/favicon",
+    "assets/images/",
+    "flutter_native_splash.yaml",
+)
+
+
+def _is_artwork(rel_dest):
+    rel = rel_dest.replace("\\", "/").lstrip("./")
+    return rel.startswith(ARTWORK_PREFIXES)
+
+
+def _keep_hand_updated_artwork(src_path, dest_path):
+    """True when dest_path is artwork the app already has and changed from the
+    baseline in src_path. A fresh `flutter create` scaffold is not hand work:
+    its defaults are replaced as before."""
+    if FRESH_SCAFFOLD or not os.path.isfile(dest_path):
+        return False
+    rel = os.path.relpath(dest_path, PROJECT_ROOT)
+    return _is_artwork(rel) and file_hash(dest_path) != file_hash(src_path)
+
+
 def bootstrap_home_sdk_if_missing(state):
     # We bootstrap if the project was just created (default files) or is completely empty
     # We check for a specific marker or just always run it if we are in bootstrap mode.
@@ -630,10 +663,32 @@ def bootstrap_home_sdk_if_missing(state):
             continue
         if os.path.exists(src_path):
             if os.path.isdir(src_path):
+                if _is_artwork(os.path.relpath(dest_path, PROJECT_ROOT)):
+                    # Merge file by file: wiping the directory would delete
+                    # the app's own branding along with the baseline's.
+                    for root, _dirs, files in os.walk(src_path):
+                        for name in files:
+                            f_src = os.path.join(root, name)
+                            f_dest = os.path.join(
+                                dest_path, os.path.relpath(f_src, src_path)
+                            )
+                            if _keep_hand_updated_artwork(f_src, f_dest):
+                                print(
+                                    f"  [i] KEEP: {os.path.relpath(f_dest, PROJECT_ROOT)} was updated by hand; baseline artwork not applied."
+                                )
+                                continue
+                            os.makedirs(os.path.dirname(f_dest), exist_ok=True)
+                            shutil.copy2(f_src, f_dest)
+                    continue
                 if os.path.exists(dest_path):
                     shutil.rmtree(dest_path)
                 shutil.copytree(src_path, dest_path)
             else:
+                if _keep_hand_updated_artwork(src_path, dest_path):
+                    print(
+                        f"  [i] KEEP: {to_rel} was updated by hand; baseline artwork not applied."
+                    )
+                    continue
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 if src_path.endswith(TEXT_SUBSTITUTION_EXTENSIONS):
                     with open(src_path, "r", encoding="utf-8", errors="ignore") as fs:
