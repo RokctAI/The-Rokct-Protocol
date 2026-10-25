@@ -1752,6 +1752,25 @@ def merge_hooks(target_app_path, app_name, compiled_manifests):
                     f"if {ol!r} not in on_login: on_login.append({ol!r})"
                 )
 
+        # 9b. Merge before_request / after_request hooks. Frappe's
+        #    app.init_request / after_request call EVERY handler
+        #    frappe.get_hooks returns (bare strings coerced to lists), so
+        #    these are list hooks too: accumulate deduped, coerce first.
+        for req_hook in ("before_request", "after_request"):
+            req_handlers = hooks.get(req_hook, [])
+            if isinstance(req_handlers, str):
+                req_handlers = [req_handlers]
+            if req_handlers:
+                append_blocks.append(f"{req_hook} = globals().get('{req_hook}', [])")
+                append_blocks.append(
+                    f"if isinstance({req_hook}, str): {req_hook} = [{req_hook}]"
+                )
+                for rh in req_handlers:
+                    _validate_hook_value(rh, "dotted", module_name, req_hook)
+                    append_blocks.append(
+                        f"if {rh!r} not in {req_hook}: {req_hook}.append({rh!r})"
+                    )
+
         # 10. Merge desk doctype JS registrations (doctype_js form scripts /
         #    doctype_list_js list-view scripts). Frappe resolves each value
         #    via frappe.get_app_path(app, *path.split("/")) and inlines the
