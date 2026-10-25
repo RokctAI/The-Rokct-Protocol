@@ -1482,10 +1482,12 @@ class RokctHubTemplateTest(unittest.TestCase):
         by_name = {m["name"]: m for m in data["modules"]}
         for name in ("subscriptions", "wallet"):
             self.assertEqual(by_name[name]["personas"], ["tenant", "control"])
-        self.assertEqual(by_name["telemetry"]["personas"], ["tenant"])
+        # telemetry composes both personas: its control persona no longer
+        # ships the Tenant Error/Visitor Log doctypes fleet owns.
+        self.assertNotIn("personas", by_name["telemetry"])
         self.assertEqual(by_name["fleet"]["personas"], ["control"])
         self.assertTrue(all("personas" not in m for n, m in by_name.items()
-                            if n not in ("subscriptions", "wallet", "telemetry", "fleet")))
+                            if n not in ("subscriptions", "wallet", "fleet")))
         # The composer clones one ref per repo: every module of a repo
         # must share a pin.
         refs = {}

@@ -11,7 +11,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "auth",
@@ -56,10 +56,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/frappe",
-      "ref": "main",
-      "personas": [
-        "tenant"
-      ],
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc",
       "_comment": "Tenant persona only: telemetry's src/control/ tree defines Tenant Error Log and Tenant Visitor Log, which the cohosted control app still owns, so composing it here would fail the cohosted_apps duplicate-doctype check. The hub's shell marker names this template, not a persona, so without this override every persona would compose."
     },
     {
@@ -68,7 +65,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "wallet",

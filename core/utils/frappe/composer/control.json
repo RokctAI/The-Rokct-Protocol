@@ -10,7 +10,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "auth",
@@ -51,7 +51,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "comms",
@@ -59,7 +59,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "wallet",
