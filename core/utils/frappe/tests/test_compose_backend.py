@@ -967,6 +967,53 @@ class AfterInstallShellCoercionTest(ComposeBackendTestBase):
         )
 
 
+class RequestHookMergeTest(ComposeBackendTestBase):
+    """before_request / after_request are list hooks (frappe's app calls
+    every handler get_hooks returns). Module handlers accumulate deduped and
+    a bare-string shell value is coerced first. Before this lane existed,
+    manifest hooks.before_request entries were silently dropped, so the hub
+    site-disabled gate never ran on a composed site."""
+
+    SHELL_HOOK = "testshell.req.before"
+
+    def _make_shell_with_hooks(self, shell_hooks_content):
+        self.write(f"{self.APP}/__init__.py", "__version__ = '0.0.1'\n")
+        self.write(f"{self.APP}/hooks.py", shell_hooks_content)
+        self.write(f"{self.APP}/modules.txt", f"{self.APP}\n")
+
+    def _exec_hooks(self):
+        namespace = {}
+        exec(compile(self.read(f"{self.APP}/hooks.py"), "hooks.py", "exec"), namespace)
+        return namespace
+
+    def test_before_and_after_request_merge(self):
+        self.make_composer_json()
+        self._make_shell_with_hooks(
+            f'app_name = "{self.APP}"\nbefore_request = "{self.SHELL_HOOK}"\n'
+        )
+        self.make_sdk(
+            manifest={
+                "name": self.MODULE,
+                "description": "test sdk",
+                "hooks": {
+                    "before_request": [
+                        "{app_name}.mymod.gate.block_request",
+                        "{app_name}.mymod.gate.block_request",
+                    ],
+                    "after_request": "{app_name}.mymod.gate.after",
+                },
+            }
+        )
+        composer = self.load_composer()
+        self.run_main(composer)
+        ns = self._exec_hooks()
+        self.assertEqual(
+            ns["before_request"],
+            [self.SHELL_HOOK, f"{self.APP}.mymod.gate.block_request"],
+        )
+        self.assertEqual(ns["after_request"], [f"{self.APP}.mymod.gate.after"])
+
+
 class OnLoginMergeTest(ComposeBackendTestBase):
     """on_login is a list hook: frappe's LoginManager.run_trigger calls every
     handler get_hooks("on_login") returns, and get_hooks coerces a bare
