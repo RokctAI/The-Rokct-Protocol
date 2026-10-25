@@ -68,7 +68,7 @@ the same record.
 
 ## Examples
 
-```
+```text
 python3 quartermaster.py decide --task-id cmsg_abc --task "Audit zones weather" \
   --kind judgment --model "Sonnet 5.5" --effort high
 override Sonnet 5.5 low: judgment work runs at low effort
