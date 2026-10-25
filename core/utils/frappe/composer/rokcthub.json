@@ -1,0 +1,128 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Hub-only Frappe compose template (DISABLED): rokctapp.json's module set with the subscriptions and wallet modules composing both their tenant and control personas, so the control-persona code lives only in the hub and never in the tenant rokctapp docker.",
+  "enabled": false,
+  "_comment": "DISABLED — not wired into any build/CI. Cloned from rokctapp.json. subscriptions and wallet carry a per-module \"personas\": [\"tenant\",\"control\"] override, so their src/tenant/ and src/control/ trees compose regardless of the shell's app_type marker. Waits for the control app to drop its seven duplicate doctypes (Company Subscription, Subscription Settings, Subscription Plan Module, Subscription Voucher, Customer Wallet, Wallet Ledger, Tenant Payout Request); until then the cohosted_apps duplicate-doctype check would fail this compose. The composer refuses an \"enabled\": false template unless ROKCT_COMPOSE_DISABLED_TEMPLATES=1.",
+  "modules": [
+    {
+      "name": "base",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "auth",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/auth/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "users",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/users/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "subscriptions",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/subscriptions/frappe",
+      "ref": "d549e49345ddac463636da0ccb59395c1c5eb315",
+      "personas": [
+        "tenant",
+        "control"
+      ]
+    },
+    {
+      "name": "gateways",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/gateways/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "Same pay pin as erp/hrms/wallet below: the composer clones one ref per repo, so every pay module entry must share it. Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
+    },
+    {
+      "name": "telemetry",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "comms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/comms/frappe",
+      "ref": "main"
+    },
+    {
+      "name": "wallet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/wallet/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "personas": [
+        "tenant",
+        "control"
+      ]
+    },
+    {
+      "name": "erp",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "ERPNext v16 fork flattened into one composed module (fork of frappe/erpnext via Frappenize/erpnext@rokct-hotfix). Upstream crm/projects/support modules are excluded and resolve to the productivity repo's SDK modules; the five fleet-colliding doctypes (Branch, Brand, Delivery Settings, Subscription, Subscription Settings + dependents) are excluded per pay#35's collision review, so erp composes beside base/subscriptions/products/delivery. A site composed with this module must NOT also have upstream erpnext installed. Pinned at the pay head carrying the fleet-collision exclusion; strict-compose verified at this SHA."
+    },
+    {
+      "name": "hrms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/hrms/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "Frappe HR fork (via Frappenize/hrms@rokct-hotfix). Composes ONLY alongside the erp module above — the Employee master and accounting doctypes live in erp, and every upstream erpnext reference resolves to {app_name}.erp. Never add hrms to a template without erp. Same pay pin as erp."
+    },
+    {
+      "name": "crm",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/crm/frappe",
+      "ref": "main",
+      "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    },
+    {
+      "name": "studio",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/designer",
+      "path": "../designer/studio/frappe",
+      "ref": "main",
+      "_comment": "Studio operations layer from the designer repo (design systems, requests, approvals and proofs, print jobs, prepress, hot folder) — the backend of studio_sdk in the rokctapp Next.js template. Same module startupos.json composes."
+    }
+  ],
+  "cohosted_apps": [
+    {
+      "name": "control",
+      "source": "git",
+      "git": "https://github.com/RokctAI/control",
+      "path": "../control",
+      "ref": "main",
+      "_comment": "The live control app installed on the same hub site; the composer fails if this composed app would define any DocType it also defines."
+    }
+  ]
+}

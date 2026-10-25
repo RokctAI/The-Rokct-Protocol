@@ -78,6 +78,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder`, `erp`, `hrms`, `crm` (erp/hrms/crm serve the delivery tenant's own company, not its merchants; erp+hrms carry rokctapp.json's pay pin) |
 | `polaris.json` | `polaris`, `crm`, `erp`, `hrms` (polaris `loan_application` reads CRM Lead.kyc_status; erp+hrms carry rokctapp.json's pay pin) |
+| `rokcthub.json` | **Disabled** (`"enabled": false`, not in any build/CI). rokctapp.json's module set, hub-only: `subscriptions` and `wallet` carry `"personas": ["tenant", "control"]` so the control-persona code composes only here and the tenant rokctapp docker never gets it. Waits for the control app to drop its seven duplicate doctypes (see below) |
 | `control.json` | **Deprecated** — never activated; the hub's rcore uses `rokctapp.json` (Ray 2026-10-24). Kept as a record: `tender`, `weather` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; weather composes its hub-side `src/control/` persona tree here — zones#54/#55; the `control` module itself joins when the control repo's SDK-ification lands) |
 | `rpanel.json` | NOT the common set: `hosting` only (the rPanel Frappe shell, RokctAI/rPanel; composes an app named `rpanel`, not `rcore`, keeping the live hub app name as `control.json` does; rpanel installs on the hub beside `control`, which already carries the common modules; the shell commits its composed output because it is open source, Ray 2026-09-26) |
 
@@ -121,3 +122,21 @@ manual, matching the flutter composer templates.
 persona marker in the rCore shell's `.rokct/config/app_type`, and a registry
 template with that name would overwrite the pinned composer.json that
 compose_product.py commits (every composed image would become the ERP docker).
+
+## Per-module persona override and disabled templates
+
+A module entry may carry `"personas": ["tenant", "control"]`: the composer then
+copies exactly those personas' `src/<persona>/` trees (and merges their
+manifest `app_type` flavor blocks) for that module, regardless of the shell's
+`.rokct/config/app_type` marker. Without the key, behaviour is unchanged.
+
+A template may list `cohosted_apps` (module-schema entries pointing at another
+app's checkout on the same site). After composing, the composer fails the build
+if the composed app defines any DocType that a cohosted app also defines.
+
+A template with top-level `"enabled": false` is refused by the composer unless
+`ROKCT_COMPOSE_DISABLED_TEMPLATES=1` is set. `rokcthub.json` is disabled until
+the control app drops its seven duplicate doctypes: Company Subscription,
+Subscription Settings, Subscription Plan Module, Subscription Voucher, Customer
+Wallet, Wallet Ledger, Tenant Payout Request. Until then its `cohosted_apps`
+check against `control` would fail.

@@ -1304,5 +1304,125 @@ class PersonaMarkerNoteTest(ComposeBackendTestBase):
         self.assertNotIn("matches no persona", self._compose(None))
 
 
+
+class PersonaOverrideTest(PersonaDoctypeRelocationTest):
+    """A template entry's "personas" override composes exactly those
+    personas for that module, regardless of the shell's app_type marker."""
+
+    def _entry(self, personas=None):
+        e = {"name": self.MODULE, "enabled": True, "path": f"sdk/{self.MODULE}/frappe"}
+        if personas is not None:
+            e["personas"] = personas
+        return e
+
+    def test_override_composes_listed_personas_despite_marker(self):
+        self.make_composer_json([self._entry(["tenant", "control"])])
+        self.make_shell()
+        self.make_persona_sdk()
+        self.set_role("tenant")
+        self.write_persona_doctype("tenant", "alpha")
+        self.write_persona_doctype("control", "beta")
+        self.run_main(self.load_composer())
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/alpha"))
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/beta"))
+
+    def test_override_can_exclude_marker_persona(self):
+        self.make_composer_json([self._entry(["control"])])
+        self.make_shell()
+        self.make_persona_sdk()
+        self.set_role("tenant")
+        self.write_persona_doctype("tenant", "alpha")
+        self.write_persona_doctype("control", "beta")
+        self.run_main(self.load_composer())
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/doctype/alpha"))
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/beta"))
+
+    def test_absent_override_keeps_marker_behaviour(self):
+        self.make_composer_json([self._entry()])
+        self.make_shell()
+        self.make_persona_sdk()
+        self.set_role("tenant")
+        self.write_persona_doctype("control", "beta")
+        out, _ = self.run_main(self.load_composer())
+        self.assertIn("Skipped unused role folder src/control/", out)
+        self.assertFalse(self.exists(f"{self.APP}/{self.MODULE}/doctype/beta"))
+
+    def test_invalid_override_hard_errors(self):
+        self.make_composer_json([self._entry("tenant")])
+        self.make_shell()
+        self.make_persona_sdk()
+        with self.assertRaises(ValueError):
+            self.run_main(self.load_composer())
+
+
+class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
+    """The composed app must not define a DocType another app in the same
+    template (cohosted_apps) defines."""
+
+    def _write_config(self, extra):
+        cfg = {
+            "name": f"{self.APP}_app",
+            "modules": [
+                {"name": self.MODULE, "enabled": True, "path": f"sdk/{self.MODULE}/frappe"}
+            ],
+        }
+        cfg.update(extra)
+        self.write("composer.json", json.dumps(cfg))
+
+    def _other_app(self, dt):
+        self.write(f"other/other/core/doctype/{dt}/{dt}.json", "{}")
+
+    def test_collision_with_cohosted_app_fails(self):
+        self._write_config({"cohosted_apps": [{"name": "other", "path": "other"}]})
+        self.make_shell()
+        self.make_persona_sdk()
+        self.write_persona_doctype("tenant", "wallet_ledger")
+        self._other_app("wallet_ledger")
+        with self.assertRaises(ValueError) as ctx:
+            self.run_main(self.load_composer())
+        self.assertIn("Duplicate DocType across apps", str(ctx.exception))
+
+    def test_module_root_doctype_collision_fails(self):
+        self._write_config({"cohosted_apps": [{"name": "other", "path": "other"}]})
+        self.make_shell()
+        self.make_sdk()
+        self.write(f"sdk/{self.MODULE}/frappe/doctype/thing/thing.json", "{}")
+        self._other_app("thing")
+        with self.assertRaises(ValueError):
+            self.run_main(self.load_composer())
+
+    def test_no_collision_passes(self):
+        self._write_config({"cohosted_apps": [{"name": "other", "path": "other"}]})
+        self.make_shell()
+        self.make_persona_sdk()
+        self.write_persona_doctype("tenant", "alpha")
+        self._other_app("beta")
+        self.run_main(self.load_composer())
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/alpha"))
+
+    def test_disabled_template_refused(self):
+        self._write_config({"enabled": False})
+        self.make_shell()
+        self.make_sdk()
+        with self.assertRaises(ValueError) as ctx:
+            self.run_main(self.load_composer())
+        self.assertIn('"enabled": false', str(ctx.exception))
+
+
+class RokctHubTemplateTest(unittest.TestCase):
+    def test_hub_template_disabled_with_override(self):
+        path = os.path.join(
+            os.path.dirname(_COMPOSER_SRC), "composer", "rokcthub.json"
+        )
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        self.assertIs(data["enabled"], False)
+        by_name = {m["name"]: m for m in data["modules"]}
+        for name in ("subscriptions", "wallet"):
+            self.assertEqual(by_name[name]["personas"], ["tenant", "control"])
+        self.assertTrue(all("personas" not in m for n, m in by_name.items()
+                            if n not in ("subscriptions", "wallet")))
+
+
 if __name__ == "__main__":
     unittest.main()
