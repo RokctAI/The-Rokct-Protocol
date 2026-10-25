@@ -1351,7 +1351,6 @@ class PersonaMarkerNoteTest(ComposeBackendTestBase):
         self.assertNotIn("matches no persona", self._compose(None))
 
 
-
 class PersonaOverrideTest(PersonaDoctypeRelocationTest):
     """A template entry's "personas" override composes exactly those
     personas for that module, regardless of the shell's app_type marker."""
@@ -1410,7 +1409,11 @@ class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
         cfg = {
             "name": f"{self.APP}_app",
             "modules": [
-                {"name": self.MODULE, "enabled": True, "path": f"sdk/{self.MODULE}/frappe"}
+                {
+                    "name": self.MODULE,
+                    "enabled": True,
+                    "path": f"sdk/{self.MODULE}/frappe",
+                }
             ],
         }
         cfg.update(extra)
@@ -1458,17 +1461,20 @@ class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
 
 class RokctHubTemplateTest(unittest.TestCase):
     def test_hub_template_disabled_with_override(self):
-        path = os.path.join(
-            os.path.dirname(_COMPOSER_SRC), "composer", "rokcthub.json"
-        )
+        path = os.path.join(os.path.dirname(_COMPOSER_SRC), "composer", "rokcthub.json")
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
         self.assertIs(data["enabled"], False)
         by_name = {m["name"]: m for m in data["modules"]}
         for name in ("subscriptions", "wallet"):
             self.assertEqual(by_name[name]["personas"], ["tenant", "control"])
-        self.assertTrue(all("personas" not in m for n, m in by_name.items()
-                            if n not in ("subscriptions", "wallet")))
+        self.assertTrue(
+            all(
+                "personas" not in m
+                for n, m in by_name.items()
+                if n not in ("subscriptions", "wallet")
+            )
+        )
 
 
 if __name__ == "__main__":
