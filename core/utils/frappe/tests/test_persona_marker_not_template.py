@@ -10,14 +10,18 @@ composed image into that template.
 import os
 import unittest
 
-COMPOSER_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "composer")
+COMPOSER_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "composer"
+)
 PERSONA_MARKERS = ("tenant",)
 
 
 class PersonaMarkerNotTemplateTest(unittest.TestCase):
     def test_no_template_named_after_a_persona_marker(self):
         for marker in PERSONA_MARKERS:
-            self.assertFalse(os.path.exists(os.path.join(COMPOSER_DIR, marker + ".json")), marker)
+            self.assertFalse(
+                os.path.exists(os.path.join(COMPOSER_DIR, marker + ".json")), marker
+            )
 
     def test_tenant_erp_template_exists(self):
         self.assertTrue(os.path.exists(os.path.join(COMPOSER_DIR, "tenant_erp.json")))
