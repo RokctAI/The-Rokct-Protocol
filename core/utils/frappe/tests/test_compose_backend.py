@@ -1457,19 +1457,25 @@ class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
 
 
 class RokctHubTemplateTest(unittest.TestCase):
-    def test_hub_template_disabled_with_override(self):
+    def test_hub_template_enabled_with_overrides(self):
         path = os.path.join(
             os.path.dirname(_COMPOSER_SRC), "composer", "rokcthub.json"
         )
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
-        self.assertIs(data["enabled"], False)
+        self.assertIs(data["enabled"], True)
         by_name = {m["name"]: m for m in data["modules"]}
         for name in ("subscriptions", "wallet"):
             self.assertEqual(by_name[name]["personas"], ["tenant", "control"])
+        self.assertEqual(by_name["telemetry"]["personas"], ["tenant"])
         self.assertTrue(all("personas" not in m for n, m in by_name.items()
-                            if n not in ("subscriptions", "wallet")))
-
+                            if n not in ("subscriptions", "wallet", "telemetry")))
+        # The composer clones one ref per repo: every module of a repo
+        # must share a pin.
+        refs = {}
+        for m in data["modules"]:
+            refs.setdefault(m["git"], set()).add(m["ref"])
+        self.assertTrue(all(len(r) == 1 for r in refs.values()), refs)
 
 if __name__ == "__main__":
     unittest.main()
