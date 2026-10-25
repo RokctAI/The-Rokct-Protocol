@@ -34,7 +34,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/agent",
       "path": "../agent/subscriptions/frappe",
-      "ref": "f1d83b1c1b9928dea29da0e61c7d8cdd4462b0f2"
+      "ref": "72c679306470179540297e2646350b8e31e078bc"
     },
     {
       "name": "gateways",
@@ -67,7 +67,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "main"
+      "ref": "351b1669bb06672b88190b26949e8f72bb80acb3"
     },
     {
       "name": "weather",
