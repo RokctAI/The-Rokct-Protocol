@@ -60,7 +60,7 @@ by module set. The exceptions are the hub and rPanel: `control.json` is named
 2026-08-20 — matching the live hub's existing app name, so no rename migration),
 and `rpanel.json` is named `"rpanel_app"` and composes an app named `rpanel`
 for the same reason (the live app name on the hub).
-`rcore.json` is deprecated in favour of `tenant.json` (Ray 2026-10-24), which
+`rcore.json` is deprecated in favour of `tenant_erp.json` (Ray 2026-10-24), which
 keeps its full module list and adds `erp` + `hrms`. `rcore.json` is kept as a record.
 
 Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
@@ -73,8 +73,8 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `startupos.json` | `studio`, `productivity`, `agent` |
 | `telephony.json` | — (telephony module pending extraction from control; `hardware/telephony/frappe` carries a control-persona `manifest.json` and the four Telephony plan fixtures, not a tenant module) |
 | `hosting.json` | — (kept as the hosting product's backend record; the hosting shell's live backend is the control site, where the hosting apps live. The hosting module itself is composed by `rpanel.json`, below) |
-| `tenant.json` | rcore.json's full module set plus `erp`, `hrms` — the ERP docker where tenants start (Ray 2026-10-24); composes an app named `rcore`; erp/hrms/gateways/wallet share rokctapp.json's pay pin. Supersedes `rcore.json` |
-| `rcore.json` | **Deprecated** in favour of `tenant.json` (kept as a record; nothing deleted) |
+| `tenant_erp.json` | rcore.json's full module set plus `erp`, `hrms` — the ERP docker where tenants start (Ray 2026-10-24); composes an app named `rcore`; erp/hrms/gateways/wallet share rokctapp.json's pay pin. Supersedes `rcore.json` |
+| `rcore.json` | **Deprecated** in favour of `tenant_erp.json` (kept as a record; nothing deleted) |
 | `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder`, `erp`, `hrms`, `crm` (erp/hrms/crm serve the delivery tenant's own company, not its merchants; erp+hrms carry rokctapp.json's pay pin) |
 | `polaris.json` | `polaris`, `crm`, `erp`, `hrms` (polaris `loan_application` reads CRM Lead.kyc_status; erp+hrms carry rokctapp.json's pay pin) |
@@ -116,3 +116,8 @@ available on demand via `--scaffold`; existing files are never overwritten). See
 
 There is currently no automated script that performs the copy/rename step — it's
 manual, matching the flutter composer templates.
+
+`tenant_erp.json` is deliberately not named `tenant.json`: `tenant` is the
+persona marker in the rCore shell's `.rokct/config/app_type`, and a registry
+template with that name would overwrite the pinned composer.json that
+compose_product.py commits (every composed image would become the ERP docker).
