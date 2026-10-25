@@ -57,7 +57,7 @@
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/frappe",
       "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc",
-      "_comment": "Tenant persona only: telemetry's src/control/ tree defines Tenant Error Log and Tenant Visitor Log, which the cohosted control app still owns, so composing it here would fail the cohosted_apps duplicate-doctype check. The hub's shell marker names this template, not a persona, so without this override every persona would compose."
+      "_comment": "Composes every persona (no override): since core#346 telemetry's src/control/ tree no longer defines Tenant Error Log or Tenant Visitor Log (the fleet module owns them), so it no longer collides with fleet or the cohosted control app. Pinned to the same core ref as base and comms, because the composer clones one ref per repo."
     },
     {
       "name": "comms",
