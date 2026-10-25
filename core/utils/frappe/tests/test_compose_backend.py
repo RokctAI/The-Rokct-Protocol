@@ -154,7 +154,21 @@ class ComposeBackendTestBase(unittest.TestCase):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        # "tenant" is both a persona marker and, since tenant.json joined the
+        # registry, a template name. These tests exercise the persona marker,
+        # not template resolution (test_template_resolution.py covers that),
+        # so treat it as a plain role marker: no materialization, no clones.
+        real_fetch = module.fetch_composer_template
+
+        def fetch_role_markers_as_miss(name, *args, **kwargs):
+            if name in self.ROLE_ONLY_MARKERS:
+                return None, None
+            return real_fetch(name, *args, **kwargs)
+
+        module.fetch_composer_template = fetch_role_markers_as_miss
         return module
+
+    ROLE_ONLY_MARKERS = frozenset({"tenant"})
 
     def run_main(self, composer):
         out, err = io.StringIO(), io.StringIO()
@@ -333,9 +347,9 @@ class PersonaDoctypeRelocationTest(ComposeBackendTestBase):
         )
 
     def set_role(self, value):
-        # A plain role marker: matches no registry template (verified miss
-        # against the local registry dir), so resolve_composer_config stays a
-        # no-op and no network is touched.
+        # A plain role marker: load_composer makes ROLE_ONLY_MARKERS miss the
+        # registry, so resolve_composer_config stays a no-op and no network
+        # is touched.
         self.write(".rokct/config/app_type", f"{value}\n")
 
     def write_persona_doctype(self, persona, dt, module=None):
