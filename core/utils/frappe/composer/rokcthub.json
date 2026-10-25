@@ -121,7 +121,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/control",
       "path": "../control/fleet/frappe",
-      "ref": "96ae4434e02207d78ee5346d54203040f60d2292",
+      "ref": "5cfe3c5dcc276bce68ff920575fb60255186d729",
       "personas": [
         "control"
       ],
