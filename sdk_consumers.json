@@ -84,7 +84,7 @@
       "consumers": [],
       "nextjs": {
         "path": "nextjs",
-        "version": "1.5.7",
+        "version": "1.6.1",
         "install_py_sha256": "0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf"
       }
     },

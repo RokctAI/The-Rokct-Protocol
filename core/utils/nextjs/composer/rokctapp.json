@@ -254,8 +254,8 @@
       "ref": "main",
       "sha256": "0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf",
       "home_sdk": false,
-      "_sha256_comment": "SHA-256 of control/nextjs/install.py at control 1.5.7 (the PR that adds the nextjs layer); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
-      "_comment": "The control app's nextjs half (control 1.5.7): the control fleet board moved out of RokctAI_frontend (#204 had added it to the shell directly) - app/handson/control/fleet/**, app/actions/handson/control/fleet/**, app/services/control/fleet.ts and fleet-actions.ts, app/lib/fleet/** (types and the ROKCT_DEMO_DATA fixtures), docs/guides/control-fleet-board.md and tour/fragments/control-fleet.tour.yaml, under persona rokctapp. No integrations: the Fleet sidebar entry and dashboard tile stay in the shell's own files. Requires auth_sdk's app/(auth)/auth.ts and the host's app/services/control/base.ts, so it composes after auth_sdk; placed before agent_sdk, the home SDK."
+      "_sha256_comment": "SHA-256 of control/nextjs/install.py at control 1.6.1 (the PR that adds the nextjs layer); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The control app's nextjs half (control 1.6.1): the control fleet board moved out of RokctAI_frontend (#204 had added it to the shell directly) - app/handson/control/fleet/**, app/actions/handson/control/fleet/**, app/services/control/fleet.ts and fleet-actions.ts, app/lib/fleet/** (types and the ROKCT_DEMO_DATA fixtures), docs/guides/control-fleet-board.md and tour/fragments/control-fleet.tour.yaml, under persona rokctapp. No integrations: the Fleet sidebar entry and dashboard tile stay in the shell's own files. Requires auth_sdk's app/(auth)/auth.ts and the host's app/services/control/base.ts, so it composes after auth_sdk; placed before agent_sdk, the home SDK."
     },
     {
       "name": "agent_sdk",

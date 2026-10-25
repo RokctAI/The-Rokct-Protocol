@@ -39,7 +39,7 @@ composer profile). This index auto-refreshes weekly via the
 | `booking_sdk` | `RokctAI/commerce` | `booking/nextjs` | `1.1.0` | `2ec597df755f4a1c0056f2bdbefd2e174a6014bbfa52ed13cf9641c70a0256e5` | `paas_customer`, `paas_manager` |
 | `calc_sdk` | `RokctAI/productivity` | — | — | — | `paas_driver`, `paas_manager` |
 | `comms_sdk` | `RokctAI/core` | `comms/nextjs` | `1.1.0` | `c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `radio`, `supacharge` |
-| `control_sdk` | `RokctAI/control` | `nextjs` | `1.5.7` | `0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf` | — |
+| `control_sdk` | `RokctAI/control` | `nextjs` | `1.6.1` | `0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf` | — |
 | `corporate_sdk` | `RokctAI/corporate` | `corporate/nextjs` | `1.2.0` | `6e03485fd03617ea1e175adc50354a91af25e213908371fa3581083d8aa7d4ba` | `minilauncher`, `paas_customer`, `paas_driver`, `paas_manager`, `supacharge` |
 | `crm_sdk` | `RokctAI/productivity` | `crm/nextjs` | `1.0.1` | `0b3ef06510a64ff21940d7bda9abc328adeec18957bcc18c5892a6a3912b3500` | — |
 | `delivery_sdk` | `RokctAI/zones` | `delivery/nextjs` | `1.0.1` | `8ca4ef31c258f0ac3fca917f875522a5714cbcb410bf5a803cf5a648e2d3caed` | `paas_customer`, `paas_driver` |
