@@ -1447,6 +1447,21 @@ class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
         self.run_main(self.load_composer())
         self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/alpha"))
 
+    def test_sdk_module_dir_inside_cohosted_app_is_skipped(self):
+        # control ships the fleet SDK at control/fleet/frappe; a template
+        # composes it, so its doctypes must not count as the cohosted app's.
+        self._write_config({"cohosted_apps": [{"name": "other", "path": "other"}]})
+        self.make_shell()
+        self.make_persona_sdk()
+        self.write_persona_doctype("tenant", "docker_instance")
+        self.write("other/fleet/frappe/manifest.json", "{}")
+        self.write(
+            "other/fleet/frappe/src/control/doctype/docker_instance/docker_instance.json",
+            "{}",
+        )
+        self.run_main(self.load_composer())
+        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/docker_instance"))
+
     def test_disabled_template_refused(self):
         self._write_config({"enabled": False})
         self.make_shell()
@@ -1468,8 +1483,9 @@ class RokctHubTemplateTest(unittest.TestCase):
         for name in ("subscriptions", "wallet"):
             self.assertEqual(by_name[name]["personas"], ["tenant", "control"])
         self.assertEqual(by_name["telemetry"]["personas"], ["tenant"])
+        self.assertEqual(by_name["fleet"]["personas"], ["control"])
         self.assertTrue(all("personas" not in m for n, m in by_name.items()
-                            if n not in ("subscriptions", "wallet", "telemetry")))
+                            if n not in ("subscriptions", "wallet", "telemetry", "fleet")))
         # The composer clones one ref per repo: every module of a repo
         # must share a pin.
         refs = {}

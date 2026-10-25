@@ -1146,9 +1146,17 @@ def module_personas_override(module_config):
 
 def collect_app_doctypes(app_dir):
     """Every DocType (dir name) defined anywhere under an app checkout:
-    any */doctype/<dt>/ dir that carries its <dt>.json."""
+    any */doctype/<dt>/ dir that carries its <dt>.json.
+
+    SDK module dirs inside the checkout (any subdirectory below the root
+    that carries a manifest.json, e.g. control/fleet/frappe) are skipped:
+    the app does not install them, a template composes them as modules,
+    so their doctypes belong to the composed app, not the cohosted one."""
     found = set()
-    for root, dirs, _files in os.walk(app_dir):
+    for root, dirs, files in os.walk(app_dir):
+        if root != app_dir and "manifest.json" in files:
+            dirs[:] = []
+            continue
         dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
         if os.path.basename(root) == "doctype":
             for dt in os.listdir(root):

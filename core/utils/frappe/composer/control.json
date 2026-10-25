@@ -86,6 +86,18 @@
       "path": "../corporate/tender/frappe",
       "ref": "912180af2a46325453a28c180127f1f68ec618f6",
       "_comment": "TenderAssist module (SA public-sector tendering: opportunity catalog, tender bids with checklists, deterministic compliance layer). Control-only per the owner ruling of 2026-08-18. Pinned to corporate main after the 2026-08-21 waves (corporate#46/#42; picks up the wave-1/2/3 fixture rules, bid-pack generator, deterministic pack parser and eTenders fetcher landed since corporate#34); since corporate#30 the manifest self-registers the module's gateway cmds from its control persona block — no whitelisted_methods/hook lines are needed in this template. The full-SHA ref pin is intentional — the composer only accepts SHA pins when cloning (hard-fails unpinned refs), unlike the legacy 'main' refs above which predate that rule."
+    },
+    {
+      "name": "fleet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/control",
+      "path": "../control/fleet/frappe",
+      "ref": "96ae4434e02207d78ee5346d54203040f60d2292",
+      "personas": [
+        "control"
+      ],
+      "_comment": "Fleet SDK module (control-split step 4, control#181): hub registry and channel, server agent, lifecycle, moves, rings and the fleet board, composed to {app}.fleet.control.* with doctypes under {app}/fleet/doctype/ (Frappe module fleet). Its manifest is the single source of the fleet scheduler jobs, doc_events, control: cmds and control_upgrade_result; control 1.7.1 registers its shim-path copies only when fleet is not composed. The cohosted duplicate-doctype scan skips SDK module dirs (any subdir with a manifest.json) inside a cohosted app checkout, so control/fleet/frappe does not count as control's own doctypes. Pinned to the control#181 merge SHA."
     }
   ]
 }
