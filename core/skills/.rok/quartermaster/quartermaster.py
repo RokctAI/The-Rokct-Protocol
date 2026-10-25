@@ -17,6 +17,7 @@
 Encodes Ray's standing model and effort policy so the gate is deterministic
 where the policy is firm, and records every decision per task.
 """
+
 import argparse
 import json
 import os
@@ -191,7 +192,9 @@ def main(argv=None):
         model = normalise_model(args.model)
         append_history(
             args.history,
-            build_entry(args, "approve", model, args.effort, args.reason, args.approved_by),
+            build_entry(
+                args, "approve", model, args.effort, args.reason, args.approved_by
+            ),
         )
         print(format_line("approve", model, args.effort, args.reason))
         return 0

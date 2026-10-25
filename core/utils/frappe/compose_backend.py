@@ -1139,7 +1139,7 @@ def module_personas_override(module_config):
     ):
         raise ValueError(
             f"CRITICAL ERROR: module '{module_config.get('name')}' has an invalid "
-            f"\"personas\" override {personas!r}; expected a list of persona names."
+            f'"personas" override {personas!r}; expected a list of persona names.'
         )
     return list(dict.fromkeys(personas))
 
