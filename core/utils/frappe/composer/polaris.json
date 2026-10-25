@@ -51,7 +51,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/gateways/frappe",
-      "ref": "main",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
       "_comment": "Replaces the retired 'pay' entry (../pay/payments/frappe no longer carries a frappe module or manifest.json): pay's payments/frappe content moved into the gateways and wallet modules, so this template mirrors rcore.json's wallet+gateways pair."
     },
     {
@@ -76,7 +76,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/pay",
       "path": "../pay/wallet/frappe",
-      "ref": "main"
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f"
     },
     {
       "name": "crm",
@@ -86,6 +86,24 @@
       "path": "../productivity/crm/frappe",
       "ref": "main",
       "_comment": "Core CRM slice (leads, opportunities, prospects, campaigns, appointments, contracts, sales notes/tasks, statuses) from the productivity SDK, using unprefixed doctype names (Lead, Opportunity, Prospect, ...). Composing this module replaces installing a standalone CRM app — a site should NOT have frappe/crm installed alongside rcore; rcore's own modules (e.g. polaris's Lead.kyc_status reads) are wired to this module's unprefixed doctypes, not to frappe/crm's 'CRM '-prefixed ones. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    },
+    {
+      "name": "erp",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/erp/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "ERPNext v16 fork flattened into one composed module (fork of frappe/erpnext via Frappenize/erpnext@rokct-hotfix). Upstream crm/projects/support modules are excluded and resolve to the productivity repo's SDK modules; the five fleet-colliding doctypes (Branch, Brand, Delivery Settings, Subscription, Subscription Settings + dependents) are excluded per pay#35's collision review, so erp composes beside base/subscriptions/products/delivery. A site composed with this module must NOT also have upstream erpnext installed. Pinned at the pay head carrying the fleet-collision exclusion; strict-compose verified at this SHA."
+    },
+    {
+      "name": "hrms",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/pay",
+      "path": "../pay/hrms/frappe",
+      "ref": "a09501d9f5ddd26d2d2db71ed45c10a6312ccc6f",
+      "_comment": "Frappe HR fork (via Frappenize/hrms@rokct-hotfix). Composes ONLY alongside the erp module above — the Employee master and accounting doctypes live in erp, and every upstream erpnext reference resolves to {app_name}.erp. Never add hrms to a template without erp. Same pay pin as erp."
     }
   ]
 }
