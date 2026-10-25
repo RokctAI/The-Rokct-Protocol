@@ -1123,6 +1123,78 @@ def find_target_app_dir(config):
     return app_name, target_path
 
 
+def module_personas_override(module_config):
+    """The template entry's per-module persona override, or None.
+
+    A module entry may carry "personas": ["tenant", "control"]: those
+    personas' src/<persona>/ trees (and their manifest app_type flavor
+    blocks) compose for that module regardless of the shell's
+    .rokct/config/app_type marker. Absent key = default marker behaviour.
+    """
+    personas = module_config.get("personas")
+    if personas is None:
+        return None
+    if not isinstance(personas, list) or not all(
+        isinstance(p, str) and p for p in personas
+    ):
+        raise ValueError(
+            f"CRITICAL ERROR: module '{module_config.get('name')}' has an invalid "
+            f"\"personas\" override {personas!r}; expected a list of persona names."
+        )
+    return list(dict.fromkeys(personas))
+
+
+def collect_app_doctypes(app_dir):
+    """Every DocType (dir name) defined anywhere under an app checkout:
+    any */doctype/<dt>/ dir that carries its <dt>.json."""
+    found = set()
+    for root, dirs, _files in os.walk(app_dir):
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+        if os.path.basename(root) == "doctype":
+            for dt in os.listdir(root):
+                if os.path.isfile(os.path.join(root, dt, f"{dt}.json")):
+                    found.add(dt)
+            dirs[:] = []
+    return found
+
+
+def check_cohosted_app_doctypes(config, composed_doctypes):
+    """Fail when the composed app would contain a DocType that another app
+    listed in the same template ("cohosted_apps") already defines — two
+    apps on one site cannot both own a DocType name.
+
+    Each cohosted_apps entry uses the module schema ({name, path} or
+    {name, source: git, git, path, ref}); its path points at the app's
+    checkout root, which is scanned for */doctype/<dt>/<dt>.json.
+    """
+    apps = config.get("cohosted_apps") or []
+    if not apps:
+        return
+    resolved = resolve_module_sources(apps)
+    clashes = []
+    for app in apps:
+        app_dir = resolved.get(id(app)) or os.path.abspath(
+            os.path.join(PROJECT_ROOT, app.get("path", ""))
+        )
+        if not os.path.isdir(app_dir):
+            raise ValueError(
+                f"CRITICAL ERROR: cohosted app '{app.get('name')}' not found at "
+                f"{app_dir}; cannot run the cross-app duplicate-doctype check."
+            )
+        for dt in sorted(collect_app_doctypes(app_dir) & set(composed_doctypes)):
+            clashes.append(
+                f"DocType '{dt}' (composed from module '{composed_doctypes[dt]}') "
+                f"is also defined by cohosted app '{app.get('name')}'"
+            )
+    if clashes:
+        for c in clashes:
+            print(f"[!] {c}", file=sys.stderr)
+        raise ValueError(
+            f"CRITICAL ERROR: Duplicate DocType across apps: {len(clashes)} "
+            f"doctype(s) collide with a cohosted app. Failing build."
+        )
+
+
 def compose_module(module_config, target_app_path, app_name, resolved_src_dir=None):
     module_name = module_config["name"]
     raw_path = module_config.get("path")
@@ -1217,7 +1289,20 @@ def compose_module(module_config, target_app_path, app_name, resolved_src_dir=No
     current_app_type = resolve_app_type()
     declared_personas = list((manifest.get("app_type") or {}).keys())
     excluded_personas = set()
-    if current_app_type and current_app_type in declared_personas:
+    persona_override = module_personas_override(module_config)
+    if persona_override is not None:
+        # Per-module persona override (template entry "personas": [...]):
+        # compose exactly these personas' src/<persona>/ trees for this
+        # module, regardless of the shell's .rokct/config/app_type marker.
+        excluded_personas = {p for p in declared_personas if p not in persona_override}
+        unknown = [p for p in persona_override if p not in declared_personas]
+        if unknown:
+            compose_warning(
+                f"Module '{module_name}' template personas {unknown} are not "
+                f"declared in its manifest app_type block."
+            )
+        current_app_type = "+".join(persona_override)
+    elif current_app_type and current_app_type in declared_personas:
         excluded_personas = {p for p in declared_personas if p != current_app_type}
 
     # 2. Copy Source Code Files (api.py, tasks.py, etc.)
@@ -2023,6 +2108,14 @@ def main():
     resolve_composer_config()
 
     config = load_composer_config()
+    if config.get("enabled") is False and os.environ.get(
+        "ROKCT_COMPOSE_DISABLED_TEMPLATES", ""
+    ).lower() not in ("1", "true", "yes"):
+        raise ValueError(
+            f"CRITICAL ERROR: composer template '{config.get('name')}' is marked "
+            '"enabled": false (see the composer README). Set '
+            "ROKCT_COMPOSE_DISABLED_TEMPLATES=1 to compose it anyway."
+        )
 
     # Scaffold mode: lay down the tokenized shell skeleton when the target
     # app shell package is missing entirely (a brand-new shell repo), or when
@@ -2073,17 +2166,22 @@ def main():
             )
             if manifest:
                 compiled_manifests[m["name"]] = manifest
-                flavor_block = (
-                    (manifest.get("app_type") or {}).get(current_app_type)
-                    if current_app_type
-                    else None
+                override = module_personas_override(m)
+                personas = (
+                    override
+                    if override is not None
+                    else ([current_app_type] if current_app_type else [])
                 )
-                if flavor_block:
-                    compiled_manifests[f"{m['name']} ({current_app_type})"] = (
-                        flavor_block
-                    )
+                for persona in personas:
+                    flavor_block = (manifest.get("app_type") or {}).get(persona)
+                    if flavor_block:
+                        compiled_manifests[f"{m['name']} ({persona})"] = flavor_block
 
     warn_persona_matches_no_manifest(current_app_type, modules, compiled_manifests)
+
+    # Cross-app duplicate check: the composed app must not define a DocType
+    # that another app in the same template (cohosted_apps) defines.
+    check_cohosted_app_doctypes(config, {**SRC_NESTED_DOCTYPES, **COMPILED_DOCTYPES})
 
     if compiled_manifests:
         merge_hooks(target_app_path, app_name, compiled_manifests)
