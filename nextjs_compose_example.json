@@ -121,6 +121,18 @@
       ]
     },
     {
+      "name": "control_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/control",
+      "path": "../control/nextjs",
+      "ref": "main",
+      "sha256": "0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf",
+      "version": "1.5.7",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
       "name": "corporate_sdk",
       "enabled": false,
       "source": "git",

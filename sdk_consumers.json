@@ -79,6 +79,15 @@
         "install_py_sha256": "c625d38498b473d9ab747111062e794e0be1872da08ac4e481d575f4e5d2c5a3"
       }
     },
+    "control_sdk": {
+      "repo": "RokctAI/control",
+      "consumers": [],
+      "nextjs": {
+        "path": "nextjs",
+        "version": "1.5.7",
+        "install_py_sha256": "0574f6e826678d18b18ca34ce6bdc9907899d9f7d75840c2314bb276f3611cbf"
+      }
+    },
     "corporate_sdk": {
       "repo": "RokctAI/corporate",
       "consumers": [
