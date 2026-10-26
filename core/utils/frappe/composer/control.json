@@ -93,11 +93,11 @@
       "source": "git",
       "git": "https://github.com/RokctAI/control",
       "path": "../control/fleet/frappe",
-      "ref": "bcd4bd7dda3d713766b2ee79f603554322308fc3",
+      "ref": "02e43e5a2820d8d6a4b4d725fb26b94d176d17d7",
       "personas": [
         "control"
       ],
-      "_comment": "Fleet SDK module (control-split step 4, control#181): hub registry and channel, server agent, lifecycle, moves, rings and the fleet board, composed to {app}.fleet.control.* with doctypes under {app}/fleet/doctype/ (Frappe module fleet). Its manifest is the single source of the fleet scheduler jobs, doc_events, control: cmds and control_upgrade_result; control 1.7.1 registers its shim-path copies only when fleet is not composed. The cohosted duplicate-doctype scan skips SDK module dirs (any subdir with a manifest.json) inside a cohosted app checkout, so control/fleet/frappe does not count as control's own doctypes. Pinned to the control#181 merge SHA."
+      "_comment": "Fleet SDK module (control-split step 4, control#181): hub registry and channel, server agent, lifecycle, moves, rings and the fleet board, composed to {app}.fleet.control.* with doctypes under {app}/fleet/doctype/ (Frappe module fleet). Its manifest is the single source of the fleet scheduler jobs, doc_events, control: cmds and control_upgrade_result; control 1.7.1 registers its shim-path copies only when fleet is not composed. The cohosted duplicate-doctype scan skips SDK module dirs (any subdir with a manifest.json) inside a cohosted app checkout, so control/fleet/frappe does not count as control's own doctypes. Pinned to the control#182 merge SHA (control main 02e43e5)."
     }
   ]
 }
