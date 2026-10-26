@@ -22,9 +22,9 @@ SHA-256, then executes it locally in the target app shell.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "3c90c0c3c0a3b922057a7b84a8fd187a13dddf9c"
+PROTOCOL_REF = "3ba26e5d6aa5b379494a53ec8340df7c37f8c377"
 COMPOSER_PATH = "core/utils/frappe/compose_backend.py"
-COMPOSER_SHA256 = "6d4d5962ec39510cac9fb81d91030c4a7bc5e0779140ec4c253fc5c9742f2e48"
+COMPOSER_SHA256 = "c6bdaf0ba52c7619409809d33b941d8ea4813dacc85b418cc079d48768e9ca21"
 GITHUB_RAW_BASE = (
     f"https://raw.githubusercontent.com/RokctAI/The-Rokct-Protocol/{PROTOCOL_REF}"
 )
