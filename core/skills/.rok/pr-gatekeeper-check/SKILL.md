@@ -14,7 +14,7 @@ a script cannot prove, and decides. The script never flips, merges or comments.
 
 ## Run
 
-```
+```bash
 python3 gatekeeper_check.py --repo <checkout> --head <ref> [--base origin/main] \
     [--body-file pr_body.md] [--name <repo>] [--pr control#192] [--fetch] [--no-run]
 ```
