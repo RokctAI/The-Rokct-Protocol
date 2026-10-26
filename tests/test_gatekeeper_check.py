@@ -32,13 +32,17 @@ from unittest import mock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 SKILL = os.path.join(ROOT, "core", "skills", ".rok", "pr-gatekeeper-check")
-spec = importlib.util.spec_from_file_location("gatekeeper_check", os.path.join(SKILL, "gatekeeper_check.py"))
+spec = importlib.util.spec_from_file_location(
+    "gatekeeper_check", os.path.join(SKILL, "gatekeeper_check.py")
+)
 gk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gk)
 
 
 def git(repo, *args):
-    subprocess.run(["git", "-C", repo] + list(args), check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "-C", repo] + list(args), check=True, capture_output=True, text=True
+    )
 
 
 def write(repo, path, text):
@@ -118,7 +122,9 @@ class TestBulletFiles(Repo):
         self.branch()
         write(self.repo, "other/tests/test_x.py", "pass\n")
         self.commit()
-        status, detail = self.one({"id": "b", "check": "bullet_files"}, body="Adds `tests/test_x.py`")
+        status, detail = self.one(
+            {"id": "b", "check": "bullet_files"}, body="Adds `tests/test_x.py`"
+        )
         self.assertEqual(status, gk.PASS)
         self.assertIn("matched only by trailing path", detail)
         self.assertIn("other/tests/test_x.py", detail)
@@ -127,7 +133,9 @@ class TestBulletFiles(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
-        status, _ = self.one({"id": "b", "check": "bullet_files"}, body="Changed `code.py` and `pkg/`")
+        status, _ = self.one(
+            {"id": "b", "check": "bullet_files"}, body="Changed `code.py` and `pkg/`"
+        )
         self.assertEqual(status, gk.PASS)
 
     def test_no_body_is_not_run(self):
@@ -146,7 +154,11 @@ class TestVersions(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         write(self.repo, "pkg/manifest.json", json.dumps({"version": "1.1.0"}))
-        write(self.repo, "pkg/CHANGELOG.md", "# Changelog\n\n## 1.1.0\n- new\n\n## 1.0.0\n- first\n")
+        write(
+            self.repo,
+            "pkg/CHANGELOG.md",
+            "# Changelog\n\n## 1.1.0\n- new\n\n## 1.0.0\n- first\n",
+        )
         self.commit()
         status, detail = self.one(self.rule)
         self.assertEqual(status, gk.PASS, detail)
@@ -154,7 +166,11 @@ class TestVersions(Repo):
     def test_changelog_and_manifest_disagree(self):
         self.branch()
         write(self.repo, "pkg/manifest.json", json.dumps({"version": "1.1.0"}))
-        write(self.repo, "pkg/CHANGELOG.md", "# Changelog\n\n## 1.2.0\n- new\n\n## 1.0.0\n- first\n")
+        write(
+            self.repo,
+            "pkg/CHANGELOG.md",
+            "# Changelog\n\n## 1.2.0\n- new\n\n## 1.0.0\n- first\n",
+        )
         self.commit()
         status, detail = self.one(self.rule)
         self.assertEqual(status, gk.FAIL)
@@ -180,6 +196,7 @@ class TestVersions(Repo):
 
 class TestVersionsPerPackage(Repo):
     """A bump in an unrelated package must not satisfy a change in this one."""
+
     rule = {"id": "v", "check": "versions", "require_bump": True}
 
     def test_bump_in_other_package_fails(self):
@@ -218,7 +235,9 @@ class TestVersionsPerPackage(Repo):
 class TestOtherChecks(Repo):
     def test_secret_fails(self):
         self.branch()
-        write(self.repo, "pkg/conf.py", 'API_KEY = "abcdefghijklmnopqrstuvwxyz123456"\n')
+        write(
+            self.repo, "pkg/conf.py", 'API_KEY = "abcdefghijklmnopqrstuvwxyz123456"\n'
+        )
         self.commit()
         status, detail = self.one({"id": "s", "check": "secrets"})
         self.assertEqual(status, gk.FAIL)
@@ -227,7 +246,11 @@ class TestOtherChecks(Repo):
     def test_unquoted_env_secret_and_bearer_fail(self):
         self.branch()
         write(self.repo, "pkg/.env.sample", "DB_PASSWORD=abcdefghijklmnopqrstuvwx\n")
-        write(self.repo, "pkg/call.sh", "curl -H 'Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123'\n")
+        write(
+            self.repo,
+            "pkg/call.sh",
+            "curl -H 'Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123'\n",
+        )
         self.commit()
         status, detail = self.one({"id": "s", "check": "secrets"})
         self.assertEqual(status, gk.FAIL)
@@ -236,7 +259,11 @@ class TestOtherChecks(Repo):
 
     def test_env_lookup_is_not_a_secret(self):
         self.branch()
-        write(self.repo, "pkg/conf.py", 'token = os.environ.get("TOKEN_FROM_ENV_VARIABLE_NAME")\nSECRET_KEY = config_value_lookup\n')
+        write(
+            self.repo,
+            "pkg/conf.py",
+            'token = os.environ.get("TOKEN_FROM_ENV_VARIABLE_NAME")\nSECRET_KEY = config_value_lookup\n',
+        )
         self.commit()
         self.assertEqual(self.one({"id": "s", "check": "secrets"})[0], gk.PASS)
 
@@ -250,7 +277,9 @@ class TestOtherChecks(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
-        status, detail = self.one({"id": "n", "check": "notes"}, body="Fine. Ray can wire this next time.")
+        status, detail = self.one(
+            {"id": "n", "check": "notes"}, body="Fine. Ray can wire this next time."
+        )
         self.assertEqual(status, gk.READ)
         self.assertIn("next time", detail)
 
@@ -258,7 +287,12 @@ class TestOtherChecks(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
-        self.assertEqual(self.one({"id": "n", "check": "notes"}, body="Not run: Flutter is not installed.")[0], gk.PASS)
+        self.assertEqual(
+            self.one(
+                {"id": "n", "check": "notes"}, body="Not run: Flutter is not installed."
+            )[0],
+            gk.PASS,
+        )
 
     def test_art_needs_ray(self):
         self.branch()
@@ -272,7 +306,10 @@ class TestOtherChecks(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
-        status, detail = self.one({"id": "o", "check": "merge_order"}, body="Stacks on #191. Merge #190 first.")
+        status, detail = self.one(
+            {"id": "o", "check": "merge_order"},
+            body="Stacks on #191. Merge #190 first.",
+        )
         self.assertEqual(status, gk.INFO)
         self.assertIn("#190", detail)
         self.assertIn("#191", detail)
@@ -281,7 +318,13 @@ class TestOtherChecks(Repo):
         self.branch()
         write(self.repo, "lib/home.dart", "void main() {}\n")
         self.commit()
-        rule = {"id": "t", "check": "requires_pair", "if_touches": ["lib/*.dart"], "then_touches": [".rokct/tours/*"], "what": "tour for a UI change"}
+        rule = {
+            "id": "t",
+            "check": "requires_pair",
+            "if_touches": ["lib/*.dart"],
+            "then_touches": [".rokct/tours/*"],
+            "what": "tour for a UI change",
+        }
         status, detail = self.one(rule)
         self.assertEqual(status, gk.READ)
         self.assertIn("tour for a UI change", detail)
@@ -293,9 +336,14 @@ class TestOtherChecks(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
-        res = gk.run(self.ctx(name="other"), [{"id": "x", "check": "secrets", "repos": ["control"]},
-                                              {"id": "y", "check": "secrets", "when_touches": ["nope/*"]},
-                                              {"id": "z", "check": "secrets", "when_touches": ["pkg/*"]}])
+        res = gk.run(
+            self.ctx(name="other"),
+            [
+                {"id": "x", "check": "secrets", "repos": ["control"]},
+                {"id": "y", "check": "secrets", "when_touches": ["nope/*"]},
+                {"id": "z", "check": "secrets", "when_touches": ["pkg/*"]},
+            ],
+        )
         self.assertEqual([r[0] for r in res if r[0] != "tests"], ["z"])
 
     def test_unknown_check_never_passes(self):
@@ -314,55 +362,112 @@ class TestCommand(Repo):
         self.commit()
 
     def test_pass_and_claim_match(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('3 passed in 0.1s')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('3 passed in 0.1s')\"",
+        }
         self.assertEqual(self.one(rule, body="3 passed")[0], gk.PASS)
 
     def test_claim_mismatch_needs_reading(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('3 passed in 0.1s')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('3 passed in 0.1s')\"",
+        }
         status, detail = self.one(rule, body="I ran it: 70 passed")
         self.assertEqual(status, gk.READ)
         self.assertIn("70", detail)
 
     def test_failed_tests_fail(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('2 passed, 1 failed')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('2 passed, 1 failed')\"",
+        }
         self.assertEqual(self.one(rule)[0], gk.FAIL)
 
     def test_errors_over_allowance_fail(self):
         cmd = "python3 -c \"print('5 passed, 14 errors')\""
-        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd, "allow_errors": 13})[0], gk.FAIL)
-        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd.replace("14", "13"), "allow_errors": 13})[0], gk.PASS)
+        self.assertEqual(
+            self.one({"id": "t", "check": "command", "cmd": cmd, "allow_errors": 13})[
+                0
+            ],
+            gk.FAIL,
+        )
+        self.assertEqual(
+            self.one(
+                {
+                    "id": "t",
+                    "check": "command",
+                    "cmd": cmd.replace("14", "13"),
+                    "allow_errors": 13,
+                }
+            )[0],
+            gk.PASS,
+        )
 
     def test_missing_tool_says_so_in_plain_words(self):
-        rule = {"id": "dart", "check": "command", "cmd": "flutter test", "requires": ["flutter-not-here-xyz"],
-                "not_run_text": "NOT RUN: Dart not tested because Flutter is not installed"}
+        rule = {
+            "id": "dart",
+            "check": "command",
+            "cmd": "flutter test",
+            "requires": ["flutter-not-here-xyz"],
+            "not_run_text": "NOT RUN: Dart not tested because Flutter is not installed",
+        }
         status, detail = self.one(rule)
         self.assertEqual(status, gk.NOTRUN)
-        self.assertEqual(detail, "NOT RUN: Dart not tested because Flutter is not installed")
+        self.assertEqual(
+            detail, "NOT RUN: Dart not tested because Flutter is not installed"
+        )
 
     def test_no_run_flag(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('3 passed')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('3 passed')\"",
+        }
         self.assertEqual(self.one(rule, run_commands=False)[0], gk.NOTRUN)
 
     def test_nonzero_exit_with_pass_count_is_not_a_pass(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"import sys;print('5 passed');sys.exit(1)\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"import sys;print('5 passed');sys.exit(1)\"",
+        }
         status, detail = self.one(rule)
         self.assertEqual(status, gk.FAIL)
         self.assertIn("exit 1", detail)
 
     def test_nonzero_exit_explained_by_allowed_errors_passes(self):
         cmd = "python3 -c \"import sys;print('5 passed, 13 errors');sys.exit(2)\""
-        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd, "allow_errors": 13})[0], gk.PASS)
-        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd})[0], gk.FAIL)
+        self.assertEqual(
+            self.one({"id": "t", "check": "command", "cmd": cmd, "allow_errors": 13})[
+                0
+            ],
+            gk.PASS,
+        )
+        self.assertEqual(
+            self.one({"id": "t", "check": "command", "cmd": cmd})[0], gk.FAIL
+        )
 
     def test_skipped_tests_are_reported_not_passed(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('591 passed, 65 skipped')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('591 passed, 65 skipped')\"",
+        }
         status, detail = self.one(rule, body="656 passed")
         self.assertEqual(status, gk.READ)
         self.assertIn("65 tests skipped", detail)
 
     def test_optional_env_checkout_only_set_when_present(self):
-        rule = {"id": "t", "check": "command", "env": {"GK_X": "{PARENT}/no-such-checkout-xyz"},
-                "cmd": "python3 -c \"import os;print('1 passed' if 'GK_X' not in os.environ else '0 passed')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "env": {"GK_X": "{PARENT}/no-such-checkout-xyz"},
+            "cmd": "python3 -c \"import os;print('1 passed' if 'GK_X' not in os.environ else '0 passed')\"",
+        }
         self.assertEqual(self.one(rule)[0], gk.PASS)
 
     def test_no_test_rule_matched_says_so(self):
@@ -373,9 +478,15 @@ class TestCommand(Repo):
         self.assertIn("no test rule", row[0][2])
 
     def test_worktree_is_cleaned_up(self):
-        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('1 passed')\""}
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"print('1 passed')\"",
+        }
         self.one(rule)
-        out = subprocess.run(["git", "-C", self.repo, "worktree", "list"], capture_output=True, text=True).stdout
+        out = subprocess.run(
+            ["git", "-C", self.repo, "worktree", "list"], capture_output=True, text=True
+        ).stdout
         self.assertEqual(len(out.strip().splitlines()), 1)
 
 
@@ -383,7 +494,19 @@ class TestMain(Repo):
     def run_main(self, *extra):
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            code = gk.main(["--repo", self.repo, "--head", "pr", "--base", "main", "--name", "control"] + list(extra))
+            code = gk.main(
+                [
+                    "--repo",
+                    self.repo,
+                    "--head",
+                    "pr",
+                    "--base",
+                    "main",
+                    "--name",
+                    "control",
+                ]
+                + list(extra)
+            )
         return code, buf.getvalue()
 
     def checklist(self, rules):
@@ -395,12 +518,16 @@ class TestMain(Repo):
 
     def test_exit_codes_table_and_log(self):
         self.branch()
-        write(self.repo, "pkg/conf.py", 'API_KEY = "abcdefghijklmnopqrstuvwxyz123456"\n')
+        write(
+            self.repo, "pkg/conf.py", 'API_KEY = "abcdefghijklmnopqrstuvwxyz123456"\n'
+        )
         self.commit()
         logdir = tempfile.mkdtemp(prefix="gk-log-")
         self.addCleanup(shutil.rmtree, logdir, True)
         log = os.path.join(logdir, "runs.jsonl")
-        cl = self.checklist([{"id": "secrets", "check": "secrets"}, {"id": "merge", "check": "merge"}])
+        cl = self.checklist(
+            [{"id": "secrets", "check": "secrets"}, {"id": "merge", "check": "merge"}]
+        )
         code, out = self.run_main("--checklist", cl, "--log", log, "--pr", "control#1")
         self.assertEqual(code, 1)
         self.assertIn("secrets", out)
@@ -408,14 +535,18 @@ class TestMain(Repo):
         self.assertIn("RESULT: FAIL (1)", out)
         row = json.loads(open(log).read().splitlines()[-1])
         self.assertEqual(row["pr"], "control#1")
-        self.assertEqual(row["results"], {"secrets": "FAIL", "merge": "PASS", "tests": "NOT RUN"})
+        self.assertEqual(
+            row["results"], {"secrets": "FAIL", "merge": "PASS", "tests": "NOT RUN"}
+        )
 
     def test_all_good_exit_zero(self):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         self.commit()
         cl = self.checklist([{"id": "merge", "check": "merge"}])
-        code, out = self.run_main("--checklist", cl, "--log", "/nonexistent-dir/runs.jsonl")
+        code, out = self.run_main(
+            "--checklist", cl, "--log", "/nonexistent-dir/runs.jsonl"
+        )
         self.assertEqual(code, 0)
         self.assertIn("no FAIL", out)
 
@@ -435,7 +566,11 @@ class TestMain(Repo):
         self.branch()
         write(self.repo, "pkg/code.py", "x = 2\n")
         write(self.repo, "pkg/manifest.json", json.dumps({"version": "1.0.1"}))
-        write(self.repo, "pkg/CHANGELOG.md", "# Changelog\n\n## 1.0.1\n- fix\n\n## 1.0.0\n- first\n")
+        write(
+            self.repo,
+            "pkg/CHANGELOG.md",
+            "# Changelog\n\n## 1.0.1\n- fix\n\n## 1.0.0\n- first\n",
+        )
         self.commit()
         code, out = self.run_main("--no-run", "--log", "/nonexistent-dir/runs.jsonl")
         self.assertEqual(code, 0, out)

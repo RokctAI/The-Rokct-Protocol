@@ -25,6 +25,7 @@ the script cannot prove, and makes the call.
 Rules live in checklist.json next to this file. One rule is one line there.
 Standard library only.
 """
+
 import argparse
 import fnmatch
 import json
@@ -40,34 +41,79 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CHECKLIST = os.path.join(HERE, "checklist.json")
 DEFAULT_LOG = "/mnt/project-files/gatekeeper/runs.jsonl"
 
-PASS, FAIL, READ, RAY, NOTRUN, INFO = "PASS", "FAIL", "NEEDS-READ", "NEEDS-RAY", "NOT RUN", "INFO"
+PASS, FAIL, READ, RAY, NOTRUN, INFO = (
+    "PASS",
+    "FAIL",
+    "NEEDS-READ",
+    "NEEDS-RAY",
+    "NOT RUN",
+    "INFO",
+)
 
-VERSION_FILES = ("manifest.json", "pyproject.toml", "pubspec.yaml", "__init__.py", "versions.json")
-ART_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".mp4", ".mov", ".psd", ".ai")
-FILE_TOKEN = re.compile(r"`([A-Za-z0-9_.\-/]+\.[A-Za-z0-9]{1,5}|[A-Za-z0-9_.\-]+/[A-Za-z0-9_.\-/]+)`")
+VERSION_FILES = (
+    "manifest.json",
+    "pyproject.toml",
+    "pubspec.yaml",
+    "__init__.py",
+    "versions.json",
+)
+ART_EXT = (
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".svg",
+    ".mp4",
+    ".mov",
+    ".psd",
+    ".ai",
+)
+FILE_TOKEN = re.compile(
+    r"`([A-Za-z0-9_.\-/]+\.[A-Za-z0-9]{1,5}|[A-Za-z0-9_.\-]+/[A-Za-z0-9_.\-/]+)`"
+)
 SECRET_PATTERNS = [
     ("private key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
     ("aws key", re.compile(r"AKIA[0-9A-Z]{16}")),
     ("github token", re.compile(r"gh[pousr]_[A-Za-z0-9]{30,}")),
     ("slack token", re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}")),
-    ("api key assignment", re.compile(r"""(?i)\b(api[_-]?key|secret|token|password)\b\s*[:=]\s*["'][A-Za-z0-9_\-/+=]{20,}["']""")),
-    ("unquoted secret assignment", re.compile(r"""(?i)^\+\s*(export\s+)?[A-Za-z0-9_]*(api[_-]?key|secret|token|password)[A-Za-z0-9_]*\s*[:=]\s*[A-Za-z0-9_\-/+=]{20,}\s*$""")),
+    (
+        "api key assignment",
+        re.compile(
+            r"""(?i)\b(api[_-]?key|secret|token|password)\b\s*[:=]\s*["'][A-Za-z0-9_\-/+=]{20,}["']"""
+        ),
+    ),
+    (
+        "unquoted secret assignment",
+        re.compile(
+            r"""(?i)^\+\s*(export\s+)?[A-Za-z0-9_]*(api[_-]?key|secret|token|password)[A-Za-z0-9_]*\s*[:=]\s*[A-Za-z0-9_\-/+=]{20,}\s*$"""
+        ),
+    ),
     ("bearer token", re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-.=]{24,}")),
 ]
 NOTE_PATTERNS = re.compile(
-    r"(?i)\b(next time|later on|in a later pr|follow[- ]?up|to ?do for ray|ray (should|can|will|needs? to)|left for)\b")
+    r"(?i)\b(next time|later on|in a later pr|follow[- ]?up|to ?do for ray|ray (should|can|will|needs? to)|left for)\b"
+)
 STACK = re.compile(r"(?i)(stacks? on|merge)\s+(?:RokctAI/\w+)?#(\d+)")
 
 
 class Ctx:
     def __init__(self, repo, head, base, body, name, run_commands):
-        self.repo, self.head, self.base, self.body, self.name = repo, head, base, body, name
+        self.repo, self.head, self.base, self.body, self.name = (
+            repo,
+            head,
+            base,
+            body,
+            name,
+        )
         self.run_commands = run_commands
         self._files = None
         self._patch = None
 
     def git(self, *args, check=False):
-        p = subprocess.run(["git", "-C", self.repo] + list(args), capture_output=True, text=True)
+        p = subprocess.run(
+            ["git", "-C", self.repo] + list(args), capture_output=True, text=True
+        )
         if check and p.returncode:
             raise RuntimeError("git %s: %s" % (" ".join(args), p.stderr.strip()))
         return p
@@ -75,8 +121,16 @@ class Ctx:
     @property
     def files(self):
         if self._files is None:
-            out = self.git("diff", "--name-status", "-M", "%s...%s" % (self.base, self.head), check=True).stdout
-            self._files = [(l.split("\t")[0][0], l.split("\t")[-1]) for l in out.splitlines() if l]
+            out = self.git(
+                "diff",
+                "--name-status",
+                "-M",
+                "%s...%s" % (self.base, self.head),
+                check=True,
+            ).stdout
+            self._files = [
+                (l.split("\t")[0][0], l.split("\t")[-1]) for l in out.splitlines() if l
+            ]
         return self._files
 
     @property
@@ -86,7 +140,9 @@ class Ctx:
     @property
     def patch(self):
         if self._patch is None:
-            self._patch = self.git("diff", "-U0", "%s...%s" % (self.base, self.head), check=True).stdout
+            self._patch = self.git(
+                "diff", "-U0", "%s...%s" % (self.base, self.head), check=True
+            ).stdout
         return self._patch
 
     def show(self, ref, path):
@@ -106,6 +162,7 @@ def applies(rule, ctx):
 
 # ---- checks: each returns (status, detail) -------------------------------
 
+
 def check_merge(ctx, rule):
     p = ctx.git("merge-tree", "--write-tree", ctx.base, ctx.head)
     conflicts = [l for l in p.stdout.splitlines() if l.startswith("CONFLICT")]
@@ -114,16 +171,26 @@ def check_merge(ctx, rule):
     if p.returncode == 0:
         return FAIL, "exit 0 but CONFLICT lines: %s" % "; ".join(conflicts)
     names = re.findall(r"CONFLICT \([^)]*\): (?:Merge conflict in )?(.+)", p.stdout)
-    return FAIL, "merge-tree exit %d, %d conflict(s): %s" % (p.returncode, len(conflicts), ", ".join(names or conflicts) or p.stderr.strip())
+    return FAIL, "merge-tree exit %d, %d conflict(s): %s" % (
+        p.returncode,
+        len(conflicts),
+        ", ".join(names or conflicts) or p.stderr.strip(),
+    )
 
 
 def check_bullet_files(ctx, rule):
     if not ctx.body:
-        return NOTRUN, "NOT RUN: no PR body given (--body-file), so bullets were not checked"
+        return (
+            NOTRUN,
+            "NOT RUN: no PR body given (--body-file), so bullets were not checked",
+        )
     named = []
     for m in FILE_TOKEN.finditer(ctx.body):
         t = m.group(1)
-        if "/" not in t and not re.search(r"\.(py|json|md|yaml|yml|toml|dart|js|ts|tsx|html|css|sh|kt|txt|png|svg)$", t):
+        if "/" not in t and not re.search(
+            r"\.(py|json|md|yaml|yml|toml|dart|js|ts|tsx|html|css|sh|kt|txt|png|svg)$",
+            t,
+        ):
             continue
         if t not in named:
             named.append(t)
@@ -139,8 +206,16 @@ def check_bullet_files(ctx, rule):
         else:
             missing.append(t)
     if missing:
-        return READ, "named in the body but not in the diff (maybe 'unchanged', maybe a lie): %s" % ", ".join(missing)
-    note = " (matched only by trailing path: %s)" % "; ".join(by_suffix) if by_suffix else ""
+        return (
+            READ,
+            "named in the body but not in the diff (maybe 'unchanged', maybe a lie): %s"
+            % ", ".join(missing),
+        )
+    note = (
+        " (matched only by trailing path: %s)" % "; ".join(by_suffix)
+        if by_suffix
+        else ""
+    )
     return PASS, "all %d named files are in the diff%s" % (len(named), note)
 
 
@@ -157,13 +232,19 @@ def version_in(text, path):
             v = data.get("version")
             return v if isinstance(v, str) else None
         return None
-    pat = r"""^\s*__version__\s*=\s*["']([^"']+)["']""" if base == "__init__.py" else r"""^version\s*[:=]\s*["']?([0-9][^"'\s]*)"""
+    pat = (
+        r"""^\s*__version__\s*=\s*["']([^"']+)["']"""
+        if base == "__init__.py"
+        else r"""^version\s*[:=]\s*["']?([0-9][^"'\s]*)"""
+    )
     m = re.search(pat, text, re.M)
     return m.group(1) if m else None
 
 
 def vtuple(v):
-    return tuple(int(x) if x.isdigit() else 0 for x in re.split(r"[.+\-]", v.split("+")[0]))
+    return tuple(
+        int(x) if x.isdigit() else 0 for x in re.split(r"[.+\-]", v.split("+")[0])
+    )
 
 
 def version_homes(ctx):
@@ -171,7 +252,11 @@ def version_homes(ctx):
     homes = set()
     names = ctx.git("ls-tree", "-r", "--name-only", ctx.head).stdout.splitlines()
     for n in names:
-        if os.path.basename(n) in ("manifest.json", "pyproject.toml", "pubspec.yaml") and version_in(ctx.show(ctx.head, n), n):
+        if os.path.basename(n) in (
+            "manifest.json",
+            "pyproject.toml",
+            "pubspec.yaml",
+        ) and version_in(ctx.show(ctx.head, n), n):
             homes.add(os.path.dirname(n))
     return homes
 
@@ -188,13 +273,22 @@ def home_of(path, homes):
 
 def check_versions(ctx, rule):
     changed = [p for st, p in ctx.files if st != "D"]
-    code = [p for p in changed if not p.lower().endswith((".md", ".txt")) and "/tests/" not in "/" + p
-            and not p.startswith("docs/") and not os.path.basename(p).startswith("test_")]
+    code = [
+        p
+        for p in changed
+        if not p.lower().endswith((".md", ".txt"))
+        and "/tests/" not in "/" + p
+        and not p.startswith("docs/")
+        and not os.path.basename(p).startswith("test_")
+    ]
     vfiles = [p for p in changed if os.path.basename(p) in VERSION_FILES]
     logs = [p for p in changed if os.path.basename(p).upper() == "CHANGELOG.MD"]
     problems, notes = [], []
     for p in vfiles:
-        new, old = version_in(ctx.show(ctx.head, p), p), version_in(ctx.show(ctx.base, p), p)
+        new, old = (
+            version_in(ctx.show(ctx.head, p), p),
+            version_in(ctx.show(ctx.base, p), p),
+        )
         if new and old and vtuple(new) <= vtuple(old) and new != old:
             problems.append("%s goes down %s -> %s" % (p, old, new))
         if new and old and new == old and os.path.basename(p) != "versions.json":
@@ -213,7 +307,11 @@ def check_versions(ctx, rule):
                 problems.append("%s top entry %s but %s says %s" % (lg, top, vp, v))
     # each package whose code changed must have its own version file bumped
     homes = version_homes(ctx)
-    bumped = {home_of(p, homes) for p in vfiles if os.path.basename(p) in ("manifest.json", "pyproject.toml", "pubspec.yaml")}
+    bumped = {
+        home_of(p, homes)
+        for p in vfiles
+        if os.path.basename(p) in ("manifest.json", "pyproject.toml", "pubspec.yaml")
+    }
     unbumped = {}
     for p in code:
         h = home_of(p, homes)
@@ -221,7 +319,9 @@ def check_versions(ctx, rule):
             unbumped.setdefault(h or ".", []).append(p)
     if unbumped:
         msg = "code changed with no bump in its own package: %s" % "; ".join(
-            "%s (%d file(s), e.g. %s)" % (h, len(f), f[0]) for h, f in sorted(unbumped.items()))
+            "%s (%d file(s), e.g. %s)" % (h, len(f), f[0])
+            for h, f in sorted(unbumped.items())
+        )
         if rule.get("require_bump"):
             problems.append(msg)
         else:
@@ -232,13 +332,19 @@ def check_versions(ctx, rule):
         return READ, "; ".join(notes)
     if not vfiles and not logs:
         return READ if code else INFO, "no version file or CHANGELOG touched"
-    return PASS, "versions consistent in %d version file(s), %d CHANGELOG(s), every changed package bumped%s" % (len(vfiles), len(logs), (" (" + "; ".join(notes) + ")") if notes else "")
+    return (
+        PASS,
+        "versions consistent in %d version file(s), %d CHANGELOG(s), every changed package bumped%s"
+        % (len(vfiles), len(logs), (" (" + "; ".join(notes) + ")") if notes else ""),
+    )
 
 
 def check_command(ctx, rule):
     for tool in rule.get("requires", []):
         if not shutil.which(tool):
-            return NOTRUN, rule.get("not_run_text") or "NOT RUN: %s is not installed" % tool
+            return NOTRUN, rule.get(
+                "not_run_text"
+            ) or "NOT RUN: %s is not installed" % tool
     if not ctx.run_commands:
         return NOTRUN, "NOT RUN: run skipped (--no-run)"
     wt = tempfile.mkdtemp(prefix="gk-wt-")
@@ -254,24 +360,46 @@ def check_command(ctx, rule):
                 continue  # an optional checkout that is not here; the skip count will show it
             env[k] = v
         try:
-            p = subprocess.run(rule["cmd"], shell=True, cwd=cwd, env=env, capture_output=True, text=True,
-                               timeout=rule.get("timeout", 900))
+            p = subprocess.run(
+                rule["cmd"],
+                shell=True,
+                cwd=cwd,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=rule.get("timeout", 900),
+            )
         except subprocess.TimeoutExpired:
             return FAIL, "timed out: %s" % rule["cmd"]
         out = p.stdout + p.stderr
-        passed = sum(int(x) for x in re.findall(r"(\d+) passed", out)) or sum(int(x) for x in re.findall(r"Ran (\d+) tests?", out))
-        failed = sum(int(x) for x in re.findall(r"(\d+) failed", out)) + sum(int(x) for x in re.findall(r"FAILED \(.*?(?:failures|errors)=(\d+)", out))
-        errors = sum(int(x) for x in re.findall(r"(\d+) errors?", out)) + sum(int(x) for x in re.findall(r"errors=(\d+)", out))
+        passed = sum(int(x) for x in re.findall(r"(\d+) passed", out)) or sum(
+            int(x) for x in re.findall(r"Ran (\d+) tests?", out)
+        )
+        failed = sum(int(x) for x in re.findall(r"(\d+) failed", out)) + sum(
+            int(x) for x in re.findall(r"FAILED \(.*?(?:failures|errors)=(\d+)", out)
+        )
+        errors = sum(int(x) for x in re.findall(r"(\d+) errors?", out)) + sum(
+            int(x) for x in re.findall(r"errors=(\d+)", out)
+        )
         skipped = sum(int(x) for x in re.findall(r"(\d+) skipped", out))
         allowed = rule.get("allow_errors", 0)
-        detail = "%s: exit %d, %d passed, %d failed, %d errors (allowed %d), %d skipped" % (
-            rule["cmd"], p.returncode, passed, failed, errors, allowed, skipped)
+        detail = (
+            "%s: exit %d, %d passed, %d failed, %d errors (allowed %d), %d skipped"
+            % (rule["cmd"], p.returncode, passed, failed, errors, allowed, skipped)
+        )
         claimed = [int(x) for x in re.findall(r"(\d+) passed", ctx.body or "")]
-        explained = p.returncode == 0 or (allowed and 0 < errors <= allowed and failed == 0)
+        explained = p.returncode == 0 or (
+            allowed and 0 < errors <= allowed and failed == 0
+        )
         if failed or passed == 0 or errors > allowed or not explained:
             return FAIL, detail + "; tail: " + " | ".join(out.strip().splitlines()[-3:])
         if skipped:
-            return READ, detail + "; %d tests skipped here, so they were not run (see the skip reasons with -rs)" % skipped
+            return (
+                READ,
+                detail
+                + "; %d tests skipped here, so they were not run (see the skip reasons with -rs)"
+                % skipped,
+            )
         if claimed and passed not in claimed:
             return READ, detail + "; PR body claims %s passed" % sorted(set(claimed))
         return PASS, detail
@@ -282,14 +410,24 @@ def check_command(ctx, rule):
 
 def check_requires_pair(ctx, rule):
     """If the diff touches A, it must also touch B (demo, tour, guide)."""
-    touched = [p for p in ctx.paths if any(fnmatch.fnmatch(p, g) for g in rule["if_touches"])]
+    touched = [
+        p for p in ctx.paths if any(fnmatch.fnmatch(p, g) for g in rule["if_touches"])
+    ]
     if not touched:
         return INFO, "does not touch %s" % ", ".join(rule["if_touches"])
-    present = [p for p in ctx.paths if any(fnmatch.fnmatch(p, g) for g in rule["then_touches"])]
+    present = [
+        p for p in ctx.paths if any(fnmatch.fnmatch(p, g) for g in rule["then_touches"])
+    ]
     if present:
         return PASS, "%s touched with %s" % (rule["what"], ", ".join(present[:3]))
-    return rule.get("severity", READ), "touches %d file(s) under %s but nothing under %s (%s)" % (
-        len(touched), ", ".join(rule["if_touches"]), ", ".join(rule["then_touches"]), rule["what"])
+    return rule.get(
+        "severity", READ
+    ), "touches %d file(s) under %s but nothing under %s (%s)" % (
+        len(touched),
+        ", ".join(rule["if_touches"]),
+        ", ".join(rule["then_touches"]),
+        rule["what"],
+    )
 
 
 def check_secrets(ctx, rule):
@@ -312,7 +450,11 @@ def check_notes(ctx, rule):
         return NOTRUN, "NOT RUN: no PR body given (--body-file)"
     hits = sorted(set(m.group(0).lower() for m in NOTE_PATTERNS.finditer(ctx.body)))
     if hits:
-        return READ, "PR body leaves work for later or for Ray (%s); Ray acts on no PR notes, send it back or have the PR say what is unproven" % ", ".join(hits)
+        return (
+            READ,
+            "PR body leaves work for later or for Ray (%s); Ray acts on no PR notes, send it back or have the PR say what is unproven"
+            % ", ".join(hits),
+        )
     return PASS, "no 'next time' or note-for-Ray wording"
 
 
@@ -320,20 +462,34 @@ def check_merge_order(ctx, rule):
     found = sorted(set(m.group(2) for m in STACK.finditer(ctx.body or "")))
     if not found:
         return INFO, "no 'stacks on #N' in the body"
-    return INFO, "stacked on #%s: merge that first; the diff against main includes it until then; versions may need renumbering" % ", #".join(found)
+    return (
+        INFO,
+        "stacked on #%s: merge that first; the diff against main includes it until then; versions may need renumbering"
+        % ", #".join(found),
+    )
 
 
 def check_art(ctx, rule):
     art = [p for st, p in ctx.files if st != "D" and p.lower().endswith(ART_EXT)]
     if art:
-        return RAY, "art/media in the diff, needs Ray's own approval attached: %s" % ", ".join(art[:6])
+        return (
+            RAY,
+            "art/media in the diff, needs Ray's own approval attached: %s"
+            % ", ".join(art[:6]),
+        )
     return PASS, "no art or media files"
 
 
 CHECKS = {
-    "merge": check_merge, "bullet_files": check_bullet_files, "versions": check_versions,
-    "command": check_command, "requires_pair": check_requires_pair, "secrets": check_secrets,
-    "notes": check_notes, "merge_order": check_merge_order, "art": check_art,
+    "merge": check_merge,
+    "bullet_files": check_bullet_files,
+    "versions": check_versions,
+    "command": check_command,
+    "requires_pair": check_requires_pair,
+    "secrets": check_secrets,
+    "notes": check_notes,
+    "merge_order": check_merge_order,
+    "art": check_art,
 }
 
 
@@ -344,7 +500,14 @@ def run(ctx, rules):
             continue
         fn = CHECKS.get(rule["check"])
         if fn is None:
-            results.append((rule["id"], READ, "unknown check %r in checklist" % rule["check"], rule))
+            results.append(
+                (
+                    rule["id"],
+                    READ,
+                    "unknown check %r in checklist" % rule["check"],
+                    rule,
+                )
+            )
             continue
         try:
             status, detail = fn(ctx, rule)
@@ -352,7 +515,14 @@ def run(ctx, rules):
             status, detail = READ, "check crashed: %s" % exc
         results.append((rule["id"], status, detail, rule))
     if not any(r[3].get("check") == "command" for r in results):
-        results.append(("tests", NOTRUN, "NOT RUN: no test rule in checklist.json matched this repo and diff, so no tests were run by the script", {}))
+        results.append(
+            (
+                "tests",
+                NOTRUN,
+                "NOT RUN: no test rule in checklist.json matched this repo and diff, so no tests were run by the script",
+                {},
+            )
+        )
     return results
 
 
@@ -366,8 +536,12 @@ def main(argv=None):
     ap.add_argument("--checklist", default=DEFAULT_CHECKLIST)
     ap.add_argument("--log", default=os.environ.get("GATEKEEPER_LOG", DEFAULT_LOG))
     ap.add_argument("--pr", default="", help="label for the log, e.g. control#192")
-    ap.add_argument("--fetch", action="store_true", help="git fetch origin before checking")
-    ap.add_argument("--no-run", action="store_true", help="skip test and compose commands")
+    ap.add_argument(
+        "--fetch", action="store_true", help="git fetch origin before checking"
+    )
+    ap.add_argument(
+        "--no-run", action="store_true", help="skip test and compose commands"
+    )
     args = ap.parse_args(argv)
 
     repo = os.path.abspath(args.repo)
@@ -379,7 +553,14 @@ def main(argv=None):
     body = open(args.body_file).read() if args.body_file else ""
     with open(args.checklist) as f:
         rules = json.load(f)["rules"]
-    ctx = Ctx(repo, args.head, args.base, body, args.name or os.path.basename(repo), not args.no_run)
+    ctx = Ctx(
+        repo,
+        args.head,
+        args.base,
+        body,
+        args.name or os.path.basename(repo),
+        not args.no_run,
+    )
     try:
         sha = ctx.git("rev-parse", "--short", args.head, check=True).stdout.strip()
         ctx.git("rev-parse", "--verify", args.base, check=True)
@@ -389,20 +570,43 @@ def main(argv=None):
 
     results = run(ctx, rules)
     width = max([len(r[0]) for r in results] or [4])
-    print("gatekeeper_check %s head %s base %s (%d rules)" % (ctx.name, sha, args.base, len(results)))
+    print(
+        "gatekeeper_check %s head %s base %s (%d rules)"
+        % (ctx.name, sha, args.base, len(results))
+    )
     for rid, status, detail, _ in results:
         print("%-*s  %-10s  %s" % (width, rid, status, detail))
     print("-- NOT RUN lines go into the verdict and the PR in plain words.")
-    print("-- The script proves mechanics only. Read: does the caller invoke it, does the test exercise the claim, is the unproven list honest.")
+    print(
+        "-- The script proves mechanics only. Read: does the caller invoke it, does the test exercise the claim, is the unproven list honest."
+    )
     bad = [r for r in results if r[1] == FAIL]
-    print("RESULT: %s" % ("FAIL (%d)" % len(bad) if bad else "no FAIL; %d need reading or Ray" % sum(1 for r in results if r[1] in (READ, RAY))))
+    print(
+        "RESULT: %s"
+        % (
+            "FAIL (%d)" % len(bad)
+            if bad
+            else "no FAIL; %d need reading or Ray"
+            % sum(1 for r in results if r[1] in (READ, RAY))
+        )
+    )
 
     log_dir = os.path.dirname(args.log)
     if log_dir and os.path.isdir(log_dir):
         try:
             with open(args.log, "a") as f:
-                f.write(json.dumps({"t": int(time.time()), "pr": args.pr, "repo": ctx.name, "head": sha,
-                                    "results": {r[0]: r[1] for r in results}}) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "t": int(time.time()),
+                            "pr": args.pr,
+                            "repo": ctx.name,
+                            "head": sha,
+                            "results": {r[0]: r[1] for r in results},
+                        }
+                    )
+                    + "\n"
+                )
         except OSError:
             pass
     return 1 if bad else 0
