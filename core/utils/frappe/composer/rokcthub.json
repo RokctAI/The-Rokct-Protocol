@@ -11,7 +11,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/base/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "auth",
@@ -56,11 +56,8 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/telemetry/frappe",
-      "ref": "main",
-      "personas": [
-        "tenant"
-      ],
-      "_comment": "Tenant persona only: telemetry's src/control/ tree defines Tenant Error Log and Tenant Visitor Log, which the cohosted control app still owns, so composing it here would fail the cohosted_apps duplicate-doctype check. The hub's shell marker names this template, not a persona, so without this override every persona would compose."
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc",
+      "_comment": "Composes every persona (no override): since core#346 telemetry's src/control/ tree no longer defines Tenant Error Log or Tenant Visitor Log (the fleet module owns them), so it no longer collides with fleet or the cohosted control app. Pinned to the same core ref as base and comms, because the composer clones one ref per repo."
     },
     {
       "name": "comms",
@@ -68,7 +65,7 @@
       "source": "git",
       "git": "https://github.com/RokctAI/core",
       "path": "../core/comms/frappe",
-      "ref": "main"
+      "ref": "9e945ec187c52f18214f3eb655e34e5ecfc4b5fc"
     },
     {
       "name": "wallet",
@@ -117,6 +114,18 @@
       "path": "../designer/studio/frappe",
       "ref": "main",
       "_comment": "Studio operations layer from the designer repo (design systems, requests, approvals and proofs, print jobs, prepress, hot folder) — the backend of studio_sdk in the rokctapp Next.js template. Same module startupos.json composes."
+    },
+    {
+      "name": "fleet",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/control",
+      "path": "../control/fleet/frappe",
+      "ref": "02e43e5a2820d8d6a4b4d725fb26b94d176d17d7",
+      "personas": [
+        "control"
+      ],
+      "_comment": "Fleet SDK module (control-split step 4, control#181): hub registry and channel, server agent, lifecycle, moves, rings and the fleet board, composed to {app}.fleet.control.* with doctypes under {app}/fleet/doctype/ (Frappe module fleet). Its manifest is the single source of the fleet scheduler jobs, doc_events, control: cmds and control_upgrade_result; control 1.7.1 registers its shim-path copies only when fleet is not composed. The cohosted duplicate-doctype scan skips SDK module dirs (any subdir with a manifest.json) inside a cohosted app checkout, so control/fleet/frappe does not count as control's own doctypes. Pinned to the control#182 merge SHA (control main 02e43e5)."
     }
   ],
   "cohosted_apps": [
