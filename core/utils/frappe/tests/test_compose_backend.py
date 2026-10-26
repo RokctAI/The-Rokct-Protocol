@@ -1463,7 +1463,9 @@ class CohostedAppDuplicateDoctypeTest(PersonaDoctypeRelocationTest):
             "{}",
         )
         self.run_main(self.load_composer())
-        self.assertTrue(self.exists(f"{self.APP}/{self.MODULE}/doctype/docker_instance"))
+        self.assertTrue(
+            self.exists(f"{self.APP}/{self.MODULE}/doctype/docker_instance")
+        )
 
     def test_disabled_template_refused(self):
         self._write_config({"enabled": False})
@@ -1512,7 +1514,9 @@ class ControlRepoPinTest(unittest.TestCase):
         for tpl in ("control.json", "rokcthub.json"):
             with open(os.path.join(base, tpl), encoding="utf-8") as fh:
                 data = json.load(fh)
-            mods = {m["name"]: m for m in data["modules"] if m.get("git") == self.CONTROL}
+            mods = {
+                m["name"]: m for m in data["modules"] if m.get("git") == self.CONTROL
+            }
             self.assertIn("fleet", mods, tpl)
             self.assertIn("provisioning", mods, tpl)
             self.assertEqual(
