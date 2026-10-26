@@ -51,6 +51,8 @@ SECRET_PATTERNS = [
     ("github token", re.compile(r"gh[pousr]_[A-Za-z0-9]{30,}")),
     ("slack token", re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}")),
     ("api key assignment", re.compile(r"""(?i)\b(api[_-]?key|secret|token|password)\b\s*[:=]\s*["'][A-Za-z0-9_\-/+=]{20,}["']""")),
+    ("unquoted secret assignment", re.compile(r"""(?i)^\+\s*(export\s+)?[A-Za-z0-9_]*(api[_-]?key|secret|token|password)[A-Za-z0-9_]*\s*[:=]\s*[A-Za-z0-9_\-/+=]{20,}\s*$""")),
+    ("bearer token", re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-.=]{24,}")),
 ]
 NOTE_PATTERNS = re.compile(
     r"(?i)\b(next time|later on|in a later pr|follow[- ]?up|to ?do for ray|ray (should|can|will|needs? to)|left for)\b")
@@ -127,10 +129,19 @@ def check_bullet_files(ctx, rule):
             named.append(t)
     if not named:
         return INFO, "PR body names no files in backticks"
-    missing = [t for t in named if not any(p == t or p.endswith("/" + t) or p.startswith(t.rstrip("/") + "/") for p in ctx.paths)]
-    if not missing:
-        return PASS, "all %d named files are in the diff" % len(named)
-    return READ, "named in the body but not in the diff (maybe 'unchanged', maybe a lie): %s" % ", ".join(missing)
+    missing, by_suffix = [], []
+    for t in named:
+        if any(p == t or p.startswith(t.rstrip("/") + "/") for p in ctx.paths):
+            continue
+        suffix = [p for p in ctx.paths if p.endswith("/" + t)]
+        if suffix:
+            by_suffix.append("%s -> %s" % (t, ", ".join(suffix[:3])))
+        else:
+            missing.append(t)
+    if missing:
+        return READ, "named in the body but not in the diff (maybe 'unchanged', maybe a lie): %s" % ", ".join(missing)
+    note = " (matched only by trailing path: %s)" % "; ".join(by_suffix) if by_suffix else ""
+    return PASS, "all %d named files are in the diff%s" % (len(named), note)
 
 
 def version_in(text, path):
@@ -155,9 +166,30 @@ def vtuple(v):
     return tuple(int(x) if x.isdigit() else 0 for x in re.split(r"[.+\-]", v.split("+")[0]))
 
 
+def version_homes(ctx):
+    """Directories at head that own a version (manifest.json, pyproject.toml, pubspec.yaml with a version)."""
+    homes = set()
+    names = ctx.git("ls-tree", "-r", "--name-only", ctx.head).stdout.splitlines()
+    for n in names:
+        if os.path.basename(n) in ("manifest.json", "pyproject.toml", "pubspec.yaml") and version_in(ctx.show(ctx.head, n), n):
+            homes.add(os.path.dirname(n))
+    return homes
+
+
+def home_of(path, homes):
+    d = os.path.dirname(path)
+    while True:
+        if d in homes:
+            return d
+        if not d:
+            return None
+        d = os.path.dirname(d)
+
+
 def check_versions(ctx, rule):
     changed = [p for st, p in ctx.files if st != "D"]
-    code = [p for p in changed if not p.lower().endswith((".md", ".txt")) and "/tests/" not in "/" + p and not os.path.basename(p).startswith("test_")]
+    code = [p for p in changed if not p.lower().endswith((".md", ".txt")) and "/tests/" not in "/" + p
+            and not p.startswith("docs/") and not os.path.basename(p).startswith("test_")]
     vfiles = [p for p in changed if os.path.basename(p) in VERSION_FILES]
     logs = [p for p in changed if os.path.basename(p).upper() == "CHANGELOG.MD"]
     problems, notes = [], []
@@ -179,13 +211,28 @@ def check_versions(ctx, rule):
             v = version_in(ctx.show(ctx.head, vp), vp)
             if v and v != top:
                 problems.append("%s top entry %s but %s says %s" % (lg, top, vp, v))
-    if code and not vfiles and rule.get("require_bump"):
-        problems.append("code changed (%d files) but no version file changed" % len(code))
+    # each package whose code changed must have its own version file bumped
+    homes = version_homes(ctx)
+    bumped = {home_of(p, homes) for p in vfiles if os.path.basename(p) in ("manifest.json", "pyproject.toml", "pubspec.yaml")}
+    unbumped = {}
+    for p in code:
+        h = home_of(p, homes)
+        if h is not None and h not in bumped:
+            unbumped.setdefault(h or ".", []).append(p)
+    if unbumped:
+        msg = "code changed with no bump in its own package: %s" % "; ".join(
+            "%s (%d file(s), e.g. %s)" % (h, len(f), f[0]) for h, f in sorted(unbumped.items()))
+        if rule.get("require_bump"):
+            problems.append(msg)
+        else:
+            notes.append(msg)
     if problems:
         return FAIL, "; ".join(problems)
+    if unbumped:
+        return READ, "; ".join(notes)
     if not vfiles and not logs:
         return READ if code else INFO, "no version file or CHANGELOG touched"
-    return PASS, "versions consistent in %d version file(s), %d CHANGELOG(s)%s" % (len(vfiles), len(logs), (" (" + "; ".join(notes) + ")") if notes else "")
+    return PASS, "versions consistent in %d version file(s), %d CHANGELOG(s), every changed package bumped%s" % (len(vfiles), len(logs), (" (" + "; ".join(notes) + ")") if notes else "")
 
 
 def check_command(ctx, rule):
@@ -199,7 +246,13 @@ def check_command(ctx, rule):
         if ctx.git("worktree", "add", "--detach", wt, ctx.head).returncode:
             return NOTRUN, "NOT RUN: could not make a worktree of %s" % ctx.head
         cwd = os.path.join(wt, rule.get("cwd", "."))
-        env = dict(os.environ, **{k: v.replace("{WT}", wt) for k, v in rule.get("env", {}).items()})
+        parent = os.path.dirname(ctx.repo)
+        env = dict(os.environ)
+        for k, v in rule.get("env", {}).items():
+            v = v.replace("{WT}", wt).replace("{PARENT}", parent)
+            if os.path.isabs(v) and not os.path.exists(v):
+                continue  # an optional checkout that is not here; the skip count will show it
+            env[k] = v
         try:
             p = subprocess.run(rule["cmd"], shell=True, cwd=cwd, env=env, capture_output=True, text=True,
                                timeout=rule.get("timeout", 900))
@@ -208,12 +261,17 @@ def check_command(ctx, rule):
         out = p.stdout + p.stderr
         passed = sum(int(x) for x in re.findall(r"(\d+) passed", out)) or sum(int(x) for x in re.findall(r"Ran (\d+) tests?", out))
         failed = sum(int(x) for x in re.findall(r"(\d+) failed", out)) + sum(int(x) for x in re.findall(r"FAILED \(.*?(?:failures|errors)=(\d+)", out))
-        errors = sum(int(x) for x in re.findall(r"(\d+) errors?", out))
+        errors = sum(int(x) for x in re.findall(r"(\d+) errors?", out)) + sum(int(x) for x in re.findall(r"errors=(\d+)", out))
+        skipped = sum(int(x) for x in re.findall(r"(\d+) skipped", out))
         allowed = rule.get("allow_errors", 0)
-        detail = "%s: %d passed, %d failed, %d errors (allowed %d)" % (rule["cmd"], passed, failed, errors, allowed)
+        detail = "%s: exit %d, %d passed, %d failed, %d errors (allowed %d), %d skipped" % (
+            rule["cmd"], p.returncode, passed, failed, errors, allowed, skipped)
         claimed = [int(x) for x in re.findall(r"(\d+) passed", ctx.body or "")]
-        if failed or passed == 0 or errors > allowed:
+        explained = p.returncode == 0 or (allowed and 0 < errors <= allowed and failed == 0)
+        if failed or passed == 0 or errors > allowed or not explained:
             return FAIL, detail + "; tail: " + " | ".join(out.strip().splitlines()[-3:])
+        if skipped:
+            return READ, detail + "; %d tests skipped here, so they were not run (see the skip reasons with -rs)" % skipped
         if claimed and passed not in claimed:
             return READ, detail + "; PR body claims %s passed" % sorted(set(claimed))
         return PASS, detail
@@ -293,6 +351,8 @@ def run(ctx, rules):
         except Exception as exc:  # a broken check must never read as PASS
             status, detail = READ, "check crashed: %s" % exc
         results.append((rule["id"], status, detail, rule))
+    if not any(r[3].get("check") == "command" for r in results):
+        results.append(("tests", NOTRUN, "NOT RUN: no test rule in checklist.json matched this repo and diff, so no tests were run by the script", {}))
     return results
 
 

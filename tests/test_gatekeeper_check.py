@@ -74,7 +74,7 @@ class Repo(unittest.TestCase):
         return gk.Ctx(self.repo, head, "main", body, name, run_commands)
 
     def one(self, rule, **kw):
-        res = gk.run(self.ctx(**kw), [rule])
+        res = [r for r in gk.run(self.ctx(**kw), [rule]) if r[0] != "tests"]
         self.assertEqual(len(res), 1)
         return res[0][1], res[0][2]
 
@@ -113,6 +113,15 @@ class TestBulletFiles(Repo):
         self.assertEqual(status, gk.READ)
         self.assertIn("pkg/other.py", detail)
         self.assertNotIn("pkg/code.py,", detail)
+
+    def test_trailing_path_match_is_reported(self):
+        self.branch()
+        write(self.repo, "other/tests/test_x.py", "pass\n")
+        self.commit()
+        status, detail = self.one({"id": "b", "check": "bullet_files"}, body="Adds `tests/test_x.py`")
+        self.assertEqual(status, gk.PASS)
+        self.assertIn("matched only by trailing path", detail)
+        self.assertIn("other/tests/test_x.py", detail)
 
     def test_all_present(self):
         self.branch()
@@ -158,7 +167,7 @@ class TestVersions(Repo):
         self.commit()
         status, detail = self.one(self.rule)
         self.assertEqual(status, gk.FAIL)
-        self.assertIn("no version file changed", detail)
+        self.assertIn("no bump in its own package: pkg", detail)
 
     def test_version_going_down_fails(self):
         self.branch()
@@ -169,6 +178,43 @@ class TestVersions(Repo):
         self.assertIn("goes down", detail)
 
 
+class TestVersionsPerPackage(Repo):
+    """A bump in an unrelated package must not satisfy a change in this one."""
+    rule = {"id": "v", "check": "versions", "require_bump": True}
+
+    def test_bump_in_other_package_fails(self):
+        write(self.repo, "a/manifest.json", json.dumps({"version": "1.0.0"}))
+        write(self.repo, "b/manifest.json", json.dumps({"version": "1.0.0"}))
+        write(self.repo, "a/c.py", "x = 1\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "two packages")
+        self.branch()
+        write(self.repo, "a/c.py", "x = 2\n")
+        write(self.repo, "b/manifest.json", json.dumps({"version": "1.0.1"}))
+        self.commit()
+        status, detail = self.one(self.rule)
+        self.assertEqual(status, gk.FAIL, detail)
+        self.assertIn("a (1 file(s), e.g. a/c.py)", detail)
+
+    def test_bump_in_own_package_passes(self):
+        write(self.repo, "a/manifest.json", json.dumps({"version": "1.0.0"}))
+        write(self.repo, "a/deep/er/c.py", "x = 1\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "pkg a")
+        self.branch()
+        write(self.repo, "a/deep/er/c.py", "x = 2\n")
+        write(self.repo, "a/manifest.json", json.dumps({"version": "1.0.1"}))
+        self.commit()
+        status, detail = self.one(self.rule)
+        self.assertEqual(status, gk.PASS, detail)
+
+    def test_without_require_bump_it_needs_reading(self):
+        self.branch()
+        write(self.repo, "pkg/code.py", "x = 9\n")
+        self.commit()
+        self.assertEqual(self.one({"id": "v", "check": "versions"})[0], gk.READ)
+
+
 class TestOtherChecks(Repo):
     def test_secret_fails(self):
         self.branch()
@@ -177,6 +223,22 @@ class TestOtherChecks(Repo):
         status, detail = self.one({"id": "s", "check": "secrets"})
         self.assertEqual(status, gk.FAIL)
         self.assertIn("pkg/conf.py", detail)
+
+    def test_unquoted_env_secret_and_bearer_fail(self):
+        self.branch()
+        write(self.repo, "pkg/.env.sample", "DB_PASSWORD=abcdefghijklmnopqrstuvwx\n")
+        write(self.repo, "pkg/call.sh", "curl -H 'Authorization: Bearer abcdefghijklmnopqrstuvwxyz0123'\n")
+        self.commit()
+        status, detail = self.one({"id": "s", "check": "secrets"})
+        self.assertEqual(status, gk.FAIL)
+        self.assertIn("unquoted secret assignment in pkg/.env.sample", detail)
+        self.assertIn("bearer token in pkg/call.sh", detail)
+
+    def test_env_lookup_is_not_a_secret(self):
+        self.branch()
+        write(self.repo, "pkg/conf.py", 'token = os.environ.get("TOKEN_FROM_ENV_VARIABLE_NAME")\nSECRET_KEY = config_value_lookup\n')
+        self.commit()
+        self.assertEqual(self.one({"id": "s", "check": "secrets"})[0], gk.PASS)
 
     def test_no_secret_passes(self):
         self.branch()
@@ -234,7 +296,7 @@ class TestOtherChecks(Repo):
         res = gk.run(self.ctx(name="other"), [{"id": "x", "check": "secrets", "repos": ["control"]},
                                               {"id": "y", "check": "secrets", "when_touches": ["nope/*"]},
                                               {"id": "z", "check": "secrets", "when_touches": ["pkg/*"]}])
-        self.assertEqual([r[0] for r in res], ["z"])
+        self.assertEqual([r[0] for r in res if r[0] != "tests"], ["z"])
 
     def test_unknown_check_never_passes(self):
         self.branch()
@@ -281,6 +343,35 @@ class TestCommand(Repo):
         rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('3 passed')\""}
         self.assertEqual(self.one(rule, run_commands=False)[0], gk.NOTRUN)
 
+    def test_nonzero_exit_with_pass_count_is_not_a_pass(self):
+        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"import sys;print('5 passed');sys.exit(1)\""}
+        status, detail = self.one(rule)
+        self.assertEqual(status, gk.FAIL)
+        self.assertIn("exit 1", detail)
+
+    def test_nonzero_exit_explained_by_allowed_errors_passes(self):
+        cmd = "python3 -c \"import sys;print('5 passed, 13 errors');sys.exit(2)\""
+        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd, "allow_errors": 13})[0], gk.PASS)
+        self.assertEqual(self.one({"id": "t", "check": "command", "cmd": cmd})[0], gk.FAIL)
+
+    def test_skipped_tests_are_reported_not_passed(self):
+        rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('591 passed, 65 skipped')\""}
+        status, detail = self.one(rule, body="656 passed")
+        self.assertEqual(status, gk.READ)
+        self.assertIn("65 tests skipped", detail)
+
+    def test_optional_env_checkout_only_set_when_present(self):
+        rule = {"id": "t", "check": "command", "env": {"GK_X": "{PARENT}/no-such-checkout-xyz"},
+                "cmd": "python3 -c \"import os;print('1 passed' if 'GK_X' not in os.environ else '0 passed')\""}
+        self.assertEqual(self.one(rule)[0], gk.PASS)
+
+    def test_no_test_rule_matched_says_so(self):
+        res = gk.run(self.ctx(name="other"), [{"id": "x", "check": "secrets"}])
+        row = [r for r in res if r[0] == "tests"]
+        self.assertEqual(len(row), 1)
+        self.assertEqual(row[0][1], gk.NOTRUN)
+        self.assertIn("no test rule", row[0][2])
+
     def test_worktree_is_cleaned_up(self):
         rule = {"id": "t", "check": "command", "cmd": "python3 -c \"print('1 passed')\""}
         self.one(rule)
@@ -317,7 +408,7 @@ class TestMain(Repo):
         self.assertIn("RESULT: FAIL (1)", out)
         row = json.loads(open(log).read().splitlines()[-1])
         self.assertEqual(row["pr"], "control#1")
-        self.assertEqual(row["results"], {"secrets": "FAIL", "merge": "PASS"})
+        self.assertEqual(row["results"], {"secrets": "FAIL", "merge": "PASS", "tests": "NOT RUN"})
 
     def test_all_good_exit_zero(self):
         self.branch()
