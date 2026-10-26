@@ -1,0 +1,17 @@
+{
+  "_doc": "One rule per line. check = a built-in in gatekeeper_check.py. repos limits a rule to those repo names; when_touches (globs) runs it only if the diff touches them. blocks is informational: FAIL always stops a flip, NEEDS-READ means the gatekeeper reads it. Add a ruling by adding one line.",
+  "rules": [
+    {"id": "merge",        "check": "merge"},
+    {"id": "bullet-files", "check": "bullet_files"},
+    {"id": "versions",     "check": "versions", "repos": ["control", "core", "commerce", "corporate", "productivity", "zones", "pay", "agent", "hardware", "Users", "users", "engram"], "require_bump": true},
+    {"id": "secrets",      "check": "secrets"},
+    {"id": "pr-notes",     "check": "notes"},
+    {"id": "merge-order",  "check": "merge_order"},
+    {"id": "art",          "check": "art"},
+    {"id": "tour-with-ui", "check": "requires_pair", "repos": ["polaris", "sticks", "supacharge", "minilauncher", "paas_manager", "paas_customer", "paas_driver"], "if_touches": ["lib/*.dart", "lib/**/*.dart"], "then_touches": [".rokct/tours/*", "**/tour*.yaml", "**/tours/*"], "what": "tour for a UI change", "severity": "NEEDS-READ"},
+    {"id": "tests-control",  "check": "command", "repos": ["control"], "cmd": "python3 -m pytest -q fleet provisioning control/control/tests --continue-on-collection-errors", "allow_errors": 13, "env": {"AGENT_REPO": "{PARENT}/agent"}, "requires": ["python3"]},
+    {"id": "tests-core-base", "check": "command", "repos": ["core"], "when_touches": ["base/*"], "cwd": "base/frappe", "cmd": "python3 -m pytest -q tests/pure", "requires": ["python3"]},
+    {"id": "tests-hardware", "check": "command", "repos": ["hardware"], "when_touches": ["hosting/*"], "cwd": "hosting/frappe", "cmd": "python3 -m pytest -q server_agent/tests", "requires": ["python3"]},
+    {"id": "dart-tests",   "check": "command", "repos": ["polaris", "sticks", "supacharge", "minilauncher", "paas_manager", "paas_customer", "paas_driver"], "when_touches": ["*.dart"], "cmd": "flutter test", "requires": ["flutter"], "not_run_text": "NOT RUN: Dart not tested because Flutter is not installed"}
+  ]
+}
