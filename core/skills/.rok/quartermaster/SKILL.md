@@ -1,7 +1,7 @@
 ---
 name: quartermaster
 description: Gate every new thread's model and effort through the Quartermaster before it is opened; it approves or overrides only model and effort and keeps a history per task.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Quartermaster: the model and effort gate
@@ -51,6 +51,13 @@ judgment call is hard.
 - `plan` work may run Fable 5.1 or Opus 5.5 at low or medium; `high` on a
   plan is overridden to medium (a plan thread at high cost Ray 4% of his
   Fable usage on 2026-10-24).
+- The script also reads the task text, because the kind label is the
+  coordinator's own claim. A `code` or `design` task that mentions review,
+  audit, security, verify, leak or secret is treated as `verify` (never
+  Haiku). A `code` or `design` task at `low` that is a rename, bump,
+  dedupe or file move is overridden to Haiku 5.5 low.
+- `python3 quartermaster.py stats` prints approve/override/hold per month so
+  a run of all-approve is visible.
 - `xhigh` and `max` are never approved here; they need Ray's word.
 - Wednesday and Thursday before the Friday reset are not an exception for
   the Quartermaster: it still holds for Ray.

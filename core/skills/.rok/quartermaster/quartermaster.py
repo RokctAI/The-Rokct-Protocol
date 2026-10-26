@@ -21,7 +21,9 @@ where the policy is firm, and records every decision per task.
 import argparse
 import json
 import os
+import re
 import sys
+from collections import Counter
 from datetime import datetime, timezone
 
 MODELS = ("Fable 5.1", "Opus 5.5", "Sonnet 5.5", "Haiku 5.5")
@@ -49,11 +51,36 @@ def normalise_model(name):
     return ALIASES.get((name or "").strip().lower(), name)
 
 
-def decide(kind, model, effort):
+# The kind label is the coordinator's own claim, so the task text is checked
+# too: reviews and security work are verification, and pure moves/renames/bumps
+# are mechanical. 70 of the first 77 decisions were labelled `code` and none
+# were ever overridden.
+VERIFY_WORDS = re.compile(
+    r"\b(review|audit|security|verif\w*|leak|vulnerab\w*|secret)\b", re.I
+)
+MECHANICAL_WORDS = re.compile(
+    r"\b(rename|re-?bump|bump|dedupe|move files?|file moves?)\b", re.I
+)
+
+
+def decide(kind, model, effort, task=""):
     """Return (decision, model, effort, reason)."""
     model = normalise_model(model)
     effort = (effort or DEFAULT_EFFORT).strip().lower()
     reasons = []
+    task = task or ""
+
+    if kind in ("code", "design") and VERIFY_WORDS.search(task):
+        reasons.append(f"task reads as verification, not {kind}; treated as verify")
+        kind = "verify"
+    elif (
+        kind in ("code", "design")
+        and model != "Haiku 5.5"
+        and effort == "low"
+        and MECHANICAL_WORDS.search(task)
+    ):
+        reasons.append("mechanical job; Haiku 5.5 low is enough")
+        model = "Haiku 5.5"
 
     if effort not in EFFORTS:
         reasons.append(f"unknown effort {effort!r}; default is low")
@@ -176,10 +203,27 @@ def main(argv=None):
     p_hist = sub.add_parser("history", help="show decisions for a task")
     p_hist.add_argument("task_id", nargs="?")
 
+    p_stats = sub.add_parser("stats", help="decisions per month: approve/override/hold")
+
     args = parser.parse_args(argv)
 
+    if args.command == "stats":
+        counts = Counter(
+            (row["ts"][:7], row["decision"]) for row in read_history(args.history)
+        )
+        for month in sorted({m for m, _ in counts}):
+            print(
+                month,
+                " ".join(
+                    f"{d}={counts[(month, d)]}" for d in ("approve", "override", "hold")
+                ),
+            )
+        return 0
+
     if args.command == "decide":
-        decision, model, effort, reason = decide(args.kind, args.model, args.effort)
+        decision, model, effort, reason = decide(
+            args.kind, args.model, args.effort, args.task
+        )
         if not args.dry_run:
             append_history(
                 args.history,
