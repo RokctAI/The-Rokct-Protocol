@@ -1487,11 +1487,12 @@ class RokctHubTemplateTest(unittest.TestCase):
         # ships the Tenant Error/Visitor Log doctypes fleet owns.
         self.assertNotIn("personas", by_name["telemetry"])
         self.assertEqual(by_name["fleet"]["personas"], ["control"])
+        self.assertEqual(by_name["provisioning"]["personas"], ["control"])
         self.assertTrue(
             all(
                 "personas" not in m
                 for n, m in by_name.items()
-                if n not in ("subscriptions", "wallet", "fleet")
+                if n not in ("subscriptions", "wallet", "fleet", "provisioning")
             )
         )
         # The composer clones one ref per repo: every module of a repo
@@ -1500,6 +1501,25 @@ class RokctHubTemplateTest(unittest.TestCase):
         for m in data["modules"]:
             refs.setdefault(m["git"], set()).add(m["ref"])
         self.assertTrue(all(len(r) == 1 for r in refs.values()), refs)
+
+
+class ControlRepoPinTest(unittest.TestCase):
+    CONTROL = "https://github.com/RokctAI/control"
+    PIN = "02e43e5a2820d8d6a4b4d725fb26b94d176d17d7"
+
+    def test_control_repo_modules_share_one_pin(self):
+        base = os.path.join(os.path.dirname(_COMPOSER_SRC), "composer")
+        for tpl in ("control.json", "rokcthub.json"):
+            with open(os.path.join(base, tpl), encoding="utf-8") as fh:
+                data = json.load(fh)
+            mods = {m["name"]: m for m in data["modules"] if m.get("git") == self.CONTROL}
+            self.assertIn("fleet", mods, tpl)
+            self.assertIn("provisioning", mods, tpl)
+            self.assertEqual(
+                mods["provisioning"]["path"], "../control/provisioning/frappe", tpl
+            )
+            self.assertEqual(mods["provisioning"]["personas"], ["control"], tpl)
+            self.assertEqual({m["ref"] for m in mods.values()}, {self.PIN}, tpl)
 
 
 if __name__ == "__main__":
