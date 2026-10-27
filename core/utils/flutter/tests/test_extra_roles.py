@@ -208,6 +208,29 @@ class ExtraRolesTest(unittest.TestCase):
         self.assertEqual(merged["session_policy"], {"home": "/main"})
         self.assertEqual(merged["constants"], {"a": "manager", "c": "c", "b": "m"})
 
+    def test_flavor_merge_combines_nested_dicts(self):
+        # The marker's own block adds to, not replaces, an extra role's
+        # constants.overrides (rokct adds appTitle, manager keeps its nav).
+        self.set_marker("rokct")
+        os.environ["ROKCT_EXTRA_ROLES"] = "manager"
+        manifest = {
+            "app_type": {
+                "manager": {
+                    "constants": {"import": "pkg:x", "overrides": {"nav": "rail"}}
+                },
+                "rokct": {
+                    "app_name": "ROKCT",
+                    "constants": {"overrides": {"appTitle": "'ROKCT'"}},
+                },
+            }
+        }
+        merged = self.installer.merged_flavor_block(manifest)
+        self.assertEqual(merged["app_name"], "ROKCT")
+        self.assertEqual(
+            merged["constants"],
+            {"import": "pkg:x", "overrides": {"nav": "rail", "appTitle": "'ROKCT'"}},
+        )
+
     def test_flavor_merge_without_roles_equals_old_lookup(self):
         self.set_marker("manager")
         block = {"installs": [{"from": "m", "to": "m"}]}

@@ -45,7 +45,7 @@ import zipfile
 
 PROTOCOL_REPO = "RokctAI/The-Rokct-Protocol"
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "8c6ffda939e9954c09355195e5e34a6dc1eeaaf3"
+PROTOCOL_REF = "e9dbcdf1a61dfc6651fdd2e3bcc8a1cdfe295507"
 # STARTUPOS_PROTOCOL_REF overrides the pin for development only; the embedded
 # hashes cannot vouch for other refs, so overriding also requires
 # STARTUPOS_ALLOW_UNPINNED=1 and loudly disables integrity verification.

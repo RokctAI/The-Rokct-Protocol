@@ -191,12 +191,29 @@ def resolve_app_roles():
     return roles
 
 
+def _merge_flavor_values(base, extra):
+    """Merge one flavor key's value over another: lists are concatenated
+    without exact duplicates, dicts merged key by key (nested dicts too, so
+    `constants.overrides` of two roles combine), anything else replaced by
+    `extra`."""
+    if isinstance(base, list) and isinstance(extra, list):
+        return base + [v for v in extra if v not in base]
+    if isinstance(base, dict) and isinstance(extra, dict):
+        merged = dict(base)
+        for key, value in extra.items():
+            merged[key] = (
+                _merge_flavor_values(merged[key], value) if key in merged else value
+            )
+        return merged
+    return extra
+
+
 def merged_flavor_block(manifest):
     """The manifest's `app_type` flavor blocks for every role of this host,
     merged into one block. Extra roles go first and the marker's own role
     last, so the marker wins where a key cannot be combined (same rule as a
-    flavor block winning over the top level). List keys are concatenated
-    without exact duplicates, dict keys merged, anything else replaced."""
+    flavor block winning over the top level). See _merge_flavor_values for
+    how each kind of value combines."""
     roles = resolve_app_roles()
     declared = manifest.get("app_type") or {}
     merged = {}
@@ -204,13 +221,7 @@ def merged_flavor_block(manifest):
         block = declared.get(role)
         if not isinstance(block, dict):
             continue
-        for key, value in block.items():
-            if isinstance(value, list) and isinstance(merged.get(key), list):
-                merged[key] = merged[key] + [v for v in value if v not in merged[key]]
-            elif isinstance(value, dict) and isinstance(merged.get(key), dict):
-                merged[key] = {**merged[key], **value}
-            else:
-                merged[key] = value
+        merged = _merge_flavor_values(merged, block)
     return merged
 
 
