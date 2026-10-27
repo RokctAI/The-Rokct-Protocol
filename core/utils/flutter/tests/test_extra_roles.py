@@ -77,9 +77,7 @@ class ExtraRolesTest(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def set_marker(self, value):
-        with open(
-            os.path.join(self.root, ".rokct", "config", "app_type"), "w"
-        ) as f:
+        with open(os.path.join(self.root, ".rokct", "config", "app_type"), "w") as f:
             f.write(value + "\n")
 
     def make_sdk(self, personas, manifest_extra=None):
@@ -96,7 +94,9 @@ class ExtraRolesTest(unittest.TestCase):
     # --- composer.json parsing ---------------------------------------------
     def test_parse_extra_roles(self):
         parse = self.composer.parse_extra_roles
-        self.assertEqual(parse(["Customer", " customer ", "driver"]), ["customer", "driver"])
+        self.assertEqual(
+            parse(["Customer", " customer ", "driver"]), ["customer", "driver"]
+        )
         self.assertEqual(parse("customer"), ["customer"])
         self.assertEqual(parse(None), [])
         self.assertEqual(parse(5), [])
