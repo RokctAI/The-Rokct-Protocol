@@ -731,6 +731,18 @@ This repo's runtime-fetched-and-executed files are pinned. See
     Every `cmd` a demo-visible screen sends needs a fixture; adding a `cmd`
     to a repository adds its fixture in the same PR (invariant 11).
 
+14. **Plan-gated menu entries are one list in `subscriptions_sdk`, client-side
+    only** (standing rule, Ray 2026-10-27; `base_sdk` 1.97.0, `subscriptions_sdk`
+    1.8.0; logged in the `agent` repo's `decision_log.md`). To hide an SDK's
+    entry from the free tier, add its profile section id to the
+    `plan-gated-sections` di_hook in `subscriptions_sdk`
+    (`PlanAccess.gateProfileSections`); never write a per-SDK plan check.
+    `PlanAccess.planGatedVisible` is true by default and only a
+    `FREE_LOCAL_TIER` build (which installs `PlanSyncGate`) sets it false, so
+    every other app is unchanged. `ProfileSectionRegistry.sections` drops the
+    declared ids while it is false. Nothing is sent to the backend, and a
+    direct route link is not blocked: the menu entry is the door.
+
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
 Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
