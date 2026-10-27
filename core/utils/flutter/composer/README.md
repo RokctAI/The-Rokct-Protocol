@@ -1,7 +1,7 @@
 # Composer Templates
 
 The `.json` files in this folder (`betassist.json`, `customer.json`, `drive.json`, `driver.json`, `forex.json`,
-`launcher.json`, `manager.json`, `photos.json`, `polaris.json`, `radio.json`, `sticks.json`, `supacharge.json`) are
+`launcher.json`, `manager.json`, `photos.json`, `polaris.json`, `radio.json`, `rokct.json`, `sticks.json`, `supacharge.json`) are
 **templates**, not active configuration.
 
 There is no `launch_manager.json` or `launch_deliver.json`: no shell ever copied either as its
@@ -33,10 +33,17 @@ the template REWRITES the app's `pubspec.yaml` name. If they disagree the app's 
 renamed and every `package:` import must follow. `launcher.json` says `launcher` while
 `minilauncher/pubspec.yaml` says `minimal_launcher` — copying as-is would rename the package.
 
+**Extra roles (`roles`).** An SDK entry may carry `"roles": ["manager"]` (a list of role names). The
+marker `.rokct/config/app_type` stays the app's primary role; the listed roles are added for that one
+SDK only: the SDK keeps those roles' `lib/src/<role>/` folders and merges their `app_type` flavor
+blocks (the marker's own role wins where a key cannot be combined). Without `roles` nothing changes.
+`rokct.json` uses it: the ROKCT app has its own marker (`rokct`, so its Play package key is
+`ROKCT_ANDROID_PACKAGE_NAME`) and takes the manager role from every SDK.
+
 **Why the copy is per-app rather than derived** (e.g. from `.rokct/config/app_type`): an app can pin
 an SDK set that differs from the template's current state. `app_type` is a different mechanism
 entirely — it selects which file variants an SDK installs, via `app_type` blocks inside SDK
-manifests. It does not choose a composer manifest.
+manifests. It does not choose a composer manifest (and `roles` above only adds roles per SDK).
 
 The relative paths inside each template (e.g. `../core/core/dart`) are written assuming the file
 sits at `RokctApp/composer.json` — one level up from the `RokctApp/` folder reaches the other

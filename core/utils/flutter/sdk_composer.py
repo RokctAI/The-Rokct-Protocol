@@ -178,6 +178,43 @@ def clean_sdk_name(name):
     return name
 
 
+# Extra roles a shell's composer.json asks for on one SDK, e.g.
+#   {"name": "orders_sdk", ..., "roles": ["customer"]}
+# keyed by clean SDK name. The marker (.rokct/config/app_type) stays the
+# app's primary role; these are added for that SDK only. Empty = unchanged.
+EXTRA_ROLES_ENV = "ROKCT_EXTRA_ROLES"
+SDK_EXTRA_ROLES = {}
+
+
+def parse_extra_roles(value):
+    """Lower-cased, de-duplicated role names from a composer.json `roles`
+    value (a list, or one string). Anything else yields []."""
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+    roles = []
+    for item in value:
+        role = str(item).strip().lower()
+        if role and role not in roles:
+            roles.append(role)
+    return roles
+
+
+def register_extra_roles(sdks):
+    """Remember each enabled SDK's `roles` from composer.json."""
+    SDK_EXTRA_ROLES.clear()
+    for sdk in sdks:
+        if isinstance(sdk, dict):
+            roles = parse_extra_roles(sdk.get("roles"))
+            if roles:
+                SDK_EXTRA_ROLES[clean_sdk_name(sdk["name"])] = roles
+
+
+def extra_roles_for(sdk_name):
+    return list(SDK_EXTRA_ROLES.get(clean_sdk_name(sdk_name), []))
+
+
 def extract_repo_name(git_url):
     url_path = git_url.rstrip("/")
     if url_path.endswith(".git"):
@@ -296,7 +333,7 @@ def strip_unused_role_folders(target_dir, sdk_name):
     doesn't declare that role at all - stripping without that confirmation
     risks deleting something the app actually needs.
     """
-    for persona in role_folders_to_strip(target_dir):
+    for persona in role_folders_to_strip(target_dir, extra_roles_for(sdk_name)):
         persona_dir = os.path.join(target_dir, "lib", "src", persona)
         if os.path.isdir(persona_dir):
             shutil.rmtree(persona_dir)
@@ -305,14 +342,17 @@ def strip_unused_role_folders(target_dir, sdk_name):
             )
 
 
-def role_folders_to_strip(sdk_dir):
+def role_folders_to_strip(sdk_dir, extra_roles=()):
     """Persona folder names under <sdk_dir>/lib/src/ that
     strip_unused_role_folders() removes for this host's role (see its
     docstring for the rules). Also used to hash an SDK source the way it
     will look once extracted, so the source fingerprint follows the strip.
     Returns [] when nothing would be stripped."""
     current_role = resolve_app_type()
-    if not current_role:
+    # The roles this app keeps from this SDK: its marker plus any extra roles
+    # composer.json asked for on this SDK.
+    kept_roles = {r for r in [current_role, *extra_roles] if r}
+    if not kept_roles:
         return []
     manifest_path = os.path.join(sdk_dir, "manifest.json")
     if not os.path.exists(manifest_path):
@@ -323,7 +363,7 @@ def role_folders_to_strip(sdk_dir):
     except Exception:
         return []
     declared_personas = list((manifest.get("app_type") or {}).keys())
-    if current_role not in declared_personas:
+    if not kept_roles & set(declared_personas):
         # This SDK doesn't declare the app's role as a persona - nothing to
         # strip; stripping blind here could remove code the app actually uses.
         return []
@@ -333,7 +373,7 @@ def role_folders_to_strip(sdk_dir):
     return [
         p
         for p in declared_personas
-        if p != current_role and os.path.isdir(os.path.join(lib_src, p))
+        if p not in kept_roles and os.path.isdir(os.path.join(lib_src, p))
     ]
 
 
@@ -438,10 +478,10 @@ def cache_dir_hash(d, exclude_dirs=()):
     return h.hexdigest()[:16]
 
 
-def source_hash(src_dir):
+def source_hash(src_dir, extra_roles=()):
     """Fingerprint of an SDK source as it will look once extracted: the
     role folders strip_unused_role_folders() would remove are left out."""
-    strip = ["lib/src/" + p for p in role_folders_to_strip(src_dir)]
+    strip = ["lib/src/" + p for p in role_folders_to_strip(src_dir, extra_roles)]
     return cache_dir_hash(src_dir, exclude_dirs=strip)
 
 
@@ -516,7 +556,7 @@ def should_extract(sdk_name, src_dir, target_dir, state, decisions):
     SOURCE_HASHES) so record_sdk_cache_state() knows what to persist.
     """
     clean_name = clean_sdk_name(sdk_name)
-    incoming_hash = source_hash(src_dir)
+    incoming_hash = source_hash(src_dir, extra_roles_for(sdk_name))
     SOURCE_HASHES[clean_name] = incoming_hash
     if not os.path.isdir(target_dir):
         decisions[clean_name] = "extracted"
@@ -1078,6 +1118,17 @@ def resolve_active_path(sdk_config):
     return os.path.abspath(os.path.join(PROJECT_ROOT, ".rokct", "cache", clean_name))
 
 
+def installer_env(sdk_name):
+    """Environment for one SDK's install.py: the parent's, plus the extra
+    roles composer.json asked for on this SDK (see EXTRA_ROLES_ENV)."""
+    env = dict(os.environ)
+    env.pop(EXTRA_ROLES_ENV, None)
+    roles = extra_roles_for(sdk_name)
+    if roles:
+        env[EXTRA_ROLES_ENV] = ",".join(roles)
+    return env
+
+
 def run_installer(sdk_config):
     sdk_name = sdk_config["name"] if isinstance(sdk_config, dict) else sdk_config
     sdk_path = resolve_active_path(sdk_config)
@@ -1094,6 +1145,7 @@ def run_installer(sdk_config):
         result = subprocess.run(
             [sys.executable, installer_script],
             cwd=PROJECT_ROOT,
+            env=installer_env(sdk_name),
             capture_output=True,
             text=True,
             check=True,
@@ -1806,13 +1858,10 @@ def find_missing_sdk_requires(sdks_to_check, all_enabled_sdks):
         except Exception:
             continue
         declared = list(manifest.get("sdk_requires") or [])
-        flavor = (
-            (manifest.get("app_type") or {}).get(current_app_type)
-            if current_app_type
-            else None
-        )
-        if isinstance(flavor, dict):
-            declared += list(flavor.get("sdk_requires") or [])
+        for role in [current_app_type, *extra_roles_for(sdk_name)]:
+            flavor = (manifest.get("app_type") or {}).get(role) if role else None
+            if isinstance(flavor, dict):
+                declared += list(flavor.get("sdk_requires") or [])
         for req in declared:
             if clean_sdk_name(str(req).strip()) not in enabled:
                 missing.append((sdk_name, req))
@@ -1854,6 +1903,7 @@ def main():
                 if isinstance(s, dict) and s.get("enabled", True)
             ]
             package_name = config.get("package_name")
+            register_extra_roles(sdks_to_install)
             print(f"[*] Reading active SDK list from composer.json: {sdks_to_install}")
         except Exception as e:
             print(f"[!] Error reading composer.json: {e}.")
