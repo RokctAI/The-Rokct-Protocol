@@ -171,6 +171,49 @@ def resolve_app_type():
     return None
 
 
+EXTRA_ROLES_ENV = "ROKCT_EXTRA_ROLES"
+
+
+def resolve_app_roles():
+    """This host's roles for the SDK being installed: its own marker
+    (resolve_app_type()) first, then the extra roles the shell's composer.json
+    asked for on this SDK ("roles": [...]), handed over by sdk_composer.py in
+    ROKCT_EXTRA_ROLES (comma separated). Without extras this is just
+    [marker], or [] when there is no marker, exactly as before."""
+    roles = []
+    primary = resolve_app_type()
+    if primary:
+        roles.append(primary)
+    for part in os.environ.get(EXTRA_ROLES_ENV, "").split(","):
+        role = part.strip().lower()
+        if role and role not in roles:
+            roles.append(role)
+    return roles
+
+
+def merged_flavor_block(manifest):
+    """The manifest's `app_type` flavor blocks for every role of this host,
+    merged into one block. Extra roles go first and the marker's own role
+    last, so the marker wins where a key cannot be combined (same rule as a
+    flavor block winning over the top level). List keys are concatenated
+    without exact duplicates, dict keys merged, anything else replaced."""
+    roles = resolve_app_roles()
+    declared = manifest.get("app_type") or {}
+    merged = {}
+    for role in roles[1:] + roles[:1]:
+        block = declared.get(role)
+        if not isinstance(block, dict):
+            continue
+        for key, value in block.items():
+            if isinstance(value, list) and isinstance(merged.get(key), list):
+                merged[key] = merged[key] + [v for v in value if v not in merged[key]]
+            elif isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = {**merged[key], **value}
+            else:
+                merged[key] = value
+    return merged
+
+
 def install_entry_applies(entry, app_type):
     """Whether one manifest `installs` entry applies to this host app.
 
@@ -196,7 +239,11 @@ def install_entry_applies(entry, app_type):
     if isinstance(scope, str):
         scope = [scope]
     wanted = {str(s).strip().lower() for s in scope if str(s).strip()}
-    return bool(app_type) and app_type in wanted
+    if isinstance(app_type, str):
+        have = {app_type}
+    else:
+        have = set(app_type or [])
+    return bool(have & wanted)
 
 
 def _under_install_dest(path, to_rel):
@@ -487,12 +534,8 @@ def _manifest_install_targets(manifest, sdk_path):
     level plus this host's app_type flavor block) would write, with
     directory entries expanded exactly as install_sdk_files_and_routes()
     expands them."""
-    current_app_type = resolve_app_type()
-    flavor_block = (
-        (manifest.get("app_type") or {}).get(current_app_type, {})
-        if current_app_type
-        else {}
-    )
+    current_app_type = resolve_app_roles()
+    flavor_block = merged_flavor_block(manifest)
     targets = set()
     for entry in manifest.get("installs", []) + flavor_block.get("installs", []):
         if not install_entry_applies(entry, current_app_type):
@@ -977,12 +1020,8 @@ def install_sdk_files_and_routes(sdk_name):
     # own .rokct/app_type marker - same file-selection idea as the
     # tenant/control split on the Frappe composer side, applied here via
     # manifest content instead of separate on-disk folders.
-    current_app_type = resolve_app_type()
-    flavor_block = (
-        (manifest.get("app_type") or {}).get(current_app_type, {})
-        if current_app_type
-        else {}
-    )
+    current_app_type = resolve_app_roles()
+    flavor_block = merged_flavor_block(manifest)
 
     version = manifest.get("version", "1.0.0")
     # An installs entry may be scoped to some app types ("app_types", see
