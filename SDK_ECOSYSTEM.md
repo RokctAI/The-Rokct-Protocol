@@ -743,6 +743,19 @@ This repo's runtime-fetched-and-executed files are pinned. See
     declared ids while it is false. Nothing is sent to the backend, and a
     direct route link is not blocked: the menu entry is the door.
 
+15. **A profile page with one pane shows the floating nav, never a bare back
+    button** (standing rule, Ray 2026-10-30; first built in `delivery_sdk`'s
+    driver profile, logged in the `agent` repo's `decision_log.md`). When a
+    profile has only one pane (a phone, one `PlaneHost` plane) it draws its
+    app's floating nav with the Profile entry lit; the back-only pill is for
+    pages that are not profiles. Do it once in the shared hub: a composition
+    that pushes `GenericProfileRoute` registers
+    `ProfileSectionRegistry.pushedProfileNavBuilder` (the launcher already
+    does) and `base_sdk` draws it; a profile route shell that hosts its own
+    page (delivery, marketplace) draws its root nav itself. At plane widths
+    the corner pill stays. A new profile page is not complete until its tour
+    step shows the nav.
+
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
 Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
