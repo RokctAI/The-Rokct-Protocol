@@ -378,6 +378,15 @@
       ],
       "nextjs": null
     },
+    "southriver_sdk": {
+      "repo": "RokctAI/corporate",
+      "consumers": [],
+      "nextjs": {
+        "path": "southriver/nextjs",
+        "version": "1.0.0",
+        "install_py_sha256": "f68db995960ea2a849121682ab0b11b6f6d6856debd7affc7dcb316d0973db51"
+      }
+    },
     "studio_sdk": {
       "repo": "RokctAI/designer",
       "consumers": [],

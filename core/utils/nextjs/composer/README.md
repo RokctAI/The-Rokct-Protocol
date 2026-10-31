@@ -77,8 +77,9 @@ same storefront shape selling the Telephony plan category; no `agent_sdk`),
 block: a lender's site, landing for visitors, the back office for lending staff
 and the borrower area at `/loans`; no `agent_sdk`, no `erp_sdk`; backend is the
 lender's site with the frappe `polaris` module),
-`southriver-web.json` → none yet (the kernel plus `corporate_sdk` only; the
-South River home SDK joins it later). A
+`southriver-web.json` → `southriver_sdk` (corporate `southriver/nextjs`, its
+`app_type["southriver-web"]` block: the private-label water landing; no
+backend, so no frappe half). A
 template without the key still composes as before: lines
 append in order at a contested marker, with a warning.
 
@@ -86,9 +87,8 @@ Next.js-only shells need only a template here:
 `southriver-web.json` (RokctAI/southriver-web, `app_type` `southriver-web`)
 is a Next.js shell with no backend — it runs base_sdk's local data mode from
 its own `data/` folder — so it has no frappe template: the kernel
-(`telemetry_sdk`, `base_sdk`) plus `corporate_sdk` for the company pages; no
-`auth_sdk` (nothing to sign in to) and no home SDK until the South River
-home SDK exists. The data mode is not a template concern: the shell's own
+(`telemetry_sdk`, `base_sdk`), `southriver_sdk` as the home SDK and
+`corporate_sdk` for the company pages; no `auth_sdk` (nothing to sign in to). The data mode is not a template concern: the shell's own
 `composer.json` carries its `"data"` key (SDK_ECOSYSTEM.md, "Host data
 folder and data mode").
 

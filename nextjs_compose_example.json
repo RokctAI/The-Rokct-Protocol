@@ -378,6 +378,18 @@
       ]
     },
     {
+      "name": "southriver_sdk",
+      "enabled": false,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/southriver/nextjs",
+      "ref": "main",
+      "sha256": "f68db995960ea2a849121682ab0b11b6f6d6856debd7affc7dcb316d0973db51",
+      "version": "1.0.0",
+      "home_sdk": false,
+      "consumers": []
+    },
+    {
       "name": "studio_sdk",
       "enabled": false,
       "source": "git",
