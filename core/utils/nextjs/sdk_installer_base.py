@@ -432,7 +432,7 @@ def install_sdk_files(sdk_name):
     # elsewhere - and never touches a shell where it is not home.
     home_block = (manifest.get("home") or {}) if is_home_sdk else {}
     if home_block:
-        print(f"[i] {sdk_name} is the home SDK: its \"home\" block applies.")
+        print(f'[i] {sdk_name} is the home SDK: its "home" block applies.')
 
     version = manifest.get("version", "1.0.0")
     installs = (
