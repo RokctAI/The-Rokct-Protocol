@@ -50,8 +50,10 @@ NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk", "corporate_sdk")
 # delivery_sdk, zones `delivery/nextjs` - the storefront that sells the
 # delivery platform and the door to the tenant portal; products_sdk, which
 # carried the flag provisionally, is a portal part). None pins a template
-# that deliberately has no home SDK yet (none today; southriver-web.json
-# gained southriver_sdk, corporate southriver/nextjs).
+# that deliberately has no home SDK yet (none today). There is no template
+# for a client site (Ray, 2026-10-31: no per-client compose templates): a
+# client shell composes from its own committed composer.json, with
+# corporate_sdk as its home SDK - see core/utils/nextjs/composer/README.md.
 EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
@@ -60,7 +62,6 @@ EXPECTED_HOME = {
     "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",
     "polaris.json": "polaris_sdk",
-    "southriver-web.json": "southriver_sdk",
 }
 
 

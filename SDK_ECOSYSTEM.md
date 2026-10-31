@@ -261,7 +261,16 @@ An app repo commits exactly three composition inputs:
    `sdks[]` read by `core/utils/nextjs/sdk_composer.py`) carry the same
    `home_sdk` flag with the same meaning: one home per shell, which owns
    `app/page.tsx` and base_sdk's single-answer landing registries; see
-   `core/utils/nextjs/composer/README.md`.
+   `core/utils/nextjs/composer/README.md`. **corporate_sdk is the home SDK
+   of every local-data site** (`"data": "local"`; Ray, 2026-10-31): its
+   manifest's `"home"` block - installs, integrations, requires and
+   `site_data` that apply only where a shell flags it `home_sdk: true` -
+   renders the whole page from the shell's `data/` folder, so no client
+   ever gets an SDK of its own. **A shell whose `app_type` names no
+   registry template composes from its own committed `composer.json`** (its
+   `sdks[]`, `home_sdk` and `data` mode) with an `[i]` log line instead of
+   an error: the registry holds products, never clients (Ray, 2026-10-31:
+   no per-client compose templates).
 2. `.rokct/initiate.py` — bootstraps the protocol toolchain from this repo
    at runtime.
 3. `.rokct/config/app_type` — a one-line persona name (`supacharge`,
@@ -337,7 +346,10 @@ in the `core` repo; the types and the rule (`resolveSiteData`) are
     `PageSectionContext.dataMode` lets a home SDK's `meta.renders` keep
     pricing off the page (the header's own sign-in pair is not yet
     switched; the TODO sits on `dropBackendOnlyActions`). The mode for
-    southriver-web, which has no backend.
+    southriver-web, which has no backend. Since base_sdk 1.53.0 a local
+    site's whole page is data: `site`, `sections`, `pricing`, `order`,
+    `css` and the theme's `palette` / `paletteDark` / `fonts`, rendered by
+    corporate_sdk as the home SDK (see "App composition").
 - **Kinds**, one file each: `theme` (`data/theme.json`:
   `{ primary, secondary?, accent? }`, hex strings); `team`
   (`data/team.json`: `{ members: [{ name, role, photo?, links? }] }`);

@@ -14,8 +14,9 @@ serve many shells. `rokctai_frontend` (`rokctapp.json`) skips hosting even
 though the control hub's backend has it; the hosting shell (`hosting.json`)
 and the telephony shell (`telephony.json`) are storefronts whose backend is
 the control site, where the hosting and telephony apps live. A template here
-does not need a frappe template of the same name, and southriver-web has no
-backend at all (base_sdk's local data mode).
+does not need a frappe template of the same name, and a client site such as
+southriver-web has no backend and no template at all (base_sdk's local data
+mode, its own composer.json).
 
 ## `rokctapp_web`
 
@@ -64,8 +65,9 @@ never write the paths its manifest installs, only the home SDK's line is injecte
 at a single-answer marker (another SDK's line there is skipped with a log line,
 never a failure), and the resolved name is recorded as `"home_sdk"` in
 `.rokct/cache/install_state.json`. `base_sdk`, `auth_sdk`,
-`telemetry_sdk` and `corporate_sdk` (the company pages, beside whichever
-SDK is home) are never home. Today: `supacharge.json` → `lms_sdk`,
+`telemetry_sdk` are never home, and `corporate_sdk` (the company pages,
+beside whichever SDK is home) is never home in a product template - it is
+home only in a local-data site's own `composer.json` (below). Today: `supacharge.json` → `lms_sdk`,
 `rokctapp.json` → `agent_sdk`, `deliveryplatform.json` → `delivery_sdk` (zones
 `delivery/nextjs`, the storefront that sells the delivery platform and the door
 to the tenant portal; `products_sdk`, which carried the flag provisionally, is a
@@ -77,18 +79,41 @@ same storefront shape selling the Telephony plan category; no `agent_sdk`),
 block: a lender's site, landing for visitors, the back office for lending staff
 and the borrower area at `/loans`; no `agent_sdk`, no `erp_sdk`; backend is the
 lender's site with the frappe `polaris` module),
-`southriver-web.json` → `southriver_sdk` (corporate `southriver/nextjs`, its
-`app_type["southriver-web"]` block: the private-label water landing; no
-backend, so no frappe half). A
-template without the key still composes as before: lines
-append in order at a contested marker, with a warning.
+A template without the key still composes as before: lines append in order
+at a contested marker, with a warning.
 
-Next.js-only shells need only a template here:
-`southriver-web.json` (RokctAI/southriver-web, `app_type` `southriver-web`)
-is a Next.js shell with no backend — it runs base_sdk's local data mode from
-its own `data/` folder — so it has no frappe template: the kernel
-(`telemetry_sdk`, `base_sdk`), `southriver_sdk` as the home SDK and
-`corporate_sdk` for the company pages; no `auth_sdk` (nothing to sign in to). The data mode is not a template concern: the shell's own
-`composer.json` carries its `"data"` key (SDK_ECOSYSTEM.md, "Host data
-folder and data mode").
+### corporate_sdk is the home of every local-data site
+
+A local-data site (`"data": "local"` in the shell's `composer.json`: no
+backend, every word in its `data/` folder) composes the kernel
+(`telemetry_sdk`, `base_sdk`) and `corporate_sdk` flagged `"home_sdk": true`
+(Ray, 2026-10-31: "corporate can be home sdk"; no SDK per client). The
+installer's **`"home"` manifest block** - the same keys as an `app_type`
+block (`installs`, `dependencies`, `devDependencies`, `integrations`,
+`requires`) plus `site_data` - merges in only for the SDK the shell flags as
+home, whatever the `app_type`, and is inert everywhere else; so corporate_sdk
+installs the company pages in every shell and the data-driven landing only
+where it is home. base_sdk's `generate.mjs` (>= 1.53.0) also enforces the
+home block's `site_data.requires` in a local build.
+
+### No template: the shell's own composer.json
+
+**The registry holds products, not clients** (Ray, 2026-10-31: thousands of
+client sites cannot each have a compose template). When a shell's
+`.rokct/config/app_type` names no template here (nor in the frappe registry),
+the composer composes from the shell's own committed `composer.json` - its
+`sdks[]`, its `home_sdk` flag and its `data` mode - and logs
+`[i] no registry template '<app_type>.json': composing from the shell's own
+committed composer.json`. A shell's `scripts/compose.sh refresh` (the
+canonical copy is RokctAI/factory `templates/app/nextjs/scripts/compose.sh`)
+does the same: it reads the SDK list from `composer.json` and leaves the
+file as committed. southriver-web composes this way.
+
+A client site needs no template here at all (see "No template: the shell's
+own composer.json" above). RokctAI/southriver-web (`app_type`
+`southriver-web`, no backend, local data mode) commits a `composer.json`
+listing the kernel (`telemetry_sdk`, `base_sdk`) and `corporate_sdk` as the
+home SDK; no `auth_sdk` (nothing to sign in to). The data mode is never a
+template concern: the shell's own `composer.json` carries its `"data"` key
+(SDK_ECOSYSTEM.md, "Host data folder and data mode").
 
