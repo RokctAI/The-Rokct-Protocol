@@ -507,6 +507,76 @@ class TestFlaggedHomeWinsRegardlessOfOrder(HomeSdkTestBase):
         )
 
 
+class TestHomeBlock(HomeSdkTestBase):
+    """A manifest's "home" block (same keys as an app_type block) applies only
+    when that SDK is the shell's home SDK - how corporate_sdk is the home of
+    every local-data site and only the company pages elsewhere."""
+
+    SITE_REL = "components/custom/site/site-page.tsx"
+
+    def setUp(self):
+        super().setUp()
+        sdk_dir = os.path.join(self.cache_dir, "gamma")
+        os.makedirs(os.path.join(sdk_dir, "templates"), exist_ok=True)
+        for name, text in (("company.tsx", "// company\n"), ("home.tsx", "// gamma home\n"), ("site.tsx", "// site\n")):
+            with open(os.path.join(sdk_dir, "templates", name), "w", encoding="utf-8") as f:
+                f.write(text)
+        manifest = {
+            "name": "gamma_sdk",
+            "version": "1.0.0",
+            "installs": [{"from": "templates/company.tsx", "to": "app/about/page.tsx"}],
+            "home": {
+                "installs": [
+                    {"from": "templates/home.tsx", "to": HOME_REL},
+                    {"from": "templates/site.tsx", "to": self.SITE_REL},
+                ],
+                "integrations": [
+                    {
+                        "target": HEADER_MENU_REL,
+                        "placeholder": HEADER_MENU_MARKER,
+                        "replacement": '  { id: "gamma-header-menu" },',
+                    }
+                ],
+            },
+        }
+        with open(os.path.join(sdk_dir, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump(manifest, f)
+
+    def exists(self, rel):
+        return os.path.exists(os.path.join(self.project_root, rel))
+
+    def test_home_block_applies_when_home(self):
+        outputs = self.compose(["gamma_sdk"], home="gamma_sdk")
+        self.assertIn('"home" block applies', outputs["gamma_sdk"])
+        self.assertIn("// gamma home", self.read(HOME_REL))
+        self.assertTrue(self.exists(self.SITE_REL))
+        self.assertTrue(self.exists("app/about/page.tsx"))
+        self.assertIn("gamma-header-menu", self.read(HEADER_MENU_REL))
+
+    def test_home_block_is_ignored_when_not_home(self):
+        self.write_sdk("alpha_sdk", single_answer=False)
+        outputs = self.compose(["alpha_sdk", "gamma_sdk"], home="alpha_sdk")
+        self.assertNotIn('"home" block', outputs["gamma_sdk"])
+        self.assert_home_is("alpha_sdk")
+        self.assertFalse(self.exists(self.SITE_REL))
+        self.assertTrue(self.exists("app/about/page.tsx"))
+        self.assertNotIn("gamma-header-menu", self.read(HEADER_MENU_REL))
+
+    def test_home_block_is_ignored_without_a_home(self):
+        with redirect_stdout(io.StringIO()):
+            self.compose(["gamma_sdk"])
+        self.assertFalse(self.exists(self.SITE_REL))
+        self.assertFalse(self.exists(HOME_REL))
+
+    def test_home_block_paths_are_home_owned(self):
+        self.write_composer(["alpha_sdk", "gamma_sdk"], home="gamma_sdk")
+        installer = self.import_installer()
+        self.assertEqual(
+            installer.home_sdk_owned_files("gamma_sdk"),
+            {"app/about/page.tsx", HOME_REL, self.SITE_REL},
+        )
+
+
 class TestHomeTakesOverEarlierInstalls(HomeSdkTestBase):
     def setUp(self):
         super().setUp()

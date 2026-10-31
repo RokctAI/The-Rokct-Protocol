@@ -166,6 +166,13 @@ is common and always installs.
 }
 ```
 
+**The manifest's `home` block** (since the local-data sites, 2026-10-31) — optional, the same keys as
+an `app_type` persona block plus `site_data`, merged in ONLY when this SDK is the shell's home SDK
+(`"home_sdk": true` on its `composer.json` entry), whatever the `app_type`. It lets one SDK be the home of
+a whole class of shells without a per-shell key: corporate_sdk's home block installs `app/page.tsx` and
+the data-driven landing for every local-data site, and does nothing in a shell where another SDK is home.
+Its installs count as home-owned like the rest of the home SDK's.
+
 **Persona template folders** — persona-specific content lives in sibling folders directly under the
 SDK's `templates/` (`templates/manager/`, `templates/customer/`, ...), each mirroring the host layout
 the same way `templates/app/...` does (so a flavor install's `from` is e.g.

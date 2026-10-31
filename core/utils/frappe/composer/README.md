@@ -36,7 +36,8 @@ the three modes aborts the compose by name (the same rule base applies at
 build time). The set is defined once, as `SHELL_OWNED_COMPOSER_KEYS` in
 `compose_backend.py` (the Next.js composer's standalone fallback mirrors it;
 a test pins the two equal). South River (`southriver-web`, `"data": "local"`)
-is the first shell that relies on this.
+is the first shell that relies on this; it has no template at all and
+composes from its own committed `composer.json`.
 
 The same one-line value doubles as the shell's role/persona marker (the
 shared-namespace convention the flutter side established). A value that names
@@ -47,9 +48,12 @@ behavior.
 
 **New product = one new template file here (backend) and/or in
 `core/utils/nextjs/composer/` (shell) + a thin shell repo carrying just the
-one-line `app_type` file.** A shell with no backend of its own (southriver-web)
-or one served by another product's backend (hosting, telephony -> control)
-needs only the Next.js template.
+one-line `app_type` file.** A shell served by another product's backend
+(hosting, telephony -> control) needs only the Next.js template. A CLIENT
+site (a local-data site such as southriver-web) needs no template at all: the
+registry holds products, not clients (Ray, 2026-10-31: thousands of client
+sites cannot each have a template), so its `app_type` names no template and
+the shell's own committed `composer.json` is the composition.
 
 ## Per-product templates
 
