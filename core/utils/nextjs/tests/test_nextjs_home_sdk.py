@@ -518,8 +518,14 @@ class TestHomeBlock(HomeSdkTestBase):
         super().setUp()
         sdk_dir = os.path.join(self.cache_dir, "gamma")
         os.makedirs(os.path.join(sdk_dir, "templates"), exist_ok=True)
-        for name, text in (("company.tsx", "// company\n"), ("home.tsx", "// gamma home\n"), ("site.tsx", "// site\n")):
-            with open(os.path.join(sdk_dir, "templates", name), "w", encoding="utf-8") as f:
+        for name, text in (
+            ("company.tsx", "// company\n"),
+            ("home.tsx", "// gamma home\n"),
+            ("site.tsx", "// site\n"),
+        ):
+            with open(
+                os.path.join(sdk_dir, "templates", name), "w", encoding="utf-8"
+            ) as f:
                 f.write(text)
         manifest = {
             "name": "gamma_sdk",
