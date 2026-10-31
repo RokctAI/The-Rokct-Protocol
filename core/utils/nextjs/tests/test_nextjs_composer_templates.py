@@ -22,8 +22,7 @@ core/utils/flutter/tests/test_composer_templates.py.
   * a template whose sdks[] lists any SDK beyond the kernel and seam SDKs
     (base_sdk, auth_sdk, telemetry_sdk, corporate_sdk) flags exactly one of
     them home; no template flags more than one; the kernel and seam SDKs
-    are never home (southriver-web.json composes only those, so it has no
-    home SDK until the South River home SDK exists)
+    are never home
   * order_sdks_for_install() puts each template's home SDK directly behind
     the last kernel entry (telemetry_sdk, base_sdk) listed ahead of it
 
@@ -51,8 +50,8 @@ NEVER_HOME = ("base_sdk", "auth_sdk", "telemetry_sdk", "corporate_sdk")
 # delivery_sdk, zones `delivery/nextjs` - the storefront that sells the
 # delivery platform and the door to the tenant portal; products_sdk, which
 # carried the flag provisionally, is a portal part). None pins a template
-# that deliberately has no home SDK yet (southriver-web.json: the kernel
-# plus corporate_sdk only, until the South River home SDK exists).
+# that deliberately has no home SDK yet (none today; southriver-web.json
+# gained southriver_sdk, corporate southriver/nextjs).
 EXPECTED_HOME = {
     "supacharge.json": "lms_sdk",
     "rokctapp.json": "agent_sdk",
@@ -61,7 +60,7 @@ EXPECTED_HOME = {
     "telephony.json": "telephony_sdk",
     "hosting.json": "hosting_sdk",
     "polaris.json": "polaris_sdk",
-    "southriver-web.json": None,
+    "southriver-web.json": "southriver_sdk",
 }
 
 

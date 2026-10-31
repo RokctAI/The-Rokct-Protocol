@@ -2,7 +2,7 @@
   "name": "southriver-web_composer",
   "version": "1.0.0",
   "description": "Compose template for the South River web shell (RokctAI/southriver-web, app_type southriver-web): a Next.js shell with no backend, so it carries no frappe modules - only the sdks[] the Next.js composer reads",
-  "_comment": "The first Next.js-only registry template: RokctAI/southriver-web is a thin shell (a one-line .rokct/config/app_type naming this template) with NO backend - it runs base_sdk's local data mode, reading its site content from the shell's own data/ folder - so modules[] is empty on purpose and there is no rcore app behind it. sdks[] is the kernel (telemetry_sdk, base_sdk) plus corporate_sdk for the company pages. NO auth_sdk: there is no backend to sign in to, so the /login and /register routes and the NextAuth session seam have nothing to talk to. NO lms_sdk or any other product SDK. No home SDK yet (no entry carries home_sdk: true, so base_sdk's landing host serves the shell in composer.json order): the South River home SDK is added to this template later, directly behind base_sdk, when it exists. Data mode is not a template concern - the shell's own composer.json carries its \"data\" key.",
+  "_comment": "The first Next.js-only registry template: RokctAI/southriver-web is a thin shell (a one-line .rokct/config/app_type naming this template) with NO backend - it runs base_sdk's local data mode, reading its site content from the shell's own data/ folder - so modules[] is empty on purpose and there is no rcore app behind it. sdks[] is the kernel (telemetry_sdk, base_sdk), the South River home SDK and corporate_sdk for the company pages. NO auth_sdk: there is no backend to sign in to, so the /login and /register routes and the NextAuth session seam have nothing to talk to. NO lms_sdk or any other product SDK besides the home SDK. southriver_sdk (corporate southriver/nextjs) is the home SDK, listed directly behind base_sdk: it owns app/page.tsx and fills base_sdk's landing registries with the private-label water landing. Data mode is not a template concern - the shell's own composer.json carries its \"data\" key.",
   "sdks": [
     {
       "name": "telemetry_sdk",
@@ -27,6 +27,18 @@
       "home_sdk": false,
       "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
       "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile, and (base_sdk >= 1.35.0) the lib/site-data reader and generate.mjs bundler behind the shell's local data mode. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the southriver-web shell provides the host-owned half, and with no auth_sdk composed the session seam resolves to null (the local-mode shell has no signed-in surface)."
+    },
+    {
+      "name": "southriver_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/corporate",
+      "path": "../corporate/southriver/nextjs",
+      "ref": "main",
+      "sha256": "f68db995960ea2a849121682ab0b11b6f6d6856debd7affc7dcb316d0973db51",
+      "home_sdk": true,
+      "_sha256_comment": "SHA-256 of southriver/nextjs/install.py at corporate claude/project-thread-3o3tuh (corporate#150; polaris/nextjs's installer text with sdk_name 'southriver_sdk'); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The South River SDK's nextjs half (southriver_sdk >= 1.0.0, corporate southriver/nextjs; only a nextjs half, South River has no backend): the South River site's home SDK. Ray, 2026-10-31, on the private-label landing render: \"build, we will change when built\". Its app_type[\"southriver-web\"] block owns app/page.tsx (every visitor to base_sdk's /landing; there is no signed-in surface) and fills base_sdk's landing registries with one module each: hero copy (empty; the hero form carries the h1), hero form (the red label-identity poster with a private-label bottle and South River's own 1.25 litre), header menu (wordmark only, six anchors, a WhatsApp order action), site metadata and a null plans query; plus eight page sections (theme, how, pricing, who, water with the label's composition table, order, contact, footer with corporate_sdk's legal links). No dependencies and no backend calls. Listed directly behind base_sdk, as the home_sdk composer orders it at install time anyway; its 'requires' names files base_sdk installs (the landing registries, app/actions/base/legal.ts, the footer chrome) plus the host-owned app/config/constants.ts and platform.ts - warn-only via check_requires()."
     },
     {
       "name": "corporate_sdk",
