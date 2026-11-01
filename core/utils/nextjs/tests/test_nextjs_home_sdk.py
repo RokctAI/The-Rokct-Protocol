@@ -669,6 +669,60 @@ class TestSingleAnswerRegistries(HomeSdkTestBase):
         )
 
 
+class TestHeaderAuthMarkerTakesANonHomeSdk(HomeSdkTestBase):
+    """base_sdk 1.60.0's header-auth slot (components/custom/landing/
+    header-auth.ts) is filled by the SDK that owns sign-in (auth_sdk), which
+    is never the home SDK - so the marker must stay out of
+    SINGLE_ANSWER_MARKERS and a non-home SDK's line there must be injected
+    (Ray, 2026-11-01: "we just moving login and signup buttons to
+    injection")."""
+
+    HEADER_AUTH_REL = "components/custom/landing/header-auth.ts"
+    HEADER_AUTH_MARKER = "// @rokct-sdk-header-auth-start"
+
+    def setUp(self):
+        super().setUp()
+        path = os.path.join(self.project_root, self.HEADER_AUTH_REL)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(
+                "export const HEADER_AUTH = [\n"
+                f"  {self.HEADER_AUTH_MARKER}\n"
+                "  // @rokct-sdk-header-auth-end\n"
+                "];\n"
+            )
+        manifest_path = os.path.join(self.cache_dir, "alpha", "manifest.json")
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        manifest["integrations"].append(
+            {
+                "target": self.HEADER_AUTH_REL,
+                "placeholder": self.HEADER_AUTH_MARKER,
+                "replacement": '  { id: "alpha-header-auth" },',
+            }
+        )
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f)
+
+    def test_header_auth_is_not_a_single_answer_marker(self):
+        installer = self.import_installer()
+        self.assertNotIn(
+            "@rokct-sdk-header-auth-start", installer.SINGLE_ANSWER_MARKERS
+        )
+        self.assertIsNone(installer._single_answer_marker(self.HEADER_AUTH_MARKER))
+
+    def test_non_home_sdk_injects_at_header_auth(self):
+        outputs = self.compose(["alpha_sdk", "beta_sdk"], home="beta_sdk")
+        self.assertNotIn("skipped @rokct-sdk-header-auth-start", outputs["alpha_sdk"])
+        header_auth = self.read(self.HEADER_AUTH_REL)
+        self.assertIn('{ id: "alpha-header-auth" },', header_auth)
+        # The single-answer rule still holds for the home-only markers.
+        self.assertNotIn("alpha-header-menu", self.read(HEADER_MENU_REL))
+
+    def test_non_home_sdk_injects_at_header_auth_in_either_order(self):
+        self.compose(["beta_sdk", "alpha_sdk"], home="beta_sdk")
+        self.assertIn('{ id: "alpha-header-auth" },', self.read(self.HEADER_AUTH_REL))
+
+
 class TestRecordHomeSdk(HomeSdkTestBase):
     def test_home_is_recorded_and_survives_the_installers(self):
         composer = self.import_composer()
