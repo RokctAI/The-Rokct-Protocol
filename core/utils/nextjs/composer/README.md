@@ -81,10 +81,6 @@ same storefront shape selling the Telephony plan category; no `agent_sdk`),
 block: a lender's site, landing for visitors, the back office for lending staff
 and the borrower area at `/loans`; no `agent_sdk`, no `erp_sdk`; backend is the
 lender's site with the frappe `polaris` module),
-`sticks.json` → `agent_sdk` (agent `agent/nextjs`, its `app_type.sticks`
-block, which sets `"common": false`: the Sticks website at RokctAI/sticks-web,
-a landing for an app-only product with no backend and no sign-in; it takes
-none of agent_sdk's rokct.ai top level, and composes no `auth_sdk`),
 A template without the key still composes as before: lines append in order
 at a contested marker, with a warning.
 
@@ -116,7 +112,11 @@ does the same: it reads the SDK list from `composer.json` and leaves the
 file as committed. southriver-web composes this way.
 
 A client site needs no template here at all (see "No template: the shell's
-own composer.json" above). RokctAI/southriver-web (`app_type`
+own composer.json" above). RokctAI/sticks-web (the Sticks website, `app_type` `sticks`, no backend, no
+sign-in) composes the same way: its own `composer.json` lists the kernel and
+`agent_sdk` as home, whose `app_type.sticks` block sets `"common": false` so
+none of agent_sdk's rokct.ai top level reaches it (see
+`core/utils/nextjs/README.md`). RokctAI/southriver-web (`app_type`
 `southriver-web`, no backend, local data mode) commits a `composer.json`
 listing the kernel (`telemetry_sdk`, `base_sdk`) and `corporate_sdk` as the
 home SDK; no `auth_sdk` (nothing to sign in to). The data mode is never a
