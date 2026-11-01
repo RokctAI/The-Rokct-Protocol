@@ -166,6 +166,14 @@ is common and always installs.
 }
 ```
 
+**`"common": false` on a persona block** (since the Sticks website, 2026-11-01) — a persona block
+that sets it opts the host whose marker names it out of the manifest's top level: only that block's
+`installs`, `dependencies`, `devDependencies`, `integrations`, `requires` and `sdk_requires` apply there.
+Every other host, and a host with no marker, composes exactly as before (top level plus its own block).
+It lets an SDK whose top level is one shell's whole product be the home of a second, unrelated shell:
+agent_sdk's top level is rokct.ai (chat, register, opportunities; it needs `db/`, auth and a backend),
+and its `app_type.sticks` block is only the Sticks landing. Absent or `true`: unchanged.
+
 **The manifest's `home` block** (since the local-data sites, 2026-10-31) — optional, the same keys as
 an `app_type` persona block plus `site_data`, merged in ONLY when this SDK is the shell's home SDK
 (`"home_sdk": true` on its `composer.json` entry), whatever the `app_type`. It lets one SDK be the home of
