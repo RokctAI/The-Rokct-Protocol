@@ -49,6 +49,7 @@ jobs:
         run: |
           python3 core/utils/nextjs/tests/test_nextjs_composer_templates.py
           python3 core/utils/nextjs/tests/test_nextjs_home_sdk.py
+          python3 core/utils/nextjs/tests/test_nextjs_common_false.py
       - name: Generated compose example matches the index, templates and census
         run: |
           python3 core/utils/nextjs/tests/test_nextjs_compose_example.py

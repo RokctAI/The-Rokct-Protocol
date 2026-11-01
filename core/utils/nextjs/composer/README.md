@@ -81,6 +81,10 @@ same storefront shape selling the Telephony plan category; no `agent_sdk`),
 block: a lender's site, landing for visitors, the back office for lending staff
 and the borrower area at `/loans`; no `agent_sdk`, no `erp_sdk`; backend is the
 lender's site with the frappe `polaris` module),
+`sticks.json` → `agent_sdk` (agent `agent/nextjs`, its `app_type.sticks`
+block, which sets `"common": false`: the Sticks website at RokctAI/sticks-web,
+a landing for an app-only product with no backend and no sign-in; it takes
+none of agent_sdk's rokct.ai top level, and composes no `auth_sdk`),
 A template without the key still composes as before: lines append in order
 at a contested marker, with a warning.
 

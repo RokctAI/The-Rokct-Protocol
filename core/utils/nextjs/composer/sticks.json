@@ -1,0 +1,44 @@
+{
+  "name": "rcore_app",
+  "version": "1.0.0",
+  "description": "Next.js compose template for the Sticks website (RokctAI/sticks-web, app_type sticks): the sdks[] it composes. No backend: the site only explains Sticks and links the app's downloads, and nobody signs in on it.",
+  "_comment": "Sticks is ROKCT's own product, an app-only service: people use it in the Sticks app (RokctAI/sticks, Dart), and the Next.js site is the landing shell only (Ray, 2026-10-11). There is no new sticks SDK (Ray, 2026-10-11: the AI lives in agent_sdk), so agent_sdk is home, through its app_type.sticks block. That block sets \"common\": false, so this shell takes none of agent_sdk's top level (rokct.ai's chat, register flow and opportunities, which need db/, auth and a backend): only the Sticks landing. No auth_sdk: the site has nothing to sign in to (the brief: 'There is no website to sign up on'), so the header draws no Log in or Sign up. No corporate_sdk: no company pages. Merge order: The-Rokct-Protocol (this template and the common:false installer) and agent_sdk 1.24.0 first, then the sticks-web compose PR.",
+  "sdks": [
+    {
+      "name": "telemetry_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/telemetry/nextjs",
+      "ref": "main",
+      "sha256": "318d20eb7123ffaa549618d06b4530dfce5df9ba0b07df2328c0c6e1738e36c4",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of telemetry/nextjs/install.py at core@573d570; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Mandatory in every Next.js composition (SDK_ECOSYSTEM.md hard invariant 9, mirroring the flutter templates' telemetry_sdk entries). Empty-manifest seam owner: installs nothing; base_sdk's kernel carries the TelemetryClient."
+    },
+    {
+      "name": "base_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/core",
+      "path": "../core/base/nextjs",
+      "ref": "main",
+      "sha256": "b6c434a1c05611d29f1018f68b9423383f7ecfbf9cc1efe74825ba6c4df98fff",
+      "home_sdk": false,
+      "_sha256_comment": "SHA-256 of base/nextjs/install.py at core@573d570 (git blob 7020b16a, 1074 bytes); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "The base SDK's nextjs half (core#160): the platform kernel — app/services/base (platform gateway, tenant hosts, session, telemetry), the base admin content/settings/system actions and pages, the manager shell, the shared app sidebar, nav-user/team-switcher, date-range-picker and use-mobile. Composed here because telemetry_sdk 'requires' app/services/base/platform-gateway.ts, which only this half installs: without it the supacharge-web composed build cannot resolve @/app/services/base/platform-gateway. Its own 'requires' names host-owned files (lib/utils.ts, the components/ui primitives, components/custom/branding.tsx, app/config/*, app/lib/*) plus merchants_sdk's shop action and merchant-nav and auth_sdk's app/lib/session.ts — warn-only via check_requires(), not an auto-install; the telephony shell provides the host-owned half."
+    },
+    {
+      "name": "agent_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/agent",
+      "path": "../agent/agent/nextjs",
+      "ref": "main",
+      "sha256": "c629e669d7aeba008b2e1c23a845eb65628f09e8538f738abbfa1385bf1088a3",
+      "home_sdk": true,
+      "_sha256_comment": "SHA-256 of agent/nextjs/install.py at agent@68ed5d75 (the generic installer with sdk_name 'agent_sdk'; the same digest the consumers index pins); required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Home SDK through app_type.sticks (agent_sdk >= 1.24.0): app/page.tsx draws the Sticks landing Ray approved (the concept artifact PDm9514Z16ypx8dk3oQQtq), its site metadata registers at base_sdk's site-metadata marker, and \"common\": false (Protocol installer >= this template's PR) keeps agent_sdk's rokct.ai top level out of the shell."
+    }
+  ]
+}
