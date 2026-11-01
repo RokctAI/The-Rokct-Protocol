@@ -59,7 +59,9 @@ Every `sdks[]` entry carries `"home_sdk": true|false`, the same flag the flutter
 templates set: exactly one entry per product template is the shell's home SDK —
 it owns `app/page.tsx` and base_sdk's single-answer landing registries
 (`header-menu`, `hero-form`, `plans-query`, `site-metadata`; `hero-copy` and
-`page-sections` merge every contributor). The Next.js composer installs the home
+`page-sections` merge every contributor, and `header-auth`, base_sdk 1.60.0's
+header Log in / Sign up slot, takes the line of the SDK that owns sign-in,
+auth_sdk, which is never home). The Next.js composer installs the home
 SDK directly behind the kernel entries (`telemetry_sdk`, `base_sdk`), other SDKs
 never write the paths its manifest installs, only the home SDK's line is injected
 at a single-answer marker (another SDK's line there is skipped with a log line,

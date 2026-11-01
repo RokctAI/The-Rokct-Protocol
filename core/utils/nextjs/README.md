@@ -208,7 +208,8 @@ the pre-role behavior.
   overwritten), `update_integrations()` injects only the home SDK's line at base_sdk's single-answer
   landing markers (`@rokct-sdk-header-menu-start`, `-hero-form-`, `-plans-query-`, `-site-metadata-`;
   another SDK's line there is skipped with `[~] skipped <marker> from <pkg>: registry owned by home SDK
-  <name>`, never a failure; `hero-copy` and `page-sections` stay multi-contributor), and the name is
+  <name>`, never a failure; `hero-copy`, `page-sections` and base_sdk 1.60.0's `header-auth` slot, which auth_sdk fills, stay
+  multi-contributor), and the name is
   recorded as `"home_sdk"` in `.rokct/cache/install_state.json`. Without the flag the composer behaves
   as before: lines append in order, with a warning at a contested marker. When `composer.json` is absent
   (a shell's `scripts/compose.sh` composing OFFLINE from its committed cache, the profile discarded after
