@@ -68,13 +68,17 @@ class CommonFalseTest(unittest.TestCase):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 f.write(f"// {rel}\n")
-        self.write_json(os.path.join(self.root, "package.json"), {"name": "t", "dependencies": {}})
+        self.write_json(
+            os.path.join(self.root, "package.json"), {"name": "t", "dependencies": {}}
+        )
         with open(os.path.join(self.root, "tsconfig.json"), "w", encoding="utf-8") as f:
             f.write('{"compilerOptions": {"paths": {"@/*": ["./*"]}}}\n')
         registry = os.path.join(self.root, REGISTRY_REL)
         os.makedirs(os.path.dirname(registry), exist_ok=True)
         with open(registry, "w", encoding="utf-8") as f:
-            f.write(f"export const R = [\n  {MARKER}\n  {MARKER.replace('-start', '-end')}\n];\n")
+            f.write(
+                f"export const R = [\n  {MARKER}\n  {MARKER.replace('-start', '-end')}\n];\n"
+            )
         self.manifest = {
             "name": "demo_sdk",
             "version": "1.0.0",
@@ -82,15 +86,25 @@ class CommonFalseTest(unittest.TestCase):
             "dependencies": {"top-only": "^1.0.0"},
             "requires": ["db/index.ts"],
             "integrations": [
-                {"target": "app/sidebar.tsx", "placeholder": "// @x-start", "replacement": "  top,"}
+                {
+                    "target": "app/sidebar.tsx",
+                    "placeholder": "// @x-start",
+                    "replacement": "  top,",
+                }
             ],
             "app_type": {
                 "sticks": {
                     "common": False,
-                    "installs": [{"from": "templates/sticks/app/page.tsx", "to": "app/page.tsx"}],
+                    "installs": [
+                        {"from": "templates/sticks/app/page.tsx", "to": "app/page.tsx"}
+                    ],
                     "dependencies": {"sticks-only": "^2.0.0"},
                     "integrations": [
-                        {"target": REGISTRY_REL, "placeholder": MARKER, "replacement": '  { id: "sticks" },'}
+                        {
+                            "target": REGISTRY_REL,
+                            "placeholder": MARKER,
+                            "replacement": '  { id: "sticks" },',
+                        }
                     ],
                 },
                 "rokct": {"installs": []},
@@ -103,7 +117,9 @@ class CommonFalseTest(unittest.TestCase):
             json.dump(data, f)
 
     def write_manifest(self):
-        self.write_json(os.path.join(self.rokct, "cache", "demo", "manifest.json"), self.manifest)
+        self.write_json(
+            os.path.join(self.rokct, "cache", "demo", "manifest.json"), self.manifest
+        )
 
     def set_app_type(self, value):
         path = os.path.join(self.rokct, "config", "app_type")
@@ -169,9 +185,7 @@ class CommonFalseTest(unittest.TestCase):
         _counter += 1
         composer = _load(_COMPOSER_SRC, f"common_false_composer_{_counter}")
         composer.PROJECT_ROOT = self.root
-        self.assertIs(
-            composer.common_manifest(self.manifest, "rokct"), self.manifest
-        )
+        self.assertIs(composer.common_manifest(self.manifest, "rokct"), self.manifest)
         stripped = composer.common_manifest(self.manifest, "sticks")
         for key in ("installs", "dependencies", "requires", "integrations"):
             self.assertNotIn(key, stripped)

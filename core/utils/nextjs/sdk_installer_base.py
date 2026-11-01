@@ -85,7 +85,15 @@ def common_manifest(manifest, app_type):
         return {
             k: v
             for k, v in manifest.items()
-            if k not in ("installs", "dependencies", "devDependencies", "integrations", "requires", "sdk_requires")
+            if k
+            not in (
+                "installs",
+                "dependencies",
+                "devDependencies",
+                "integrations",
+                "requires",
+                "sdk_requires",
+            )
         }
     return manifest
 
@@ -454,7 +462,9 @@ def install_sdk_files(sdk_name):
         print(f'[i] {sdk_name} is the home SDK: its "home" block applies.')
     common = common_manifest(manifest, current_app_type)
     if common is not manifest:
-        print(f'[i] {sdk_name}: app_type "{current_app_type}" sets "common": false; its top level is skipped.')
+        print(
+            f'[i] {sdk_name}: app_type "{current_app_type}" sets "common": false; its top level is skipped.'
+        )
         manifest = common
 
     version = manifest.get("version", "1.0.0")
