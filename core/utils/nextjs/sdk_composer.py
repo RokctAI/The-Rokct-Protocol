@@ -186,7 +186,15 @@ def common_manifest(manifest, app_type):
         return {
             k: v
             for k, v in manifest.items()
-            if k not in ("installs", "dependencies", "devDependencies", "integrations", "requires", "sdk_requires")
+            if k
+            not in (
+                "installs",
+                "dependencies",
+                "devDependencies",
+                "integrations",
+                "requires",
+                "sdk_requires",
+            )
         }
     return manifest
 
@@ -968,7 +976,9 @@ def find_missing_sdk_requires(sdks_to_check, all_enabled_sdks):
                 manifest = json.load(f)
         except Exception:
             continue
-        declared = list(common_manifest(manifest, current_app_type).get("sdk_requires") or [])
+        declared = list(
+            common_manifest(manifest, current_app_type).get("sdk_requires") or []
+        )
         flavor = (
             (manifest.get("app_type") or {}).get(current_app_type)
             if current_app_type
