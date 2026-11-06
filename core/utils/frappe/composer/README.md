@@ -145,7 +145,6 @@ Subscription Settings, Subscription Plan Module, Subscription Voucher, Customer
 Wallet, Wallet Ledger, Tenant Payout Request). control#179 removed them and
 re-exports them from the subscriptions and wallet SDKs, so the template is now
 enabled and its `cohosted_apps` check against `control` passes. Its
-`cohosted_apps` entry still names control at `main`: a build without
-`ROKCT_ALLOW_UNPINNED_SDKS=1` (PlatformStack's image build) refuses that mutable
-ref, so pin it to the same control SHA as `fleet`/`provisioning` when those are
-repinned.
+`cohosted_apps` entry pins control to the same SHA as `fleet`/`provisioning`,
+because a build without `ROKCT_ALLOW_UNPINNED_SDKS=1` (PlatformStack's image
+build) refuses a mutable ref such as `main`. Repin all three together.
