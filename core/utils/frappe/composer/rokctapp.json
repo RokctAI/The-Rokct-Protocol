@@ -93,8 +93,26 @@
       "source": "git",
       "git": "https://github.com/RokctAI/productivity",
       "path": "../productivity/crm/frappe",
-      "ref": "main",
+      "ref": "871f01ecf14099f4713d439ed72f1b99ed0b9c5c",
       "_comment": "Core CRM slice (leads, deals, contacts, organizations, notes, tasks, call logs, statuses) ported from Frappenize/crm (frappe/crm fork) into the productivity SDK. Composing this module replaces installing the standalone frappe/crm app — a site must NOT have frappe/crm installed alongside rcore, since the doctype names (CRM Lead, CRM Deal, ...) are intentionally identical and would double-define. Existing sites need one 'bench execute rcore.patches.crm_seed_defaults.execute' to seed default statuses."
+    },
+    {
+      "name": "projects",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/projects/frappe",
+      "ref": "871f01ecf14099f4713d439ed72f1b99ed0b9c5c",
+      "_comment": "ERPNext v16 projects module (project, task, timesheet) excised from erp into the productivity SDK. erp imports it at module level ({app_name}.projects.*), so it composes whenever erp does. Same productivity pin as crm and support: the composer clones one ref per repo. Pinned at productivity#82's fix commit (erp import paths with the tenant. segment)."
+    },
+    {
+      "name": "support",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/productivity",
+      "path": "../productivity/support/frappe",
+      "ref": "871f01ecf14099f4713d439ed72f1b99ed0b9c5c",
+      "_comment": "ERPNext v16 support module (issue, service level agreement, warranty claim) excised from erp into the productivity SDK. erp imports it at module level ({app_name}.support.*), so it composes whenever erp does. Same productivity pin as crm and projects. Pinned at productivity#82's fix commit, which adds the missing tenant. segment to its erp import paths (the real Ignition install stopped there)."
     },
     {
       "name": "studio",

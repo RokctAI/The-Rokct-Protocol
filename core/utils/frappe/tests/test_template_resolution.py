@@ -831,5 +831,24 @@ class RealRegistryTest(unittest.TestCase):
             self.assertEqual(len(refs), 1, f"{repo} entries must share one ref")
 
 
+class RokctappErpCompanionsTest(unittest.TestCase):
+    """erp imports {app_name}.projects/support at module level, so rokctapp
+    must compose both productivity modules beside erp (a real Ignition
+    install stopped at Pick List / Sales Invoice without them)."""
+
+    def test_rokctapp_composes_projects_and_support(self):
+        with open(os.path.join(_REGISTRY_DIR, "rokctapp.json"), encoding="utf-8") as fh:
+            data = json.load(fh)
+        mods = {m["name"]: m for m in data["modules"] if m.get("enabled", True)}
+        self.assertIn("erp", mods)
+        prod = "https://github.com/RokctAI/productivity"
+        for name in ("crm", "projects", "support"):
+            self.assertIn(name, mods)
+            self.assertEqual(mods[name]["git"], prod)
+            self.assertEqual(mods[name]["path"], f"../productivity/{name}/frappe")
+        # The composer clones one ref per repo.
+        self.assertEqual(len({m["ref"] for m in mods.values() if m["git"] == prod}), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
