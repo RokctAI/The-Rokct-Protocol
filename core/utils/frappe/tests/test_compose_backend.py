@@ -1507,7 +1507,7 @@ class RokctHubTemplateTest(unittest.TestCase):
 
 class ControlRepoPinTest(unittest.TestCase):
     CONTROL = "https://github.com/RokctAI/control"
-    PIN = "cb6d4adb452eb6338a5d8929bb461db0768a6946"
+    PIN = "7db52316a90d9c0bd0b150558a423c659c82b4d3"
 
     def test_control_repo_modules_share_one_pin(self):
         base = os.path.join(os.path.dirname(_COMPOSER_SRC), "composer")
