@@ -82,7 +82,7 @@ Common to all products: `base`, `auth`, `users`, `subscriptions`, `gateways`,
 | `rokctapp.json` | `erp`, `hrms`, `crm` (erp+hrms pinned to the pay head carrying the fleet doctype-collision exclusion, pay#35; hrms composes only alongside erp) |
 | `deliveryplatform.json` | `merchants`, `products`, `orders`, `promotions`, `loyalty`, `booking`, `kitchen`, `delivery`, `map`, `zones`, `weather`, `hardware`, `builder`, `erp`, `hrms`, `crm` (erp/hrms/crm serve the delivery tenant's own company, not its merchants; erp+hrms carry rokctapp.json's pay pin) |
 | `polaris.json` | `polaris`, `crm`, `erp`, `hrms` (polaris `loan_application` reads CRM Lead.kyc_status; erp+hrms carry rokctapp.json's pay pin) |
-| `rokcthub.json` | **Disabled** (`"enabled": false`, not in any build/CI). rokctapp.json's module set, hub-only: `subscriptions` and `wallet` carry `"personas": ["tenant", "control"]` so the control-persona code composes only here and the tenant rokctapp docker never gets it. Waits for the control app to drop its seven duplicate doctypes (see below) |
+| `rokcthub.json` | **Enabled** (`"enabled": true`, since control#179 dropped control's seven duplicate doctypes). rokctapp.json's module set plus `fleet` and `provisioning` (control persona), hub-only: `subscriptions` and `wallet` carry `"personas": ["tenant", "control"]` so the control-persona code composes only here and the tenant rokctapp docker never gets it. Covered by rCore's Compose Test, which composes every registry template. Not yet built into an image: the hub image switches from `rokctapp.json` to this template after control#198 (composed billing/wallet guards) merges, this template's control/agent/pay pins move to the merge SHAs, and PlatformStack builds with `PRODUCT=rokcthub` |
 | `control.json` | **Deprecated** — never activated; the hub's rcore uses `rokctapp.json` (Ray 2026-10-24). Kept as a record: `tender`, `weather` (hub/control docker; composes an app named `control`, not `rcore`; tender is control-only per owner ruling 2026-08-18; weather composes its hub-side `src/control/` persona tree here — zones#54/#55; the `control` module itself joins when the control repo's SDK-ification lands) |
 | `rpanel.json` | NOT the common set: `hosting` only (the rPanel Frappe shell, RokctAI/rPanel; composes an app named `rpanel`, not `rcore`, keeping the live hub app name as `control.json` does; rpanel installs on the hub beside `control`, which already carries the common modules; the shell commits its composed output because it is open source, Ray 2026-09-26) |
 
@@ -139,8 +139,13 @@ app's checkout on the same site). After composing, the composer fails the build
 if the composed app defines any DocType that a cohosted app also defines.
 
 A template with top-level `"enabled": false` is refused by the composer unless
-`ROKCT_COMPOSE_DISABLED_TEMPLATES=1` is set. `rokcthub.json` is disabled until
-the control app drops its seven duplicate doctypes: Company Subscription,
+`ROKCT_COMPOSE_DISABLED_TEMPLATES=1` is set. `rokcthub.json` was disabled until
+the control app dropped its seven duplicate doctypes (Company Subscription,
 Subscription Settings, Subscription Plan Module, Subscription Voucher, Customer
-Wallet, Wallet Ledger, Tenant Payout Request. Until then its `cohosted_apps`
-check against `control` would fail.
+Wallet, Wallet Ledger, Tenant Payout Request). control#179 removed them and
+re-exports them from the subscriptions and wallet SDKs, so the template is now
+enabled and its `cohosted_apps` check against `control` passes. Its
+`cohosted_apps` entry still names control at `main`: a build without
+`ROKCT_ALLOW_UNPINNED_SDKS=1` (PlatformStack's image build) refuses that mutable
+ref, so pin it to the same control SHA as `fleet`/`provisioning` when those are
+repinned.
