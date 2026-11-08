@@ -280,6 +280,7 @@ def check_versions(ctx, rule):
         and "/tests/" not in "/" + p
         and not p.startswith("docs/")
         and not os.path.basename(p).startswith("test_")
+        and not any(fnmatch.fnmatch(p, g) for g in rule.get("ignore") or ())
     ]
     vfiles = [p for p in changed if os.path.basename(p) in VERSION_FILES]
     logs = [p for p in changed if os.path.basename(p).upper() == "CHANGELOG.MD"]
@@ -332,10 +333,12 @@ def check_versions(ctx, rule):
         return READ, "; ".join(notes)
     if not vfiles and not logs:
         return READ if code else INFO, "no version file or CHANGELOG touched"
+    # a manifest with no "version" key is not a version file (commerce#187 read "1 version file")
+    counted = [p for p in vfiles if version_in(ctx.show(ctx.head, p), p)]
     return (
         PASS,
         "versions consistent in %d version file(s), %d CHANGELOG(s), every changed package bumped%s"
-        % (len(vfiles), len(logs), (" (" + "; ".join(notes) + ")") if notes else ""),
+        % (len(counted), len(logs), (" (" + "; ".join(notes) + ")") if notes else ""),
     )
 
 
@@ -387,7 +390,9 @@ def check_command(ctx, rule):
             "%s: exit %d, %d passed, %d failed, %d errors (allowed %d), %d skipped"
             % (rule["cmd"], p.returncode, passed, failed, errors, allowed, skipped)
         )
-        claimed = [int(x) for x in re.findall(r"(\d+) passed", ctx.body or "")]
+        claimed = [int(x) for x in re.findall(r"(\d+) passed", ctx.body or "")] + [
+            int(x) for x in re.findall(r"(\d+) tests?,? OK", ctx.body or "")
+        ]  # pytest "70 passed" and unittest "866 tests, OK" (Pulsar PR bodies)
         explained = p.returncode == 0 or (
             allowed and 0 < errors <= allowed and failed == 0
         )
