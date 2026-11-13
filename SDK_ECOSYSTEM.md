@@ -768,6 +768,20 @@ This repo's runtime-fetched-and-executed files are pinned. See
     the corner pill stays. A new profile page is not complete until its tour
     step shows the nav.
 
+16. **No spinners: loading states use shimmers** (standing rule, Ray
+    2026-11-13: "No spinner, use shimmers"). A screen, list, card or sheet
+    that waits for data shows a shimmer skeleton, never a
+    `CircularProgressIndicator` or `CupertinoActivityIndicator` (web: no
+    `animate-spin` / spinner component; use a skeleton). In Dart use
+    `base_sdk`'s `Loading()` (a shimmer since base_sdk 1.109.0), `LoadingList`,
+    `LoadingGrid`, `TabBarLoading` or wrap your own placeholder in
+    `AppShimmer`. Renders, store screenshots, SVG/PNG captures and tours show
+    neither a spinner nor a shimmer: capture after the demo data has loaded.
+    Enforced by the compliance check `no-spinner` (layer 21) in
+    `shared-workflows/scripts/compliance`, run by
+    `sdk_validator.py --compliance`; it is a warning while the remaining
+    small in-button spinners are replaced.
+
 ## Gateway `cmd` co-location — an SDK calls only its own backend
 
 Standing rule, Ray 2026-09-02 ("make it a rule"). An SDK's Dart half (and its
