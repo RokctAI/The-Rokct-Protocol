@@ -23,7 +23,9 @@ import sys
 import tempfile
 import unittest
 
-_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "compose_backend.py")
+_SRC = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "compose_backend.py"
+)
 
 
 class PulsarProvidedTest(unittest.TestCase):
@@ -42,19 +44,26 @@ class PulsarProvidedTest(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def test_only_pulsar_templates_get_provided(self):
-        self.assertEqual(self.mod.pulsar_provided({"runtime": "pulsar"}), self.mod.PULSAR_PROVIDED)
+        self.assertEqual(
+            self.mod.pulsar_provided({"runtime": "pulsar"}), self.mod.PULSAR_PROVIDED
+        )
         self.assertEqual(self.mod.pulsar_provided({}), ())
 
     def test_requirement_on_provided_part_is_satisfied(self):
         modules = [{"name": "forex", "enabled": True}]
         reqs = {"forex": ["auth", "users", "base"]}
         provided = self.mod.pulsar_provided({"runtime": "pulsar"})
-        self.assertEqual(self.mod.find_missing_sdk_requires(modules, reqs, provided), [("forex", "base")])
+        self.assertEqual(
+            self.mod.find_missing_sdk_requires(modules, reqs, provided),
+            [("forex", "base")],
+        )
         self.assertEqual(len(self.mod.find_missing_sdk_requires(modules, reqs)), 3)
 
     def test_provided_names_never_reach_requirements_txt(self):
-        manifests = {"forex": {"dependencies": ["auth", "users", "requests==2.0"]},
-                     "erp": {"dependencies": ["auth", "rapidfuzz~=3.14.3"]}}
+        manifests = {
+            "forex": {"dependencies": ["auth", "users", "requests==2.0"]},
+            "erp": {"dependencies": ["auth", "rapidfuzz~=3.14.3"]},
+        }
         self.mod.merge_dependencies(self.root, manifests, self.mod.PULSAR_PROVIDED)
         with open(os.path.join(self.root, "requirements.txt")) as f:
             lines = [ln.strip() for ln in f if ln.strip() and not ln.startswith("#")]
