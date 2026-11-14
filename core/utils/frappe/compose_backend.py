@@ -1931,15 +1931,19 @@ def warn_persona_matches_no_manifest(current_app_type, modules, manifests):
     return message
 
 
-def merge_dependencies(project_root, compiled_manifests):
+def merge_dependencies(project_root, compiled_manifests, provided=()):
     # Collect all dependencies from manifests, deduped by package NAME so the
     # same package pinned differently by two manifests doesn't get injected
     # twice. Iterate deterministically (sorted) and keep the first occurrence.
+    # Names Pulsar carries (`provided`) are not pip packages and are dropped.
     all_deps = []
     seen_names = set()
     raw_deps = set()
+    skip = {_sdk_name(p) for p in provided}
     for manifest in compiled_manifests.values():
         for d in manifest.get("dependencies", []):
+            if _dep_name(d) in skip:
+                continue
             raw_deps.add(d.strip())
     for d in sorted(raw_deps):
         name = _dep_name(d)
@@ -2082,9 +2086,21 @@ def collect_sdk_requires(modules, resolved_sources, current_app_type=None):
     return requirements
 
 
-def find_missing_sdk_requires(modules, requirements):
-    """[(module, required)] for every requirement not an enabled module."""
+# Shared parts that come with Pulsar (core/pulsar/pulsar/sdk_deps.py PROVIDED; keep the two in step). On a
+# template with "runtime": "pulsar" they are never poured or pip-installed, so two apps never install them
+# twice; a module that requires one is satisfied by Pulsar itself (Ray, 2026-11-14).
+PULSAR_PROVIDED = ("auth", "users", "wallet", "subscriptions")
+
+
+def pulsar_provided(config):
+    """The shared SDK names Pulsar carries for this template, or () when it does not run on Pulsar."""
+    return PULSAR_PROVIDED if (config or {}).get("runtime") == "pulsar" else ()
+
+
+def find_missing_sdk_requires(modules, requirements, provided=()):
+    """[(module, required)] for every requirement not an enabled module (nor carried by Pulsar)."""
     enabled = {_sdk_name(m["name"]) for m in modules if m.get("enabled", False)}
+    enabled |= {_sdk_name(p) for p in provided}
     missing = []
     for module, declared in requirements.items():
         for req in declared:
@@ -2093,11 +2109,11 @@ def find_missing_sdk_requires(modules, requirements):
     return missing
 
 
-def check_sdk_requires(modules, resolved_sources, current_app_type=None):
+def check_sdk_requires(modules, resolved_sources, current_app_type=None, provided=()):
     """Fail the compose early, with one clear line per gap, when an enabled
     module requires a module the template does not enable."""
     requirements = collect_sdk_requires(modules, resolved_sources, current_app_type)
-    missing = find_missing_sdk_requires(modules, requirements)
+    missing = find_missing_sdk_requires(modules, requirements, provided)
     if not missing:
         return
     for module, req in missing:
@@ -2183,9 +2199,13 @@ def main():
 
     # Fail fast: every enabled module's declared `sdk_requires` must itself
     # be enabled, before anything is poured into the app.
-    check_sdk_requires(modules, resolved_sources, current_app_type)
+    provided = pulsar_provided(config)
+    check_sdk_requires(modules, resolved_sources, current_app_type, provided)
 
     for m in modules:
+        if m.get("enabled", False) and _sdk_name(m["name"]) in provided:
+            print(f"\n[*] Skipping module: {m['name']} (comes with Pulsar)")
+            continue
         if m.get("enabled", False):
             print(f"\n[*] Pouring module: {m['name']}...")
             manifest = compose_module(
@@ -2213,7 +2233,7 @@ def main():
     if compiled_manifests:
         merge_hooks(target_app_path, app_name, compiled_manifests)
         merge_commands(target_app_path, app_name, compiled_manifests)
-        merge_dependencies(PROJECT_ROOT, compiled_manifests)
+        merge_dependencies(PROJECT_ROOT, compiled_manifests, provided)
 
     # Post-compose token lint: composed output must not carry unresolved
     # {app_name}/{module_name} literals (warn; hard error under
