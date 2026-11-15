@@ -490,6 +490,60 @@ class TestCommand(Repo):
         self.assertEqual(len(out.strip().splitlines()), 1)
 
 
+class TestImprovementsFromRuns(Repo):
+    """Gaps the runs showed (core#410, core#357, commerce#187): replayed as tests."""
+
+    def test_ignored_tree_does_not_need_a_version_read(self):
+        # Pulsar (core/pulsar) has no version file: a PR there is INFO, not NEEDS-READ
+        self.branch()
+        write(self.repo, "pulsar/pulsar/stock/x.py", "y = 1\n")
+        self.commit()
+        rule = {"id": "v", "check": "versions", "ignore": ["pulsar/*"]}
+        self.assertEqual(self.one(rule)[0], gk.INFO)
+        self.assertEqual(self.one({"id": "v", "check": "versions"})[0], gk.READ)
+
+    def test_manifest_without_version_is_not_counted(self):
+        self.branch()
+        write(self.repo, "pkg/code.py", "x = 2\n")
+        write(self.repo, "pkg/manifest.json", json.dumps({"version": "1.0.1"}))
+        write(self.repo, "other/manifest.json", json.dumps({"name": "no version here"}))
+        write(
+            self.repo,
+            "pkg/CHANGELOG.md",
+            "# Changelog\n\n## 1.0.1\n- fix\n\n## 1.0.0\n- first\n",
+        )
+        self.commit()
+        status, detail = self.one({"id": "v", "check": "versions", "require_bump": True})
+        self.assertEqual(status, gk.PASS, detail)
+        self.assertIn("1 version file(s)", detail)
+
+    def test_unittest_claim_in_pulsar_wording_is_compared(self):
+        self.branch()
+        write(self.repo, "pkg/code.py", "x = 2\n")
+        self.commit()
+        rule = {
+            "id": "t",
+            "check": "command",
+            "cmd": "python3 -c \"import sys; sys.stderr.write('Ran 5 tests in 0.1s\\n\\nOK\\n')\"",
+        }
+        self.assertEqual(self.one(rule, body="**5 tests, OK (15 skipped)**")[0], gk.PASS)
+        status, detail = self.one(rule, body="**890 tests, OK**")
+        self.assertEqual(status, gk.READ)
+        self.assertIn("890", detail)
+
+    def test_shipped_checklist_scopes_core_test_rules(self):
+        with open(os.path.join(SKILL, "checklist.json")) as f:
+            rules = {r["id"]: r for r in json.load(f)["rules"]}
+        self.branch()
+        write(self.repo, "base/lib/screen.dart", "// ui\n")
+        write(self.repo, "pulsar/pulsar/stock/x.py", "y = 1\n")
+        self.commit()
+        ctx = self.ctx(name="core")
+        self.assertFalse(gk.applies(rules["tests-core-base"], ctx))  # Dart-only base change (core#357)
+        self.assertTrue(gk.applies(rules["tests-core-pulsar"], ctx))
+        self.assertEqual(rules["versions"]["ignore"], ["pulsar/*"])
+
+
 class TestMain(Repo):
     def run_main(self, *extra):
         buf = io.StringIO()
