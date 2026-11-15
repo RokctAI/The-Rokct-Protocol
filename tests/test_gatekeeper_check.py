@@ -513,7 +513,9 @@ class TestImprovementsFromRuns(Repo):
             "# Changelog\n\n## 1.0.1\n- fix\n\n## 1.0.0\n- first\n",
         )
         self.commit()
-        status, detail = self.one({"id": "v", "check": "versions", "require_bump": True})
+        status, detail = self.one(
+            {"id": "v", "check": "versions", "require_bump": True}
+        )
         self.assertEqual(status, gk.PASS, detail)
         self.assertIn("1 version file(s)", detail)
 
@@ -526,7 +528,9 @@ class TestImprovementsFromRuns(Repo):
             "check": "command",
             "cmd": "python3 -c \"import sys; sys.stderr.write('Ran 5 tests in 0.1s\\n\\nOK\\n')\"",
         }
-        self.assertEqual(self.one(rule, body="**5 tests, OK (15 skipped)**")[0], gk.PASS)
+        self.assertEqual(
+            self.one(rule, body="**5 tests, OK (15 skipped)**")[0], gk.PASS
+        )
         status, detail = self.one(rule, body="**890 tests, OK**")
         self.assertEqual(status, gk.READ)
         self.assertIn("890", detail)
@@ -539,7 +543,9 @@ class TestImprovementsFromRuns(Repo):
         write(self.repo, "pulsar/pulsar/stock/x.py", "y = 1\n")
         self.commit()
         ctx = self.ctx(name="core")
-        self.assertFalse(gk.applies(rules["tests-core-base"], ctx))  # Dart-only base change (core#357)
+        self.assertFalse(
+            gk.applies(rules["tests-core-base"], ctx)
+        )  # Dart-only base change (core#357)
         self.assertTrue(gk.applies(rules["tests-core-pulsar"], ctx))
         self.assertEqual(rules["versions"]["ignore"], ["pulsar/*"])
 
