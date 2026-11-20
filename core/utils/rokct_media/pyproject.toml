@@ -76,6 +76,7 @@ packages = [
     "rokct_media.qc",
     "rokct_media.speech",
     "rokct_media.text",
+    "rokct_media.video",
     "rokct_media.voices",
 ]
 

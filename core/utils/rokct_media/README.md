@@ -124,6 +124,16 @@ An ad or spoken-spot JSON goes in, and a mixed, mastered MP3/WAV comes out. The 
 
 The ad format is `rokct_media/compose/ad.schema.json`. The default `voices/` and `cache/`, and any relative paths in an ad, resolve against `ROKCT_MEDIA_COMPOSE_ROOT` if it is set, otherwise against the working folder.
 
+## Level 3 groundwork: vertical video (`rokct_media.video.vertical`)
+
+This builds the ffmpeg graph and command for one 1080x1920 social video:
+- a clip or still, cover-cropped (a still gets a slow zoom);
+- a hook caption, then timed lines, burned in as boxed text;
+- the voice loudness-normalised to -16 LUFS for phone speakers;
+- output as H.264 + AAC with +faststart.
+
+It was moved verbatim from the agent's `tiktok_render.py` (2026-11-20), which now imports it. Shot-making (video models) and longer edits will build on this.
+
 ## Tests
 
 ```bash
