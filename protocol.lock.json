@@ -1,11 +1,11 @@
 {
-  "ref": "f807db0e9bab9d20b43ae5dea65bc34e033a4038",
+  "ref": "ff7e9303b85dbabbac7eb621024ae19cdb274de9",
   "generated_from": "tools/gen_protocol_lock.py",
   "files": {
     "core/templates/.markdownlint.json": "9fed09e4675bcddb2bdc584620d7f3724f165ac1e8871ffa7cd31eea494712f7",
     "core/templates/active_session.txt": "06922aac4f5e7495c10fca09360dcc2bc3b766412e90cc4b9c9978c0fb16195c",
     "core/templates/decision_log.md": "5de01ee1774fd3408fc3051998b59ddb1ed5cd126ff0d3c64a55ccb6dba28544",
-    "core/templates/memory.md": "c83bf446e065ce3a8d8880e8272d358d9c13995761f978095b6de83f8b63f01b",
+    "core/templates/memory.md": "b88c55b6a473e16a10c854fe6513aab4a39da8f6de9c9f699c0d67a3807e61e3",
     "core/templates/project_map.md": "4630c8f4245f860f1b539da1ee4037eca31d38514c7946f24f24d7a3bbdaf897",
     "core/templates/session_summary.md": "2e9d38200a6f15dc7d232c01d0472b539da25c9bce8e482103875e616e33678f",
     "core/utils/agent_delegation/delegate_to_agent.py": "8371e14a76fc68a35ca395f390f76e2ed9c052f29f67ce3742d2f6de4f478b03",
@@ -59,8 +59,8 @@
     "core/utils/startup_os/safe_io.py": "b3afd716283abc9faa2783469a833a0beb8fb5587c0c7dad373c2492efa20368",
     "core/utils/startup_os/schemas.py": "2a9088ae02a07452b428d149dce035fb5c3ef15a9f4047974ddbd4d319de815b",
     "core/utils/startup_os/template_engine.py": "c665050a1149b7ebc6eb0ad91a2d33a955eaa0edcdba198427419447f958f14f",
-    "profiles/local/initiate.py": "ae3a6afe790a00bb78054454c06f9d9de362634a4543b93cb76b946597e7bdf1",
-    "profiles/web/initiate.py": "1f285554e32b5916b622bbf1c0a128c61e966c0de0552f200b5019f94060bb65",
+    "profiles/local/initiate.py": "7e74e74d5a17d70c7f5087091f507c9a8f439eb3ccf5bdac9a9fb4efda342efe",
+    "profiles/web/initiate.py": "2555df8d74091073e0cc46233227151d8144077d56d43ad2a356f9e4dbfcf0a9",
     "workflows/maintenance.yml": "df37cf18061299ce6d413f3f9f5017882a7bd044e56e15bad24a13b03cff473d"
   }
 }
