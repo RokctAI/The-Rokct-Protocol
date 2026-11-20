@@ -22,7 +22,7 @@ SHA-256, then executes it locally in the target app shell.
 import hashlib, os, sys, subprocess, tempfile, urllib.request
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "f807db0e9bab9d20b43ae5dea65bc34e033a4038"
+PROTOCOL_REF = "ff7e9303b85dbabbac7eb621024ae19cdb274de9"
 COMPOSER_PATH = "core/utils/frappe/compose_backend.py"
 COMPOSER_SHA256 = "f0f637b30789965f08608c45d84471c5597df7a50f4c2e13b30ded3d20af43e4"
 GITHUB_RAW_BASE = (
