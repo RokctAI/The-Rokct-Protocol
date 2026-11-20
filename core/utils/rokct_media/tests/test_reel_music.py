@@ -33,7 +33,10 @@ class ReelMusic(unittest.TestCase):
             a, b = Path(d) / "a.wav", Path(d) / "b.wav"
             M.render_music(7, 4, a)
             M.render_music(7, 4, b)
-            self.assertEqual(hashlib.sha256(a.read_bytes()).digest(), hashlib.sha256(b.read_bytes()).digest())
+            self.assertEqual(
+                hashlib.sha256(a.read_bytes()).digest(),
+                hashlib.sha256(b.read_bytes()).digest(),
+            )
             with wave.open(str(a)) as w:
                 self.assertEqual((w.getnchannels(), w.getframerate()), (1, M.RATE))
                 self.assertAlmostEqual(w.getnframes() / M.RATE, 4, delta=0.05)

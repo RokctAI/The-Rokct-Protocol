@@ -24,6 +24,7 @@ re-renders it (and thanks to the line cache, only the lines that changed).
     failed/foo.json         moved here if validation or rendering fails
     failed/foo.error.txt    why
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -51,8 +52,14 @@ def _stable(path: Path, wait: float = 1.0) -> bool:
     return (a.st_size, a.st_mtime_ns) == (b.st_size, b.st_mtime_ns) and b.st_size > 0
 
 
-def watch(inbox: Path, out_root: Path, failed_dir: Path | None = None, interval: float = 3.0,
-          once: bool = False, **make_kwargs) -> None:
+def watch(
+    inbox: Path,
+    out_root: Path,
+    failed_dir: Path | None = None,
+    interval: float = 3.0,
+    once: bool = False,
+    **make_kwargs,
+) -> None:
     inbox = Path(inbox).resolve()
     inbox.mkdir(parents=True, exist_ok=True)
     out_root = Path(out_root).resolve()
@@ -63,7 +70,10 @@ def watch(inbox: Path, out_root: Path, failed_dir: Path | None = None, interval:
         state = json.loads(state_path.read_text())
     except (FileNotFoundError, json.JSONDecodeError):
         state = {}
-    print(f"watching {inbox} -> {out_root} (failures -> {failed_dir}); Ctrl-C to stop", flush=True)
+    print(
+        f"watching {inbox} -> {out_root} (failures -> {failed_dir}); Ctrl-C to stop",
+        flush=True,
+    )
     while True:
         for path in sorted(inbox.glob("*.json")):
             if not _stable(path, 0.5):
@@ -81,7 +91,9 @@ def watch(inbox: Path, out_root: Path, failed_dir: Path | None = None, interval:
                 dest = failed_dir / path.name
                 shutil.move(str(path), dest)
                 (failed_dir / (path.stem + ".error.txt")).write_text(
-                    f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}", encoding="utf-8")
+                    f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}",
+                    encoding="utf-8",
+                )
                 print(f"  FAILED: {exc}\n  moved to {dest}", flush=True)
                 state.pop(path.name, None)
             state_path.write_text(json.dumps(state, indent=1))
