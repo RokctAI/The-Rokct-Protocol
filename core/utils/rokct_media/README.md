@@ -117,10 +117,14 @@ in `rokct_media/speech/stitch.py`; `stitch(..., lead_s=0)` turns it off.
 
 An ad or spoken-spot JSON goes in, and a mixed, mastered MP3/WAV comes out. The voices come from a content-addressed line cache, so only changed lines are re-rendered. On top of the voices go a procedural music bed and sound effects, ducking under speech, loudness normalisation and a true-peak limiter. This code was moved verbatim from factory `radio_ads/adfactory` (2026-11-20), and the factory example ads render byte-identically through it.
 
-    pip install "rokct-media[voice,compose] @ git+https://github.com/RokctAI/The-Rokct-Protocol@<sha>#subdirectory=core/utils/rokct_media"
+```sh
+pip install "rokct-media[voice,compose] @ git+https://github.com/RokctAI/The-Rokct-Protocol@<sha>#subdirectory=core/utils/rokct_media"
+```
 
-    from rokct_media.compose.pipeline import make_ad
-    make_ad("spot.json", "out/", voices_dir=Path("voices"), cache_dir=Path("cache/tts"))
+```python
+from rokct_media.compose.pipeline import make_ad
+make_ad("spot.json", "out/", voices_dir=Path("voices"), cache_dir=Path("cache/tts"))
+```
 
 The ad format is `rokct_media/compose/ad.schema.json`. The default `voices/` and `cache/`, and any relative paths in an ad, resolve against `ROKCT_MEDIA_COMPOSE_ROOT` if it is set, otherwise against the working folder.
 
