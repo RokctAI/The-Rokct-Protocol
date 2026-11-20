@@ -66,6 +66,42 @@ def _run(module: str, argv: list[str], isolate: bool) -> None:
         raise subprocess.CalledProcessError(rc, module)
 
 
+DEFAULT_STEPS = 10
+
+
+def steps_for(sp: dict, voice) -> int:
+    """Diffusion steps: the job's speech.steps when it sets them, else the
+    voice's ddpm_steps (factory lesson_voices.json), else 10. Voice A has
+    no ddpm_steps and stays at 10."""
+    return int(sp.get("steps") or getattr(voice, "ddpm_steps", None) or DEFAULT_STEPS)
+
+
+def gate_argv(voice, sp: dict, last_round: bool) -> list[str]:
+    """The per-voice gate settings for the QC worker (voice_batch/run.py
+    render_rounds): F0 window, similarity minimums, pace (report-only) and,
+    on the last seed round only, the near-miss allowance."""
+    from ..qc import checks as qc_checks
+
+    argv = [
+        "--f0-target",
+        str(voice.f0_target_hz),
+        "--f0-tolerance",
+        str(voice.f0_tolerance_hz),
+        "--sim-short",
+        str(voice.similarity_min_lt_5s or qc_gate.SIM_SHORT),
+        "--sim-long",
+        str(voice.similarity_min_ge_5s or qc_gate.SIM_LONG),
+        "--pace-wpm",
+        str(voice.pace_wpm or qc_checks.PACE_WPM),
+        "--pace-tolerance",
+        str(voice.pace_tolerance_wpm or qc_checks.PACE_TOL_WPM),
+        # Near misses only once the word-exact seeds are spent.
+        "--near-miss-words",
+        str(int(sp.get("near_miss_words") or 0) if last_round else 0),
+    ]
+    return argv
+
+
 class _Ctx:
     def __init__(
         self, job: Job, model_path, isolate: bool, on_progress, no_cache: bool
@@ -77,7 +113,7 @@ class _Ctx:
             no_cache,
         )
         sp = job.speech
-        opts = {"cfg_scale": sp["cfg"], "ddpm_steps": sp["steps"]}
+        opts = {"cfg_scale": sp["cfg"], "ddpm_steps": steps_for(sp, None)}
         if sp["engine"] == "voice_model":
             opts.update(
                 revision=sp["model_revision"],
@@ -92,16 +128,17 @@ class _Ctx:
             except Exception:  # noqa: BLE001 - a progress callback never fails a render
                 pass
 
-    def render(self, jobs_path: Path, ref: Path) -> None:
+    def render(self, jobs_path: Path, voice) -> None:
+        opts = {**self.engine_opts, "ddpm_steps": steps_for(self.job.speech, voice)}
         argv = [
             "--jobs",
             str(jobs_path),
             "--ref",
-            str(ref),
+            str(voice.ref),
             "--engine",
             self.job.speech["engine"],
             "--engine-opts",
-            json.dumps(self.engine_opts),
+            json.dumps(opts),
         ]
         if self.no_cache:
             argv.append("--no-cache")
@@ -139,7 +176,8 @@ def sentence_rounds(
     }
     pending = set(text_of)
     results: list[dict] = []
-    for rnd, seeds in enumerate(ctx.job.speech["seed_rounds"], 1):
+    rounds = ctx.job.speech["seed_rounds"]
+    for rnd, seeds in enumerate(rounds, 1):
         jobs = []
         for key in sorted(pending):
             for seed in seeds:
@@ -163,7 +201,7 @@ def sentence_rounds(
             seeds=list(seeds),
             sentences=len(pending),
         )
-        ctx.render(work / "jobs.json", voice.ref)
+        ctx.render(work / "jobs.json", voice)
         ctx.qc(
             [
                 "sentences",
@@ -171,10 +209,7 @@ def sentence_rounds(
                 str(work),
                 "--ref",
                 str(voice.ref),
-                "--f0-target",
-                str(voice.f0_target_hz),
-                "--f0-tolerance",
-                str(voice.f0_tolerance_hz),
+                *gate_argv(voice, ctx.job.speech, rnd == len(rounds)),
             ]
         )
         results = json.loads((work / "results.json").read_text(encoding="utf-8"))
@@ -210,8 +245,18 @@ def _sentence_segment_qc(r: dict) -> dict:
         "pauses_ms",
         "sha256",
         "takes",
-    )
+        "similarity_lowered",
+        "asr_lowered",
+        "near_miss_sentences",
+        "wpm",
+        "pace",
+        "checks",
+    )  # never "timings" or transcripts: result.json carries no script text
     out = {k: r[k] for k in keep if k in r}
+    # Passed on a lowered bar (similarity or a near-miss word): a human
+    # listens before it ships (voice_batch "needs_listen").
+    if r.get("status") == "pass":
+        out["needs_listen"] = bool(r.get("asr_lowered") or r.get("similarity_lowered"))
     if r.get("lacking"):
         out["lacking"] = [
             {"sentence": int(x["key"].rsplit("#", 1)[1]), "tier": x["tier"]}
@@ -289,7 +334,7 @@ def whole_take_rounds(
         ctx.progress(
             stage="round", voice=voice.id, round=rnd, seeds=seeds, segments=len(todo)
         )
-        ctx.render(work / "jobs.json", voice.ref)
+        ctx.render(work / "jobs.json", voice)
         ctx.qc(
             [
                 "takes",
@@ -386,7 +431,8 @@ def run(
         "selection": sp["selection"],
         "seed_rounds": sp["seed_rounds"],
         "cfg": sp["cfg"],
-        "steps": sp["steps"],
+        "steps": sp.get("steps"),
+        "near_miss_words": int(sp.get("near_miss_words") or 0),
         "tail_pad": TAIL_PAD,
         "prompt": tts_prompt("<sentence>"),
         "asr_model": sp["asr_model"],
@@ -450,7 +496,13 @@ def run(
     res.voices = {
         vid: {
             **v.summary(),
-            "gate": qc_gate.gate_settings(v.f0_target_hz, v.f0_tolerance_hz),
+            "steps": steps_for(sp, v),
+            "gate": qc_gate.gate_settings(
+                v.f0_target_hz,
+                v.f0_tolerance_hz,
+                v.similarity_min_lt_5s,
+                v.similarity_min_ge_5s,
+            ),
         }
         for vid, v in used.items()
     }

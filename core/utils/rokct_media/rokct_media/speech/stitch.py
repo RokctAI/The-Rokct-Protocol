@@ -14,8 +14,9 @@
 
 """Join a segment's sentence takes into one clip.
 
-Lifted verbatim from factory voice_batch/qc.py (stitch): trim each take at
--40 dB with 40 ms padding, 12 ms fades, then 200-240 ms of silence between
+Kept in step with factory voice_batch/qc.py (stitch, speech_bounds) as of
+2026-11-20: trim each take at -40 dB (an edge noise burst of <= 200 ms
+that sits >= 100 ms from the speech is dropped) with 40 ms padding, 12 ms fades, then 200-240 ms of silence between
 takes (280-320 ms pauses once the pads are counted).
 
 The finished clip then gets a lead-in (`lead_in`): silence at the front up
@@ -39,6 +40,10 @@ LEAD_S, LEAD_FADE_S = 0.20, 0.010
 # Below this (relative to the clip's peak) a sample counts as silence when
 # measuring the lead-in a clip already has; matches the stitch trim.
 LEAD_TOP_DB = 40.0
+# An edge sound island this short, this far from the speech, is a click or
+# noise burst, not a word (speech_bounds). Measured on librosa's centred
+# 512-sample frames, which widen an island by ~40 ms.
+BLIP_MAX_S, BLIP_GAP_S = 0.20, 0.10
 
 
 def lead_in(x, sr: int = SR, lead_s: float = LEAD_S, fade_s: float = LEAD_FADE_S):
@@ -64,15 +69,49 @@ def lead_in(x, sr: int = SR, lead_s: float = LEAD_S, fade_s: float = LEAD_FADE_S
     return np.concatenate([np.zeros(want - have), y])
 
 
-def stitch(arrays: list, sr: int = SR, lead_s: float = LEAD_S):
+def speech_bounds(
+    x,
+    sr: int = SR,
+    top_db: float = 40.0,
+    frame: int = 512,
+    hop: int = 128,
+    blip_max_s: float = BLIP_MAX_S,
+    blip_gap_s: float = BLIP_GAP_S,
+) -> tuple[int, int]:
+    """(start, end) samples of a take's speech: the -40 dB trim, minus any
+    short sound island (a click or noise burst the engine left before the
+    first word or after the last) that sits apart from the speech. Such a
+    burst is above -40 dB, so the plain trim kept it and the stitch put an
+    audible scratch inside the pause between sentences. A real word lost
+    this way fails the final ASR gate, so the line is retried, not shipped."""
     import librosa
+
+    iv = [
+        list(v)
+        for v in librosa.effects.split(
+            x, top_db=top_db, frame_length=frame, hop_length=hop
+        )
+    ]
+    if not iv:
+        return 0, len(x)
+    short, gap = blip_max_s * sr, blip_gap_s * sr
+    while len(iv) > 1 and iv[0][1] - iv[0][0] <= short and iv[1][0] - iv[0][1] >= gap:
+        iv.pop(0)
+    while (
+        len(iv) > 1 and iv[-1][1] - iv[-1][0] <= short and iv[-1][0] - iv[-2][1] >= gap
+    ):
+        iv.pop()
+    return int(iv[0][0]), int(iv[-1][1])
+
+
+def stitch(arrays: list, sr: int = SR, lead_s: float = LEAD_S):
     import numpy as np
 
     fade, pad = int(FADE_S * sr), int(PAD_S * sr)
     out, pauses = [], []
     for j, x in enumerate(arrays):
         x = np.asarray(x, dtype=np.float64)
-        _, (s, e) = librosa.effects.trim(x, top_db=40, frame_length=512, hop_length=128)
+        s, e = speech_bounds(x, sr)
         x = x[max(0, s - pad) : min(len(x), e + pad)].copy()
         ramp = np.linspace(0, 1, fade) ** 2
         x[:fade] *= ramp

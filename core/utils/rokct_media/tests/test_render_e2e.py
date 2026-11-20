@@ -49,6 +49,7 @@ class FakeMeter:
 
     def __init__(self, ref, asr_model, language="en", pyin=(50.0, 300.0)):
         self.language = language
+        self.ref_hiss = None
 
     def measure(self, p, text, wild=None):
         import soundfile as sf
@@ -65,6 +66,10 @@ class FakeMeter:
             "swings": 0,
             "transcript": text,
             "tail_db": tail_db(x, sr),
+            "span": None,
+            "n_words": len(text.split()),
+            "hiss": None,
+            "words": [],
         }
 
 
@@ -103,7 +108,7 @@ class EndToEnd(unittest.TestCase):
 
     def test_f0_closest_zero_json(self):
         (self.job / "script.md").write_text(
-            "Well done. You checked every step before you moved on.\n"
+            "Well done, you got there. You checked every step before you moved on.\n"
         )
         (self.job / "voice.txt").write_text("tutor_001\n")
         res = self.go()
@@ -114,8 +119,9 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual((seg["seeds"], seg["seeds_tried"]), ([22, 22], [11, 22, 33]))
         result = json.loads((self.job / "out" / "result.json").read_text())
         self.assertEqual(result["status"], "pass")
-        self.assertNotIn(
-            "Well done", json.dumps(result)
+        self.assertNotIn("Well done", json.dumps(result))
+        self.assertFalse(
+            result["segments"][0]["needs_listen"]
         )  # no script text in result.json
         self.assertEqual(
             result["voices"]["voice_a"]["gate"]["median_f0_hz"], [94.0, 110.0]

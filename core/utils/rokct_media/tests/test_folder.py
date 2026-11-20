@@ -57,7 +57,11 @@ class Conventions(unittest.TestCase):
             [{"id": "s01", "role": "default", "text": "Say this now. Then that."}],
         )
         self.assertEqual(job.speech["selection"], "f0_closest")
-        self.assertEqual((job.speech["cfg"], job.speech["steps"]), (1.3, 10))
+        self.assertEqual((job.speech["cfg"], job.speech["steps"]), (1.3, None))
+        # No steps in the job: the voice's ddpm_steps, else 10 (Voice A).
+        from rokct_media.levels.l1_speech import steps_for
+
+        self.assertEqual(steps_for(job.speech, None), 10)
         self.assertEqual(
             job.speech["model_revision"], "c00898d257e6b46004e3e2866a47534085fb685a"
         )

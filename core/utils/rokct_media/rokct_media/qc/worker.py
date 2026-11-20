@@ -18,7 +18,9 @@ Runs in its own process (python -m rokct_media.qc.worker ...), so the ASR
 and speaker models are never resident beside the voice model.
 
     sentences --work WORK --ref REF.wav [--f0-target 102 --f0-tolerance 8]
-        Lifted from factory voice_batch/qc.py: reads WORK/lines.json and
+              [--sim-short 0.83 --sim-long 0.88 --pace-wpm 149
+               --pace-tolerance 15 --near-miss-words 0]
+        Kept in step with factory voice_batch/qc.py: reads WORK/lines.json and
         WORK/takes_index.json ({take path: {key, seed}}), caches per-take
         measurements in WORK/takes_measure.json, picks one take per
         sentence, stitches each segment, gates it, writes WORK/results.json.
@@ -44,14 +46,17 @@ from ..audio.dsp import normalise
 from ..speech.cut import keep_through, sha256_file
 from ..speech.stitch import SR, stitch
 from . import gate as qc
+from .checks import PACE_TOL_WPM, PACE_WPM, clip_checks, timings
 from .meter import Meter
 
 
 def gate_sentences(args) -> int:
+    """Kept in step with factory voice_batch/qc.py main() as of 2026-11-20."""
     import numpy as np
     import soundfile as sf
 
     lo, hi = qc.f0_range(args.f0_target, args.f0_tolerance)
+
     work = Path(args.work)
     lines = json.loads((work / "lines.json").read_text(encoding="utf-8"))
     index = json.loads((work / "takes_index.json").read_text(encoding="utf-8"))
@@ -72,14 +77,24 @@ def gate_sentences(args) -> int:
         for k, w in enumerate(it.get("sentence_wild", []), 1)
     }
 
+    # Takes a failed line was assembled from. When every sentence had a
+    # passing take but the stitched clip failed, the next round would pick
+    # the very same best takes again and fail identically, so it picks from
+    # the others.
+    rpath = work / "rejected_takes.json"
+    rejected = (
+        set(json.loads(rpath.read_text(encoding="utf-8"))) if rpath.exists() else set()
+    )
+
     for p, meta in index.items():
         if p in M or not Path(p).exists():
             continue
         m = meter.measure(p, sentence_of[meta["key"]], wild_of.get(meta["key"]))
+        m.pop("words", None)
         M[p] = {**m, **meta}
         print(
             f"take {meta['key']} seed{meta['seed']}: err={m['err']} f0={m['f0']} swings={m['swings']} "
-            f"sim={m['res']} dur={m['dur']} tail={m['tail_db']}",
+            f"sim={m['res']} dur={m['dur']} tail={m['tail_db']} hiss={m['hiss']}",
             flush=True,
         )
         mpath.write_text(json.dumps(M, indent=1), encoding="utf-8")
@@ -89,12 +104,35 @@ def gate_sentences(args) -> int:
         picks, tiers, lacking = [], [], []
         for k in range(1, len(it["sentences"]) + 1):
             key = f"{it['id']}#{k}"
-            cands = [dict(m, path=p) for p, m in M.items() if m["key"] == key]
-            best, tier = qc.pick(cands, args.f0_target, args.f0_tolerance)
+            cands = [
+                dict(m, path=p)
+                for p, m in M.items()
+                if m["key"] == key and p not in rejected
+            ]
+            best, tier = qc.pick(
+                cands,
+                args.f0_target,
+                args.f0_tolerance,
+                min(args.sim_short, qc.TAKE_SIM_MIN),
+                meter.ref_hiss,
+                args.near_miss_words,
+            )
             picks.append(best)
-            tiers.append(tier)  # noqa: E702
-            if tier != 1:
+            tiers.append(tier)
+            if tier not in (1, 3):
                 lacking.append({"key": key, "tier": tier})
+                if tier == 0:
+                    # What the ASR heard instead, for qc_failed.json in the
+                    # private agent repo (never printed: CI logs are public).
+                    lacking[-1]["heard"] = sorted(
+                        {c.get("transcript", "") for c in cands}
+                    )[:5]
+                    dead = sum(not qc.span_ok(c) for c in cands)
+                    if dead:
+                        lacking[-1]["dead_air_takes"] = dead
+                    hissy = sum(not qc.hiss_ok(c, meter.ref_hiss) for c in cands)
+                    if hissy:
+                        lacking[-1]["hissy_takes"] = hissy
         tried = sorted(
             {m["seed"] for m in M.values() if m["key"].split("#")[0] == it["id"]}
         )
@@ -119,12 +157,29 @@ def gate_sentences(args) -> int:
         fm = meter.measure(dst, it.get("asr_text", it["text"]), it.get("asr_wild"))
         x, _ = sf.read(str(dst))
         dur = round(len(x) / SR, 3)
-        thr = qc.sim_threshold(dur)
+        thr = qc.sim_threshold(dur, args.sim_short, args.sim_long)
+        tm = timings(it["text"], fm.get("words", []), dur)
+        cgate, cm = clip_checks(
+            x,
+            SR,
+            tm["wpm"] if tm["words"] else None,
+            (args.pace_wpm, args.pace_tolerance),
+        )
+        # Each sentence was already heard on its own. On a long stitched clip
+        # the ASR drifts a word now and then, so the whole-clip check allows
+        # the near-miss sentences' own misses plus one word per 8 sentences;
+        # any miss allowed here flags the line for a listen.
+        asr_allow = 0
+        if args.near_miss_words:
+            asr_allow = (
+                sum(b["err"] for b, t in zip(picks, tiers) if t == 3) + len(picks) // 8
+            )
         gate = {
             "f0": lo <= fm["f0"] <= hi,
             "similarity": fm["res"] >= thr,
-            "asr": fm["err"] == 0,
+            "asr": fm["err"] <= asr_allow,
             "tail": qc.tail_ok(fm["tail_db"]),
+            **cgate,
         }
         r.update(
             {
@@ -137,12 +192,21 @@ def gate_sentences(args) -> int:
                 "similarity": fm["res"],
                 "similarity_threshold": thr,
                 "asr_match": fm["err"] == 0,
+                # Passed only because the batch lowered the bar: a human listens.
+                "similarity_lowered": fm["res"] < qc.sim_threshold(dur),
+                # Passed on a near-miss sentence or a whole-clip ASR allowance: a human listens.
+                "asr_lowered": fm["err"] > 0 or 3 in tiers,
+                "near_miss_sentences": [k for k, t in enumerate(tiers, 1) if t == 3],
                 "asr_word_errors": fm["err"],
                 "asr_transcript": fm["transcript"],
                 "tail_db": fm["tail_db"],
                 "rms_dbfs": round(float(20 * np.log10(np.sqrt(np.mean(x**2)))), 2),
                 "peak": round(float(np.max(np.abs(x))), 4),
                 "pauses_ms": pauses,
+                "wpm": tm["wpm"],
+                "pace": cm["pace"],
+                "checks": cm,
+                "timings": tm,
                 "sha256": sha256_file(dst),
                 "seeds": [b["seed"] for b in picks],
                 "takes": [
@@ -160,12 +224,19 @@ def gate_sentences(args) -> int:
                 ],
             }
         )
+        if r["status"] == "fail" and not lacking:
+            bad = {g for g, ok in gate.items() if not ok}
+            # Onset and lead-in only look at the start of the clip.
+            rejected.update(
+                b["path"] for b in (picks[:1] if bad <= {"onset", "lead_in"} else picks)
+            )
         results.append(r)
         print(
             f"segment {it['id']}: {r['status']} dur={dur}s f0={fm['f0']} sim={fm['res']} (>= {thr}) "
-            f"asr_errors={fm['err']} tail={fm['tail_db']} seeds={r['seeds']}",
+            f"asr_errors={fm['err']} tail={fm['tail_db']} wpm={tm['wpm']} checks={cm} seeds={r['seeds']}",
             flush=True,
         )
+    rpath.write_text(json.dumps(sorted(rejected), indent=1), encoding="utf-8")
     (work / "results.json").write_text(
         json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8"
     )
@@ -216,7 +287,7 @@ def gate_takes(args) -> int:
                 parts.append({"missing": True})
                 continue
             m = meter.measure(p, text, wild)
-            best, tier = qc.pick([m], target, tol)
+            best, tier = qc.pick([m], target, tol, qc.TAKE_SIM_MIN, meter.ref_hiss)
             parts.append(
                 {
                     "tier": tier,
@@ -290,6 +361,17 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--ref", required=True)
     s.add_argument("--f0-target", type=float, default=qc.TARGET_F0)
     s.add_argument("--f0-tolerance", type=float, default=qc.F0_TOLERANCE)
+    s.add_argument("--sim-short", type=float, default=qc.SIM_SHORT)
+    s.add_argument("--sim-long", type=float, default=qc.SIM_LONG)
+    s.add_argument("--pace-wpm", type=float, default=PACE_WPM)
+    s.add_argument("--pace-tolerance", type=float, default=PACE_TOL_WPM)
+    s.add_argument(
+        "--near-miss-words",
+        type=int,
+        default=0,
+        help="accept a sentence take this many ASR words off when no take is "
+        "word-exact (flagged for a listen); passed on the last seed round only",
+    )
     t = sub.add_parser("takes")
     t.add_argument("--qc", required=True)
     t.add_argument("--qc-out", required=True)
