@@ -15,8 +15,11 @@
 # compliance-ignore-file: structural-special-dirs
 import os
 import hashlib
+import re
 import shutil
+import time
 import urllib.request
+from pathlib import Path
 
 PROTOCOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.getcwd()
@@ -85,6 +88,31 @@ def touch(path):
         f.write("")
 
 
+RETENTION_DAYS = {"1 month": 31, "1 week": 7}
+
+
+def prune_sessions(rokct_dir):
+    """Keep .rokct/sessions/ (the repo's scratchpad). Only when memory.md sets
+    Session Retention to 1 Month or 1 Week, delete session files older than
+    that. Forever (the default) or an unreadable setting deletes nothing."""
+    sessions = rokct_dir / "sessions"
+    memory = rokct_dir / "memory.md"
+    if not sessions.is_dir() or not memory.is_file():
+        return
+    m = re.search(
+        r"Session Retention\*\*:\s*\[([^\]]+)\]",
+        memory.read_text(encoding="utf-8"),
+    )
+    days = RETENTION_DAYS.get(m.group(1).strip().lower()) if m else None
+    if not days:
+        return
+    cutoff = time.time() - days * 86400
+    for f in sessions.rglob("*.md"):
+        if f.is_file() and f.stat().st_mtime < cutoff:
+            f.unlink()
+            print(f"[end] Pruned old session {f.name} (retention {m.group(1)})")
+
+
 def main():
     if not os.path.isdir(ROKCT_DIR):
         print("[end] .rokct/ not found, nothing to do")
@@ -103,6 +131,8 @@ def main():
     if os.path.isfile(installer_base):
         os.remove(installer_base)
         print("[end] Deleted sdk_installer_base.py (transient compose runtime fetch)")
+
+    prune_sessions(Path(ROKCT_DIR))
 
     workflows_dir = os.path.join(ROKCT_DIR, "workflows")
     if os.path.isdir(workflows_dir):
@@ -131,6 +161,7 @@ def main():
         if os.path.isdir(item_path):
             if item in (
                 "workflows",
+                "sessions",
                 "agent",
                 "evidence",
                 "images",
