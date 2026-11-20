@@ -230,16 +230,64 @@ class Wildcard(unittest.TestCase):
 class Plans(unittest.TestCase):
     def test_sentence_item(self):
         a = sentence_item(
-            {"id": "s01", "text": "Hi {{Thendo|TEN-doh}}. Welcome to Mahikeng.\n"}, PRON
+            {
+                "id": "s01",
+                "text": "Hi there, {{Thendo|TEN-doh}} and friends. Welcome to Mahikeng today.\n",
+            },
+            PRON,
         )
-        self.assertEqual(a["text"], "Hi Thendo. Welcome to Mahikeng.")
-        self.assertEqual(a["sentences"], ["Hi Thendo.", "Welcome to Mahikeng."])
-        self.assertEqual(a["render_text"], ["Hi TEN-doh.", "Welcome to mah-hee-KENG."])
+        self.assertEqual(
+            a["text"], "Hi there, Thendo and friends. Welcome to Mahikeng today."
+        )
+        self.assertEqual(
+            a["sentences"],
+            ["Hi there, Thendo and friends.", "Welcome to Mahikeng today."],
+        )
+        self.assertEqual(
+            a["render_text"],
+            ["Hi there, TEN-doh and friends.", "Welcome to mah-hee-KENG today."],
+        )
         self.assertEqual(
             a["sentence_wild"],
             [[["Thendo", "TEN-doh"]], [["Mahikeng", "mah-hee-KENG"]]],
         )
-        self.assertEqual(a["tts_text"], "Hi TEN-doh. Welcome to mah-hee-KENG.")
+        self.assertEqual(
+            a["tts_text"],
+            "Hi there, TEN-doh and friends. Welcome to mah-hee-KENG today.",
+        )
+
+    def test_short_sentences_join_their_neighbour(self):
+        # voice_batch 18 Oct: rendered alone, a sentence of three words or
+        # fewer mostly came back as dead air or babble.
+        a = sentence_item(
+            {"id": "s03", "text": "Hi {{Thendo|TEN-doh}}. Welcome to Mahikeng."}, PRON
+        )
+        self.assertEqual(a["sentences"], ["Hi Thendo. Welcome to Mahikeng."])
+        self.assertEqual(a["render_text"], ["Hi TEN-doh. Welcome to mah-hee-KENG."])
+        self.assertEqual(
+            a["sentence_wild"],
+            [[["Thendo", "TEN-doh"], ["Mahikeng", "mah-hee-KENG"]]],
+        )
+        # The render key is still per split sentence, so clips that passed
+        # before the join are not rendered again.
+        b = sentence_item(
+            {"id": "s03", "text": "Hi {{Thendo|TEN-doh}}.  Welcome to Mahikeng."}, PRON
+        )
+        self.assertEqual(a["render_sha256"], b["render_sha256"])
+
+    def test_names_are_wildcards(self):
+        pron = P.merge(P.empty(), {"names": ["Thendo"]})
+        a = sentence_item(
+            {"id": "s04", "text": "Well done today, Thendo's class."}, pron
+        )
+        self.assertEqual(a["sentence_wild"], [[["Thendo", "Thendo"]]])
+        self.assertEqual(
+            P.word_errors_wild(
+                a["text"], "Well done today, Tendo's class.", a["asr_wild"]
+            ),
+            0,
+        )
+
         plain = sentence_item(
             {"id": "s02", "text": "Plain line - with a dash."}, P.empty()
         )

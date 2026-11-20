@@ -17,7 +17,8 @@
 Two selections, both lifted from factory:
 
 * "f0_closest" (voice_batch/lines.py, the tutor batches): the segment is
-  split into sentences; each sentence's render text is the pronounced text
+  split into sentences (a sentence of three words or fewer joins its
+  neighbour); each sentence's render text is the pronounced text
   through speak_text (a spaced dash or a colon becomes a comma). Takes are
   chosen per sentence, so the shipped clip may join different seeds.
 * "whole_take" (PR #196 reel_voice.py): the segment is split into
@@ -35,7 +36,7 @@ import hashlib
 
 from ..text import norm as textnorm
 from ..text import pronounce as pronunciations
-from ..text.norm import speak_text, split_sentences
+from ..text.norm import render_sentences, speak_text, split_sentences
 from .cut import text_through
 from .takes import SEED_ROUNDS, all_seeds, seed_rounds
 
@@ -46,31 +47,43 @@ class PlanError(ValueError):
     pass
 
 
-def pronounced_fields(id_: str, text: str, pron: dict | None) -> dict:
+def pronounced_fields(id_: str, text: str, pron: dict | None, names=()) -> dict:
     """The text fields every per-sentence item carries, with pronunciations
-    applied sentence by sentence (voice_batch/lines.py, verbatim).
+    applied sentence by sentence (voice_batch/lines.py, kept in step as of
+    2026-11-20).
 
     text        display text: inline markup resolved to the display word
-    sentences   display sentences (the per-take ASR reference)
+    sentences   display sentences (the per-take ASR reference); a sentence
+                of three words or fewer joins its neighbour (render_sentences)
     render_text what the TTS is given, one per sentence
-    sentence_wild / asr_wild  the respelled words the ASR check wildcards
+    sentence_wild / asr_wild  the respelled words and names (`names` plus
+                the pronunciations' "names") the ASR check wildcards
     tts_text    only when a pronunciation changed the spoken text"""
     try:
-        parts = [pronunciations.apply(s, pron) for s in split_sentences(text)]
+        parts = [pronunciations.apply(s, pron) for s in render_sentences(text)]
+        # Hashed per split sentence, as before render_sentences joined the
+        # short ones: a clip that already passed is not rendered again.
+        render_key = [
+            speak_text(pronunciations.apply(s, pron)[1]) for s in split_sentences(text)
+        ]
     except pronunciations.PronunciationError as exc:
         raise pronunciations.PronunciationError(f"segment {id_}: {exc}") from None
     display = " ".join(p[0] for p in parts)
     render = [speak_text(p[1]) for p in parts]
+    every_name = [*((pron or {}).get("names") or []), *names]
+    wild = [p[2] + pronunciations.name_wild(p[0], every_name) for p in parts]
     out = {
         "text": display,
         "source_text": text,
         "text_sha256": hashlib.sha256(display.encode("utf-8")).hexdigest(),
-        "render_sha256": hashlib.sha256("\n".join(render).encode("utf-8")).hexdigest(),
+        "render_sha256": hashlib.sha256(
+            "\n".join(render_key).encode("utf-8")
+        ).hexdigest(),
         "sentences": [p[0] for p in parts],
         "render_text": render,
-        "sentence_wild": [p[2] for p in parts],
+        "sentence_wild": wild,
         "asr_text": display,
-        "asr_wild": [w for p in parts for w in p[2]],
+        "asr_wild": [w for sw in wild for w in sw],
         "pronounced": [w[0] for p in parts for w in p[2]],
     }
     tts = " ".join(p[1] for p in parts)

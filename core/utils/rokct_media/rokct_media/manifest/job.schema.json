@@ -48,7 +48,8 @@
     "reuse": {"type": "string"},
     "resume": {"type": "boolean"},
     "asr_model": {"type": "string"},
-    "language": {"type": "string"}
+    "language": {"type": "string"},
+    "near_miss_words": {"type": "integer", "minimum": 0, "maximum": 3}
    }
   },
   "segments": {

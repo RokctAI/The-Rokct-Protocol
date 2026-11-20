@@ -67,14 +67,18 @@ def _clean(s: str) -> str:
 
 
 def empty() -> dict:
-    return {"words": {}, "ambiguous": {}}
+    return {"words": {}, "ambiguous": {}, "names": []}
 
 
 def validate(raw) -> dict:
     """The file's content, checked. Raises PronunciationError."""
     if not isinstance(raw, dict):
         raise PronunciationError("pronunciations must be a JSON object")
-    unknown = set(raw) - {"words", "ambiguous"} - {k for k in raw if k.startswith("_")}
+    unknown = (
+        set(raw)
+        - {"words", "ambiguous", "names"}
+        - {k for k in raw if k.startswith("_")}
+    )
     if unknown:
         raise PronunciationError(f"unknown field(s): {sorted(unknown)}")
     words, amb = raw.get("words", {}), raw.get("ambiguous", {})
@@ -106,6 +110,13 @@ def validate(raw) -> dict:
     both = {w.lower() for w in out["words"]} & {w.lower() for w in out["ambiguous"]}
     if both:
         raise PronunciationError(f"in both words and ambiguous: {sorted(both)}")
+    names = raw.get("names", [])
+    if not isinstance(names, list):
+        raise PronunciationError('"names" must be a list')
+    for n in names:
+        if not isinstance(n, str) or not WORD_RE.fullmatch(n):
+            raise PronunciationError(f"names: bad name {n!r}")
+        out["names"].append(_clean(n))
     return out
 
 
@@ -120,6 +131,7 @@ def merge(base: dict, job: dict | None) -> dict:
     for k in ("words", "ambiguous"):
         out[k] = {w: v for w, v in base[k].items() if w.lower() not in drop}
         out[k].update(job[k])
+    out["names"] = list(dict.fromkeys([*base.get("names", []), *job["names"]]))
     return validate(out)
 
 
@@ -256,7 +268,8 @@ def _wild_tokens(reference: str, wild: list[list[str]]) -> list:
     out, i = [], 0
     while i < len(ref):
         for dt, n in specs:
-            if ref[i : i + len(dt)] == dt:
+            # A possessive ("John Petersen's") normalises to "petersens".
+            if ref[i : i + len(dt)] in (dt, dt[:-1] + [dt[-1] + "s"]):
                 out.append(("*", n))
                 i += len(dt)
                 break
@@ -264,6 +277,20 @@ def _wild_tokens(reference: str, wild: list[list[str]]) -> list:
             out.append(ref[i])
             i += 1
     return out
+
+
+def name_wild(text: str, names) -> list[list[str]]:
+    """[[name, name], ...] for each whole-word use of a name in `text`
+    (display text, any case), longest name first, never overlapping: the
+    ASR wildcard for a proper noun spoken as written."""
+    hits: list[tuple[int, int, str]] = []
+    for n in sorted(
+        {_clean(n) for n in names if n and n.strip()}, key=lambda n: -len(n)
+    ):
+        for m in _word_re(n).finditer(text):
+            if not any(a < m.end() and m.start() < b for a, b, _ in hits):
+                hits.append((m.start(), m.end(), m.group(0)))
+    return [[f, f] for _, _, f in sorted(hits)]
 
 
 def word_errors_wild(

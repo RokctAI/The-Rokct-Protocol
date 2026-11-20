@@ -28,6 +28,11 @@ must have, the F0 gate window, and the owner's agreement flag:
     # confirmed_by = "owner"       # optional: who set it
     # confirmed_on = 2026-10-01    # optional: when
     aliases = ["tutor_001"]
+    # ddpm_steps = 14              # optional: this voice's diffusion steps
+    # similarity_min_lt_5s = 0.83  # optional: per-voice similarity gate
+    # similarity_min_ge_5s = 0.88
+    # pace_wpm = 149               # optional: pace target (report-only)
+    # pace_tolerance_wpm = 15
 
 A relative ref resolves against the voices root: ROKCT_MEDIA_VOICES_ROOT,
 else the voices file's own folder. A voice with an empty ref has no cloned
@@ -57,7 +62,20 @@ KEYS = {
     "confirmed_by",
     "confirmed_on",
     "aliases",
+    "ddpm_steps",
+    "similarity_min_lt_5s",
+    "similarity_min_ge_5s",
+    "pace_wpm",
+    "pace_tolerance_wpm",
 }
+# Optional per-voice render and gate settings (factory lesson_voices.json /
+# voice specs). Absent = the job's settings and the package defaults.
+NUM_KEYS = (
+    "similarity_min_lt_5s",
+    "similarity_min_ge_5s",
+    "pace_wpm",
+    "pace_tolerance_wpm",
+)
 
 
 class VoiceError(ValueError):
@@ -79,6 +97,11 @@ class Voice:
     confirmed_by: str | None = None
     confirmed_on: str | None = None
     aliases: list[str] = field(default_factory=list)
+    ddpm_steps: int | None = None
+    similarity_min_lt_5s: float | None = None
+    similarity_min_ge_5s: float | None = None
+    pace_wpm: float | None = None
+    pace_tolerance_wpm: float | None = None
 
     def verify(self) -> str:
         """Check the reference's bytes against its pin; returns the sha256."""
@@ -108,8 +131,8 @@ class Voice:
             "f0_tolerance_hz": self.f0_tolerance_hz,
             "agreement_in_place": self.agreement_in_place,
         }
-        for k in ("confirmed_by", "confirmed_on"):
-            if getattr(self, k):
+        for k in ("confirmed_by", "confirmed_on", "ddpm_steps", *NUM_KEYS):
+            if getattr(self, k) is not None:
                 out[k] = getattr(self, k)
         return out
 
@@ -163,6 +186,17 @@ def parse(raw: dict, root: Path) -> dict[str, Voice]:
             and all(isinstance(a, str) and ID_RE.fullmatch(a) for a in aliases)
         ):
             raise VoiceError(f"{vid}: aliases must be a list of ids")
+        steps = e.get("ddpm_steps")
+        if steps is not None and not (
+            isinstance(steps, int) and not isinstance(steps, bool) and steps >= 1
+        ):
+            raise VoiceError(f"{vid}: ddpm_steps must be a whole number of at least 1")
+        for k in NUM_KEYS:
+            v = e.get(k)
+            if v is not None and (
+                isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0
+            ):
+                raise VoiceError(f"{vid}: {k} must be a positive number")
         p = None
         if ref:
             p = Path(ref)
@@ -177,6 +211,8 @@ def parse(raw: dict, root: Path) -> dict[str, Voice]:
             confirmed_by=e.get("confirmed_by"),
             confirmed_on=on,
             aliases=list(aliases),
+            ddpm_steps=steps,
+            **{k: (None if e.get(k) is None else float(e[k])) for k in NUM_KEYS},
         )
     seen: dict[str, str] = {}
     for v in voices.values():

@@ -37,7 +37,9 @@ DEFAULT_SPEECH = {
     "engine": "voice_model",
     "model_revision": REVISION,
     "cfg": 1.3,
-    "steps": 10,
+    # None: the voice's ddpm_steps, else 10 (levels/l1_speech.steps_for).
+    "steps": None,
+    "near_miss_words": 0,
     "seed_rounds": [list(r) for r in SEED_ROUNDS],
     "selection": "f0_closest",
     "pace": 1.0,
