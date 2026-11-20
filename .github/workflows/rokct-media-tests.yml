@@ -28,9 +28,10 @@ jobs:
           python-version: '3.12'
       # The core install (numpy, soundfile, jsonschema), plus librosa and
       # lameenc for the stitch and end-to-end tests, and scipy + pyloudnorm
-      # for the level 2 (compose) tests. No model, no torch, no ASR.
+      # (+ imageio-ffmpeg, the runner has no ffmpeg) for the level 2 (compose)
+      # tests. No model, no torch, no ASR.
       - name: Install rokct-media (core) and test tools
-        run: pip install ./core/utils/rokct_media pytest librosa lameenc scipy pyloudnorm
+        run: pip install ./core/utils/rokct_media pytest librosa lameenc scipy pyloudnorm imageio-ffmpeg
       - name: The wheel ships no tests
         run: |
           pip wheel --no-deps -w "$RUNNER_TEMP/wheel" ./core/utils/rokct_media
