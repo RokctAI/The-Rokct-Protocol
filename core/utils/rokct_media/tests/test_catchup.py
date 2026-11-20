@@ -226,9 +226,10 @@ class MeterWordTimestamps(unittest.TestCase):
         m.enc = NS(embed_utterance=lambda w: np.ones(3))
         m.R = np.ones(3)
         x = good_clip()
-        with mock.patch.object(
-            Meter, "r16", staticmethod(lambda p: x)
-        ), mock.patch.dict(sys.modules, {"soundfile": NS(read=lambda p: (x, SR))}):
+        with (
+            mock.patch.object(Meter, "r16", staticmethod(lambda p: x)),
+            mock.patch.dict(sys.modules, {"soundfile": NS(read=lambda p: (x, SR))}),
+        ):
             out = m.measure("x.wav", "Hi")
         self.assertTrue(seen.get("word_timestamps"))
         self.assertEqual(out["words"], [{"w": " Hi", "start": 0.2, "end": 0.4}])
@@ -247,8 +248,9 @@ class Selection(unittest.TestCase):
         noise = np.random.default_rng(0).normal(0, 0.02, sr)
         clean, hissy = hiss_db(voice, sr), hiss_db(voice + noise, sr)
         self.assertGreater(hissy - clean, 12)
-        a, b = dict(self.t(0, 101, 1, 0.9), hiss=hissy), dict(
-            self.t(0, 104, 2, 0.9), hiss=clean
+        a, b = (
+            dict(self.t(0, 101, 1, 0.9), hiss=hissy),
+            dict(self.t(0, 104, 2, 0.9), hiss=clean),
         )
         self.assertIs(pick([a, b], ref_hiss=clean)[0], b)
         self.assertEqual(pick([a], ref_hiss=clean), (None, 0))
