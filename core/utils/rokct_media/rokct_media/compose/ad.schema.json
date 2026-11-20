@@ -1,0 +1,456 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RokctAI/factory/radio_ads/schema/ad.schema.json",
+  "title": "Radio ad",
+  "description": "One radio advert. Drop a file like this into the inbox and make_ad.py renders it. See radio_ads/SCHEMA.md for the field-by-field guide.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "client",
+    "duration_s",
+    "format",
+    "cast",
+    "script"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "description": "Output folder name: out/<id>/. Lowercase letters, digits, '-' and '_'."
+    },
+    "client": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free text for humans; ignored by the renderer."
+    },
+    "duration_s": {
+      "type": "integer",
+      "enum": [
+        15,
+        30,
+        45,
+        60
+      ],
+      "description": "Spot length. The delivered file is exactly this long."
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "single-voice",
+        "dialogue",
+        "spot"
+      ],
+      "description": "single-voice: one voice reads everything (the tag may use a second voice). dialogue: two or more speakers talk to each other. spot: jingle-less announcer spot; any cast, each line rendered on its own."
+    },
+    "cast": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Role name -> voice. Role names are what script[].speaker refers to.",
+      "additionalProperties": {
+        "$ref": "#/$defs/castMember"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_-]{1,32}$"
+      }
+    },
+    "script": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/segment"
+      }
+    },
+    "tag": {
+      "description": "End tag / legal read. Rendered on its own after the script; can be read fast.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/tag"
+        }
+      ]
+    },
+    "music": {
+      "$ref": "#/$defs/music"
+    },
+    "sfx": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sfx"
+      },
+      "default": []
+    },
+    "timing": {
+      "$ref": "#/$defs/timing"
+    },
+    "render": {
+      "$ref": "#/$defs/render"
+    },
+    "output": {
+      "$ref": "#/$defs/output"
+    }
+  },
+  "$defs": {
+    "castMember": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "voice": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "Persona id from the tutor voice specs (tutor_001 .. tutor_012, assistant_001 .. assistant_003). Resolves to <voices_dir>/<voice>.wav."
+        },
+        "ref": {
+          "type": "string",
+          "description": "Path to a reference WAV to clone from (relative to the ad JSON, then to radio_ads/). Use instead of 'voice'."
+        },
+        "gain_db": {
+          "type": "number",
+          "minimum": -12,
+          "maximum": 12,
+          "default": 0
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "voice"
+          ]
+        },
+        {
+          "required": [
+            "ref"
+          ]
+        }
+      ]
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "speaker",
+        "text"
+      ],
+      "properties": {
+        "speaker": {
+          "type": "string",
+          "description": "A key of 'cast'."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "pause_after_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0.25
+        },
+        "delivery": {
+          "type": "string",
+          "description": "Direction for the read (e.g. 'warm, smiling', 'urgent'). Recorded in the report. The engine has no style control; see 'rate' and punctuation for what actually changes the read."
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 1.3,
+          "default": 1.0,
+          "description": "Per-line tempo applied after rendering (pitch preserved). 1.1 = 10% faster."
+        },
+        "gain_db": {
+          "type": "number",
+          "minimum": -12,
+          "maximum": 12,
+          "default": 0
+        }
+      }
+    },
+    "tag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "speaker",
+        "text"
+      ],
+      "properties": {
+        "speaker": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "fast": {
+          "type": "boolean",
+          "default": false,
+          "description": "Legal-style fast read: applies 'rate' (default 1.2 when fast) and exempts the tag from the ad-level slow-down."
+        },
+        "rate": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 1.4
+        },
+        "gap_before_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 0.4
+        },
+        "gain_db": {
+          "type": "number",
+          "minimum": -12,
+          "maximum": 12,
+          "default": -1
+        }
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bed": {
+          "type": "string",
+          "default": "builtin:corporate",
+          "description": "'none', 'builtin:upbeat' | 'builtin:calm' | 'builtin:corporate' (generated, no licence needed), or a path to a WAV/MP3/FLAC file."
+        },
+        "seed": {
+          "type": "integer",
+          "default": 1,
+          "description": "Variation seed for built-in beds."
+        },
+        "level_db": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 0,
+          "default": -6,
+          "description": "Bed loudness relative to the voice when nobody is speaking (intro, outro, gaps)."
+        },
+        "duck_db": {
+          "type": "number",
+          "minimum": -30,
+          "maximum": 0,
+          "default": -12,
+          "description": "Extra gain on the bed while someone is speaking (sidechain ducking). Default -6 + -12 puts the bed 18 dB under the voice."
+        },
+        "intro_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 1.2,
+          "description": "Music alone before the first word."
+        },
+        "outro_min_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 1.0,
+          "description": "Minimum music after the last word; spare time is added here."
+        },
+        "fade_in_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0.3
+        },
+        "fade_out_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 1.5
+        }
+      }
+    },
+    "sfx": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Path to a sound file, or 'builtin:ding' | 'builtin:hooter' | 'builtin:whoosh'."
+        },
+        "at_s": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Absolute start time in the finished ad. Use this or 'segment'."
+        },
+        "segment": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Anchor to script[segment] (0-based) instead of an absolute time. Use 'tag' as -1."
+        },
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "offset_s": {
+          "type": "number",
+          "default": 0,
+          "description": "Offset from the anchor (may be negative)."
+        },
+        "gain_db": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 6,
+          "default": -6
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fit": {
+          "type": "string",
+          "enum": [
+            "none",
+            "speed_up",
+            "both"
+          ],
+          "default": "speed_up",
+          "description": "none: report only. speed_up: if long, speed speech up (pitch preserved) by up to max_stretch. both: also slow down short reads."
+        },
+        "max_stretch": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.15,
+          "default": 0.08
+        },
+        "compress_pauses": {
+          "type": "boolean",
+          "default": true,
+          "description": "If still too long after stretching, shrink pauses (down to half)."
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": [
+            "vibevoice",
+            "dummy"
+          ],
+          "default": "vibevoice",
+          "description": "'dummy' makes a tone of the estimated length; for testing the mix without the model."
+        },
+        "model": {
+          "type": "string",
+          "default": "microsoft/VibeVoice-1.5B"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "joint",
+            "per_line"
+          ],
+          "default": "auto",
+          "description": "joint: VibeVoice renders the whole conversation in one pass (natural turn-taking) and it is split per line with speech recognition. per_line: every line rendered alone. auto: joint for 'dialogue', per_line otherwise."
+        },
+        "cfg_scale": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 3.0,
+          "default": 1.3
+        },
+        "ddpm_steps": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 50,
+          "default": 10
+        },
+        "seed": {
+          "type": "integer",
+          "default": 7
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "formats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "wav",
+              "mp3"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "default": [
+            "wav",
+            "mp3"
+          ]
+        },
+        "sample_rate": {
+          "type": "integer",
+          "enum": [
+            44100,
+            48000
+          ],
+          "default": 44100
+        },
+        "channels": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ],
+          "default": 2
+        },
+        "loudness_lufs": {
+          "type": "number",
+          "minimum": -31,
+          "maximum": -9,
+          "default": -23,
+          "description": "Integrated loudness target. -23 = EBU R128 broadcast; -16 or -14 for streaming."
+        },
+        "true_peak_dbtp": {
+          "type": "number",
+          "minimum": -6,
+          "maximum": 0,
+          "default": -1
+        },
+        "mp3_bitrate_kbps": {
+          "type": "integer",
+          "enum": [
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "default": 192
+        }
+      }
+    }
+  }
+}
