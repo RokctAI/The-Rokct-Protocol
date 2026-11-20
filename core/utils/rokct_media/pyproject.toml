@@ -44,6 +44,15 @@ voice = [
     "resemblyzer",
     "lameenc",
 ]
+# Level 2 audio composition (rokct_media.compose): beds, mixing, mastering.
+# Speech for it comes from the voice extra.
+compose = [
+    "scipy",
+    "librosa",
+    "pyloudnorm",
+    "faster-whisper",
+    "imageio-ffmpeg",
+]
 test = ["pytest"]
 
 [project.urls]
@@ -59,6 +68,7 @@ rokct-media = "rokct_media.cli:main"
 packages = [
     "rokct_media",
     "rokct_media.audio",
+    "rokct_media.compose",
     "rokct_media.deliver",
     "rokct_media.levels",
     "rokct_media.manifest",
@@ -71,6 +81,7 @@ packages = [
 
 [tool.setuptools.package-data]
 "rokct_media.manifest" = ["*.json"]
+"rokct_media.compose" = ["*.json"]
 "rokct_media.text" = ["*.json"]
 
 [tool.setuptools.dynamic]
