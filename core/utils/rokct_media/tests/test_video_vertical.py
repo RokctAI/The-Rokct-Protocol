@@ -34,10 +34,18 @@ class Vertical(unittest.TestCase):
         g = V.build_graph("motion", None, False, 5.0, [], silent=False)
         self.assertIn(f"scale={V.WIDTH}:{V.HEIGHT}", g)
         self.assertIn(V.LOUDNORM, g)
-        cmd = V.render_cmd(Path("v.mp4"), "motion", Path("a.wav"), g, 5.0, Path("o.mp4"))
+        cmd = V.render_cmd(
+            Path("v.mp4"), "motion", Path("a.wav"), g, 5.0, Path("o.mp4")
+        )
         self.assertEqual(cmd[-3:], ["-movflags", "+faststart", "o.mp4"])
-        silent = V.render_cmd(Path("v.png"), "still", None, V.build_graph("still", None, True, 5.0, [], True),
-                              5.0, Path("o.mp4"))
+        silent = V.render_cmd(
+            Path("v.png"),
+            "still",
+            None,
+            V.build_graph("still", None, True, 5.0, [], True),
+            5.0,
+            Path("o.mp4"),
+        )
         self.assertIn("-an", silent)
         self.assertNotIn("[a]", " ".join(silent))
 

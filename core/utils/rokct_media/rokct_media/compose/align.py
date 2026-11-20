@@ -24,6 +24,7 @@ Two jobs:
 * transcribe(): plain transcript + word-error rate against the script, used
   by the report to confirm the words came out right.
 """
+
 from __future__ import annotations
 
 import difflib
@@ -38,12 +39,24 @@ DEFAULT_ASR = "base.en"
 def _model(name: str):
     if name not in _MODELS:
         from faster_whisper import WhisperModel
+
         _MODELS[name] = WhisperModel(name, device="cpu", compute_type="int8")
     return _MODELS[name]
 
 
-_NUM = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five",
-        "6": "six", "7": "seven", "8": "eight", "9": "nine", "10": "ten"}
+_NUM = {
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+    "10": "ten",
+}
 
 
 def norm_words(text: str) -> list[str]:
@@ -52,14 +65,22 @@ def norm_words(text: str) -> list[str]:
     return [_NUM.get(w, w).strip("'") for w in words if w.strip("'")]
 
 
-def recognise(audio: np.ndarray, sr: int, model: str = DEFAULT_ASR, prompt: str | None = None):
+def recognise(
+    audio: np.ndarray, sr: int, model: str = DEFAULT_ASR, prompt: str | None = None
+):
     """Return (text, [(word, start, end)]) for 16 kHz-resampled audio."""
     from .dsp import resample
 
     a16 = resample(audio, sr, 16000)
-    segments, _ = _model(model).transcribe(a16, language="en", beam_size=5,
-                                           word_timestamps=True, initial_prompt=prompt,
-                                           vad_filter=False, condition_on_previous_text=False)
+    segments, _ = _model(model).transcribe(
+        a16,
+        language="en",
+        beam_size=5,
+        word_timestamps=True,
+        initial_prompt=prompt,
+        vad_filter=False,
+        condition_on_previous_text=False,
+    )
     words, texts = [], []
     for seg in segments:
         texts.append(seg.text.strip())
@@ -83,12 +104,20 @@ def wer(ref: str, hyp: str) -> float:
     return d[len(h)] / len(r)
 
 
-def transcribe(audio: np.ndarray, sr: int, reference_text: str, model: str = DEFAULT_ASR) -> dict:
+def transcribe(
+    audio: np.ndarray, sr: int, reference_text: str, model: str = DEFAULT_ASR
+) -> dict:
     text, _ = recognise(audio, sr, model)
-    return {"asr_model": model, "transcript": text, "wer": round(wer(reference_text, text), 3)}
+    return {
+        "asr_model": model,
+        "transcript": text,
+        "wer": round(wer(reference_text, text), 3),
+    }
 
 
-def split_joint(audio: np.ndarray, sr: int, lines: list[str], model: str = DEFAULT_ASR) -> tuple[list[np.ndarray], dict]:
+def split_joint(
+    audio: np.ndarray, sr: int, lines: list[str], model: str = DEFAULT_ASR
+) -> tuple[list[np.ndarray], dict]:
     """Cut a joint render into one clip per script line.
 
     Returns (clips, info). Raises RuntimeError if the words cannot be
@@ -123,7 +152,11 @@ def split_joint(audio: np.ndarray, sr: int, lines: list[str], model: str = DEFAU
 
     starts, ends = [], []
     for i in range(len(lines)):
-        idx = [ref_to_hyp[k] for k, li in enumerate(ref_line) if li == i and k in ref_to_hyp]
+        idx = [
+            ref_to_hyp[k]
+            for k, li in enumerate(ref_line)
+            if li == i and k in ref_to_hyp
+        ]
         if not idx:
             raise RuntimeError(f"joint split: no words of line {i} recognised")
         starts.append(hyp_t[min(idx)][0])
@@ -134,19 +167,22 @@ def split_joint(audio: np.ndarray, sr: int, lines: list[str], model: str = DEFAU
     # little outside the gap too.
     hop = int(0.01 * sr)
     frames = audio[: audio.size // hop * hop].reshape(-1, hop)
-    energy = np.sqrt(np.mean(frames ** 2, axis=1) + 1e-12)
+    energy = np.sqrt(np.mean(frames**2, axis=1) + 1e-12)
     cuts = [0]
     for i in range(len(lines) - 1):
         lo = max(ends[i] - 0.08, starts[i] + 0.05)
         hi = min(starts[i + 1] + 0.08, ends[i + 1] - 0.05)
         if hi <= lo:
-            lo, hi = min(ends[i], starts[i + 1]) - 0.1, max(ends[i], starts[i + 1]) + 0.1
+            lo, hi = (
+                min(ends[i], starts[i + 1]) - 0.1,
+                max(ends[i], starts[i + 1]) + 0.1,
+            )
         f0, f1 = int(lo * sr / hop), max(int(lo * sr / hop) + 1, int(hi * sr / hop))
         f1 = min(f1, energy.size)
         f0 = min(max(f0, cuts[-1] // hop + 1), f1 - 1)
         best = f0 + int(np.argmin(energy[f0:f1])) if f1 > f0 else f0
         cuts.append(best * hop)
     cuts.append(audio.size)
-    clips = [audio[cuts[i]:cuts[i + 1]] for i in range(len(lines))]
+    clips = [audio[cuts[i] : cuts[i + 1]] for i in range(len(lines))]
     info["cuts_s"] = [round(c / sr, 3) for c in cuts[1:-1]]
     return clips, info

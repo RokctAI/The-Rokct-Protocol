@@ -37,10 +37,10 @@ RATE = 44100
 
 # Semitone offsets from the key root, one chord per bar.
 PROGRESSIONS = [
-    [0, 7, 9, 5],   # I  V  vi IV
-    [9, 5, 0, 7],   # vi IV I  V
-    [0, 5, 9, 7],   # I  IV vi V
-    [0, 9, 5, 7],   # I  vi IV V
+    [0, 7, 9, 5],  # I  V  vi IV
+    [9, 5, 0, 7],  # vi IV I  V
+    [0, 5, 9, 7],  # I  IV vi V
+    [0, 9, 5, 7],  # I  vi IV V
 ]
 KEYS = [48, 50, 52, 53, 55, 57]  # MIDI roots: C D E F G A (octave 3)
 TEMPOS = [96, 100, 104, 108, 112]
@@ -86,31 +86,73 @@ def render_music(seed, duration, out: Path):
 
         # Kick on every beat: a pitch-dropping sine thump.
         if step % 2 == 0:
-            add(t, 0.25, lambda x: math.sin(2 * math.pi * (50 + 90 * math.exp(-x * 30)) * x)
-                * math.exp(-x * 14), 0.55)
+            add(
+                t,
+                0.25,
+                lambda x: (
+                    math.sin(2 * math.pi * (50 + 90 * math.exp(-x * 30)) * x)
+                    * math.exp(-x * 14)
+                ),
+                0.55,
+            )
         # Hi-hat on the off-beats: short decaying noise.
         else:
             hat = [rng.uniform(-1, 1) for _ in range(int(0.06 * RATE))]
-            add(t, 0.06, lambda x, h=hat: h[min(len(h) - 1, int(x * RATE))] * math.exp(-x * 60), 0.10)
+            add(
+                t,
+                0.06,
+                lambda x, h=hat: h[min(len(h) - 1, int(x * RATE))] * math.exp(-x * 60),
+                0.10,
+            )
 
         # Bass on the chord root, one octave down, each beat.
         if step % 2 == 0:
             f = _hz(chord[0] - 12)
-            add(t, beat * 0.9, lambda x, f=f: (math.sin(2 * math.pi * f * x)
-                + 0.3 * math.sin(4 * math.pi * f * x)) * min(1, x * 40) * math.exp(-x * 2.5), 0.28)
+            add(
+                t,
+                beat * 0.9,
+                lambda x, f=f: (
+                    (
+                        math.sin(2 * math.pi * f * x)
+                        + 0.3 * math.sin(4 * math.pi * f * x)
+                    )
+                    * min(1, x * 40)
+                    * math.exp(-x * 2.5)
+                ),
+                0.28,
+            )
 
         # Plucked arpeggio on eighths, walking the triad up an octave.
         note = chord[step % 3] + 12 * (1 + (step // 3) % 2)
         f = _hz(note)
-        add(t, beat * 0.5, lambda x, f=f: (math.sin(2 * math.pi * f * x)
-            + 0.25 * math.sin(6 * math.pi * f * x)) * math.exp(-x * 9), 0.12)
+        add(
+            t,
+            beat * 0.5,
+            lambda x, f=f: (
+                (math.sin(2 * math.pi * f * x) + 0.25 * math.sin(6 * math.pi * f * x))
+                * math.exp(-x * 9)
+            ),
+            0.12,
+        )
 
         # Pad: the whole triad, held for the bar, soft attack.
         if step % 8 == 0:
             freqs = [_hz(m + 12) for m in chord]
-            add(t, bar, lambda x, fs=freqs: sum(
-                math.sin(2 * math.pi * fq * x) + 0.2 * math.sin(4 * math.pi * fq * x * 1.003)
-                for fq in fs) / 3 * min(1, x * 3) * min(1, (bar - x) * 6), 0.10)
+            add(
+                t,
+                bar,
+                lambda x, fs=freqs: (
+                    sum(
+                        math.sin(2 * math.pi * fq * x)
+                        + 0.2 * math.sin(4 * math.pi * fq * x * 1.003)
+                        for fq in fs
+                    )
+                    / 3
+                    * min(1, x * 3)
+                    * min(1, (bar - x) * 6)
+                ),
+                0.10,
+            )
 
         t += beat / 2
         step += 1
@@ -137,11 +179,21 @@ def _trimmed(vo: Path, tmp: Path):
 
     subprocess.run(
         [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(vo),
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(vo),
             "-af",
             "silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
             "silenceremove=start_periods=1:start_threshold=-45dB,areverse",
-            "-ac", "1", "-ar", str(RATE), str(tmp),
+            "-ac",
+            "1",
+            "-ar",
+            str(RATE),
+            str(tmp),
         ],
         check=True,
     )
@@ -163,13 +215,24 @@ def _lay(music: Path, vo: Path, at_for):
     mixed = music.with_name("music_vo.wav")
     subprocess.run(
         [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-            "-i", str(music), "-i", str(line),
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(music),
+            "-i",
+            str(line),
             "-filter_complex",
             f"[0:a]volume='if(between(t,{at - 0.25:.2f},{at + length + 0.1:.2f}),0.3,1)':eval=frame[m];"
             f"[1:a]adelay={int(at * 1000)}:all=1,volume=1.6[v];"
             "[m][v]amix=inputs=2:normalize=0:duration=first",
-            "-ac", "1", "-ar", str(RATE), str(mixed),
+            "-ac",
+            "1",
+            "-ar",
+            str(RATE),
+            str(mixed),
         ],
         check=True,
     )

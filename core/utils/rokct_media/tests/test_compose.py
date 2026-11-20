@@ -21,6 +21,7 @@ Quick tests that need no model: validation, beds, the mix, watch mode.
 Uses the 'dummy' engine (tones instead of speech) and generates its own
 reference WAVs, so it runs without the voices/ folder or VibeVoice.
 """
+
 from __future__ import annotations
 
 import json
@@ -39,10 +40,15 @@ from rokct_media.compose.watch import watch
 
 def base_ad(**over):
     ad = {
-        "id": "test_ad", "client": "Test", "duration_s": 15, "format": "single-voice",
+        "id": "test_ad",
+        "client": "Test",
+        "duration_s": 15,
+        "format": "single-voice",
         "cast": {"host": {"voice": "v1"}},
-        "script": [{"speaker": "host", "text": "Hello there, this is a short test advert."},
-                   {"speaker": "host", "text": "Buy now while stocks last."}],
+        "script": [
+            {"speaker": "host", "text": "Hello there, this is a short test advert."},
+            {"speaker": "host", "text": "Buy now while stocks last."},
+        ],
         "tag": {"speaker": "host", "text": "Terms apply.", "fast": True},
         "music": {"bed": "builtin:calm"},
         "sfx": [{"file": "builtin:ding", "segment": 1, "offset_s": -0.2}],
@@ -59,7 +65,9 @@ class FactoryTest(unittest.TestCase):
         self.voices.mkdir()
         t = np.arange(24000 * 3) / 24000
         for v in ("v1", "v2"):
-            dsp.write_wav(self.voices / f"{v}.wav", 0.1 * np.sin(2 * np.pi * 150 * t), 24000)
+            dsp.write_wav(
+                self.voices / f"{v}.wav", 0.1 * np.sin(2 * np.pi * 150 * t), 24000
+            )
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -68,7 +76,6 @@ class FactoryTest(unittest.TestCase):
         p = self.tmp / name
         p.write_text(json.dumps(ad))
         return p
-
 
     def test_semantic_errors(self):
         ad = base_ad(format="dialogue")
@@ -101,8 +108,14 @@ class FactoryTest(unittest.TestCase):
     def test_full_mix_hits_loudness_and_length(self):
         for lufs in (-23, -16):
             ad = base_ad(output={"loudness_lufs": lufs, "true_peak_dbtp": -1})
-            rep = make_ad(self.write(ad), self.tmp / "out", voices_dir=self.voices,
-                          cache_dir=self.tmp / "cache", asr=False, log=lambda m: None)
+            rep = make_ad(
+                self.write(ad),
+                self.tmp / "out",
+                voices_dir=self.voices,
+                cache_dir=self.tmp / "cache",
+                asr=False,
+                log=lambda m: None,
+            )
             m = rep["loudness"]["measured"]
             self.assertAlmostEqual(m["wav"]["integrated_lufs"], lufs, delta=0.3)
             self.assertLessEqual(m["wav"]["true_peak_dbtp"], -0.9)
@@ -112,7 +125,12 @@ class FactoryTest(unittest.TestCase):
 
     def test_cache_rerenders_only_changed_line(self):
         p = self.write(base_ad())
-        kw = dict(voices_dir=self.voices, cache_dir=self.tmp / "cache", asr=False, log=lambda m: None)
+        kw = dict(
+            voices_dir=self.voices,
+            cache_dir=self.tmp / "cache",
+            asr=False,
+            log=lambda m: None,
+        )
         make_ad(p, self.tmp / "out", **kw)
         ad = base_ad()
         ad["script"][1]["text"] = "Buy today while stocks last."
@@ -122,9 +140,20 @@ class FactoryTest(unittest.TestCase):
 
     def test_over_long_script_is_sped_up(self):
         ad = base_ad()
-        ad["script"].append({"speaker": "host", "text": "One more sentence that makes this a bit longer than it should be, by quite a few extra words."})
-        rep = make_ad(self.write(ad), self.tmp / "out", voices_dir=self.voices,
-                      cache_dir=self.tmp / "cache", asr=False, log=lambda m: None)
+        ad["script"].append(
+            {
+                "speaker": "host",
+                "text": "One more sentence that makes this a bit longer than it should be, by quite a few extra words.",
+            }
+        )
+        rep = make_ad(
+            self.write(ad),
+            self.tmp / "out",
+            voices_dir=self.voices,
+            cache_dir=self.tmp / "cache",
+            asr=False,
+            log=lambda m: None,
+        )
         self.assertGreater(rep["timing"]["tempo_applied"], 1.0)
         self.assertLessEqual(rep["timing"]["tempo_applied"], 1.08 + 1e-6)
 
@@ -133,8 +162,15 @@ class FactoryTest(unittest.TestCase):
         inbox.mkdir()
         (inbox / "good.json").write_text(json.dumps(base_ad(id="good")))
         (inbox / "bad.json").write_text(json.dumps(base_ad(id="bad", duration_s=7)))
-        watch(inbox, self.tmp / "out", once=True, voices_dir=self.voices,
-              cache_dir=self.tmp / "cache", asr=False, log=lambda m: None)
+        watch(
+            inbox,
+            self.tmp / "out",
+            once=True,
+            voices_dir=self.voices,
+            cache_dir=self.tmp / "cache",
+            asr=False,
+            log=lambda m: None,
+        )
         self.assertTrue((self.tmp / "out" / "good" / "good.mp3").exists())
         self.assertTrue((self.tmp / "failed" / "bad.json").exists())
         self.assertIn("duration_s", (self.tmp / "failed" / "bad.error.txt").read_text())

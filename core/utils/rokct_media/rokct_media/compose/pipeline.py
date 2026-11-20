@@ -14,11 +14,12 @@
 
 """ad.json -> finished spot (wav + mp3 + report.json).
 
-    validate -> render lines (cached) -> trim + level each line -> time fit
-    -> place on timeline with pauses -> music bed with ducking + fades
-    -> sfx -> master to loudness target / true-peak ceiling -> encode
-    -> measure (pyloudnorm + ffmpeg ebur128) -> ASR word check -> report
+validate -> render lines (cached) -> trim + level each line -> time fit
+-> place on timeline with pauses -> music bed with ducking + fades
+-> sfx -> master to loudness target / true-peak ceiling -> encode
+-> measure (pyloudnorm + ffmpeg ebur128) -> ASR word check -> report
 """
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -33,16 +34,24 @@ import numpy as np
 from . import align, bed, dsp, tts
 from .schema import ROOT, load_ad
 
-LINE_LUFS = -20.0          # every rendered line is levelled to this before mixing
+LINE_LUFS = -20.0  # every rendered line is levelled to this before mixing
 
 
 def _log_default(msg: str) -> None:
     print(msg, flush=True)
 
 
-def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | None = None,
-            cache_dir: Path | None = None, asr: bool = True, asr_model: str = align.DEFAULT_ASR,
-            engine_override: str | None = None, log=_log_default) -> dict:
+def make_ad(
+    ad_path: str | Path,
+    out_root: str | Path,
+    *,
+    voices_dir: Path | None = None,
+    cache_dir: Path | None = None,
+    asr: bool = True,
+    asr_model: str = align.DEFAULT_ASR,
+    engine_override: str | None = None,
+    log=_log_default,
+) -> dict:
     t_start = time.time()
     ad, warnings = load_ad(ad_path, voices_dir)
     if engine_override:
@@ -54,8 +63,10 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
     render = ad["render"]
     for w in warnings:
         log(f"  warning: {w}")
-    log(f"[{ad['id']}] {ad['format']}, {ad['duration_s']}s, {len(ad['script'])} lines, "
-        f"mode={render['resolved_mode']}, engine={render['engine']}")
+    log(
+        f"[{ad['id']}] {ad['format']}, {ad['duration_s']}s, {len(ad['script'])} lines, "
+        f"mode={render['resolved_mode']}, engine={render['engine']}"
+    )
 
     # ------------------------------------------------------------------ render
     segs = [dict(s, kind="script", index=i) for i, s in enumerate(ad["script"])]
@@ -78,13 +89,20 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
             log("  rendering dialogue jointly (one pass, all speakers)")
             audio, m = tts.render_cached(cache, render, turns, refs, "joint", log)
             if len(turns) > 1:
-                clips, joint_info = align.split_joint(audio, tts.ENGINE_SR, [t for _, t in turns], asr_model)
+                clips, joint_info = align.split_joint(
+                    audio, tts.ENGINE_SR, [t for _, t in turns], asr_model
+                )
             else:
                 clips, joint_info = [audio], {}
             joint_info.update(m)
             for i, clip in enumerate(clips):
                 raw[i] = clip
-                meta[i] = {"cached": m["cached"], "render_s": None, "cache_key": m["cache_key"], "via": "joint"}
+                meta[i] = {
+                    "cached": m["cached"],
+                    "render_s": None,
+                    "cache_key": m["cache_key"],
+                    "via": "joint",
+                }
         except Exception as exc:  # noqa: BLE001 - any joint failure falls back
             msg = f"joint render/split failed ({exc}); falling back to per-line"
             warnings.append(msg)
@@ -95,8 +113,12 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         if raw[i] is not None:
             continue
         ref = ad["cast"][s["speaker"]]["ref_path"]
-        log(f"  line {i} ({s['speaker']}): {s['text'][:60]}{'...' if len(s['text']) > 60 else ''}")
-        audio, m = tts.render_cached(cache, render, [(0, s["text"])], [ref], "per_line", log)
+        log(
+            f"  line {i} ({s['speaker']}): {s['text'][:60]}{'...' if len(s['text']) > 60 else ''}"
+        )
+        audio, m = tts.render_cached(
+            cache, render, [(0, s["text"])], [ref], "per_line", log
+        )
         if m["cached"]:
             log("    cached")
         raw[i] = audio
@@ -123,7 +145,7 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         gap_before_tag = tag["gap_before_s"]
     else:
         gap_before_tag = 0.0
-    pauses[-1] = 0.0                                   # nothing after the last line
+    pauses[-1] = 0.0  # nothing after the last line
 
     rates = [s["rate"] for s in segs]
     speech_natural = sum(c.shape[0] / sr / r for c, r in zip(clips, rates))
@@ -170,12 +192,17 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
     if over > 0.01:
         status = f"over by {over:.2f}s"
     elif target - needed > 1.5:
-        status = f"under by {target - needed:.2f}s (music tail fills it)" if has_bed else \
-                 f"under by {target - needed:.2f}s (silence fills it)"
+        status = (
+            f"under by {target - needed:.2f}s (music tail fills it)"
+            if has_bed
+            else f"under by {target - needed:.2f}s (silence fills it)"
+        )
     else:
         status = "fits"
-    log(f"  timing: natural speech+pauses {natural_total:.2f}s, window {window:.2f}s, "
-        f"tempo x{tempo:.3f}, pauses x{pause_scale:.2f} -> {status}")
+    log(
+        f"  timing: natural speech+pauses {natural_total:.2f}s, window {window:.2f}s, "
+        f"tempo x{tempo:.3f}, pauses x{pause_scale:.2f} -> {status}"
+    )
 
     # ------------------------------------------------------------- timeline
     n = int(round(total * sr))
@@ -184,7 +211,7 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         a = int(round(st * sr))
         b = min(n, a + c.shape[0])
         voice[a:b] += c[: b - a]
-    voice_lufs = dsp.loudness(voice[int(intro * sr): int(voice_end * sr)], sr)
+    voice_lufs = dsp.loudness(voice[int(intro * sr) : int(voice_end * sr)], sr)
 
     mix = np.stack([voice, voice], axis=1)
     bed_info = {"bed": music["bed"]}
@@ -194,7 +221,7 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
             b = bed.generate_bed(style, total + 0.5, sr, music["seed"])[:n]
         else:
             b = dsp.read_audio(music["bed_path"], sr, channels=2)
-            if b.shape[0] < n:                       # loop with a short crossfade
+            if b.shape[0] < n:  # loop with a short crossfade
                 reps = int(np.ceil(n / max(1, b.shape[0] - sr))) + 1
                 parts = [b]
                 xf = int(0.5 * sr)
@@ -216,8 +243,14 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         fo = min(music["fade_out_s"], max(0.2, 0.7 * (total - voice_end)))
         b = dsp.fade(b, sr, 0.0, fo)
         mix = mix + b
-        bed_info.update({"level_db": music["level_db"], "duck_db": music["duck_db"],
-                         "intro_s": intro, "fade_out_s": round(fo, 2)})
+        bed_info.update(
+            {
+                "level_db": music["level_db"],
+                "duck_db": music["duck_db"],
+                "intro_s": intro,
+                "fade_out_s": round(fo, 2),
+            }
+        )
 
     sfx_info = []
     for fx in ad["sfx"]:
@@ -238,7 +271,9 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         b_ = min(n, a + clip.shape[0])
         if a < n:
             mix[a:b_] += clip[: b_ - a, None]
-        sfx_info.append({"file": fx["file"], "at_s": round(at, 3), "gain_db": fx["gain_db"]})
+        sfx_info.append(
+            {"file": fx["file"], "at_s": round(at, 3), "gain_db": fx["gain_db"]}
+        )
 
     # --------------------------------------------------------------- master
     out = ad["output"]
@@ -258,7 +293,10 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         # MP3 encoding shifts loudness by a tenth or two; trim it back once,
         # never past the true-peak ceiling.
         m3 = measured["mp3"]
-        if m3["integrated_lufs"] is not None and abs(m3["integrated_lufs"] - out["loudness_lufs"]) > 0.05:
+        if (
+            m3["integrated_lufs"] is not None
+            and abs(m3["integrated_lufs"] - out["loudness_lufs"]) > 0.05
+        ):
             adj = out["loudness_lufs"] - m3["integrated_lufs"]
             adj = min(adj, out["true_peak_dbtp"] - m3["true_peak_dbtp"])
             if abs(adj) > 0.05:
@@ -290,13 +328,21 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
     lines = []
     for i, (s, (st, en)) in enumerate(zip(segs, positions)):
         entry = {
-            "n": i, "kind": s["kind"], "speaker": s["speaker"],
-            "voice": ad["cast"][s["speaker"]]["source"], "text": s["text"],
-            "delivery": s.get("delivery"), "start_s": round(st, 3), "end_s": round(en, 3),
-            "duration_s": round(en - st, 3), "tempo": applied[i],
+            "n": i,
+            "kind": s["kind"],
+            "speaker": s["speaker"],
+            "voice": ad["cast"][s["speaker"]]["source"],
+            "text": s["text"],
+            "delivery": s.get("delivery"),
+            "start_s": round(st, 3),
+            "end_s": round(en, 3),
+            "duration_s": round(en - st, 3),
+            "tempo": applied[i],
             "pause_after_s": round(pauses[i], 3) if i < len(segs) - 1 else 0.0,
-            "cached": meta[i].get("cached"), "render_s": meta[i].get("render_s"),
-            "rendered_via": meta[i].get("via"), "cache_key": meta[i].get("cache_key"),
+            "cached": meta[i].get("cached"),
+            "render_s": meta[i].get("render_s"),
+            "rendered_via": meta[i].get("via"),
+            "cache_key": meta[i].get("cache_key"),
         }
         if asr_info:
             entry["asr"] = asr_info["per_line"][i]["transcript"]
@@ -304,36 +350,66 @@ def make_ad(ad_path: str | Path, out_root: str | Path, *, voices_dir: Path | Non
         lines.append(entry)
     words = sum(len(s["text"].split()) for s in segs)
     report = {
-        "id": ad["id"], "client": ad["client"], "title": ad.get("title"), "format": ad["format"],
+        "id": ad["id"],
+        "client": ad["client"],
+        "title": ad.get("title"),
+        "format": ad["format"],
         "created": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
-        "source_sha256": hashlib.sha256(Path(ad["_source_path"]).read_bytes()).hexdigest(),
+        "source_sha256": hashlib.sha256(
+            Path(ad["_source_path"]).read_bytes()
+        ).hexdigest(),
         "files": files,
-        "target": {"duration_s": ad["duration_s"], "loudness_lufs": out["loudness_lufs"],
-                   "true_peak_dbtp": out["true_peak_dbtp"], "sample_rate": sr,
-                   "channels": out["channels"]},
+        "target": {
+            "duration_s": ad["duration_s"],
+            "loudness_lufs": out["loudness_lufs"],
+            "true_peak_dbtp": out["true_peak_dbtp"],
+            "sample_rate": sr,
+            "channels": out["channels"],
+        },
         "timing": {
-            "status": status, "actual_duration_s": round(total, 3),
-            "voice_window_s": round(window, 3), "natural_speech_s": round(speech_natural, 3),
+            "status": status,
+            "actual_duration_s": round(total, 3),
+            "voice_window_s": round(window, 3),
+            "natural_speech_s": round(speech_natural, 3),
             "natural_speech_plus_pauses_s": round(natural_total, 3),
-            "tempo_applied": round(tempo, 4), "pause_scale": round(pause_scale, 3),
-            "voice_start_s": round(intro, 3), "voice_end_s": round(voice_end, 3),
-            "words": words, "words_per_minute": round(words / max(1e-6, sum(e - s for s, e in positions)) * 60, 1),
+            "tempo_applied": round(tempo, 4),
+            "pause_scale": round(pause_scale, 3),
+            "voice_start_s": round(intro, 3),
+            "voice_end_s": round(voice_end, 3),
+            "words": words,
+            "words_per_minute": round(
+                words / max(1e-6, sum(e - s for s, e in positions)) * 60, 1
+            ),
         },
         "loudness": {"mastering": minfo, "measured": measured},
-        "render": {"engine": render["engine"], "model": render["model"] if render["engine"] == "vibevoice" else None,
-                   "mode_requested": render["mode"], "mode_used": mode,
-                   "cfg_scale": render["cfg_scale"], "ddpm_steps": render["ddpm_steps"],
-                   "seed": render["seed"], "joint_split": joint_info,
-                   "lines_rendered": sum(1 for m in meta if m.get("cached") is False),
-                   "lines_cached": sum(1 for m in meta if m.get("cached"))},
-        "music": bed_info, "sfx": sfx_info, "lines": lines, "asr": (
-            {k: v for k, v in asr_info.items() if k != "per_line"} if asr_info else None),
-        "warnings": warnings, "wall_time_s": round(time.time() - t_start, 1),
+        "render": {
+            "engine": render["engine"],
+            "model": render["model"] if render["engine"] == "vibevoice" else None,
+            "mode_requested": render["mode"],
+            "mode_used": mode,
+            "cfg_scale": render["cfg_scale"],
+            "ddpm_steps": render["ddpm_steps"],
+            "seed": render["seed"],
+            "joint_split": joint_info,
+            "lines_rendered": sum(1 for m in meta if m.get("cached") is False),
+            "lines_cached": sum(1 for m in meta if m.get("cached")),
+        },
+        "music": bed_info,
+        "sfx": sfx_info,
+        "lines": lines,
+        "asr": (
+            {k: v for k, v in asr_info.items() if k != "per_line"} if asr_info else None
+        ),
+        "warnings": warnings,
+        "wall_time_s": round(time.time() - t_start, 1),
     }
-    (out_dir / "report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                                         encoding="utf-8")
+    (out_dir / "report.json").write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     shutil.copyfile(ad["_source_path"], out_dir / "ad.json")
     m = measured.get("mp3") or measured["wav"]
-    log(f"  done in {report['wall_time_s']}s: {total:.2f}s, {m['integrated_lufs']} LUFS, "
-        f"{m['true_peak_dbtp']} dBTP -> {out_dir}")
+    log(
+        f"  done in {report['wall_time_s']}s: {total:.2f}s, {m['integrated_lufs']} LUFS, "
+        f"{m['true_peak_dbtp']} dBTP -> {out_dir}"
+    )
     return report

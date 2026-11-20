@@ -24,6 +24,7 @@ Validation has two layers:
 path resolved to an absolute path, so the rest of the pipeline never has to
 guess.
 """
+
 from __future__ import annotations
 
 import copy
@@ -40,8 +41,8 @@ DEFAULT_VOICES_DIR = ROOT / "voices"
 
 BUILTIN_BEDS = ("upbeat", "calm", "corporate")
 BUILTIN_SFX = ("ding", "hooter", "whoosh")
-WORDS_PER_SECOND = 2.6          # brisk ad read, used only for the estimate warning
-MAX_JOINT_SPEAKERS = 4          # VibeVoice-1.5B supports up to 4 voices in one pass
+WORDS_PER_SECOND = 2.6  # brisk ad read, used only for the estimate warning
+MAX_JOINT_SPEAKERS = 4  # VibeVoice-1.5B supports up to 4 voices in one pass
 
 
 class AdError(ValueError):
@@ -155,13 +156,18 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
                 try:
                     member["spec"] = json.loads(spec.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
-                    warnings.append(f"cast.{role}: {spec.name} is not valid JSON; ignored")
+                    warnings.append(
+                        f"cast.{role}: {spec.name} is not valid JSON; ignored"
+                    )
         else:
             ref = _resolve_path(member["ref"], ad_dir)
             member["source"] = f"ref:{member['ref']}"
         if not ref.exists():
-            hint = (" - copy it from the agent repo, see voices/README.md"
-                    if "voice" in member else "")
+            hint = (
+                " - copy it from the agent repo, see voices/README.md"
+                if "voice" in member
+                else ""
+            )
             errors.append(f"cast.{role}: reference audio not found: {ref}{hint}")
         member["ref_path"] = str(ref)
         cast[role] = member
@@ -176,8 +182,10 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
         if re.match(r"^\s*speaker\s*\d+\s*:", seg["text"], re.I):
             errors.append(f"script/{i}: text must not start with 'Speaker N:'")
         if seg["speaker"] not in cast:
-            errors.append(f"script/{i}: speaker '{seg['speaker']}' is not in cast "
-                          f"({', '.join(cast)})")
+            errors.append(
+                f"script/{i}: speaker '{seg['speaker']}' is not in cast "
+                f"({', '.join(cast)})"
+            )
         elif seg["speaker"] not in speakers_in_order:
             speakers_in_order.append(seg["speaker"])
     if ad["tag"]:
@@ -187,8 +195,10 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
 
     fmt = ad["format"]
     if fmt == "single-voice" and len(speakers_in_order) != 1:
-        errors.append(f"format single-voice needs exactly one speaker in the script, "
-                      f"found {len(speakers_in_order)}: {speakers_in_order}")
+        errors.append(
+            f"format single-voice needs exactly one speaker in the script, "
+            f"found {len(speakers_in_order)}: {speakers_in_order}"
+        )
     if fmt == "dialogue" and len(speakers_in_order) < 2:
         errors.append("format dialogue needs at least two speakers in the script")
 
@@ -196,11 +206,16 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
     if mode == "auto":
         mode = "joint" if fmt == "dialogue" else "per_line"
     if mode == "joint" and len(speakers_in_order) > MAX_JOINT_SPEAKERS:
-        errors.append(f"render.mode joint supports at most {MAX_JOINT_SPEAKERS} speakers")
+        errors.append(
+            f"render.mode joint supports at most {MAX_JOINT_SPEAKERS} speakers"
+        )
     ad["render"]["resolved_mode"] = mode
 
-    unused = [r for r in cast if r not in speakers_in_order
-              and not (ad["tag"] and ad["tag"]["speaker"] == r)]
+    unused = [
+        r
+        for r in cast
+        if r not in speakers_in_order and not (ad["tag"] and ad["tag"]["speaker"] == r)
+    ]
     if unused:
         warnings.append(f"cast members never used: {', '.join(unused)}")
 
@@ -210,8 +225,10 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
         pass
     elif bed.startswith("builtin:"):
         if bed.split(":", 1)[1] not in BUILTIN_BEDS:
-            errors.append(f"music.bed: unknown built-in '{bed}', choose from "
-                          + ", ".join("builtin:" + b for b in BUILTIN_BEDS))
+            errors.append(
+                f"music.bed: unknown built-in '{bed}', choose from "
+                + ", ".join("builtin:" + b for b in BUILTIN_BEDS)
+            )
     else:
         p = _resolve_path(bed, ad_dir)
         if not p.exists():
@@ -228,12 +245,16 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
             if s == -1 and not ad["tag"]:
                 errors.append(f"sfx/{i}: segment -1 means the tag, but there is no tag")
             elif s != -1 and not (0 <= s < len(ad["script"])):
-                errors.append(f"sfx/{i}: segment {s} out of range 0..{len(ad['script']) - 1}")
+                errors.append(
+                    f"sfx/{i}: segment {s} out of range 0..{len(ad['script']) - 1}"
+                )
         f = fx["file"]
         if f.startswith("builtin:"):
             if f.split(":", 1)[1] not in BUILTIN_SFX:
-                errors.append(f"sfx/{i}: unknown built-in '{f}', choose from "
-                              + ", ".join("builtin:" + b for b in BUILTIN_SFX))
+                errors.append(
+                    f"sfx/{i}: unknown built-in '{f}', choose from "
+                    + ", ".join("builtin:" + b for b in BUILTIN_SFX)
+                )
         else:
             p = _resolve_path(f, ad_dir)
             if not p.exists():
@@ -241,17 +262,26 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
             fx["path"] = str(p)
 
     # --- rough timing estimate ---------------------------------------------------
-    est = sum(estimate_speech_seconds(s["text"]) / s["rate"] + s["pause_after_s"]
-              for s in ad["script"])
+    est = sum(
+        estimate_speech_seconds(s["text"]) / s["rate"] + s["pause_after_s"]
+        for s in ad["script"]
+    )
     if ad["tag"]:
-        est += ad["tag"]["gap_before_s"] + estimate_speech_seconds(ad["tag"]["text"]) / ad["tag"]["rate"]
+        est += (
+            ad["tag"]["gap_before_s"]
+            + estimate_speech_seconds(ad["tag"]["text"]) / ad["tag"]["rate"]
+        )
     budget = ad["duration_s"] - ad["music"]["intro_s"] - ad["music"]["outro_min_s"]
     ad["estimate_speech_s"] = round(est, 2)
     if est > budget * (1 + ad["timing"]["max_stretch"]) + 0.5:
-        warnings.append(f"script looks long: ~{est:.1f}s of speech for a {budget:.1f}s "
-                        f"voice window ({ad['duration_s']}s spot); expect it to run over")
+        warnings.append(
+            f"script looks long: ~{est:.1f}s of speech for a {budget:.1f}s "
+            f"voice window ({ad['duration_s']}s spot); expect it to run over"
+        )
     elif est < budget * 0.6:
-        warnings.append(f"script looks short: ~{est:.1f}s of speech for a {budget:.1f}s voice window")
+        warnings.append(
+            f"script looks short: ~{est:.1f}s of speech for a {budget:.1f}s voice window"
+        )
 
     if errors:
         raise AdError(f"{path.name}:\n  - " + "\n  - ".join(errors))
@@ -262,6 +292,11 @@ def load_ad(path: str | Path, voices_dir: Path | None = None) -> tuple[dict, lis
 def _clean_text(text: str) -> str:
     text = " ".join(str(text).split())
     # Curly quotes and dashes the tokenizer handles poorly.
-    return (text.replace("’", "'").replace("‘", "'")
-                .replace("“", '"').replace("”", '"')
-                .replace("—", ", ").replace("–", "-"))
+    return (
+        text.replace("’", "'")
+        .replace("‘", "'")
+        .replace("“", '"')
+        .replace("”", '"')
+        .replace("—", ", ")
+        .replace("–", "-")
+    )
