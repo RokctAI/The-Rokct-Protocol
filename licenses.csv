@@ -1,7 +1,7 @@
 "Name","Version","License"
 "PyYAML","6.0.3","MIT License"
 "beautifulsoup4","4.15.0","MIT License"
-"certifi","2026.10.23","Mozilla Public License 2.0 (MPL 2.0)"
+"certifi","2026.11.20","Mozilla Public License 2.0 (MPL 2.0)"
 "cffi","2.1.1","MIT-0"
 "charset-normalizer","3.5.2","MIT"
 "cryptography","50.0.2","Apache-2.0 OR BSD-3-Clause"
