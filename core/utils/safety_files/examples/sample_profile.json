@@ -1,0 +1,54 @@
+{
+  "jurisdiction": "ZA",
+  "company": {
+    "name": "Demo Signs and Branding (Pty) Ltd",
+    "registration_number": "2020/000000/07",
+    "trade": "Signage installation",
+    "address": "1 Demo Street, Musina, 0900",
+    "contact_person": "Demo Contact",
+    "phone": "000 000 0000",
+    "email": "demo@example.com"
+  },
+  "site": {
+    "name": "Demo regional office",
+    "address": "2 Example Road, Saldanha, 7395",
+    "client": "Demo Buyer",
+    "project": "Outdoor branding signage installation",
+    "start_date": "2026-12-01",
+    "end_date": "2026-12-12"
+  },
+  "policy": {
+    "signed_by": "Demo Director",
+    "position": "Director",
+    "signed_on": "2026-11-22"
+  },
+  "people": [
+    {"name": "Demo Director", "role": "Person in charge of health and safety", "phone": "000 000 0000", "appointed_on": "2026-11-22"},
+    {"name": "Demo Supervisor", "role": "Site supervisor", "phone": "000 000 0001", "appointed_on": "2026-11-22"}
+  ],
+  "hazards": [
+    {"activity": "Mounting signs above 2 m", "hazard": "Fall from ladder or scaffold", "risk": "H", "controls": "Inspected scaffold, harness above 2 m, two people per lift", "responsible": "Demo Supervisor"},
+    {"activity": "Drilling into walls", "hazard": "Dust and flying debris", "risk": "M", "controls": "Safety glasses, dust mask, barricade below", "responsible": "Demo Supervisor"},
+    {"activity": "Electrical connection of lit signs", "hazard": "Electric shock", "risk": "H", "controls": "Isolate and lock out supply; only a qualified electrician connects", "responsible": "Demo Director"}
+  ],
+  "procedures": [
+    {"title": "Working at height on a mobile scaffold", "ppe": ["Hard hat", "Harness", "Safety boots"], "steps": ["Inspect the scaffold and tag it before use", "Lock the wheels and fit guardrails", "Barricade the area below", "Never climb the outside of the scaffold"]}
+  ],
+  "training": [
+    {"person": "Demo Supervisor", "course": "Working at heights", "issued": "2024-01-15", "expires": "2027-01-15"},
+    {"person": "Demo Installer", "course": "First aid level 1", "issued": "2023-12-01", "expires": "2026-12-01"}
+  ],
+  "medicals": [
+    {"person": "Demo Installer", "issued": "2025-11-01", "expires": "2026-11-01"}
+  ],
+  "registers": {
+    "ppe": [{"date": "2026-11-22", "person": "Demo Installer", "item": "Harness", "signature": "signed"}],
+    "equipment": [{"item": "Mobile scaffold", "serial": "SC-01", "last_inspected": "2026-11-20", "next_inspection": "2026-12-20"}],
+    "visitors": []
+  },
+  "documents": [
+    {"type": "coida_letter", "reference": "DEMO-COIDA-0001", "issued": "2026-03-01", "expires": "2027-02-28"},
+    {"type": "company_registration", "reference": "2020/000000/07"}
+  ],
+  "incidents": []
+}
