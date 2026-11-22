@@ -31,9 +31,8 @@ Usage:
 
 Skipped automatically (always listed with the reason):
   - draft PRs — always, no flag to include them
-  - PRs from machinery authors: dependabot[bot], rokctbot[bot], and the
-    jules / google-labs-jules variants; add more with --skip-author LOGIN
-    (repeatable)
+  - PRs from machinery authors: dependabot[bot] and rokctbot[bot]; add more
+    with --skip-author LOGIN (repeatable)
 
 claude[bot] is deliberately NOT skipped: an open ready-for-review PR from the
 Claude fleet (flipped from draft when done) is exactly the instruction this
@@ -56,7 +55,7 @@ DEFAULT_ORG = "RokctAI"
 # "[bot]" suffix stripped, so "dependabot" also covers "dependabot[bot]".
 # claude[bot] is deliberately absent: its ready-for-review PRs are the ones
 # these waves process.
-DEFAULT_SKIP_AUTHORS = {"dependabot", "rokctbot", "jules", "google-labs-jules"}
+DEFAULT_SKIP_AUTHORS = {"dependabot", "rokctbot"}
 
 
 def token():

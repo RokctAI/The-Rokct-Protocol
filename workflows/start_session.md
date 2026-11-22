@@ -32,21 +32,21 @@
         *   If **new** → proceed to step 4.
 
 4.  **Ask for Session Name and Mode**:
-    *   Ask: *"What are we working on today?"* (e.g. "Offline Robustness Audit", "Jules Delegation")
+    *   Ask: *"What are we working on today?"* (e.g. "Offline Robustness Audit", "Groq Delegation")
     *   Determine **Mode** based on the task:
         *   `Planning` — architecture, research, design decisions
         *   `Building` — implementation, code changes
-        *   `Delegation` — dispatching work to Jules or another agent
+        *   `Delegation` — dispatching work to another agent
         *   `Audit` — reviewing, debugging, investigating
 
 5.  **Determine Agent and Workspace**:
-    *   **Agent**: Identify who is running this session (e.g. Antigravity, Jules, sinyage).
+    *   **Agent**: Identify who is running this session (e.g. Antigravity, Claude, sinyage).
     *   **Workspace**: Is this session touching multiple repos? → Set `Workspace: TRUE`, otherwise `FALSE`.
     *   Use the **Agent Delegation Decision Framework** in `memory.md` to confirm the right agent for this task.
 
 6.  **Determine Branch Strategy**:
     *   **Local Agent** → Create and switch to branch `users/[SafeID]/[SessionName]`.
-    *   **Web Agent (Jules/Antigravity)** → Stay on current branch. Do **NOT** create branches.
+    *   **Web Agent (Antigravity)** → Stay on current branch. Do **NOT** create branches.
 
 7.  **Create Session File**:
     *   Create `.rokct/sessions/[YYYY-MM-DD]_@[Agent]_[SessionName].md` with the following header:

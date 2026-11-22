@@ -240,10 +240,10 @@ def update_json_tenders(tenders_path, tenders_dir):
     print(f"[Done] tenders.json saved ({len(items)} items).")
 
 
-def save_jules_todo(
+def save_todo(
     base_dir, todo_list, filename="todo.json", title_prefix="Tender Enrichment Queue"
 ):
-    """Saves the work list for Jules' weekly session."""
+    """Saves a work-list queue file under .rokct/agent/."""
     todo_path = base_dir / ".rokct" / "agent" / filename
     todo_path.parent.mkdir(parents=True, exist_ok=True)
 

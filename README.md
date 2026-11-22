@@ -59,7 +59,7 @@ The agent will read `init_protocol.md` and run the matching `initiate.py` (Local
 | Profile | When to Use | Key Differences |
 |---------|-------------|-----------------|
 | **Local** | Desktop (VS Code, CLI, Windsurf) | Copies local-only skills, workflows, Safe ID from git config |
-| **Web** | Cloud sandbox (Jules, Codespaces, Replit) | Skips local-only assets, no interactive prompts |
+| **Web** | Cloud sandbox (Codespaces, Replit) | Skips local-only assets, no interactive prompts |
 
 ### 4. Workspace Mode (Multi-Repo)
 
@@ -97,7 +97,7 @@ python tools/wave_merge.py --merge       # one y/N confirmation, then merges
 
 Skipped automatically (and listed with the reason): draft PRs (always — no
 flag to include them), and PRs from machinery authors (`dependabot[bot]`,
-`rokctbot[bot]`, and the `jules` / `google-labs-jules` variants). Skip more
+`rokctbot[bot]`). Skip more
 logins with a repeatable `--skip-author LOGIN`. `claude[bot]` is deliberately
 NOT skipped: Claude-fleet PRs flipped from draft to ready are exactly the
 ones these waves are for. Defaults to merge commits (the house habit);

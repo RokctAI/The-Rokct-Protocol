@@ -113,15 +113,15 @@ def generate_md(release, flag, source_ref, existing_content=""):
 
     # --- AI SECTION PRESERVATION ---
     # Default Checklist
-    ai_section = """## AI Checklist (Jules)
-<!-- This section is populated by Jules during enrichment. -->
+    ai_section = """## AI Checklist
+<!-- This section is populated during enrichment. -->
 - [ ] Review Tender Documents | 1
 - [ ] Prepare Initial Response | 3
 """
-    # If the card exists and has an AI section, we preserve Jules' work!
-    if "## AI Checklist (Jules)" in existing_content:
-        # Extract everything from the Jules header to the end
-        match = re.search(r"(## AI Checklist \(Jules\)[\s\S]*)$", existing_content)
+    # If the card exists and has an AI section, preserve the enriched tasks.
+    if "## AI Checklist" in existing_content:
+        # Extract everything from the checklist header to the end
+        match = re.search(r"(## AI Checklist[\s\S]*)$", existing_content)
         if match:
             ai_section = match.group(1).strip() + "\n"
 

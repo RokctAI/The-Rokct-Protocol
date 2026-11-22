@@ -174,7 +174,7 @@ def scan_registry(name, path, base_dir):
                 # 4. Tender AI Logic
                 if name == "Tenders":
                     match = re.search(
-                        r"## AI Checklist \(Jules\)[\s\S]*?-->\s*([\s\S]*)$", content
+                        r"## AI Checklist[^\n]*\n[\s\S]*?-->\s*([\s\S]*)$", content
                     )
                     if match:
                         current_tasks = match.group(1).strip()

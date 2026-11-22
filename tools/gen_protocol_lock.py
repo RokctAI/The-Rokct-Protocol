@@ -131,7 +131,6 @@ LOCK_TARGETS = (
         f"{_DELEGATES}/delegate_to_agent.py",
         f"{_DELEGATES}/handle_groq_output.py",
         f"{_DELEGATES}/update_structure.py",
-        f"{_DELEGATES}/manage_sessions.py",
         "core/utils/frappe/compose_backend.py",
         "core/utils/flutter/sdk_composer.py",
         "core/utils/flutter/sdk_installer_base.py",
@@ -146,14 +145,12 @@ LOCK_TARGETS = (
     + tuple(f"core/templates/{t}" for t in TEMPLATE_FILES)
 )
 
-# The 12 scaffold wrappers that share a byte-identical resolve_delegate().
+# The 10 scaffold wrappers that share a byte-identical resolve_delegate().
 _WRAPPER_TARGETS = {
     "call_groq.py": f"{_DELEGATES}/delegate_to_agent.py",
-    "call_jules.py": f"{_DELEGATES}/delegate_to_agent.py",
     "check_health.py": f"{_DELEGATES}/reporter.py",
     "handle_groq_output.py": f"{_DELEGATES}/handle_groq_output.py",
     "lock_job.py": f"{_DELEGATES}/job_manager.py",
-    "manage_sessions.py": f"{_DELEGATES}/manage_sessions.py",
     "privacy_sync.py": f"{_DELEGATES}/privacy.py",
     "response_kits.py": f"{_DELEGATES}/job_manager.py",
     "update_audit_logs.py": f"{_DELEGATES}/reporter.py",

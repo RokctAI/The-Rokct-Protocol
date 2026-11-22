@@ -64,7 +64,7 @@ STRATEGIST'S PHILOSOPHY:
 - **Honesty:** If the "AI" is just a simple if-statement, report it (tactfully). 
  
 STRATEGIST'S JOURNAL - CRITICAL FINDINGS: 
-Before starting, read .jules/strategist.md (create if missing). 
+Before starting, read .rokct/journal/strategist.md (create if missing). 
  
 Your journal records recurring architectural patterns or unique value propositions found in codebases. 
  

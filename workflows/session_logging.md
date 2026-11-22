@@ -15,7 +15,7 @@
 *   **0. Update Rules**: Run `git submodule update --remote`.
     *   *If updated*: Copy `The-Rokct-Protocol/.cursorrules` -> `./.cursorrules`.
     *   **Action (Environment Check)**:
-        1.  **Determine Type**: Are you in a **Local Terminal** (Unrestricted) or a **Cloud/Web Agent** (Restricted/Jules)?
+        1.  **Determine Type**: Are you in a **Local Terminal** (Unrestricted) or a **Cloud/Web Agent** (Restricted)?
         2.  **Select Mode**: Ask: *"Is this session for [Planning] (Read-Only/No Edits) or [Building] (Full Edits)?"*
         3.  **Load Rules**: Copy `The-Rokct-Protocol/modes/[selection].md` -> `.rokct/mode_rules.md`.
         4.  **If Cloud/Web**: **SKIP** all branching. Work on the current branch assigned to you. Do not switch.
@@ -63,7 +63,7 @@
 *   **Do NOT mix contexts**: Truly unrelated tasks (e.g., "Fixing Billing" vs "Designing Chat") must remain separate.
 
 ## 4. Persistence (Anti-Hang)
-*   **Context**: Critical for Cloud Agents (Jules).
+*   **Context**: Critical for Cloud Agents.
 *   **Trigger**: Completion of a significant step.
 *   **Action**:
     1.  **Read**: Check `Checkpoint Policy` in `.rokct/memory.md`.
