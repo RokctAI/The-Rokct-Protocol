@@ -411,9 +411,9 @@ def update_tender_card(md_path, requirements):
     tender_id = md_path.stem
     with open(md_path, "r", encoding="utf-8") as f:
         content = f.read()
-    standard_comment = "<!-- This section is populated by Jules during enrichment. -->"
+    standard_comment = "<!-- This section is populated during enrichment. -->"
     tasks = generate_actionable_tasks(requirements, tender_id)
-    checklist_header = "## AI Checklist (Jules)"
+    checklist_header = "## AI Checklist"
     new_checklist_block = f"{checklist_header}\n{standard_comment}\n"
     for task in tasks:
         new_checklist_block += f"- [ ] {task}\n"
@@ -493,7 +493,7 @@ def main():
         try:
             with open(todo_path, "r", encoding="utf-8") as f:
                 todo_data = json.load(f)
-            # save_jules_todo (registry_orchestrator/updaters.py) writes a
+            # save_todo (registry_orchestrator/updaters.py) writes a
             # dict {"title", "pending_count", "files": [...]} — the same
             # format pdf_to_md.py already accepts. This reader only took
             # the legacy bare list, so every committed todo.json was

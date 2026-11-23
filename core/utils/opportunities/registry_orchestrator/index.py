@@ -29,7 +29,7 @@ from updaters import (
     update_audit_log,
     update_json_meta,
     update_json_tenders,
-    save_jules_todo,
+    save_todo,
 )
 
 # --- CONFIGURATION ---
@@ -111,25 +111,25 @@ def run_orchestration():
             print(f"[Error] {label} update failed (previous file kept): {e}")
 
     # Save specialized task queues
-    save_jules_todo(
+    save_todo(
         BASE_DIR,
         tenders_todo,
         filename="todo.json",
         title_prefix="Tender Enrichment Queue",
     )
-    save_jules_todo(
+    save_todo(
         BASE_DIR,
         equity_todo,
         filename="equity_todo.json",
         title_prefix="Equity Audit Queue",
     )
-    save_jules_todo(
+    save_todo(
         BASE_DIR,
         grants_todo,
         filename="grants_todo.json",
         title_prefix="Grants Verification Queue",
     )
-    save_jules_todo(
+    save_todo(
         BASE_DIR,
         eeip_todo,
         filename="eeip_todo.json",

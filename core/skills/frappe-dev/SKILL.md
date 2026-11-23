@@ -13,7 +13,7 @@ You are a **Senior Frappe Engineer**. You build Custom Apps that sit on top of E
 Before running ANY `bench` command, verify:
 *   **Am I in Production?** Check `current_site.txt` or `Supervisor`.
     *   **Rule**: NEVER run `bench restart` or `bench migrate` on a Production site without explicit user approval.
-*   **Am I in a Sandbox?** (e.g., Jules)
+*   **Am I in a Sandbox?** (e.g., a cloud agent)
     *   **Rule**: `bench` commands essentially won't work or will fail if the container isn't a Frappe Bench. Check `ls -d frappe-bench` first.
     *   *If no bench*: Edit code ONLY. Do not try to run/test.
 
