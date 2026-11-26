@@ -1,0 +1,32 @@
+# Packaging for the Safety Files engine (same shape as ../startup_os).
+#
+# `pip install <path-to-this-directory>` builds a wheel exposing the modules
+# as the `safetyfiles` import package plus a `safetyfiles` console script.
+# An SDK installs it and calls `safetyfiles.builder.build/status` from its
+# gateway cmd. Stdlib only: the wheel declares no runtime dependencies.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "safetyfiles"
+description = "Safety Files - compiles a contractor's site safety file binder, gap report and expiry log."
+requires-python = ">=3.9"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "RokctAI" }]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/RokctAI/The-Rokct-Protocol"
+Source = "https://github.com/RokctAI/The-Rokct-Protocol/tree/main/core/utils/safety_files"
+
+[project.scripts]
+safetyfiles = "safetyfiles.main:main"
+
+[tool.setuptools]
+packages = ["safetyfiles"]
+package-dir = { safetyfiles = "." }
+
+[tool.setuptools.dynamic]
+version = { attr = "safetyfiles.__version__" }
