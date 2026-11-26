@@ -19,7 +19,13 @@ Fetches sdk_composer.py and sdk_installer_base.py from GitHub pinned to
 PROTOCOL_REF, verifies their SHA-256, then executes the composer locally.
 """
 
-import hashlib, os, sys, subprocess, tempfile, urllib.request
+import hashlib, os, sys, subprocess, tempfile, time, urllib.request
+
+# A CI runner can lose its connection to raw.githubusercontent.com for a few
+# seconds (TLS handshake or read timeouts). One failed read must not look like
+# a missing composer, so each script is tried several times before giving up.
+FETCH_ATTEMPTS = 4
+FETCH_TIMEOUT_SECONDS = 30
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
 PROTOCOL_REF = "ff611248f23eea620ef1f26676268302fcffae50"
@@ -36,16 +42,29 @@ EXPECTED_SHA256 = {
 
 def fetch_script(path):
     url = f"{GITHUB_RAW_BASE}/{path}"
-    try:
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"},
+    data = None
+    last_error = None
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"},
+            )
+            with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SECONDS) as resp:
+                if resp.status == 200:
+                    data = resp.read()
+                    break
+                last_error = f"HTTP {resp.status}"
+        except Exception as exc:  # network, TLS, timeout or HTTP error
+            last_error = repr(exc)
+        if attempt < FETCH_ATTEMPTS:
+            time.sleep(2 ** attempt)
+    if data is None:
+        print(
+            f"[compose] Could not fetch {path} at {PROTOCOL_REF} after "
+            f"{FETCH_ATTEMPTS} attempts: {last_error}",
+            file=sys.stderr,
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status != 200:
-                return None
-            data = resp.read()
-    except Exception:
         return None
     digest = hashlib.sha256(data).hexdigest()
     if digest != EXPECTED_SHA256[path]:
