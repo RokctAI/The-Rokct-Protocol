@@ -48,7 +48,10 @@ def fetch_script(path):
         try:
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "Mozilla/5.0", "X-Trace-Id": "flutter-bootstrap"},
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "X-Trace-Id": "flutter-bootstrap",
+                },
             )
             with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SECONDS) as resp:
                 if resp.status == 200:
@@ -58,7 +61,7 @@ def fetch_script(path):
         except Exception as exc:  # network, TLS, timeout or HTTP error
             last_error = repr(exc)
         if attempt < FETCH_ATTEMPTS:
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
     if data is None:
         print(
             f"[compose] Could not fetch {path} at {PROTOCOL_REF} after "
