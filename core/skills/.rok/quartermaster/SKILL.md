@@ -39,10 +39,12 @@ judgment call is hard.
 - Default effort is `low`.
 - Allowed models: Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5. Anything else
   is overridden to Sonnet 5.5.
-- Haiku 5.5 for `batch` (mechanical) work at any effort, and for `code` or
-  `design` jobs at `low` (file moves, rewrites; Ray 2026-10-24, Haiku has
-  proven itself on his local work). Haiku on `judgment`, `verify` or `plan`,
-  or above low outside batch, is overridden to Sonnet 5.5 low.
+- Haiku 5.5 only for mechanical file jobs: `batch` work at any effort, and
+  `code` jobs at `low` (file moves, repeated edits). Ray 2026-11-27: Haiku
+  never does `design` or renders. Haiku on `design`, `judgment`, `verify` or
+  `plan`, or above low outside batch, is overridden to Sonnet 5.5 low. The
+  thread that used a Haiku worker reads the real diffs itself, not a summary,
+  and rejects blind search-and-replace.
 - `judgment` work runs Sonnet 5.5 low unless Fable 5.1 or Opus 5.5 was
   proposed; effort is always forced to low.
 - `verify` work (the PR gatekeeper and other verifiers) keeps the effort
@@ -54,7 +56,7 @@ judgment call is hard.
 - The script also reads the task text, because the kind label is the
   coordinator's own claim. A `code` or `design` task that mentions review,
   audit, security, verify, leak or secret is treated as `verify` (never
-  Haiku). A `code` or `design` task at `low` that is a rename, bump,
+  Haiku). A `code` task at `low` that is a rename, bump,
   dedupe or file move is overridden to Haiku 5.5 low.
 - `python3 quartermaster.py stats` prints approve/override/hold per month so
   a run of all-approve is visible.

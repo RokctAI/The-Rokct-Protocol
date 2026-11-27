@@ -74,7 +74,7 @@ def decide(kind, model, effort, task=""):
         reasons.append(f"task reads as verification, not {kind}; treated as verify")
         kind = "verify"
     elif (
-        kind in ("code", "design")
+        kind == "code"
         and model != "Haiku 5.5"
         and effort == "low"
         and MECHANICAL_WORDS.search(task)
@@ -98,13 +98,14 @@ def decide(kind, model, effort, task=""):
         pass
     else:
         if model == "Haiku 5.5":
-            # Ray 2026-10-24: Haiku may take low-effort code and design jobs
-            # (moves, rewrites); judgment, verify and plan work stay off it.
-            if kind in ("code", "design") and effort == "low":
+            # Ray 2026-11-27: Haiku only for low-effort mechanical code jobs
+            # (moves, repeated edits); never design or renders, and never
+            # judgment, verify or plan. The thread reads the real diffs.
+            if kind == "code" and effort == "low":
                 pass
             else:
                 reasons.append(
-                    "Haiku 5.5 is for batch work or low-effort code/design only"
+                    "Haiku 5.5 is for batch work or low-effort mechanical code only"
                 )
                 model = DEFAULT_MODEL
                 effort = DEFAULT_EFFORT
