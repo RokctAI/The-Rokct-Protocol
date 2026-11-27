@@ -23,8 +23,10 @@ this file to check for past lessons or user preferences.
 ## Report PR (every thread)
 
 * Every thread or agent session opens ONE report PR (draft, off main) in the
-  repo it works on, before it starts work. It is never flipped to ready and
-  never merged: it only holds the report.
+  repo it works on, before it starts work. It holds the report and a short
+  session note in `.rokct/sessions/` (so it has a diff to merge).
+* When the session ends, the report PR goes to the PR gatekeeper and is
+  squash-merged once flipped (Ray, 2026-11-27).
 * Code work always goes in separate PRs. The report PR lists every PR the
   session opened for its tasks, with each one's state.
 * First write the task for this repo in the report PR description, then keep
