@@ -10,12 +10,7 @@ on:
   pull_request:
     types: [closed]
   schedule:
-    - cron: '*/30 * * * *'  # 30-min scheduler (factory)
     - cron: '0 20 * * *'    # Daily queue (factory, opportunities)
-    - cron: '0 20 1 * *'    # Monthly idea session (protocol)
-    - cron: '0 21 * * 0'    # Weekly delegation queue (protocol)
-    - cron: '0 22 * * 0'    # Weekly review (protocol)
-    - cron: '0 23 * * 0'    # Weekly publisher (protocol)
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -47,7 +42,7 @@ concurrency:
 
 jobs:
   agent:
-    uses: RokctAI/shared-workflows/.github/workflows/universal-agent.yml@dd47cc588dd704ef76556921c491fbe69b45b04c # shared-workflows main @ 2026-10-16
+    uses: RokctAI/shared-workflows/.github/workflows/universal-agent.yml@a1ed8107168041aa252213ddcfa5279b00697195 # shared-workflows main @ 2026-11-27
     with:
       mode: 'auto'
       # Since the factory split, the factory's Level 0/1 prompt queue and job
