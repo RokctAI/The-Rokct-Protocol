@@ -5,6 +5,7 @@ version: 1.0.0
 ---
 
 # HTML mockups before building (design first)
+> Superseded by the `render` skill (shared pipeline, Ray 2026-11-28): use it for frames, proposals and decks. These steps remain for reference.
 **When:** a large redesign where Ray should see the direction before Dart work.
 
 1. Generate a static HTML page of every screen and state with `scripts/build2.py` (styles in `style2.css`; `build.py` and `style.css` are the older v1 mockup, kept for reference).
