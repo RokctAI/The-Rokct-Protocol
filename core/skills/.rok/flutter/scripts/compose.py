@@ -28,7 +28,7 @@ FETCH_ATTEMPTS = 4
 FETCH_TIMEOUT_SECONDS = 30
 
 # Pinned by tools/gen_protocol_lock.py - do not edit these constants by hand.
-PROTOCOL_REF = "ff611248f23eea620ef1f26676268302fcffae50"
+PROTOCOL_REF = "e0b05dca6c9620eba856266c40ffdf8ee457b44b"
 COMPOSER_PATH = "core/utils/flutter/sdk_composer.py"
 INSTALLER_BASE_PATH = "core/utils/flutter/sdk_installer_base.py"
 GITHUB_RAW_BASE = (
