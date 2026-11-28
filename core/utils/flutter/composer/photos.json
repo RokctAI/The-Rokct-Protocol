@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "package_name": "photos",
   "description": "Configuration list of active SDKs for the photos app: a gallery backed up to the user's own private GitHub repos, offline first",
-  "_comment_home": "The photos SDK (gallery, memories, places, people; factory#262) does not exist yet. When it lands it is added here as the home_sdk, reaching depot through its own domain/interface contract plus a host adapter (ADR-005). Until then this profile composes with base's default home plus depot's /depot/setup and /depot/files, which is enough to test sign-in, backup and the repo-side jobs.",
+  "_comment_home": "There is no separate photos SDK: depot_sdk is the home (hardware#138), with role folders drive/, photos/ and common/. The gallery, memories, places and people screens (factory#262) will be added inside depot/photos/. base_sdk is no longer the home.",
   "sdks": [
     {
       "name": "base_sdk",
@@ -25,7 +25,8 @@
       "ref": "main",
       "sha256": "b05eb10221aaed7744b111905977e3fad4dd62ab705b1c354b4936eca5759c57",
       "_sha256_comment": "SHA-256 of depot/dart/install.py at hardware@3b579b4; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
-      "_comment": "Storage on the user's own private GitHub repos (depot/CONTRACT.md): device-flow GitHub sign-in, batched commits, index, versions, offline queue, repo-side jobs. The host passes DepotConfig(thumbnails: true, suggestedRepoName: 'my-photos') with the clientId of the GitHub OAuth app (device flow enabled). Not the home: the photos SDK will be. Photos also needs a Google sign-in for the Photos Picker scope to start a Google Photos import (runJob('import', pickerSession, googleToken)); the token is short-lived and passed as a masked dispatch input, never stored in the repo."
+      "home_sdk": true,
+      "_comment": "Storage on the user's own private GitHub repos (depot/CONTRACT.md): device-flow GitHub sign-in, batched commits, index, versions, offline queue, repo-side jobs. The host passes DepotConfig(thumbnails: true, suggestedRepoName: 'my-photos') with the clientId of the GitHub OAuth app (device flow enabled). Home for photos (hardware#138, depot_sdk 1.4.0): depot's app_type.photos block sets replaceMainRoute -> the file browser, so the shell's .rokct/config/app_type must be 'photos'; Photos login and splash live in depot/lib/src/photos/, declared through @auth-entry-config. Photos also needs a Google sign-in for the Photos Picker scope to start a Google Photos import (runJob('import', pickerSession, googleToken)); the token is short-lived and passed as a masked dispatch input, never stored in the repo."
     },
     {
       "name": "telemetry_sdk",
