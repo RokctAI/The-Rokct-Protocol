@@ -5,6 +5,7 @@ version: 1.0.0
 ---
 
 # Render Flutter screens locally for review
+> Superseded by the `render` skill (shared pipeline, Ray 2026-11-28): use it for frames, proposals and decks. These steps remain for reference.
 **When:** before and after any screen change, so Ray and the gatekeeper see real pixels. Without Flutter in the container this is the only way to show a Dart UI.
 
 1. Install Flutter if missing: download `flutter_linux_3.44.9-stable.tar.xz` from storage.googleapis.com into /opt and add it to PATH. Run `git config --global --add safe.directory '*'`, or pub get fails as root.
