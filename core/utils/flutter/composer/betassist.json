@@ -57,6 +57,15 @@
       "_sha256_comment": "SHA-256 of users/dart/install.py at Users@55048d34; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
     },
     {
+      "name": "onboarding_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/Users",
+      "path": "../Users/onboarding/dart",
+      "ref": "main",
+      "sha256": "5980c6a541ec6334686b10a08932c4e4967c835cb99ec6e9097fc25f4f324076"
+    },
+    {
       "name": "wallet_sdk",
       "enabled": true,
       "source": "git",
@@ -105,6 +114,17 @@
       "ref": "main",
       "sha256": "88ac3c9d07789e5e5e81d3090402e3a595c79d88f7924b79c15109dd5292988b",
       "_sha256_comment": "SHA-256 of corporate/dart/install.py at corporate@a3a9eb05; required by the composer's unpinned-installer gate. Update when upstream install.py changes."
+    },
+    {
+      "name": "hardware_sdk",
+      "enabled": true,
+      "source": "git",
+      "git": "https://github.com/RokctAI/hardware",
+      "path": "../hardware/hardware/dart",
+      "ref": "main",
+      "sha256": "6dc903f84e0a45e9128a8564a1dd36f2bce148c05adb0927cf064ff7c6db7ddf",
+      "_sha256_comment": "SHA-256 of hardware/dart/install.py at hardware@2a994ec6; required by the composer's unpinned-installer gate. Update when upstream install.py changes.",
+      "_comment": "Required by betassist_sdk (its pubspec depends on it), so the composed app resolves."
     },
     {
       "name": "desktop_sdk",
