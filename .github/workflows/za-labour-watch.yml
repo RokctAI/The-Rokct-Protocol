@@ -44,26 +44,24 @@ jobs:
           set +e
           OUT="$(python3 -I -c 'import sys; sys.path.insert(0, "."); sys.argv=["w","--propose"]; import runpy; runpy.run_module("hrms_pulsar.za_labour_watch", run_name="__main__")')"
           echo "$OUT"
-          echo "result=$OUT" >> "$GITHUB_OUTPUT"
+          echo "result=$(printf '%s' "$OUT" | tr -d '\r' | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
           if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
           exit 0
 
       - name: Open draft PR in pay
         if: steps.watch.outputs.changed == 'true'
         working-directory: pay
+        env:
+          RESULT: ${{ steps.watch.outputs.result }}
         run: |
           BR="auto/za-labour-threshold-$(date +%Y%m%d)"
           git config user.name "rokct-labour-watch"
           git config user.email "actions@users.noreply.github.com"
           git checkout -b "$BR"
+          git diff --stat
           git commit -am "hrms: AUTO-PROPOSED BCEA earnings threshold (check before merging)"
           git push origin "$BR"
-          BODY="Weekly ZA labour watch found a new BCEA earnings threshold on the Department of Labour site.
-
-          Result: ${{ steps.watch.outputs.result }}
-
-          DRAFT on purpose: check the figure and its effective date against the gazette, fix the date in za_labour_rules.json (it is set to the day the watch ran), then hand to the gatekeeper."
-          jq -n --arg t "hrms: AUTO-PROPOSED BCEA earnings threshold" --arg h "$BR" --arg b "$BODY" \
-            '{title:$t, head:$h, base:"main", body:$b, draft:true}' | \
+          jq -n --arg t "hrms: AUTO-PROPOSED BCEA earnings threshold" --arg h "$BR" --arg r "$RESULT" \
+            '{title:$t, head:$h, base:"main", draft:true, body:("Weekly ZA labour watch found a new BCEA earnings threshold on the Department of Labour site.\n\nResult: " + $r + "\n\nDRAFT on purpose: check the figure and its effective date against the gazette, fix the date in za_labour_rules.json (it is set to the day the watch ran), then hand to the gatekeeper.")}' | \
             curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/RokctAI/pay/pulls -d @- | jq -r '.html_url // .message'
